@@ -17,14 +17,14 @@
   --font-poppins: var(--font-poppins);
 }
 
-@media (prefers-color-scheme: dark) {
+/* @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
     --primary: #41574A;
     --primary-dark: #34463A;
   }
-}
+} */
 
 body {
   background: var(--background);

@@ -16,7 +16,7 @@ const Navigation = () => {
               priority
             /> */}
             <h1 className="text-xl flex items-center gap-2">
-                <span>Kasten Fabriek</span>
+                <span>Kasten-fabriek.nl</span>
             </h1>
           </Link>
 
