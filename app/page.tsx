@@ -3,9 +3,9 @@ import Image from "next/image";
 export default function Home() {
   return (
     <div className="relative w-full h-screen -mt-6 font-poppins">
-      <Image src="/ladingplaceholder.jpg" alt="Home" fill className="object-cover" />
-
-      <div className="absolute inset-0 bg-black/30" />
+      {/* <Image src="/ladingplaceholder.jpg" alt="Home" fill className="object-cover" /> */}
+      <video src="/inspo.mov" autoPlay muted loop className="absolute inset-0 object-cover" />
+      <div className="absolute inset-0 bg-black/10 z-10" />
 
       <div className="relative z-10 flex flex-col justify-center h-full text-white px-4 max-w-7xl mx-auto">
         <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6 text-left">
