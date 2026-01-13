@@ -40,9 +40,6 @@ export default function RootLayout({
         <IntroAnimation />
         <Navigation />
         {children}
-        <div className="w-full h-[3000px]">
-          {/* <Image src="/ladingplaceholder.jpg" alt="Home" fill className="object-cover -z-10 " /> */}
-        </div>
         <Footer />
       </body>
     </html>
