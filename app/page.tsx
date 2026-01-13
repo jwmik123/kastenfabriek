@@ -6,9 +6,11 @@ export default function Home() {
   return (
     <>
     <div className="relative w-full h-screen -mt-6 font-poppins" data-nav-theme="dark">
-      <Image src="/homeplaceholder.png" alt="Home" fill className="object-cover" />
-      {/* <video src="/inspo.mov" autoPlay muted loop className="absolute inset-0 object-cover" /> */}
-      {/* <div className="absolute inset-0 bg-black/30 z-10" /> */}
+      {/* <Image src="/homeplaceholder.png" alt="Home" fill className="object-cover" /> */}
+      <video autoPlay muted loop className="absolute inset-0 w-full h-full object-cover">
+      <source className="" src="https://www.maatkastenonline.be/themes/maatkastenonline/assets/images/maatkastenonline-home-mobile.webm" type="video/webm"></source>
+      </video>
+      <div className="absolute inset-0 bg-black/10 z-10" />
 
       <div className="relative z-10 flex flex-col justify-end pb-24 h-full text-white px-4 max-w-7xl mx-auto">
         <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6 text-left">
