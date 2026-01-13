@@ -34,8 +34,8 @@ export default function Home() {
           Kies het type kast dat perfect bij jouw ruimte en behoeften past
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {/* Option 1 - Maatkast */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+          {/* Option 1 - Kledingkast */}
           <div className="group cursor-pointer">
             <div className="aspect-square bg-neutral-50 overflow-hidden mb-4 relative">
               <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -50,14 +50,14 @@ export default function Home() {
               </div>
             </div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2 group-hover:text-primary transition-colors">
-              Maatkast
+              Kledingkast
             </h3>
             <p className="text-gray-600 text-sm leading-relaxed">
               Volledig op maat gemaakt, perfect passend in jouw ruimte
             </p>
           </div>
 
-          {/* Option 2 - Schuifdeurkast */}
+          {/* Option 2 - Wasmachinekast */}
           <div className="group cursor-pointer">
             <div className="aspect-square bg-neutral-50 overflow-hidden mb-4 relative">
               <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -65,43 +65,21 @@ export default function Home() {
                 <div className="text-center space-y-4">
                   <div className="w-20 h-20 mx-auto bg-primary/10 rounded-full flex items-center justify-center">
                     <svg className="w-10 h-10 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
                     </svg>
                   </div>
                 </div>
               </div>
             </div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2 group-hover:text-primary transition-colors">
-              Schuifdeurkast
+              Wasmachinekast
             </h3>
             <p className="text-gray-600 text-sm leading-relaxed">
-              Ruimtebesparend met stijlvolle schuifdeuren
+              Functionele kast voor je wasmachine en droger
             </p>
           </div>
 
-          {/* Option 3 - Inloopkast */}
-          <div className="group cursor-pointer">
-            <div className="aspect-square bg-neutral-50 overflow-hidden mb-4 relative">
-              <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              <div className="w-full h-full flex items-center justify-center">
-                <div className="text-center space-y-4">
-                  <div className="w-20 h-20 mx-auto bg-primary/10 rounded-full flex items-center justify-center">
-                    <svg className="w-10 h-10 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2 group-hover:text-primary transition-colors">
-              Inloopkast
-            </h3>
-            <p className="text-gray-600 text-sm leading-relaxed">
-              Luxe walk-in oplossing voor maximale opbergruimte
-            </p>
-          </div>
-
-          {/* Option 4 - IKEA PAX Deuren */}
+          {/* Option 3 - IKEA PAX Deuren */}
           <div className="group cursor-pointer">
             <div className="aspect-square bg-neutral-50 overflow-hidden mb-4 relative">
               <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -121,6 +99,64 @@ export default function Home() {
             <p className="text-gray-600 text-sm leading-relaxed">
               Op maat gemaakte deuren voor je bestaande IKEA kast
             </p>
+          </div>
+        </div>
+
+        {/* Coming Soon Section */}
+        <div className="mt-16">
+          <h3 className="text-2xl font-semibold text-center mb-8 text-gray-800">
+            Binnenkort beschikbaar
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl mx-auto">
+            {/* Coming Soon 1 - TV Meubel */}
+            <div className="group cursor-not-allowed opacity-60">
+              <div className="aspect-square bg-neutral-50 overflow-hidden mb-4 relative">
+                <div className="absolute inset-0 bg-gray-400/10" />
+                <div className="absolute top-4 right-4 bg-gray-700 text-white px-3 py-1 rounded-full text-xs font-semibold">
+                  Binnenkort
+                </div>
+                <div className="w-full h-full flex items-center justify-center">
+                  <div className="text-center space-y-4">
+                    <div className="w-20 h-20 mx-auto bg-gray-200 rounded-full flex items-center justify-center">
+                      <svg className="w-10 h-10 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-700 mb-2">
+                TV Meubel
+              </h3>
+              <p className="text-gray-500 text-sm leading-relaxed">
+                Stijlvol maatwerk TV-meubel voor je woonkamer
+              </p>
+            </div>
+
+            {/* Coming Soon 2 - Badkamermeubel */}
+            <div className="group cursor-not-allowed opacity-60">
+              <div className="aspect-square bg-neutral-50 overflow-hidden mb-4 relative">
+                <div className="absolute inset-0 bg-gray-400/10" />
+                <div className="absolute top-4 right-4 bg-gray-700 text-white px-3 py-1 rounded-full text-xs font-semibold">
+                  Binnenkort
+                </div>
+                <div className="w-full h-full flex items-center justify-center">
+                  <div className="text-center space-y-4">
+                    <div className="w-20 h-20 mx-auto bg-gray-200 rounded-full flex items-center justify-center">
+                      <svg className="w-10 h-10 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-700 mb-2">
+                Badkamermeubel
+              </h3>
+              <p className="text-gray-500 text-sm leading-relaxed">
+                Op maat gemaakte badkamermeubels voor elke ruimte
+              </p>
+            </div>
           </div>
         </div>
       </div>

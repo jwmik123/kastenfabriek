@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Poppins } from "next/font/google";
 import "./globals.css";
 import Navigation from "@/components/Navigation";
 import IntroAnimation from "@/components/IntroAnimation";
+import Footer from "@/components/Footer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -42,6 +43,7 @@ export default function RootLayout({
         <div className="w-full h-[3000px]">
           {/* <Image src="/ladingplaceholder.jpg" alt="Home" fill className="object-cover -z-10 " /> */}
         </div>
+        <Footer />
       </body>
     </html>
   );
