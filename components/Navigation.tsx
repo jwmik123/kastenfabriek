@@ -18,11 +18,11 @@ const Navigation = () => {
   // }, [])
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-30">
+    <div className="fixed top-0 left-0 right-0 z-30  font-poppins">
       {/* Top Header */}
       <div className="w-full bg-primary text-white py-2">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between text-sm font-poppins">
+          <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-2">
               <Mail size={16} />
               <span>info@kasten-fabriek.nl</span>
@@ -59,12 +59,12 @@ const Navigation = () => {
               height={40}
               priority
             /> */}
-            <h1 className="text-xl flex items-center gap-2">
-                <span>Kasten-fabriek.nl</span>
+            <h1 className="text-4xl flex items-center gap-2">
+                <span>KF</span>
             </h1>
           </Link>
 
-          <div className="flex items-center gap-8">
+          <div className="flex items-center gap-8 text-lg">
             <Link href="/about" className="transition-colors hover:text-gray-600">
               Onze kasten
             </Link>
@@ -77,7 +77,7 @@ const Navigation = () => {
           </div>
 
           <div className="flex items-center gap-4">
-            <button className="text-white bg-green-600 px-4 py-2 rounded-full cursor-pointer">
+            <button className="text-white bg-green-600 px-6 py-4 rounded-full cursor-pointer">
               Ontwerp je maatkast
             </button>
 

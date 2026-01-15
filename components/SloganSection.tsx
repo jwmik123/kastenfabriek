@@ -20,7 +20,7 @@ export default function SloganSection({
   onButtonClick,
 }: SloganSectionProps) {
   return (
-    <div className="w-full px-6 md:px-12">
+    <div className="w-full px-6 md:px-12 pb-12 md:pb-20 md:pt-12">
       <section className="rounded-xl relative overflow-hidden min-h-80 h-80 lg:h-144">
         <Image
           src={backgroundImage}
