@@ -1,6 +1,7 @@
 import Image from "next/image";
 import ProductOptionsSection from "@/components/ProductOptionsSection";
 import SloganSection from "@/components/SloganSection";
+import ModuleHighlight from "@/components/ModuleHighlight";
 
 export default function Home() {
   return (
@@ -118,6 +119,8 @@ afwerking rondom."
   align="left"
   buttonText="Ontwerp jouw maatkast"
 />
+
+<ModuleHighlight />
 
 
     </>

@@ -20,8 +20,8 @@ export default function SloganSection({
   onButtonClick,
 }: SloganSectionProps) {
   return (
-    <div className="w-full px-12">
-      <section className="rounded-xl relative overflow-hidden h-64 md:h-80 lg:h-144">
+    <div className="w-full px-6 md:px-12">
+      <section className="rounded-xl relative overflow-hidden min-h-80 h-80 lg:h-144">
         <Image
           src={backgroundImage}
           alt="Slogan background"
@@ -49,7 +49,7 @@ export default function SloganSection({
                 ) : (
                   <button
                     onClick={onButtonClick}
-                    className="bg-primary cursor-pointer text-white px-8 py-4 rounded-xl text-lg font-semibold hover:bg-primary-dark transition-colors"
+                    className="bg-primary cursor-pointer text-white px-8 py-4 md:mt-12 rounded-xl text-lg font-semibold hover:bg-primary-dark transition-colors"
                   >
                     {buttonText}
                   </button>
