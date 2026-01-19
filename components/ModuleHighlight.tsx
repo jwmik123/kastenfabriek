@@ -4,13 +4,7 @@ import { Canvas, useThree, useFrame } from "@react-three/fiber";
 import { useGLTF, Environment, OrbitControls } from "@react-three/drei";
 import { useState, Suspense, useEffect, useRef } from "react";
 import gsap from "gsap";
-import { CustomEase } from "gsap/CustomEase";
-
-gsap.registerPlugin(CustomEase);
-
-// Custom snap/wiggle ease - overshoots then settles back
-// Adjust the path to control overshoot amount and wiggle intensity
-CustomEase.create("snapWiggle", "M0,0 C0.25,0 0.35,1 0.5,1.08 0.65,1.16 0.7,1.08 0.78,1 0.86,0.97 0.92,0.99 1,1");
+import * as THREE from "three/webgpu";
 
 useGLTF.preload("/objects/modules.glb");
 
@@ -83,12 +77,13 @@ function ModulesModel() {
         child.castShadow = true;
         child.receiveShadow = true;
       }
-      
+
     });
   }, [scene]);
 
   return <primitive object={scene} />;
 }
+
 
 function MobileModuleSelect({
   activeModule,
@@ -194,7 +189,19 @@ export default function ModuleHighlight() {
 
         {/* Right side - Three.js Canvas */}
         <div className="flex-1 aspect-square bg-gray-900 rounded-xl overflow-hidden">
-          <Canvas shadows camera={{ position: [CAMERA_START_X, CAMERA_Y, CAMERA_Z], fov: 40 }}>
+          <Canvas
+            shadows
+            camera={{ position: [CAMERA_START_X, CAMERA_Y, CAMERA_Z], fov: 40 }}
+            frameloop="always"
+            gl={async (props) => {
+              const renderer = new THREE.WebGPURenderer({
+                ...(props as object),
+                antialias: true,
+              });
+              await renderer.init();
+              return renderer;
+            }}
+          >
             <ambientLight intensity={1} />
             <directionalLight
               shadow-mapSize-width={2048}
