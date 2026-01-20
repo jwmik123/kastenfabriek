@@ -1,0 +1,110 @@
+import type {
+  FullPricingData,
+  ModuleLayout,
+  DoorVariant,
+  CorpusType,
+  Accessory,
+  InstallationTier,
+} from "@/types/configurator-pricing";
+
+export class PricingEngine {
+  constructor(private data: FullPricingData) {}
+
+  getModule(layoutId: number): ModuleLayout | undefined {
+    return this.data.modules.find((m) => m.layoutId === layoutId);
+  }
+
+  getModulePrice(layoutId: number, type: CorpusType): number {
+    const module = this.getModule(layoutId);
+    if (!module) {
+      throw new Error(`Module layout ${layoutId} not found`);
+    }
+    return type === "double" ? module.priceDouble : module.priceSingle;
+  }
+
+  getDoor(variant: DoorVariant): Accessory | undefined {
+    return this.data.doors.find((d) => d.variant === variant) as unknown as Accessory;
+  }
+
+  getDoorPrice(variant: DoorVariant): number {
+    const door = this.data.doors.find((d) => d.variant === variant);
+    return door?.price ?? 0;
+  }
+
+  getAccessory(accessoryId: string): Accessory | undefined {
+    return this.data.accessories.find((a) => a.id === accessoryId);
+  }
+
+  getAccessoryPrice(accessoryId: string): number {
+    const accessory = this.getAccessory(accessoryId);
+    return accessory?.price ?? 0;
+  }
+
+  calculateLedPrice(moduleCount: number): number {
+    if (moduleCount === 0) return 0;
+    const { basePrice, pricePerModule } = this.data.config.led;
+    return basePrice + pricePerModule * moduleCount;
+  }
+
+  getInstallationTier(subtotal: number): InstallationTier | undefined {
+    return this.data.installation.find(
+      (t) => subtotal >= t.minTotal && subtotal < t.maxTotal
+    );
+  }
+
+  getInstallationPrice(subtotal: number): number {
+    const tier = this.getInstallationTier(subtotal);
+    return tier?.price ?? 0;
+  }
+
+  get deliveryPrice(): number {
+    return this.data.config.deliveryPrice;
+  }
+
+  get constraints() {
+    return this.data.config.constraints;
+  }
+
+  get ledPricing() {
+    return this.data.config.led;
+  }
+
+  validateCorpusWidth(width: number, type: CorpusType): boolean {
+    const constraints =
+      type === "single"
+        ? this.data.config.constraints.singleCorpus
+        : this.data.config.constraints.doubleCorpus;
+    return width >= constraints.minWidth && width <= constraints.maxWidth;
+  }
+
+  validateCorpusHeight(height: number, type: CorpusType): boolean {
+    const constraints =
+      type === "single"
+        ? this.data.config.constraints.singleCorpus
+        : this.data.config.constraints.doubleCorpus;
+    return height >= constraints.minHeight && height <= constraints.maxHeight;
+  }
+
+  validateCorpusDepth(depth: number, type: CorpusType): boolean {
+    const constraints =
+      type === "single"
+        ? this.data.config.constraints.singleCorpus
+        : this.data.config.constraints.doubleCorpus;
+    return depth >= constraints.minDepth && depth <= constraints.maxDepth;
+  }
+
+  validateTopCabinetHeight(height: number): boolean {
+    return height <= this.data.config.constraints.topCabinet.maxHeight;
+  }
+
+  determineCorpusType(width: number): CorpusType {
+    const { singleCorpus, doubleCorpus } = this.data.config.constraints;
+    if (width <= singleCorpus.maxWidth) {
+      return "single";
+    }
+    if (width >= doubleCorpus.minWidth) {
+      return "double";
+    }
+    return "single";
+  }
+}

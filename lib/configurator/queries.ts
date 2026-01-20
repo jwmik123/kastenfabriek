@@ -1,0 +1,99 @@
+import { groq } from "next-sanity";
+
+export const pricingDataQuery = groq`{
+  "config": *[_type == "pricingConfig"][0] {
+    currency,
+    lastUpdated,
+    led,
+    deliveryPrice,
+    constraints
+  },
+  "modules": *[_type == "moduleLayout"] | order(layoutId asc) {
+    layoutId,
+    name,
+    description,
+    contents,
+    priceDouble,
+    priceSingle,
+    availableForTopCabinet
+  },
+  "accessories": *[_type == "accessory"] {
+    "id": accessoryId.current,
+    name,
+    nameNl,
+    price,
+    category,
+    perUnit,
+    maxPerCorpus
+  },
+  "doors": *[_type == "doorType"] {
+    "id": doorId.current,
+    name,
+    price,
+    variant,
+    description
+  },
+  "installation": *[_type == "installationTier"] | order(minTotal asc) {
+    name,
+    minTotal,
+    maxTotal,
+    price,
+    days,
+    people
+  }
+}`;
+
+export const moduleLayoutsQuery = groq`
+  *[_type == "moduleLayout"] | order(layoutId asc) {
+    layoutId,
+    name,
+    description,
+    contents,
+    priceDouble,
+    priceSingle,
+    availableForTopCabinet
+  }
+`;
+
+export const accessoriesQuery = groq`
+  *[_type == "accessory"] {
+    "id": accessoryId.current,
+    name,
+    nameNl,
+    price,
+    category,
+    perUnit,
+    maxPerCorpus
+  }
+`;
+
+export const doorTypesQuery = groq`
+  *[_type == "doorType"] {
+    "id": doorId.current,
+    name,
+    price,
+    variant,
+    description
+  }
+`;
+
+export const installationTiersQuery = groq`
+  *[_type == "installationTier"] | order(minTotal asc) {
+    name,
+    minTotal,
+    maxTotal,
+    price,
+    days,
+    people
+  }
+`;
+
+export const pricingConfigQuery = groq`
+  *[_type == "pricingConfig"][0] {
+    currency,
+    lastUpdated,
+    led,
+    deliveryPrice,
+    constraints
+  }
+`;

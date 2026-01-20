@@ -1,17 +1,29 @@
 // components/IntroAnimation.tsx
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
+
+const SESSION_KEY = "intro-animation-shown";
 
 export default function IntroAnimation() {
   const container = useRef<HTMLDivElement>(null);
   const introWrapper = useRef<HTMLDivElement>(null);
+  const [hasSeenIntro, setHasSeenIntro] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const seen = sessionStorage.getItem(SESSION_KEY);
+    setHasSeenIntro(!!seen);
+    if (!seen) {
+      sessionStorage.setItem(SESSION_KEY, "true");
+    }
+  }, []);
 
   useGSAP(
     () => {
-      // Set initial state immediately
+      if (hasSeenIntro !== false) return;
+
       gsap.set(".fill-rect", {
         scaleX: 0,
         transformOrigin: "left center",
@@ -19,21 +31,22 @@ export default function IntroAnimation() {
 
       const tl = gsap.timeline();
 
-      tl.to(
-        ".fill-rect",
-        {
-          scaleX: 1,
-          duration: 2,
-          ease: "power4.inOut",
-        }
-      ).to(introWrapper.current, {
+      tl.to(".fill-rect", {
+        scaleX: 1,
+        duration: 2,
+        ease: "power4.inOut",
+      }).to(introWrapper.current, {
         y: "-200%",
         duration: 1.5,
         ease: "power4.inOut",
       });
     },
-    { scope: container }
+    { scope: container, dependencies: [hasSeenIntro] }
   );
+
+  // Don't render anything while checking sessionStorage (avoids flash)
+  // or if user has already seen the intro this session
+  if (hasSeenIntro !== false) return null;
 
   return (
     <div ref={introWrapper} className="fixed inset-0 z-50 flex items-center justify-center bg-primary-dark">

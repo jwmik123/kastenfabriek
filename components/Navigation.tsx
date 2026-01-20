@@ -84,15 +84,16 @@ const Navigation = () => {
 
       {/* Main Navigation */}
       <nav className={`w-full transition-all duration-300 ${
-        isScrolled ? 'py-4' : 'py-0'
+        isScrolled ? 'py-0' : 'py-0'
       }`}>
-        <div className={`transition-all duration-300 ${
+        {/* ${
           isScrolled
             ? 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 bg-white/60 backdrop-blur-md rounded-xl border border-gray-200'
             : 'bg-white'
-        }`}>
+        } */}
+        <div className={`transition-all duration-300 bg-white`}>
           <div className={`flex items-center justify-between font-poppins text-black transition-all duration-300 ${
-            isScrolled ? 'py-4' : 'py-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'
+            isScrolled ? 'py-4' : 'py-4 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'
           }`}>
           <Link href="/" className="flex-shrink-0 flex items-center gap-2">
             <Image
@@ -101,7 +102,7 @@ const Navigation = () => {
               width={80}
               height={40}
               priority
-              className="w-[50px] h-auto lg:w-[80px]"
+              className="w-[50px] h-auto lg:w-[60px]"
             />
             {/* <h1 className="text-4xl flex items-center gap-2">
                 <span>KF</span>

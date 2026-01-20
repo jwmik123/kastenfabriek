@@ -23,6 +23,7 @@ const modules: Module[] = [
   { id: 6, name: "Module Wasmachine", xPosition: 10.7 },
   { id: 7, name: "Module Roede Hoog", xPosition: 12.7 },
   { id: 8, name: "Module Roede Hoog + Lade", xPosition: 14.7 },
+  { id: 9, name: "Module Roede Midden Lade", xPosition: 16.7 },
 ];
 
 // Camera settings - adjust these values
