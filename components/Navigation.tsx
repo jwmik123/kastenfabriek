@@ -124,7 +124,7 @@ const Navigation = () => {
 
           {/* Desktop Right Section */}
           <div className="hidden lg:flex items-center gap-4">
-            <Link href="bouw-je-kast/kledingkast" className="text-white bg-green-600 px-6 py-4 rounded-full cursor-pointer">
+            <Link href="/kledingkast" className="text-white bg-green-600 px-6 py-4 rounded-full cursor-pointer">
               Ontwerp je maatkast
             </Link>
 

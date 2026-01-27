@@ -16,7 +16,7 @@ export default function KledingkastConfigurator({ pricingData }: { pricingData: 
   }, [pricingData, hydrate])
 
   return (
-    <div className="flex w-screen h-screen">
+    <div className="flex w-screen aspect-video pt-32">
       <div className="w-3/5 h-full">
         <ThreeCanvas />
       </div>
