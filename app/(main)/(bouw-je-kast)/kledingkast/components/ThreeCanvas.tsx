@@ -5,14 +5,12 @@ import { OrbitControls, useGLTF } from '@react-three/drei'
 import * as THREE from 'three/webgpu'
 import { useMemo } from 'react'
 import { useClosetStore } from '../store'
+import { MODULE_LAYOUTS, getLayoutById, computeModulePositions } from './moduleLayouts'
+import FillZone from './FillZone'
+import SpecialElement from './SpecialElement'
 
-const MODEL_PATH = '/objects/module1.glb'
-const WALL = 0.05 // 5cm wall thickness in meters
-
-// The original model bounding box (from glb metadata)
-const BASE_WIDTH = 0.575
-const BASE_HEIGHT = 2.036
-const BASE_DEPTH = 0.6
+const WALL = 0.018 // 5cm wall thickness in meters
+const MODULE_WALL = 0.018 // 2.5cm module side panel thickness
 
 function createGridTexture(moduleCount: number): THREE.CanvasTexture {
   const canvas = document.createElement('canvas')
@@ -68,7 +66,7 @@ function ClosetCorpus() {
   const height = useClosetStore((s) => s.height) / 100
   const depth = useClosetStore((s) => s.depth) / 100
 
-  const color = '#d4cfc9'
+  const color = '#fff'
 
   return (
     <group position={[0, height / 2, 0]}>
@@ -114,73 +112,120 @@ function TopCabinet() {
 
   if (!needsTop) return null
 
+  // Inner dimensions - fits inside the main closet walls
+  const innerW = width - WALL * 2
+  const innerD = depth - WALL
+
   const color = '#c4b59d'
   const y = mainH + topH / 2
 
   return (
-    <group position={[0, y, 0]}>
+    <group position={[0, y, WALL / 2]}>
       {/* Back */}
-      <mesh position={[0, 0, -depth / 2 + WALL / 2]}>
-        <boxGeometry args={[width, topH, WALL]} />
+      <mesh position={[0, 0, -innerD / 2 + WALL / 2]}>
+        <boxGeometry args={[innerW, topH, WALL]} />
         <meshStandardMaterial color={color} />
       </mesh>
       {/* Left */}
-      <mesh position={[-width / 2 + WALL / 2, 0, 0]}>
-        <boxGeometry args={[WALL, topH, depth]} />
+      <mesh position={[-innerW / 2 + WALL / 2, 0, 0]}>
+        <boxGeometry args={[WALL, topH, innerD]} />
         <meshStandardMaterial color={color} />
       </mesh>
       {/* Right */}
-      <mesh position={[width / 2 - WALL / 2, 0, 0]}>
-        <boxGeometry args={[WALL, topH, depth]} />
+      <mesh position={[innerW / 2 - WALL / 2, 0, 0]}>
+        <boxGeometry args={[WALL, topH, innerD]} />
         <meshStandardMaterial color={color} />
       </mesh>
       {/* Top */}
       <mesh position={[0, topH / 2 - WALL / 2, 0]}>
-        <boxGeometry args={[width, WALL, depth]} />
+        <boxGeometry args={[innerW, WALL, innerD]} />
         <meshStandardMaterial color={color} />
       </mesh>
       {/* Divider between main and top */}
       <mesh position={[0, -topH / 2 + WALL / 2, 0]}>
-        <boxGeometry args={[width, WALL, depth]} />
+        <boxGeometry args={[innerW, WALL, innerD]} />
         <meshStandardMaterial color={color} />
       </mesh>
     </group>
   )
 }
 
-function Module({ index }: { index: number }) {
-  const { scene } = useGLTF(MODEL_PATH)
+function Module({ index, layoutId }: { index: number; layoutId: number }) {
   const mh = useClosetStore((s) => s.mainHeight()) / 100
   const depth = useClosetStore((s) => s.depth) / 100
   const moduleCount = useClosetStore((s) => s.moduleCount)
   const width = useClosetStore((s) => s.width) / 100
+  const doorsOpen = useClosetStore((s) => s.doorsOpen)
 
-  const clone = useMemo(() => {
-    const c = scene.clone(true)
-    c.traverse((child) => {
-      child.position.set(0, 0, 0)
-    })
-    return c
-  }, [scene])
+  const layout = getLayoutById(layoutId)
+  if (!layout) return null
 
   const innerW = width - WALL * 2
   const slotW = innerW / moduleCount
+  const moduleHeight = mh - WALL * 2
+  const moduleDepth = depth - WALL
 
-  // Model is rotated -90° around Y, so X↔Z are swapped
-  const scaleX = (depth - WALL) / BASE_WIDTH
-  const scaleY = (mh - WALL * 2) / BASE_HEIGHT
-  const scaleZ = slotW / BASE_DEPTH
+  const doorRotation = doorsOpen ? Math.PI * -0.65 : 0
 
-  const startX = -innerW / 2 + slotW
+  const { specialElementY, fillAbove, fillBelow } = computeModulePositions(layout, moduleHeight)
+
+  // Position this module slot within the closet
+  const startX = -innerW / 2
   const x = startX + index * slotW
 
+  // Center offsets for fill zone shelves (relative to this group)
+  const centerX = slotW / 2
+  const centerZ = moduleDepth / 2
+
   return (
-    <primitive
-      object={clone}
-      scale={[scaleX, scaleY, scaleZ]}
-      position={[x, WALL, -depth / 2 + WALL]}
-      rotation={[0, -Math.PI / 2, 0]}
-    />
+    <group position={[x, WALL, -depth / 2 + WALL]}>
+      {/* Special element (GLB) — no Y scaling */}
+      <SpecialElement
+        layout={layout}
+        targetWidth={slotW}
+        targetDepth={moduleDepth}
+        positionY={specialElementY}
+        doorRotation={doorRotation}
+      />
+
+      {/* Fill zone above special element */}
+      {fillAbove.end > fillAbove.start && (
+        <FillZone
+          config={layout.fillZone.above}
+          startY={fillAbove.start}
+          endY={fillAbove.end}
+          width={slotW}
+          depth={moduleDepth}
+          centerX={centerX}
+          centerZ={centerZ}
+        />
+      )}
+
+      {/* Fill zone below special element */}
+      {fillBelow.end > fillBelow.start && (
+        <FillZone
+          config={layout.fillZone.below}
+          startY={fillBelow.start}
+          endY={fillBelow.end}
+          width={slotW}
+          depth={moduleDepth}
+          centerX={centerX}
+          centerZ={centerZ}
+        />
+      )}
+
+      {/* Left wall */}
+      <mesh position={[MODULE_WALL / 2, moduleHeight / 2, centerZ]}>
+        <boxGeometry args={[MODULE_WALL, moduleHeight, moduleDepth]} />
+        <meshStandardMaterial color="#fff" />
+      </mesh>
+
+      {/* Right wall */}
+      <mesh position={[slotW - MODULE_WALL / 2, moduleHeight / 2, centerZ]}>
+        <boxGeometry args={[MODULE_WALL, moduleHeight, moduleDepth]} />
+        <meshStandardMaterial color="#fff" />
+      </mesh>
+    </group>
   )
 }
 
@@ -195,38 +240,54 @@ function ClosetScene() {
       {modules
         .filter((m) => m.layoutId !== null)
         .map((m) => (
-          <Module key={m.slotIndex} index={m.slotIndex} />
+          <Module key={m.slotIndex} index={m.slotIndex} layoutId={m.layoutId!} />
         ))}
     </group>
   )
 }
 
 export default function ThreeCanvas() {
+  const doorsOpen = useClosetStore((s) => s.doorsOpen)
+  const toggleDoors = useClosetStore((s) => s.toggleDoors)
+
   return (
-    <Canvas
-      camera={{ position: [0, 1.2, 4], fov: 45 }}
-      shadows
-      gl={async (props: any) => {
-        const renderer = new THREE.WebGPURenderer({
-          ...props,
-          forceWebGL: true,
-        })
-        await renderer.init()
-        return renderer
-      }}
-    >
-      <color attach="background" args={['#e8e8e8']} />
-      <ambientLight intensity={0.8} />
-      <directionalLight position={[5, 8, 5]} intensity={1} />
-      <ClosetScene />
-      <OrbitControls
-        target={[0, 1, 0]}
-        minDistance={2}
-        maxDistance={8}
-        enablePan={false}
-      />
-    </Canvas>
+    <div className="relative w-full h-full">
+      <Canvas
+        camera={{ position: [0, 1.2, 4], fov: 45 }}
+        shadows
+        gl={async (props: any) => {
+          const renderer = new THREE.WebGPURenderer({
+            ...props,
+            forceWebGL: true,
+          })
+          await renderer.init()
+          return renderer
+        }}
+      >
+        <color attach="background" args={['#e8e8e8']} />
+        <ambientLight intensity={0.8} />
+        <directionalLight position={[5, 8, 5]} intensity={1} />
+        <ClosetScene />
+        <OrbitControls
+          target={[0, 1, 0]}
+          minDistance={2}
+          maxDistance={8}
+          enablePan={false}
+        />
+      </Canvas>
+      <button
+        onClick={toggleDoors}
+        className="absolute top-4 right-4 px-4 py-2 bg-white rounded-lg shadow-md text-sm font-medium hover:bg-gray-50 transition-colors border border-gray-200"
+      >
+        {doorsOpen ? 'Sluit deuren' : 'Open deuren'}
+      </button>
+    </div>
   )
 }
 
-useGLTF.preload(MODEL_PATH)
+// Preload all module GLBs that have a glbPath
+MODULE_LAYOUTS.forEach((layout) => {
+  if (layout.specialElement.glbPath) {
+    useGLTF.preload(layout.specialElement.glbPath)
+  }
+})
