@@ -4,6 +4,7 @@ import { useGLTF } from '@react-three/drei'
 import * as THREE from 'three/webgpu'
 import { useMemo } from 'react'
 import type { ModuleLayoutConfig } from './moduleLayouts'
+import { useClosetMaterialInstance } from './ClosetMaterial'
 
 interface SpecialElementProps {
   layout: ModuleLayoutConfig
@@ -22,35 +23,58 @@ function SpecialElementInner({
 }: SpecialElementProps) {
   const { scene } = useGLTF(layout.specialElement.glbPath!)
 
-  const scaleZ = targetWidth * layout.specialElement.baseWidth
-  const scaleX = targetDepth * layout.specialElement.baseDepth
+  const scaleZ = targetWidth / layout.specialElement.baseWidth
+  const scaleX = targetDepth / layout.specialElement.baseDepth
+  const closetMaterial = useClosetMaterialInstance()
 
-  const clone = useMemo(() => {
+  const { clone, offsetX, offsetZ } = useMemo(() => {
     const c = scene.clone(true)
+    const fixedDepthMeshes: THREE.Mesh[] = []
+
+    // First pass: scale all geometries, collect non-_ds meshes
     c.traverse((child: THREE.Object3D) => {
       if ((child as THREE.Mesh).isMesh) {
         const mesh = child as THREE.Mesh
         mesh.geometry = mesh.geometry.clone()
-        // Scale X and Z only — never scale Y
-        mesh.geometry.scale(scaleX, 1, scaleZ)
-        mesh.position.x *= scaleX
-        mesh.position.z *= scaleZ
+        mesh.material = closetMaterial
+
+        const isDepthScalable = mesh.name.includes('_ds')
+
+        if (isDepthScalable) {
+          // Scale in both depth (X) and width (Z)
+          mesh.geometry.scale(scaleX, 1, scaleZ)
+          mesh.position.z *= scaleX
+        } else {
+          // Scale width only, no depth scaling on geometry
+          mesh.geometry.scale(1, 1, scaleZ)
+          fixedDepthMeshes.push(mesh)
+        }
       }
 
       if (child.name.includes('Deur')) {
         child.rotation.y = doorRotation
       }
     })
-    return c
-  }, [scene, scaleX, scaleZ, doorRotation])
+
+    // Second pass: offset non-_ds meshes so they stay at the front edge
+    // The _ds front edge moved forward by this amount:
+    const depthGrowth = layout.specialElement.baseDepth * (scaleX - 1)
+    for (const mesh of fixedDepthMeshes) {
+      mesh.position.z += depthGrowth
+    }
+
+    // Compute offset to align element flush to origin on X and Z
+    const box = new THREE.Box3().setFromObject(c)
+    const MODULE_WALL = 0.018
+    return { clone: c, offsetX: -box.min.x + MODULE_WALL, offsetZ: -box.min.z }
+  }, [scene, scaleX, scaleZ, doorRotation, closetMaterial])
 
   return (
-    <primitive object={clone} position={[0, positionY, 0]} rotation={[0,0,0]} />
+    <primitive object={clone} position={[offsetX, positionY, offsetZ]} rotation={[0, 0, 0]} />
   )
 }
 
 export default function SpecialElement(props: SpecialElementProps) {
-  // If there's no GLB, render nothing
   if (!props.layout.specialElement.glbPath) return null
   return <SpecialElementInner {...props} />
 }

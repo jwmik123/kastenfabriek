@@ -2,11 +2,11 @@
 
 import { useState } from 'react'
 import { useClosetStore } from '../../store'
+import { MODULE_LAYOUTS } from '../moduleLayouts'
 
 export default function ModulesStep() {
   const moduleCount = useClosetStore((s) => s.moduleCount)
   const modules = useClosetStore((s) => s.modules)
-  const moduleLayouts = useClosetStore((s) => s.moduleLayouts)
   const setModuleCount = useClosetStore((s) => s.setModuleCount)
   const setModuleLayout = useClosetStore((s) => s.setModuleLayout)
   const minModules = useClosetStore((s) => s.minModules())
@@ -66,7 +66,7 @@ export default function ModulesStep() {
               <div>{m.slotIndex + 1}</div>
               {m.layoutId !== null && (
                 <div className="text-[10px] opacity-60">
-                  {moduleLayouts.find((l) => l.layoutId === m.layoutId)?.name ?? ''}
+                  {MODULE_LAYOUTS.find((l) => l.id === m.layoutId)?.label ?? ''}
                 </div>
               )}
               {m.layoutId === null && <div className="text-[10px]">Leeg</div>}
@@ -82,19 +82,19 @@ export default function ModulesStep() {
             Indeling voor vak {selectedSlot + 1}
           </label>
           <div className="grid grid-cols-3 gap-2">
-            {moduleLayouts.map((layout) => (
+            {MODULE_LAYOUTS.map((layout) => (
               <button
-                key={layout.layoutId}
+                key={layout.id}
                 onClick={() => {
-                  setModuleLayout(selectedSlot, layout.layoutId)
+                  setModuleLayout(selectedSlot, layout.id)
                 }}
                 className={`px-2 py-2 rounded-lg text-xs transition-colors text-left ${
-                  modules[selectedSlot]?.layoutId === layout.layoutId
+                  modules[selectedSlot]?.layoutId === layout.id
                     ? 'bg-black text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
-                <div className="font-medium">{layout.name}</div>
+                <div className="font-medium">{layout.label}</div>
                 <div className="opacity-70 mt-0.5">{layout.description}</div>
               </button>
             ))}

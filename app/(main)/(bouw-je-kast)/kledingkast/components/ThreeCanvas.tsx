@@ -3,11 +3,12 @@
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls, useGLTF } from '@react-three/drei'
 import * as THREE from 'three/webgpu'
-import { useMemo } from 'react'
+import { Suspense, useMemo } from 'react'
 import { useClosetStore } from '../store'
 import { MODULE_LAYOUTS, getLayoutById, computeModulePositions } from './moduleLayouts'
 import FillZone from './FillZone'
 import SpecialElement from './SpecialElement'
+import ClosetMaterial, { ClosetMaterialProvider } from './ClosetMaterial'
 
 const WALL = 0.018 // 5cm wall thickness in meters
 const MODULE_WALL = 0.018 // 2.5cm module side panel thickness
@@ -66,38 +67,36 @@ function ClosetCorpus() {
   const height = useClosetStore((s) => s.height) / 100
   const depth = useClosetStore((s) => s.depth) / 100
 
-  const color = '#fff'
-
   return (
     <group position={[0, height / 2, 0]}>
       {/* Back wall */}
-      <mesh position={[0, 0, -depth / 2 + WALL / 2]}>
+      <mesh position={[0, 0, -depth / 2 + WALL / 2]} castShadow>
         <boxGeometry args={[width, height, WALL]} />
-        <meshStandardMaterial color={color} />
+        <ClosetMaterial />
       </mesh>
 
       {/* Left wall */}
-      <mesh position={[-width / 2 + WALL / 2, 0, 0]}>
+      <mesh position={[-width / 2 + WALL / 2, 0, 0]} castShadow>
         <boxGeometry args={[WALL, height, depth]} />
-        <meshStandardMaterial color={color} />
+        <ClosetMaterial />
       </mesh>
 
       {/* Right wall */}
-      <mesh position={[width / 2 - WALL / 2, 0, 0]}>
+      <mesh position={[width / 2 - WALL / 2, 0, 0]} castShadow>
         <boxGeometry args={[WALL, height, depth]} />
-        <meshStandardMaterial color={color} />
+        <ClosetMaterial />
       </mesh>
 
       {/* Top panel */}
-      <mesh position={[0, height / 2 - WALL / 2, 0]}>
+      <mesh position={[0, height / 2 - WALL / 2, 0]} castShadow>
         <boxGeometry args={[width, WALL, depth]} />
-        <meshStandardMaterial color={color} />
+        <ClosetMaterial />
       </mesh>
 
       {/* Bottom panel */}
-      <mesh position={[0, -height / 2 + WALL / 2, 0]}>
+      <mesh position={[0, -height / 2 + WALL / 2, 0]} castShadow>
         <boxGeometry args={[width, WALL, depth]} />
-        <meshStandardMaterial color={color} />
+        <ClosetMaterial />
       </mesh>
     </group>
   )
@@ -116,7 +115,6 @@ function TopCabinet() {
   const innerW = width - WALL * 2
   const innerD = depth - WALL
 
-  const color = '#c4b59d'
   const y = mainH + topH / 2
 
   return (
@@ -124,27 +122,27 @@ function TopCabinet() {
       {/* Back */}
       <mesh position={[0, 0, -innerD / 2 + WALL / 2]}>
         <boxGeometry args={[innerW, topH, WALL]} />
-        <meshStandardMaterial color={color} />
+        <ClosetMaterial />
       </mesh>
       {/* Left */}
       <mesh position={[-innerW / 2 + WALL / 2, 0, 0]}>
         <boxGeometry args={[WALL, topH, innerD]} />
-        <meshStandardMaterial color={color} />
+        <ClosetMaterial />
       </mesh>
       {/* Right */}
       <mesh position={[innerW / 2 - WALL / 2, 0, 0]}>
         <boxGeometry args={[WALL, topH, innerD]} />
-        <meshStandardMaterial color={color} />
+        <ClosetMaterial />
       </mesh>
       {/* Top */}
       <mesh position={[0, topH / 2 - WALL / 2, 0]}>
         <boxGeometry args={[innerW, WALL, innerD]} />
-        <meshStandardMaterial color={color} />
+        <ClosetMaterial />
       </mesh>
       {/* Divider between main and top */}
       <mesh position={[0, -topH / 2 + WALL / 2, 0]}>
         <boxGeometry args={[innerW, WALL, innerD]} />
-        <meshStandardMaterial color={color} />
+        <ClosetMaterial />
       </mesh>
     </group>
   )
@@ -217,13 +215,13 @@ function Module({ index, layoutId }: { index: number; layoutId: number }) {
       {/* Left wall */}
       <mesh position={[MODULE_WALL / 2, moduleHeight / 2, centerZ]}>
         <boxGeometry args={[MODULE_WALL, moduleHeight, moduleDepth]} />
-        <meshStandardMaterial color="#fff" />
+        <ClosetMaterial />
       </mesh>
 
       {/* Right wall */}
       <mesh position={[slotW - MODULE_WALL / 2, moduleHeight / 2, centerZ]}>
         <boxGeometry args={[MODULE_WALL, moduleHeight, moduleDepth]} />
-        <meshStandardMaterial color="#fff" />
+        <ClosetMaterial />
       </mesh>
     </group>
   )
@@ -233,7 +231,7 @@ function ClosetScene() {
   const modules = useClosetStore((s) => s.modules)
 
   return (
-    <group>
+    <ClosetMaterialProvider>
       <ClosetCorpus />
       <TopCabinet />
       <FloorGrid />
@@ -242,7 +240,7 @@ function ClosetScene() {
         .map((m) => (
           <Module key={m.slotIndex} index={m.slotIndex} layoutId={m.layoutId!} />
         ))}
-    </group>
+    </ClosetMaterialProvider>
   )
 }
 
@@ -264,14 +262,36 @@ export default function ThreeCanvas() {
           return renderer
         }}
       >
+              <axesHelper args={[5]} />
+
         <color attach="background" args={['#e8e8e8']} />
-        <ambientLight intensity={0.8} />
-        <directionalLight position={[5, 8, 5]} intensity={1} />
-        <ClosetScene />
+        <ambientLight intensity={0.6} />
+        <directionalLight
+          position={[5, 8, 5]}
+          intensity={1}
+          castShadow
+          shadow-mapSize-width={1024}
+          shadow-mapSize-height={1024}
+          shadow-camera-left={-3}
+          shadow-camera-right={3}
+          shadow-camera-top={4}
+          shadow-camera-bottom={-1}
+          shadow-camera-near={0.5}
+          shadow-camera-far={20}
+        />
+        <Suspense>
+          <ClosetScene />
+        </Suspense>
+        {/* Floor plane to receive shadows */}
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
+          <planeGeometry args={[20, 20]} />
+          <shadowMaterial opacity={0.35} />
+        </mesh>
         <OrbitControls
           target={[0, 1, 0]}
           minDistance={2}
           maxDistance={8}
+          maxPolarAngle={Math.PI / 2}
           enablePan={false}
         />
       </Canvas>

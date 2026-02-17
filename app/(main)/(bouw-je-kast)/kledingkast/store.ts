@@ -28,6 +28,9 @@ interface ClosetState {
   materialId: string
   doorHandleId: string
 
+  // View options
+  doorsOpen: boolean
+
   // Derived
   moduleWidthCm: () => number
   minModules: () => number
@@ -48,6 +51,7 @@ interface ClosetState {
   setModuleLayout: (slotIndex: number, layoutId: number) => void
   setMaterialId: (id: string) => void
   setDoorHandleId: (id: string) => void
+  toggleDoors: () => void
 }
 
 const TOP_CABINET_THRESHOLD = 275
@@ -76,6 +80,7 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
 
   materialId: 'white',
   doorHandleId: 'default',
+  doorsOpen: false,
 
   // Derived
   moduleWidthCm: () => {
@@ -165,4 +170,5 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
 
   setMaterialId: (materialId) => set({ materialId }),
   setDoorHandleId: (doorHandleId) => set({ doorHandleId }),
+  toggleDoors: () => set((s) => ({ doorsOpen: !s.doorsOpen })),
 }))

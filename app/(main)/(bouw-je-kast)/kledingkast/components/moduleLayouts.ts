@@ -72,8 +72,8 @@ export const MODULE_LAYOUTS: ModuleLayoutConfig[] = [
       glbPath: '/objects/ladesbinnen.glb',
       height: 0.8,
       anchor: { type: 'bottom' },
-      baseWidth: 1.65,
-      baseDepth: 1.94,
+      baseWidth: .605,
+      baseDepth: .515,
     },
     fillZone: {
       above: { type: 'shelves', spacing: SHELF_SPACING },
