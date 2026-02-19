@@ -16,11 +16,13 @@ export default function KledingkastConfigurator({ pricingData }: { pricingData: 
   }, [pricingData, hydrate])
 
   return (
-    <div className="flex w-screen aspect-video pt-32">
-      <div className="w-3/5 h-full">
+    <div className="relative w-screen h-[calc(100vh-100px)] mt-[100px]">
+      {/* Canvas fills entire background */}
+      <div className="absolute inset-0">
         <ThreeCanvas />
       </div>
-      <div className="w-2/5 h-full overflow-y-auto border-l border-gray-200 bg-white">
+      {/* Floating wizard panel */}
+      <div className="absolute top-8 right-8 w-[30vw] aspect-square bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl overflow-y-auto">
         <StepWizard />
       </div>
     </div>

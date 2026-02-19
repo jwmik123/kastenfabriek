@@ -251,7 +251,7 @@ export default function ThreeCanvas() {
   return (
     <div className="relative w-full h-full">
       <Canvas
-        camera={{ position: [0, 1.2, 4], fov: 45 }}
+        camera={{ position: [0.8, 1.6, 5], fov: 45 }}
         shadows
         gl={async (props: any) => {
           const renderer = new THREE.WebGPURenderer({
@@ -288,7 +288,7 @@ export default function ThreeCanvas() {
           <shadowMaterial opacity={0.35} />
         </mesh>
         <OrbitControls
-          target={[0, 1, 0]}
+          target={[0.4, 1, 0]}
           minDistance={2}
           maxDistance={8}
           maxPolarAngle={Math.PI / 2}
@@ -297,7 +297,7 @@ export default function ThreeCanvas() {
       </Canvas>
       <button
         onClick={toggleDoors}
-        className="absolute top-4 right-4 px-4 py-2 bg-white rounded-lg shadow-md text-sm font-medium hover:bg-gray-50 transition-colors border border-gray-200"
+        className="absolute top-4 left-4 px-4 py-2 bg-white rounded-lg shadow-md text-sm font-medium hover:bg-gray-50 transition-colors border border-gray-200"
       >
         {doorsOpen ? 'Sluit deuren' : 'Open deuren'}
       </button>
