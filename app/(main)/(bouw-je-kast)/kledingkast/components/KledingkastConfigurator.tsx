@@ -22,7 +22,7 @@ export default function KledingkastConfigurator({ pricingData }: { pricingData: 
         <ThreeCanvas />
       </div>
       {/* Floating wizard panel */}
-      <div className="absolute top-8 right-8 w-[30vw] aspect-square bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl overflow-y-auto">
+      <div className="absolute top-8 right-8 w-1/3 bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl overflow-y-auto">
         <StepWizard />
       </div>
     </div>

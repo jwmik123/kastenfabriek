@@ -44,7 +44,7 @@ export default function FillZone({
   return (
     <>
       {shelfPositions.map((y, i) => (
-        <mesh key={i} position={[centerX, y + SHELF_THICKNESS / 2, centerZ]}>
+        <mesh key={i} position={[centerX, y + SHELF_THICKNESS / 2, centerZ]} castShadow receiveShadow>
           <boxGeometry args={[width, SHELF_THICKNESS, depth]} />
           <ClosetMaterial />
         </mesh>

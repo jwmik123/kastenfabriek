@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from 'react'
 import { useClosetStore } from '../../store'
 import { MODULE_LAYOUTS } from '../moduleLayouts'
 
@@ -12,8 +11,8 @@ export default function ModulesStep() {
   const minModules = useClosetStore((s) => s.minModules())
   const maxModules = useClosetStore((s) => s.maxModules())
   const moduleWidthCm = useClosetStore((s) => s.moduleWidthCm())
-
-  const [selectedSlot, setSelectedSlot] = useState<number | null>(null)
+  const selectedSlot = useClosetStore((s) => s.selectedSlot)
+  const setSelectedSlot = useClosetStore((s) => s.setSelectedSlot)
 
   return (
     <div className="space-y-6">

@@ -31,6 +31,9 @@ interface ClosetState {
   // View options
   doorsOpen: boolean
 
+  // Selection (shared between 3D scene and step panels)
+  selectedSlot: number | null
+
   // Derived
   moduleWidthCm: () => number
   minModules: () => number
@@ -52,6 +55,7 @@ interface ClosetState {
   setMaterialId: (id: string) => void
   setDoorHandleId: (id: string) => void
   toggleDoors: () => void
+  setSelectedSlot: (slot: number | null) => void
 }
 
 const TOP_CABINET_THRESHOLD = 275
@@ -81,6 +85,7 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
   materialId: 'white',
   doorHandleId: 'default',
   doorsOpen: false,
+  selectedSlot: null,
 
   // Derived
   moduleWidthCm: () => {
@@ -171,4 +176,5 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
   setMaterialId: (materialId) => set({ materialId }),
   setDoorHandleId: (doorHandleId) => set({ doorHandleId }),
   toggleDoors: () => set((s) => ({ doorsOpen: !s.doorsOpen })),
+  setSelectedSlot: (slot) => set({ selectedSlot: slot }),
 }))

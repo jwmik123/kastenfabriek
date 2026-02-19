@@ -2,13 +2,16 @@
 
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls, useGLTF } from '@react-three/drei'
-import * as THREE from 'three/webgpu'
-import { Suspense, useMemo } from 'react'
+import * as THREE from 'three'
+import { Suspense, useMemo, useState, useEffect } from 'react'
 import { useClosetStore } from '../store'
 import { MODULE_LAYOUTS, getLayoutById, computeModulePositions } from './moduleLayouts'
 import FillZone from './FillZone'
 import SpecialElement from './SpecialElement'
 import ClosetMaterial, { ClosetMaterialProvider } from './ClosetMaterial'
+// import GTAOEffect from './GTAOEffect'
+import {EffectComposer, SSAO} from "@react-three/postprocessing"
+import { BlendFunction } from 'postprocessing'
 
 const WALL = 0.018 // 5cm wall thickness in meters
 const MODULE_WALL = 0.018 // 2.5cm module side panel thickness
@@ -70,31 +73,31 @@ function ClosetCorpus() {
   return (
     <group position={[0, height / 2, 0]}>
       {/* Back wall */}
-      <mesh position={[0, 0, -depth / 2 + WALL / 2]} castShadow>
+      <mesh position={[0, 0, -depth / 2 + WALL / 2]} castShadow receiveShadow>
         <boxGeometry args={[width, height, WALL]} />
         <ClosetMaterial />
       </mesh>
 
       {/* Left wall */}
-      <mesh position={[-width / 2 + WALL / 2, 0, 0]} castShadow>
+      <mesh position={[-width / 2 + WALL / 2, 0, 0]} castShadow receiveShadow>
         <boxGeometry args={[WALL, height, depth]} />
         <ClosetMaterial />
       </mesh>
 
       {/* Right wall */}
-      <mesh position={[width / 2 - WALL / 2, 0, 0]} castShadow>
+      <mesh position={[width / 2 - WALL / 2, 0, 0]} castShadow receiveShadow>
         <boxGeometry args={[WALL, height, depth]} />
         <ClosetMaterial />
       </mesh>
 
       {/* Top panel */}
-      <mesh position={[0, height / 2 - WALL / 2, 0]} castShadow>
+      <mesh position={[0, height / 2 - WALL / 2, 0]} castShadow receiveShadow>
         <boxGeometry args={[width, WALL, depth]} />
         <ClosetMaterial />
       </mesh>
 
       {/* Bottom panel */}
-      <mesh position={[0, -height / 2 + WALL / 2, 0]} castShadow>
+      <mesh position={[0, -height / 2 + WALL / 2, 0]} castShadow receiveShadow>
         <boxGeometry args={[width, WALL, depth]} />
         <ClosetMaterial />
       </mesh>
@@ -120,27 +123,27 @@ function TopCabinet() {
   return (
     <group position={[0, y, WALL / 2]}>
       {/* Back */}
-      <mesh position={[0, 0, -innerD / 2 + WALL / 2]}>
+      <mesh position={[0, 0, -innerD / 2 + WALL / 2]} castShadow>
         <boxGeometry args={[innerW, topH, WALL]} />
         <ClosetMaterial />
       </mesh>
       {/* Left */}
-      <mesh position={[-innerW / 2 + WALL / 2, 0, 0]}>
+      <mesh position={[-innerW / 2 + WALL / 2, 0, 0]} castShadow>
         <boxGeometry args={[WALL, topH, innerD]} />
         <ClosetMaterial />
       </mesh>
       {/* Right */}
-      <mesh position={[innerW / 2 - WALL / 2, 0, 0]}>
+      <mesh position={[innerW / 2 - WALL / 2, 0, 0]} castShadow>
         <boxGeometry args={[WALL, topH, innerD]} />
         <ClosetMaterial />
       </mesh>
       {/* Top */}
-      <mesh position={[0, topH / 2 - WALL / 2, 0]}>
+      <mesh position={[0, topH / 2 - WALL / 2, 0]} castShadow>
         <boxGeometry args={[innerW, WALL, innerD]} />
         <ClosetMaterial />
       </mesh>
       {/* Divider between main and top */}
-      <mesh position={[0, -topH / 2 + WALL / 2, 0]}>
+      <mesh position={[0, -topH / 2 + WALL / 2, 0]} castShadow>
         <boxGeometry args={[innerW, WALL, innerD]} />
         <ClosetMaterial />
       </mesh>
@@ -213,15 +216,59 @@ function Module({ index, layoutId }: { index: number; layoutId: number }) {
       )}
 
       {/* Left wall */}
-      <mesh position={[MODULE_WALL / 2, moduleHeight / 2, centerZ]}>
+      <mesh position={[MODULE_WALL / 2, moduleHeight / 2, centerZ]} castShadow receiveShadow>
         <boxGeometry args={[MODULE_WALL, moduleHeight, moduleDepth]} />
         <ClosetMaterial />
       </mesh>
 
       {/* Right wall */}
-      <mesh position={[slotW - MODULE_WALL / 2, moduleHeight / 2, centerZ]}>
+      <mesh position={[slotW - MODULE_WALL / 2, moduleHeight / 2, centerZ]} castShadow receiveShadow>
         <boxGeometry args={[MODULE_WALL, moduleHeight, moduleDepth]} />
         <ClosetMaterial />
+      </mesh>
+    </group>
+  )
+}
+
+function ModuleSlotInteraction({ slotIndex }: { slotIndex: number }) {
+  const mh = useClosetStore((s) => s.mainHeight()) / 100
+  const depth = useClosetStore((s) => s.depth) / 100
+  const moduleCount = useClosetStore((s) => s.moduleCount)
+  const width = useClosetStore((s) => s.width) / 100
+  const selectedSlot = useClosetStore((s) => s.selectedSlot)
+  const setSelectedSlot = useClosetStore((s) => s.setSelectedSlot)
+
+  const [hovered, setHovered] = useState(false)
+
+  const innerW = width - WALL * 2
+  const slotW = innerW / moduleCount
+  const moduleHeight = mh - WALL * 2
+  const moduleDepth = depth - WALL
+
+  const isSelected = selectedSlot === slotIndex
+
+  useEffect(() => {
+    document.body.style.cursor = hovered ? 'pointer' : 'auto'
+    return () => { document.body.style.cursor = 'auto' }
+  }, [hovered])
+
+  const opacity = isSelected ? 0.18 : hovered ? 0.32 : 0
+
+  return (
+    <group position={[(-innerW / 2) + slotIndex * slotW, WALL, -depth / 2 + WALL]}>
+      <mesh
+        position={[slotW / 2, moduleHeight / 2, moduleDepth + 0.002]}
+        onPointerOver={(e) => { e.stopPropagation(); setHovered(true) }}
+        onPointerOut={() => setHovered(false)}
+        onClick={(e) => { e.stopPropagation(); setSelectedSlot(isSelected ? null : slotIndex) }}
+      >
+        <planeGeometry args={[slotW, moduleHeight]} />
+        <meshBasicMaterial
+          color="#22c55e"
+          transparent={true}
+          opacity={opacity}
+          depthWrite={false}
+        />
       </mesh>
     </group>
   )
@@ -240,6 +287,9 @@ function ClosetScene() {
         .map((m) => (
           <Module key={m.slotIndex} index={m.slotIndex} layoutId={m.layoutId!} />
         ))}
+      {modules.map((m) => (
+        <ModuleSlotInteraction key={`hit-${m.slotIndex}`} slotIndex={m.slotIndex} />
+      ))}
     </ClosetMaterialProvider>
   )
 }
@@ -247,31 +297,35 @@ function ClosetScene() {
 export default function ThreeCanvas() {
   const doorsOpen = useClosetStore((s) => s.doorsOpen)
   const toggleDoors = useClosetStore((s) => s.toggleDoors)
+  const setSelectedSlot = useClosetStore((s) => s.setSelectedSlot)
 
   return (
     <div className="relative w-full h-full">
       <Canvas
         camera={{ position: [0.8, 1.6, 5], fov: 45 }}
         shadows
+        onPointerMissed={() => setSelectedSlot(null)}
         gl={async (props: any) => {
-          const renderer = new THREE.WebGPURenderer({
+          const renderer = new THREE.WebGLRenderer({
             ...props,
-            forceWebGL: true,
+            // forceWebGL: true,
           })
-          await renderer.init()
+        
+          // renderer.toneMapping = THREE.ACESFilmicToneMapping
+          // renderer.toneMappingExposure = 1.0
           return renderer
         }}
       >
               <axesHelper args={[5]} />
 
         <color attach="background" args={['#e8e8e8']} />
-        <ambientLight intensity={0.6} />
+        <ambientLight intensity={.7} />
         <directionalLight
-          position={[5, 8, 5]}
-          intensity={1}
+          position={[-3, 5, 10]}
+          intensity={0.5}
           castShadow
-          shadow-mapSize-width={1024}
-          shadow-mapSize-height={1024}
+          shadow-mapSize-width={2048}
+          shadow-mapSize-height={2048}
           shadow-camera-left={-3}
           shadow-camera-right={3}
           shadow-camera-top={4}
@@ -279,13 +333,26 @@ export default function ThreeCanvas() {
           shadow-camera-near={0.5}
           shadow-camera-far={20}
         />
+        
         <Suspense>
           <ClosetScene />
         </Suspense>
         {/* Floor plane to receive shadows */}
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}  castShadow receiveShadow>
           <planeGeometry args={[20, 20]} />
-          <shadowMaterial opacity={0.35} />
+          {/* <shadowMaterial opacity={0.35} /> */}
+          <meshBasicMaterial
+          color="#cccccc"
+        />
+        </mesh>
+        {/* Back wall plane to receive shadows */}
+        <mesh rotation={[0, 0, 0]} position={[0, 0, -.5]} receiveShadow>
+          <planeGeometry args={[20, 20]} />
+          {/* <shadowMaterial opacity={0.35} /> */}
+          <meshBasicMaterial
+          color="#e9e9e9"
+        />
+
         </mesh>
         <OrbitControls
           target={[0.4, 1, 0]}
@@ -294,6 +361,22 @@ export default function ThreeCanvas() {
           maxPolarAngle={Math.PI / 2}
           enablePan={false}
         />
+        {/* <EffectComposer enableNormalPass>
+          <SSAO
+            blendFunction={BlendFunction.MULTIPLY} // blend mode
+            samples={16} // amount of samples per pixel (shouldn't be a multiple of the ring count)
+            rings={2} // amount of rings in the occlusion sampling pattern
+            distanceThreshold={1.0} // global distance threshold at which the occlusion effect starts to fade out. min: 0, max: 1
+            distanceFalloff={0.0} // distance falloff. min: 0, max: 1
+            rangeThreshold={0.5} // local occlusion range threshold at which the occlusion starts to fade out. min: 0, max: 1
+            rangeFalloff={0.1} // occlusion range falloff. min: 0, max: 1
+            luminanceInfluence={0.9} // how much the luminance of the scene influences the ambient occlusion
+            radius={0.2} // occlusion sampling radius
+            // scale={0.5} // scale of the ambient occlusion
+            // bias={0.5} // occlusion bias
+  />
+        </EffectComposer> */}
+        {/* <GTAOEffect /> */}
       </Canvas>
       <button
         onClick={toggleDoors}

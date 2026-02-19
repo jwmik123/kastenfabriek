@@ -70,7 +70,7 @@ export default function StepWizard() {
   return (
     <div className="flex flex-col h-full p-6">
       <StepIndicator />
-      <div className="flex-1">
+      <div className="flex-1 pb-4">
         <CurrentStep />
       </div>
       <div className="flex justify-between pt-4 border-t border-gray-200">

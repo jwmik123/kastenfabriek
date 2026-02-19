@@ -3,7 +3,8 @@
     "allow": [
       "Bash(npm install:*)",
       "Bash(find:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(node -e:*)"
     ]
   }
 }

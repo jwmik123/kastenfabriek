@@ -37,6 +37,8 @@ function SpecialElementInner({
         const mesh = child as THREE.Mesh
         mesh.geometry = mesh.geometry.clone()
         mesh.material = closetMaterial
+        mesh.castShadow = true
+        mesh.receiveShadow = true
 
         const isDepthScalable = mesh.name.includes('_ds')
 
