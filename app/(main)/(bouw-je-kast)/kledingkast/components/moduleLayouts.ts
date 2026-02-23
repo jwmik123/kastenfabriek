@@ -70,7 +70,7 @@ export const MODULE_LAYOUTS: ModuleLayoutConfig[] = [
     description: 'Laden onderin, planken erboven',
     specialElement: {
       glbPath: '/objects/ladesbinnen.glb',
-      height: 0.8,
+      height: 0.495,
       anchor: { type: 'bottom' },
       baseWidth: .605,
       baseDepth: .515,

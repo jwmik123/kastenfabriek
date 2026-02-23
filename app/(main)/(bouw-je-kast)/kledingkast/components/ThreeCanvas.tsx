@@ -1,17 +1,15 @@
 'use client'
 
-import { Canvas } from '@react-three/fiber'
+import { Canvas, useThree } from '@react-three/fiber'
 import { OrbitControls, useGLTF } from '@react-three/drei'
-import * as THREE from 'three'
+import * as THREE from 'three/webgpu'
 import { Suspense, useMemo, useState, useEffect } from 'react'
 import { useClosetStore } from '../store'
 import { MODULE_LAYOUTS, getLayoutById, computeModulePositions } from './moduleLayouts'
 import FillZone from './FillZone'
 import SpecialElement from './SpecialElement'
 import ClosetMaterial, { ClosetMaterialProvider } from './ClosetMaterial'
-// import GTAOEffect from './GTAOEffect'
-import {EffectComposer, SSAO} from "@react-three/postprocessing"
-import { BlendFunction } from 'postprocessing'
+import PostProcessing from './PostProcessing'
 
 const WALL = 0.018 // 5cm wall thickness in meters
 const MODULE_WALL = 0.018 // 2.5cm module side panel thickness
@@ -261,6 +259,7 @@ function ModuleSlotInteraction({ slotIndex }: { slotIndex: number }) {
         onPointerOver={(e) => { e.stopPropagation(); setHovered(true) }}
         onPointerOut={() => setHovered(false)}
         onClick={(e) => { e.stopPropagation(); setSelectedSlot(isSelected ? null : slotIndex) }}
+        layers={1}
       >
         <planeGeometry args={[slotW, moduleHeight]} />
         <meshBasicMaterial
@@ -274,6 +273,14 @@ function ModuleSlotInteraction({ slotIndex }: { slotIndex: number }) {
   )
 }
 
+function RaycasterSetup() {
+  const { raycaster } = useThree()
+  useEffect(() => {
+    raycaster.layers.enable(1)
+  }, [raycaster])
+  return null
+}
+
 function ClosetScene() {
   const modules = useClosetStore((s) => s.modules)
 
@@ -281,7 +288,7 @@ function ClosetScene() {
     <ClosetMaterialProvider>
       <ClosetCorpus />
       <TopCabinet />
-      <FloorGrid />
+      {/* <FloorGrid /> */}
       {modules
         .filter((m) => m.layoutId !== null)
         .map((m) => (
@@ -304,25 +311,24 @@ export default function ThreeCanvas() {
       <Canvas
         camera={{ position: [0.8, 1.6, 5], fov: 45 }}
         shadows
+        // frameloop="demand"
         onPointerMissed={() => setSelectedSlot(null)}
         gl={async (props: any) => {
-          const renderer = new THREE.WebGLRenderer({
+          const renderer = new THREE.WebGPURenderer({
             ...props,
             // forceWebGL: true,
           })
         
-          // renderer.toneMapping = THREE.ACESFilmicToneMapping
-          // renderer.toneMappingExposure = 1.0
-          return renderer
+          return renderer.init();
         }}
       >
-              <axesHelper args={[5]} />
+              {/* <axesHelper args={[5]} /> */}
 
         <color attach="background" args={['#e8e8e8']} />
-        <ambientLight intensity={.7} />
+        <ambientLight intensity={.6} />
         <directionalLight
           position={[-3, 5, 10]}
-          intensity={0.5}
+          intensity={0.7}
           castShadow
           shadow-mapSize-width={2048}
           shadow-mapSize-height={2048}
@@ -334,6 +340,8 @@ export default function ThreeCanvas() {
           shadow-camera-far={20}
         />
         
+        <RaycasterSetup />
+        <PostProcessing />
         <Suspense>
           <ClosetScene />
         </Suspense>
@@ -361,22 +369,6 @@ export default function ThreeCanvas() {
           maxPolarAngle={Math.PI / 2}
           enablePan={false}
         />
-        {/* <EffectComposer enableNormalPass>
-          <SSAO
-            blendFunction={BlendFunction.MULTIPLY} // blend mode
-            samples={16} // amount of samples per pixel (shouldn't be a multiple of the ring count)
-            rings={2} // amount of rings in the occlusion sampling pattern
-            distanceThreshold={1.0} // global distance threshold at which the occlusion effect starts to fade out. min: 0, max: 1
-            distanceFalloff={0.0} // distance falloff. min: 0, max: 1
-            rangeThreshold={0.5} // local occlusion range threshold at which the occlusion starts to fade out. min: 0, max: 1
-            rangeFalloff={0.1} // occlusion range falloff. min: 0, max: 1
-            luminanceInfluence={0.9} // how much the luminance of the scene influences the ambient occlusion
-            radius={0.2} // occlusion sampling radius
-            // scale={0.5} // scale of the ambient occlusion
-            // bias={0.5} // occlusion bias
-  />
-        </EffectComposer> */}
-        {/* <GTAOEffect /> */}
       </Canvas>
       <button
         onClick={toggleDoors}

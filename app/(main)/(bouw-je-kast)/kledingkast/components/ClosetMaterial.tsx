@@ -74,7 +74,6 @@ export default function ClosetMaterial() {
       <meshStandardMaterial
         key="oak"
         map={oakMap}
-        
         normalMap={oakNormalMap}
         roughness={0.7}
       />
