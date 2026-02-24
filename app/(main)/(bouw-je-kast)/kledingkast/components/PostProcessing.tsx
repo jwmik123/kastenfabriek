@@ -29,12 +29,12 @@ export default function PostProcessing() {
 
     // 2. AO Setup
     const aoPass = ao(scenePassDepth, scenePassNormal, camera)
-    
+
     aoPass.thickness.value = 0.5 
     aoPass.radius.value = 0.15
     aoPass.scale.value = 1.0
     aoPass.distanceFallOff.value = 1.0
-    aoPass.resolutionScale = 0.5 
+    aoPass.resolutionScale = 0.5
 
     // console.log(aoPass);
 
@@ -46,6 +46,8 @@ export default function PostProcessing() {
       1.0,
       aoColor
     )
+
+    // postProcessing.outputNode = aoColor;
 
     ppRef.current = postProcessing
 

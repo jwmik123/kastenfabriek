@@ -259,7 +259,7 @@ function ModuleSlotInteraction({ slotIndex }: { slotIndex: number }) {
         onPointerOver={(e) => { e.stopPropagation(); setHovered(true) }}
         onPointerOut={() => setHovered(false)}
         onClick={(e) => { e.stopPropagation(); setSelectedSlot(isSelected ? null : slotIndex) }}
-        layers={1}
+        // layers={1}
       >
         <planeGeometry args={[slotW, moduleHeight]} />
         <meshBasicMaterial
@@ -271,6 +271,27 @@ function ModuleSlotInteraction({ slotIndex }: { slotIndex: number }) {
       </mesh>
     </group>
   )
+}
+
+function SceneEnvironment() {
+  const { scene } = useThree()
+  useEffect(() => {
+    const loader = new THREE.CubeTextureLoader()
+    const texture = loader.load([
+      '/cubemaps/module-highlight/px.png',
+      '/cubemaps/module-highlight/nx.png',
+      '/cubemaps/module-highlight/py.png',
+      '/cubemaps/module-highlight/ny.png',
+      '/cubemaps/module-highlight/pz.png',
+      '/cubemaps/module-highlight/nz.png',
+    ])
+    scene.environment = texture
+    return () => {
+      texture.dispose()
+      scene.environment = null
+    }
+  }, [scene])
+  return null
 }
 
 function RaycasterSetup() {
@@ -311,7 +332,7 @@ export default function ThreeCanvas() {
       <Canvas
         camera={{ position: [0.8, 1.6, 5], fov: 45 }}
         shadows
-        // frameloop="demand"
+        frameloop="demand"
         onPointerMissed={() => setSelectedSlot(null)}
         gl={async (props: any) => {
           const renderer = new THREE.WebGPURenderer({
@@ -322,10 +343,11 @@ export default function ThreeCanvas() {
           return renderer.init();
         }}
       >
-              {/* <axesHelper args={[5]} /> */}
+        {/* <axesHelper args={[5]} /> */}
 
         <color attach="background" args={['#e8e8e8']} />
-        <ambientLight intensity={.6} />
+        <SceneEnvironment />
+        {/* <ambientLight intensity={0} /> */}
         <directionalLight
           position={[-3, 5, 10]}
           intensity={0.7}
@@ -338,28 +360,24 @@ export default function ThreeCanvas() {
           shadow-camera-bottom={-1}
           shadow-camera-near={0.5}
           shadow-camera-far={20}
+          shadow-bias={-0.0005}
+          shadow-normalBias={0.02}
         />
         
         <RaycasterSetup />
-        <PostProcessing />
+        {/* <PostProcessing /> */}
         <Suspense>
           <ClosetScene />
         </Suspense>
         {/* Floor plane to receive shadows */}
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}  castShadow receiveShadow>
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
           <planeGeometry args={[20, 20]} />
-          {/* <shadowMaterial opacity={0.35} /> */}
-          <meshBasicMaterial
-          color="#cccccc"
-        />
+          <meshStandardMaterial color="#fafafa" />
         </mesh>
         {/* Back wall plane to receive shadows */}
         <mesh rotation={[0, 0, 0]} position={[0, 0, -.5]} receiveShadow>
           <planeGeometry args={[20, 20]} />
-          {/* <shadowMaterial opacity={0.35} /> */}
-          <meshBasicMaterial
-          color="#e9e9e9"
-        />
+          <meshStandardMaterial color="#ffffff" />
 
         </mesh>
         <OrbitControls

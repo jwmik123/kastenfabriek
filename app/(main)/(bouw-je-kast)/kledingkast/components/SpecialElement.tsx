@@ -25,6 +25,7 @@ function SpecialElementInner({
 
   const scaleZ = targetWidth / layout.specialElement.baseWidth
   const scaleX = targetDepth / layout.specialElement.baseDepth
+
   const closetMaterial = useClosetMaterialInstance()
 
   const { clone, offsetX, offsetZ } = useMemo(() => {
@@ -40,15 +41,22 @@ function SpecialElementInner({
         mesh.castShadow = true
         mesh.receiveShadow = true
 
-        const isDepthScalable = mesh.name.includes('_ds')
+        console.log(`Processing mesh: ${mesh.name}, scalable in depth: ${mesh.name.includes('_ds')}, scalable in width: ${mesh.name.includes('_ws')}`);
 
-        if (isDepthScalable) {
+        const isDepthScalable = mesh.name.includes('_ds')
+        const isWidthScalable = mesh.name.includes('_ws')
+
+        if (isDepthScalable && isWidthScalable) {
           // Scale in both depth (X) and width (Z)
           mesh.geometry.scale(scaleX, 1, scaleZ)
           mesh.position.z *= scaleX
-        } else {
-          // Scale width only, no depth scaling on geometry
+        } else if (isDepthScalable) {
+          mesh.geometry.scale(scaleX, 1, 1)
+          mesh.position.z *= scaleX
+        } else if (isWidthScalable) {
           mesh.geometry.scale(1, 1, scaleZ)
+          fixedDepthMeshes.push(mesh)
+        } else {
           fixedDepthMeshes.push(mesh)
         }
       }
@@ -57,10 +65,11 @@ function SpecialElementInner({
         child.rotation.y = doorRotation
       }
     })
-
     // Second pass: offset non-_ds meshes so they stay at the front edge
     // The _ds front edge moved forward by this amount:
     const depthGrowth = layout.specialElement.baseDepth * (scaleX - 1)
+    // Second pass: reposition non-_ds meshes proportionally in depth,
+    // same scaling their positions as _ds meshes do.
     for (const mesh of fixedDepthMeshes) {
       mesh.position.z += depthGrowth
     }
