@@ -6,12 +6,26 @@ import { useMemo } from 'react'
 import type { ModuleLayoutConfig } from './moduleLayouts'
 import { useClosetMaterialInstance } from './ClosetMaterial'
 
+// All nodes in module GLBs carry a -90° Y rotation.
+// After that rotation: local X → world Z (depth), local Z → world X (width).
+// So sceneSize.x = WIDTH, sceneSize.z = DEPTH.
+//
+// Mesh name suffixes drive scaling:
+//   _ds  → geometry.scale(depthScale, 1, 1)   stretches local X → world Z (depth)
+//   _ws  → geometry.scale(1, 1, widthScale)   stretches local Z → world X (width)
+//
+// Mesh name tokens drive width positioning:
+//   Right (no _ws) → mesh.position.x += widthGrowth   clamps to right edge
+//   Left  (or none) → no adjustment                    stays at left edge
+
+const MODULE_WALL = 0.018
+
 interface SpecialElementProps {
   layout: ModuleLayoutConfig
-  targetWidth: number  // desired slot width in meters
-  targetDepth: number  // desired module depth in meters
-  positionY: number    // Y position of the element's bottom edge
-  doorRotation: number // rotation angle for doors (0 = closed)
+  targetWidth: number  // slot width in meters
+  targetDepth: number  // module depth in meters
+  positionY: number    // Y of the element's bottom in module-group space
+  doorRotation: number // door open angle in radians
 }
 
 function SpecialElementInner({
@@ -22,63 +36,77 @@ function SpecialElementInner({
   doorRotation,
 }: SpecialElementProps) {
   const { scene } = useGLTF(layout.specialElement.glbPath!)
-
-  const scaleZ = targetWidth / layout.specialElement.baseWidth
-  const scaleX = targetDepth / layout.specialElement.baseDepth
-
   const closetMaterial = useClosetMaterialInstance()
 
+  // Original world-space dimensions of the GLB (width = X, depth = Z)
+  const originalSize = useMemo(() => {
+    const box = new THREE.Box3().setFromObject(scene)
+    return new THREE.Vector3(
+      box.max.x - box.min.x,  // width
+      box.max.y - box.min.y,  // height
+      box.max.z - box.min.z,  // depth
+    )
+  }, [scene])
+
   const { clone, offsetX, offsetZ } = useMemo(() => {
+    const widthScale  = targetWidth  / originalSize.x
+    const depthScale  = targetDepth  / originalSize.z
+    const widthGrowth = targetWidth  - originalSize.x
+    const depthGrowth = targetDepth  - originalSize.z
+
     const c = scene.clone(true)
-    const fixedDepthMeshes: THREE.Mesh[] = []
 
-    // First pass: scale all geometries, collect non-_ds meshes
     c.traverse((child: THREE.Object3D) => {
-      if ((child as THREE.Mesh).isMesh) {
-        const mesh = child as THREE.Mesh
-        mesh.geometry = mesh.geometry.clone()
-        mesh.material = closetMaterial
-        mesh.castShadow = true
-        mesh.receiveShadow = true
-
-        console.log(`Processing mesh: ${mesh.name}, scalable in depth: ${mesh.name.includes('_ds')}, scalable in width: ${mesh.name.includes('_ws')}`);
-
-        const isDepthScalable = mesh.name.includes('_ds')
-        const isWidthScalable = mesh.name.includes('_ws')
-
-        if (isDepthScalable && isWidthScalable) {
-          // Scale in both depth (X) and width (Z)
-          mesh.geometry.scale(scaleX, 1, scaleZ)
-          mesh.position.z *= scaleX
-        } else if (isDepthScalable) {
-          mesh.geometry.scale(scaleX, 1, 1)
-          mesh.position.z *= scaleX
-        } else if (isWidthScalable) {
-          mesh.geometry.scale(1, 1, scaleZ)
-          fixedDepthMeshes.push(mesh)
-        } else {
-          fixedDepthMeshes.push(mesh)
-        }
-      }
-
+      // Door rotation
       if (child.name.includes('Deur')) {
         child.rotation.y = doorRotation
       }
-    })
-    // Second pass: offset non-_ds meshes so they stay at the front edge
-    // The _ds front edge moved forward by this amount:
-    const depthGrowth = layout.specialElement.baseDepth * (scaleX - 1)
-    // Second pass: reposition non-_ds meshes proportionally in depth,
-    // same scaling their positions as _ds meshes do.
-    for (const mesh of fixedDepthMeshes) {
-      mesh.position.z += depthGrowth
-    }
 
-    // Compute offset to align element flush to origin on X and Z
+      if (!(child as THREE.Mesh).isMesh) return
+      const mesh = child as THREE.Mesh
+
+      mesh.geometry = mesh.geometry.clone()
+      mesh.material = closetMaterial
+      mesh.castShadow = true
+      mesh.receiveShadow = true
+
+      const hasDS   = mesh.name.includes('_ds')
+      const hasWS   = mesh.name.includes('_ws')
+      const isRight = mesh.name.includes('Right')
+      const isBack  = mesh.name.includes('Back')
+
+      // --- Geometry scaling ---
+      if (hasDS && hasWS) {
+        mesh.geometry.scale(depthScale, 1, widthScale)
+      } else if (hasDS) {
+        mesh.geometry.scale(depthScale, 1, 1)
+      } else if (hasWS) {
+        mesh.geometry.scale(1, 1, widthScale)
+      }
+      // no flags → fixed size, no stretch
+
+      // --- Width positioning ---
+      // Right non-_ws: shift world-X to maintain distance from right edge.
+      if (isRight && !hasWS) {
+        mesh.position.x += widthGrowth
+      }
+
+      // --- Depth positioning ---
+      // _ws-only (no _ds): front-anchored — maintain distance from the front face.
+      // Analogous to Right meshes being anchored to the right edge.
+      if (!hasDS && !isBack) {
+        mesh.position.z += depthGrowth
+      }
+    })
+
+    // Align the element: left edge at MODULE_WALL, back edge at Z=0
     const box = new THREE.Box3().setFromObject(c)
-    const MODULE_WALL = 0.018
-    return { clone: c, offsetX: -box.min.x + MODULE_WALL, offsetZ: -box.min.z }
-  }, [scene, scaleX, scaleZ, doorRotation, closetMaterial])
+    return {
+      clone:   c,
+      offsetX: -box.min.x + MODULE_WALL,
+      offsetZ: -box.min.z,
+    }
+  }, [scene, originalSize, targetWidth, targetDepth, doorRotation, closetMaterial])
 
   return (
     <primitive object={clone} position={[offsetX, positionY, offsetZ]} rotation={[0, 0, 0]} />

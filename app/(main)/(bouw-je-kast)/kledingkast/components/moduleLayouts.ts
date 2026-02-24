@@ -19,10 +19,8 @@ export type ModuleLayoutConfig = {
 
   specialElement: {
     glbPath: string | null // null = no GLB (e.g. full-shelves layout)
-    height: number         // fixed height in meters
+    height: number         // height in meters — used for fill zone placement; should match GLB
     anchor: Anchor
-    baseWidth: number      // reference GLB X dimension for width scaling
-    baseDepth: number      // reference GLB Z dimension for depth scaling
   }
 
   fillZone: {
@@ -34,18 +32,15 @@ export type ModuleLayoutConfig = {
 export type { Anchor, FillZoneConfig, FillShelves, FillOpen }
 
 // Default shelf spacing and thickness
-export const SHELF_SPACING = 0.30  // 30cm
+export const SHELF_SPACING = 0.25  // 30cm
 export const SHELF_THICKNESS = 0.018 // 2.5cm
 
 /**
  * Module layout registry.
  *
- * To add a new layout: create a GLB for the special element, measure its
- * dimensions, and add an entry here. The renderer handles everything else.
- *
- * NOTE: These entries use the existing GLBs as placeholders.
- * Replace glbPath, height, baseWidth, baseDepth with real measurements
- * once dedicated special-element GLBs are authored.
+ * To add a new layout: drop in a GLB and add an entry here.
+ * Width and depth are measured automatically at runtime from the GLB bounding box.
+ * Only `height` needs to be set manually — it drives fill zone placement.
  */
 export const MODULE_LAYOUTS: ModuleLayoutConfig[] = [
   {
@@ -56,8 +51,6 @@ export const MODULE_LAYOUTS: ModuleLayoutConfig[] = [
       glbPath: null,
       height: 0,
       anchor: { type: 'bottom' },
-      baseWidth: 0.575,
-      baseDepth: 0.6,
     },
     fillZone: {
       above: { type: 'shelves', spacing: SHELF_SPACING },
@@ -69,11 +62,9 @@ export const MODULE_LAYOUTS: ModuleLayoutConfig[] = [
     label: 'Drawers + shelves',
     description: 'Laden onderin, planken erboven',
     specialElement: {
-      glbPath: '/objects/ladesbinnen.glb',
-      height: 0.495,
+      glbPath: '/objects/ModuleDrawer.glb',
+      height: 0.7,
       anchor: { type: 'bottom' },
-      baseWidth: .605,
-      baseDepth: .515,
     },
     fillZone: {
       above: { type: 'shelves', spacing: SHELF_SPACING },
@@ -102,7 +93,7 @@ export function computeModulePositions(
 
   switch (anchor.type) {
     case 'bottom':
-      specialElementY = 0
+      specialElementY = -0.108
       fillAbove = { start: seHeight, end: moduleHeight }
       break
 

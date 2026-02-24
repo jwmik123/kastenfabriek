@@ -11,8 +11,12 @@ import SpecialElement from './SpecialElement'
 import ClosetMaterial, { ClosetMaterialProvider } from './ClosetMaterial'
 import PostProcessing from './PostProcessing'
 
-const WALL = 0.018 // 5cm wall thickness in meters
-const MODULE_WALL = 0.018 // 2.5cm module side panel thickness
+const WALL = 0.018 // 1.8cm panel thickness in meters
+const MODULE_WALL = 0.018 // 1.8cm module side panel thickness
+const ONDERSTEL_HEIGHT = 0.108 // 108mm onderstel (plinth)
+const ONDERSTEL_GAP = 0.010   // 10mm gap between onderstel top and module floor
+const ONDERSTEL_FRONT_INSET = 0.064 // 64mm inset from the front
+const MODULE_FLOOR_Y = ONDERSTEL_HEIGHT + ONDERSTEL_GAP // 118mm — where modules start
 
 function createGridTexture(moduleCount: number): THREE.CanvasTexture {
   const canvas = document.createElement('canvas')
@@ -48,7 +52,7 @@ function FloorGrid() {
   const moduleCount = useClosetStore((s) => s.moduleCount)
 
   const innerW = width - WALL * 2
-  const innerD = depth - WALL
+  const innerD = depth - WALL - ONDERSTEL_FRONT_INSET
 
   const texture = useMemo(() => createGridTexture(moduleCount), [moduleCount])
 
@@ -69,7 +73,7 @@ function ClosetCorpus() {
   const depth = useClosetStore((s) => s.depth) / 100
 
   return (
-    <group position={[0, height / 2, 0]}>
+    <group position={[0, height / 2, depth / 2]}>
       {/* Back wall */}
       <mesh position={[0, 0, -depth / 2 + WALL / 2]} castShadow receiveShadow>
         <boxGeometry args={[width, height, WALL]} />
@@ -94,11 +98,6 @@ function ClosetCorpus() {
         <ClosetMaterial />
       </mesh>
 
-      {/* Bottom panel */}
-      <mesh position={[0, -height / 2 + WALL / 2, 0]} castShadow receiveShadow>
-        <boxGeometry args={[width, WALL, depth]} />
-        <ClosetMaterial />
-      </mesh>
     </group>
   )
 }
@@ -114,12 +113,12 @@ function TopCabinet() {
 
   // Inner dimensions - fits inside the main closet walls
   const innerW = width - WALL * 2
-  const innerD = depth - WALL
+  const innerD = depth - WALL - ONDERSTEL_FRONT_INSET
 
   const y = mainH + topH / 2
 
   return (
-    <group position={[0, y, WALL / 2]}>
+    <group position={[0, y, depth / 2 + WALL / 2]}>
       {/* Back */}
       <mesh position={[0, 0, -innerD / 2 + WALL / 2]} castShadow>
         <boxGeometry args={[innerW, topH, WALL]} />
@@ -161,8 +160,8 @@ function Module({ index, layoutId }: { index: number; layoutId: number }) {
 
   const innerW = width - WALL * 2
   const slotW = innerW / moduleCount
-  const moduleHeight = mh - WALL * 2
-  const moduleDepth = depth - WALL
+  const moduleHeight = mh - WALL - (MODULE_FLOOR_Y)
+  const moduleDepth = depth - WALL - ONDERSTEL_FRONT_INSET
 
   const doorRotation = doorsOpen ? Math.PI * -0.65 : 0
 
@@ -177,11 +176,11 @@ function Module({ index, layoutId }: { index: number; layoutId: number }) {
   const centerZ = moduleDepth / 2
 
   return (
-    <group position={[x, WALL, -depth / 2 + WALL]}>
+    <group position={[x, MODULE_FLOOR_Y, WALL]}>
       {/* Special element (GLB) — no Y scaling */}
       <SpecialElement
         layout={layout}
-        targetWidth={slotW}
+        targetWidth={slotW - MODULE_WALL * 2}
         targetDepth={moduleDepth}
         positionY={specialElementY}
         doorRotation={doorRotation}
@@ -240,8 +239,8 @@ function ModuleSlotInteraction({ slotIndex }: { slotIndex: number }) {
 
   const innerW = width - WALL * 2
   const slotW = innerW / moduleCount
-  const moduleHeight = mh - WALL * 2
-  const moduleDepth = depth - WALL
+  const moduleHeight = mh - WALL - (MODULE_FLOOR_Y)
+  const moduleDepth = depth - WALL - ONDERSTEL_FRONT_INSET
 
   const isSelected = selectedSlot === slotIndex
 
@@ -253,7 +252,7 @@ function ModuleSlotInteraction({ slotIndex }: { slotIndex: number }) {
   const opacity = isSelected ? 0.18 : hovered ? 0.32 : 0
 
   return (
-    <group position={[(-innerW / 2) + slotIndex * slotW, WALL, -depth / 2 + WALL]}>
+    <group position={[(-innerW / 2) + slotIndex * slotW, MODULE_FLOOR_Y, WALL]}>
       <mesh
         position={[slotW / 2, moduleHeight / 2, moduleDepth + 0.002]}
         onPointerOver={(e) => { e.stopPropagation(); setHovered(true) }}
@@ -302,6 +301,42 @@ function RaycasterSetup() {
   return null
 }
 
+function OnderstelPlinth() {
+  const width = useClosetStore((s) => s.width) / 100
+  const depth = useClosetStore((s) => s.depth) / 100
+  const { scene } = useGLTF('/objects/onderstel.glb')
+
+  const innerW = width - WALL * 2
+  const innerD = depth - WALL - ONDERSTEL_FRONT_INSET
+
+  // Scale to inner closet dimensions, sits on floor (Y=0) between the walls
+  // GLTF X → scene X (width), GLTF Z → scene Z (depth)
+  // If scaling appears on wrong axis, swap scaleX/scaleZ below
+  const { clone, scaleX, scaleZ, pX, pY, pZ } = useMemo(() => {
+    const c = scene.clone(true)
+    const box = new THREE.Box3().setFromObject(c)
+    const sx = innerW / (box.max.x - box.min.x)
+    const sz = innerD / (box.max.z - box.min.z)
+    const cx = (box.min.x + box.max.x) / 2
+    return {
+      clone: c,
+      scaleX: sx,
+      scaleZ: sz,
+      pX: -cx * sx,              // center in scene X
+      pY: -box.min.y,            // bottom of plate sits on floor (Y=0)
+      pZ: WALL - box.min.z * sz, // back face aligns with interior back wall (Z=WALL)
+    }
+  }, [scene, innerW, innerD])
+
+  return (
+    <primitive
+      object={clone}
+      scale={[scaleX, 1, scaleZ]}
+      position={[pX, pY, pZ]}
+    />
+  )
+}
+
 function ClosetScene() {
   const modules = useClosetStore((s) => s.modules)
 
@@ -309,6 +344,7 @@ function ClosetScene() {
     <ClosetMaterialProvider>
       <ClosetCorpus />
       <TopCabinet />
+      <OnderstelPlinth />
       {/* <FloorGrid /> */}
       {modules
         .filter((m) => m.layoutId !== null)
@@ -350,7 +386,7 @@ export default function ThreeCanvas() {
         {/* <ambientLight intensity={0} /> */}
         <directionalLight
           position={[-3, 5, 10]}
-          intensity={0.7}
+          intensity={1}
           castShadow
           shadow-mapSize-width={2048}
           shadow-mapSize-height={2048}
@@ -369,17 +405,18 @@ export default function ThreeCanvas() {
         <Suspense>
           <ClosetScene />
         </Suspense>
-        {/* Floor plane to receive shadows */}
+        {/* Back wall plane to receive shadows — sits just behind closet back (Z=0) */}
+        <mesh rotation={[0, 0, 0]} position={[0, 0, -0.01]} receiveShadow>
+          <planeGeometry args={[20, 20]} />
+          <meshStandardMaterial color="#fafafa" />
+
+        </mesh>
+                {/* Floor plane to receive shadows */}
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
           <planeGeometry args={[20, 20]} />
           <meshStandardMaterial color="#fafafa" />
         </mesh>
-        {/* Back wall plane to receive shadows */}
-        <mesh rotation={[0, 0, 0]} position={[0, 0, -.5]} receiveShadow>
-          <planeGeometry args={[20, 20]} />
-          <meshStandardMaterial color="#ffffff" />
 
-        </mesh>
         <OrbitControls
           target={[0.4, 1, 0]}
           minDistance={2}
@@ -404,3 +441,5 @@ MODULE_LAYOUTS.forEach((layout) => {
     useGLTF.preload(layout.specialElement.glbPath)
   }
 })
+
+useGLTF.preload('/objects/onderstel.glb')

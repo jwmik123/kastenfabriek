@@ -4,7 +4,8 @@
       "Bash(npm install:*)",
       "Bash(find:*)",
       "Bash(cat:*)",
-      "Bash(node -e:*)"
+      "Bash(node -e:*)",
+      "Bash(npx -y react-doctor@latest . --verbose --diff)"
     ]
   }
 }
