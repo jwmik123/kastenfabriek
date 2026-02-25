@@ -1,7 +1,7 @@
 'use client'
 
 import { Canvas, useThree } from '@react-three/fiber'
-import { OrbitControls, useGLTF } from '@react-three/drei'
+import { OrbitControls, useGLTF, useTexture } from '@react-three/drei'
 import * as THREE from 'three/webgpu'
 import { Suspense, useMemo, useState, useEffect } from 'react'
 import { useClosetStore } from '../store'
@@ -337,6 +337,25 @@ function OnderstelPlinth() {
   )
 }
 
+function SilhouettePlane() {
+  const width = useClosetStore((s) => s.width) / 100
+  const texture = useTexture('/silhouette.png')
+
+  const SILHOUETTE_HEIGHT = 1.8
+  const img = texture.image as HTMLImageElement
+  const aspect = img.width / img.height
+  const planeWidth = SILHOUETTE_HEIGHT * aspect
+
+  const x = -(width / 2 + 0.3 + planeWidth / 2)
+
+  return (
+    <mesh position={[x, SILHOUETTE_HEIGHT / 2 - 0.05, -0.005]}>
+      <planeGeometry args={[planeWidth, SILHOUETTE_HEIGHT]} />
+      <meshBasicMaterial map={texture} transparent opacity={0.25} depthWrite={false} />
+    </mesh>
+  )
+}
+
 function ClosetScene() {
   const modules = useClosetStore((s) => s.modules)
 
@@ -404,6 +423,7 @@ export default function ThreeCanvas() {
         {/* <PostProcessing /> */}
         <Suspense>
           <ClosetScene />
+          <SilhouettePlane />
         </Suspense>
         {/* Back wall plane to receive shadows — sits just behind closet back (Z=0) */}
         <mesh rotation={[0, 0, 0]} position={[0, 0, -0.01]} receiveShadow>
@@ -422,6 +442,8 @@ export default function ThreeCanvas() {
           minDistance={2}
           maxDistance={8}
           maxPolarAngle={Math.PI / 2}
+          minAzimuthAngle={-Math.PI / 2 + 0.1}
+          maxAzimuthAngle={Math.PI / 2 - 0.1}
           enablePan={false}
         />
       </Canvas>
