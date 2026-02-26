@@ -19,12 +19,12 @@ export default function KledingkastConfigurator({ pricingData }: { pricingData: 
     <>
     <div className="configurator-container relative w-full flex flex-col lg:flex-row pt-[80px]">
       {/* Canvas — left panel */}
-      <div className="w-full h-full lg:w-2/3">
+      <div className="w-full h-[60vh] lg:h-full lg:w-2/3">
         <ThreeCanvas />
-     
+
       </div>
       {/* Wizard — right panel */}
-      <div className="w-full lg:w-1/3 h-full bg-white overflow-y-auto">
+      <div className="w-full lg:w-1/3 lg:h-full bg-white overflow-y-auto">
         <StepWizard />
       </div>
     </div>

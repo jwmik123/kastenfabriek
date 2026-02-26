@@ -12,6 +12,7 @@ export default function ModulesStep() {
   const modules = useClosetStore((s) => s.modules)
   const setModuleCount = useClosetStore((s) => s.setModuleCount)
   const setModuleLayout = useClosetStore((s) => s.setModuleLayout)
+  const toggleModuleDoor = useClosetStore((s) => s.toggleModuleDoor)
   const minModules = useClosetStore((s) => s.minModules())
   const maxModules = useClosetStore((s) => s.maxModules())
   const moduleWidthCm = useClosetStore((s) => s.moduleWidthCm())
@@ -91,6 +92,27 @@ export default function ModulesStep() {
           <span className="text-sm font-medium">
             Kies je indeling voor kolom {selectedSlot + 1}
           </span>
+
+          {/* Door toggle */}
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-muted-foreground">Deur</span>
+            <button
+              onClick={() => toggleModuleDoor(selectedSlot)}
+              className={cn(
+                'relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors',
+                modules[selectedSlot]?.hasDoor ? 'bg-foreground' : 'bg-input',
+              )}
+              role="switch"
+              aria-checked={modules[selectedSlot]?.hasDoor}
+            >
+              <span
+                className={cn(
+                  'pointer-events-none block h-4 w-4 rounded-full bg-background shadow-lg transition-transform',
+                  modules[selectedSlot]?.hasDoor ? 'translate-x-4' : 'translate-x-0',
+                )}
+              />
+            </button>
+          </div>
           <div className="flex flex-row gap-4 flex-wrap mt-4">
             {MODULE_LAYOUTS.map((layout) => {
               const LayoutSvg = LAYOUT_SVGS[layout.id]

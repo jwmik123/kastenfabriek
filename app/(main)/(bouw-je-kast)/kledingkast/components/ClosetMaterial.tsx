@@ -50,7 +50,7 @@ export function useClosetMaterialInstance(): THREE.MeshStandardMaterial {
         roughness: 0.7,
       })
     }
-    const color = MATERIAL_COLORS[ctx?.materialId ?? 'white'] || '#ffffff'
+    const color = MATERIAL_COLORS[ctx?.materialId ?? 'green-shadow'] || '#767b67'
     return new THREE.MeshStandardMaterial({ color })
   }, [ctx])
 }
@@ -59,7 +59,7 @@ export default function ClosetMaterial() {
   const ctx = useContext(MaterialContext)
 
   if (!ctx) {
-    return <meshStandardMaterial color="#ffffff" />
+    return <meshStandardMaterial color="#767b67" />
   }
 
   const { materialId, oakMap, oakNormalMap } = ctx
@@ -78,6 +78,6 @@ export default function ClosetMaterial() {
   return <meshStandardMaterial  
           // wireframe={true} 
           key={materialId} 
-          color={MATERIAL_COLORS[materialId] || '#ffffff'} 
+          color={MATERIAL_COLORS[materialId] || '#767b67'} 
         />
 }

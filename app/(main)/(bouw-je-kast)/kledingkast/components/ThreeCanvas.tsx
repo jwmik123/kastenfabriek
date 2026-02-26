@@ -10,6 +10,7 @@ import { useClosetStore } from '../store'
 import { MODULE_LAYOUTS, getLayoutById, computeModulePositions } from './moduleLayouts'
 import FillZone from './FillZone'
 import SpecialElement from './SpecialElement'
+import Door from './objects/Door'
 import ClosetMaterial, { ClosetMaterialProvider, useClosetMaterialInstance } from './ClosetMaterial'
 import PostProcessing from './PostProcessing'
 import CanvasToolbar from './CanvasToolbar'
@@ -154,7 +155,7 @@ function TopCabinet() {
   )
 }
 
-function Module({ index, layoutId }: { index: number; layoutId: number }) {
+function Module({ index, layoutId, hasDoor }: { index: number; layoutId: number; hasDoor: boolean }) {
   const mh = useClosetStore((s) => s.mainHeight()) / 100
   const depth = useClosetStore((s) => s.depth) / 100
   const moduleCount = useClosetStore((s) => s.moduleCount)
@@ -244,6 +245,16 @@ function Module({ index, layoutId }: { index: number; layoutId: number }) {
         <boxGeometry args={[slotW, MODULE_WALL, moduleDepth]} />
         <ClosetMaterial />
       </mesh>
+
+      {/* Door */}
+      {hasDoor && (
+        <Door
+          moduleHeight={moduleHeight}
+          slotW={slotW}
+          moduleDepth={moduleDepth}
+          doorsOpen={doorsOpen}
+        />
+      )}
     </group>
   )
 }
@@ -400,7 +411,7 @@ function ClosetScene() {
       {modules
         .filter((m) => m.layoutId !== null)
         .map((m) => (
-          <Module key={m.slotIndex} index={m.slotIndex} layoutId={m.layoutId!} />
+          <Module key={m.slotIndex} index={m.slotIndex} layoutId={m.layoutId!} hasDoor={m.hasDoor} />
         ))}
       {modules.map((m) => (
         <ModuleSlotInteraction key={`hit-${m.slotIndex}`} slotIndex={m.slotIndex} />

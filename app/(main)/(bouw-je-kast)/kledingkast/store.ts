@@ -4,6 +4,7 @@ import type { FullPricingData, ModuleLayout, PricingConstraints } from '@/types/
 export interface ModuleSlot {
   slotIndex: number
   layoutId: number | null // null = empty slot
+  hasDoor: boolean
 }
 
 interface ClosetState {
@@ -54,6 +55,7 @@ interface ClosetState {
   setDepth: (d: number) => void
   setModuleCount: (count: number) => void
   setModuleLayout: (slotIndex: number, layoutId: number) => void
+  toggleModuleDoor: (slotIndex: number) => void
   setMaterialId: (id: string) => void
   setDoorHandleId: (id: string) => void
   toggleDoors: () => void
@@ -82,9 +84,9 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
 
   moduleCount: 3,
   modules: [
-    { slotIndex: 0, layoutId: null },
-    { slotIndex: 1, layoutId: null },
-    { slotIndex: 2, layoutId: null },
+    { slotIndex: 0, layoutId: null, hasDoor: true },
+    { slotIndex: 1, layoutId: null, hasDoor: true },
+    { slotIndex: 2, layoutId: null, hasDoor: true },
   ],
 
   materialId: 'white',
@@ -170,7 +172,7 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
     const clamped = Math.max(min, Math.min(max, count))
     const existing = get().modules
     const modules: ModuleSlot[] = Array.from({ length: clamped }, (_, i) =>
-      existing[i] ?? { slotIndex: i, layoutId: null }
+      existing[i] ?? { slotIndex: i, layoutId: null, hasDoor: true }
     )
     set({ moduleCount: clamped, modules })
   },
@@ -178,6 +180,11 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
   setModuleLayout: (slotIndex, layoutId) =>
     set((s) => ({
       modules: s.modules.map((m) => (m.slotIndex === slotIndex ? { ...m, layoutId } : m)),
+    })),
+
+  toggleModuleDoor: (slotIndex) =>
+    set((s) => ({
+      modules: s.modules.map((m) => (m.slotIndex === slotIndex ? { ...m, hasDoor: !m.hasDoor } : m)),
     })),
 
   setMaterialId: (materialId) => set({ materialId }),
