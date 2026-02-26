@@ -32,10 +32,20 @@ export default function FillZone({
 
     const positions: number[] = []
     let y = startY + config.spacing
-    while (y < endY - SHELF_THICKNESS) {
+    while (y + SHELF_THICKNESS < endY) {
       positions.push(y)
       y += config.spacing
     }
+
+    // Remove the last shelf if the gap above it is less than one spacing
+    if (positions.length > 0) {
+      const lastY = positions[positions.length - 1]
+      const gapAbove = endY - (lastY + SHELF_THICKNESS)
+      if (gapAbove < config.spacing) {
+        positions.pop()
+      }
+    }
+
     return positions
   }, [config, startY, endY])
 

@@ -30,6 +30,8 @@ interface ClosetState {
 
   // View options
   doorsOpen: boolean
+  showMeasurements: boolean
+  userZoom: number
 
   // Selection (shared between 3D scene and step panels)
   selectedSlot: number | null
@@ -55,6 +57,9 @@ interface ClosetState {
   setMaterialId: (id: string) => void
   setDoorHandleId: (id: string) => void
   toggleDoors: () => void
+  toggleMeasurements: () => void
+  zoomIn: () => void
+  zoomOut: () => void
   setSelectedSlot: (slot: number | null) => void
 }
 
@@ -85,6 +90,8 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
   materialId: 'white',
   doorHandleId: 'default',
   doorsOpen: false,
+  showMeasurements: false,
+  userZoom: 0.5,
   selectedSlot: null,
 
   // Derived
@@ -120,7 +127,7 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
   },
 
   setStep: (step) => set({ step }),
-  nextStep: () => set((s) => ({ step: Math.min(s.step + 1, 4) })),
+  nextStep: () => set((s) => ({ step: Math.min(s.step + 1, 3) })),
   prevStep: () => set((s) => ({ step: Math.max(s.step - 1, 1) })),
 
   setWidth: (width) => {
@@ -176,5 +183,8 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
   setMaterialId: (materialId) => set({ materialId }),
   setDoorHandleId: (doorHandleId) => set({ doorHandleId }),
   toggleDoors: () => set((s) => ({ doorsOpen: !s.doorsOpen })),
+  toggleMeasurements: () => set((s) => ({ showMeasurements: !s.showMeasurements })),
+  zoomIn: () => set((s) => ({ userZoom: Math.max(0.4, s.userZoom - 0.1) })),
+  zoomOut: () => set((s) => ({ userZoom: Math.min(2.0, s.userZoom + 0.1) })),
   setSelectedSlot: (slot) => set({ selectedSlot: slot }),
 }))

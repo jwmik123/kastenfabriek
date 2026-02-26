@@ -2,6 +2,10 @@
 
 import { useClosetStore } from '../../store'
 import { MODULE_LAYOUTS } from '../moduleLayouts'
+import { LAYOUT_SVGS } from '../LayoutSvgs'
+import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
+import { Minus, Plus } from 'lucide-react'
 
 export default function ModulesStep() {
   const moduleCount = useClosetStore((s) => s.moduleCount)
@@ -15,88 +19,99 @@ export default function ModulesStep() {
   const setSelectedSlot = useClosetStore((s) => s.setSelectedSlot)
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-lg font-semibold text-gray-900">Modules</h2>
-      <p className="text-sm text-gray-500">
-        Kies het aantal modules en vul elk vak met een indeling.
-      </p>
+    <div className="space-y-7">
+      {/* <div>
+        <h2 className="text-base font-semibold">Modules</h2>
+        <p className="text-sm text-muted-foreground mt-1">
+          Kies het aantal modules en vul elk vak met een indeling.
+        </p>
+      </div> */}
 
-      {/* Module count slider */}
+      {/* Module count +/- */}
       <div className="space-y-2">
-        <div className="flex justify-between text-sm">
-          <span className="font-medium text-gray-700">Aantal modules</span>
-          <span className="text-gray-500">{moduleCount}</span>
-        </div>
-        <input
-          type="range"
-          min={minModules}
-          max={maxModules}
-          value={moduleCount}
-          onChange={(e) => setModuleCount(Number(e.target.value))}
-          className="w-full accent-black"
-        />
-        <div className="flex justify-between text-xs text-gray-400">
-          <span>{minModules}</span>
-          <span>{maxModules}</span>
-        </div>
-        <div className="text-xs text-gray-400">
-          {moduleWidthCm.toFixed(1)} cm per module
+        <span className="text-sm font-medium">Aantal modules</span>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-8 w-8 shrink-0"
+            onClick={() => setModuleCount(moduleCount - 1)}
+            disabled={moduleCount <= minModules}
+          >
+            <Minus className="w-3.5 h-3.5" />
+          </Button>
+          <span className="w-6 text-center tabular-nums font-semibold text-sm">{moduleCount}</span>
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-8 w-8 shrink-0"
+            onClick={() => setModuleCount(moduleCount + 1)}
+            disabled={moduleCount >= maxModules}
+          >
+            <Plus className="w-3.5 h-3.5" />
+          </Button>
+          <span className="text-xs text-muted-foreground ml-1">
+            {moduleWidthCm.toFixed(0)} cm / module
+          </span>
         </div>
       </div>
 
-      {/* Slot grid */}
+      {/* Slot strip */}
       <div className="space-y-2">
-        <label className="text-sm font-medium text-gray-700">
-          Klik op een vak om een indeling te kiezen
-        </label>
-        <div className="flex flex-wrap gap-2">
-          {modules.map((m) => (
-            <button
-              key={m.slotIndex}
-              onClick={() => setSelectedSlot(m.slotIndex === selectedSlot ? null : m.slotIndex)}
-              className={`flex-1 min-w-[3rem] h-14 rounded-lg text-xs font-medium transition-colors border-2 ${
-                selectedSlot === m.slotIndex
-                  ? 'border-black bg-gray-50'
-                  : m.layoutId !== null
-                    ? 'border-gray-300 bg-gray-100 text-gray-700'
-                    : 'border-dashed border-gray-300 text-gray-400'
-              }`}
-            >
-              <div>{m.slotIndex + 1}</div>
-              {m.layoutId !== null && (
-                <div className="text-[10px] opacity-60">
-                  {MODULE_LAYOUTS.find((l) => l.id === m.layoutId)?.label ?? ''}
-                </div>
-              )}
-              {m.layoutId === null && <div className="text-[10px]">Leeg</div>}
-            </button>
-          ))}
+        <span className="text-sm font-medium">Klik op een vak om een indeling te kiezen</span>
+        <div className="flex gap-1 flex-wrap mt-4">
+          {modules.map((m) => {
+            const isSelected = selectedSlot === m.slotIndex
+            const hasLayout = m.layoutId !== null
+
+            return (
+              <button
+                key={m.slotIndex}
+                onClick={() => setSelectedSlot(m.slotIndex === selectedSlot ? null : m.slotIndex)}
+                className={cn(
+                  'flex flex-col items-center justify-center gap-1 w-14 h-7 rounded-md border-2 transition-all',
+                  isSelected
+                    ? 'border-foreground bg-accent text-foreground'
+                    : hasLayout
+                      ? 'border-border bg-muted text-foreground hover:border-foreground/40'
+                      : 'border-dashed border-border text-muted-foreground hover:border-foreground/40',
+                )}
+              >
+                
+                <span className="text-[10px] leading-none">Kolom {m.slotIndex + 1}</span>
+              </button>
+            )
+          })}
         </div>
       </div>
 
       {/* Layout picker for selected slot */}
       {selectedSlot !== null && (
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">
-            Indeling voor vak {selectedSlot + 1}
-          </label>
-          <div className="grid grid-cols-3 gap-2">
-            {MODULE_LAYOUTS.map((layout) => (
-              <button
-                key={layout.id}
-                onClick={() => {
-                  setModuleLayout(selectedSlot, layout.id)
-                }}
-                className={`px-2 py-2 rounded-lg text-xs transition-colors text-left ${
-                  modules[selectedSlot]?.layoutId === layout.id
-                    ? 'bg-black text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                <div className="font-medium">{layout.label}</div>
-                <div className="opacity-70 mt-0.5">{layout.description}</div>
-              </button>
-            ))}
+        <div className="space-y-4">
+          <span className="text-sm font-medium">
+            Kies je indeling voor kolom {selectedSlot + 1}
+          </span>
+          <div className="flex flex-row gap-4 flex-wrap mt-4">
+            {MODULE_LAYOUTS.map((layout) => {
+              const LayoutSvg = LAYOUT_SVGS[layout.id]
+              const isActive = modules[selectedSlot]?.layoutId === layout.id
+
+              return (
+                <button
+                  key={layout.id}
+                  onClick={() => setModuleLayout(selectedSlot, layout.id)}
+                  className={cn(
+                    'flex flex-col items-center gap-2 p-3 rounded-md border-2 transition-all',
+                    isActive
+                      ? 'border-primary bg-primary text-background'
+                      : 'border-border bg-background text-foreground hover:border-primary/40 hover:bg-muted',
+                  )}
+                >
+                  {LayoutSvg && <LayoutSvg className="h-32" />}
+                  {/* <span className="text-[11px] font-medium leading-snug text-center">{layout.label}</span> */}
+                </button>
+              )
+            })}
           </div>
         </div>
       )}

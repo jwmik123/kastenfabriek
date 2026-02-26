@@ -32,7 +32,7 @@ export type ModuleLayoutConfig = {
 export type { Anchor, FillZoneConfig, FillShelves, FillOpen }
 
 // Default shelf spacing and thickness
-export const SHELF_SPACING = 0.25  // 30cm
+export const SHELF_SPACING = 0.30  // 25cm
 export const SHELF_THICKNESS = 0.018 // 2.5cm
 
 /**
@@ -64,6 +64,62 @@ export const MODULE_LAYOUTS: ModuleLayoutConfig[] = [
     specialElement: {
       glbPath: '/objects/ModuleDrawer.glb',
       height: 0.7,
+      anchor: { type: 'bottom' },
+    },
+    fillZone: {
+      above: { type: 'shelves', spacing: SHELF_SPACING },
+      below: { type: 'open' },
+    },
+  },
+  {
+    id: 3,
+    label: 'Double Rod + shelves',
+    description: 'Laden onderin, planken erboven',
+    specialElement: {
+      glbPath: '/objects/ModuleDoubleRod.glb',
+      height: 1.718,
+      anchor: { type: 'bottom' },
+    },
+    fillZone: {
+      above: { type: 'shelves', spacing: SHELF_SPACING },
+      below: { type: 'open' },
+    },
+  },
+  {
+    id: 4,
+    label: 'Split shelves + rod',
+    description: 'Laden onderin, planken erboven',
+    specialElement: {
+      glbPath: '/objects/ModuleSplit.glb',
+      height: 1.7,
+      anchor: { type: 'bottom' },
+    },
+    fillZone: {
+      above: { type: 'shelves', spacing: SHELF_SPACING },
+      below: { type: 'open' },
+    },
+  },
+  {
+    id: 5,
+    label: 'Single Rod',
+    description: 'Laden onderin, planken erboven',
+    specialElement: {
+      glbPath: '/objects/ModuleSingleRod.glb',
+      height: 1.118,
+      anchor: { type: 'bottom' },
+    },
+    fillZone: {
+      above: { type: 'shelves', spacing: SHELF_SPACING },
+      below: { type: 'open' },
+    },
+  },
+   {
+    id: 6,
+    label: 'Shelf Rod',
+    description: 'Laden onderin, planken erboven',
+    specialElement: {
+      glbPath: '/objects/33_ModuleShelfRod.glb',
+      height: 1.718,
       anchor: { type: 'bottom' },
     },
     fillZone: {

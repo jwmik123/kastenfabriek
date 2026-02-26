@@ -63,7 +63,7 @@ const Navigation = () => {
   return (
     <div className="fixed top-0 left-0 right-0 z-30  font-poppins">
       {/* Top Header */}
-      <div className="hidden lg:block w-full bg-primary text-white py-2">
+      {/* <div className="hidden lg:block w-full bg-foreground text-white py-1">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-2">
@@ -80,7 +80,7 @@ const Navigation = () => {
             </div>
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Main Navigation */}
       <nav className={`w-full transition-all duration-300 ${
@@ -93,7 +93,7 @@ const Navigation = () => {
         } */}
         <div className={`transition-all duration-300 bg-white`}>
           <div className={`flex items-center justify-between font-poppins text-black transition-all duration-300 ${
-            isScrolled ? 'py-4' : 'py-4 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'
+            isScrolled ? 'py-4' : 'py-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'
           }`}>
           <Link href="/" className="flex-shrink-0 flex items-center gap-2">
             <Image
@@ -124,7 +124,7 @@ const Navigation = () => {
 
           {/* Desktop Right Section */}
           <div className="hidden lg:flex items-center gap-4">
-            <Link href="/kledingkast" className="text-white bg-green-600 px-6 py-4 rounded-full cursor-pointer">
+            <Link href="/kledingkast" className="text-white bg-primary  border-2 border-primary rounded-sm px-4 py-2 cursor-pointer transition-colors">
               Ontwerp je maatkast
             </Link>
 
@@ -141,7 +141,7 @@ const Navigation = () => {
 
           {/* Mobile Right Section */}
           <div className="flex lg:hidden items-center gap-4">
-            <button className="text-white bg-green-600 px-4 py-2 text-sm rounded-full cursor-pointer">
+            <button className="text-white bg-orange-500 px-4 py-2 text-sm rounded-full cursor-pointer">
               Ontwerp je kast
             </button>
 

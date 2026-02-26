@@ -15,9 +15,10 @@ import { useClosetMaterialInstance } from './ClosetMaterial'
 //   _ws  → geometry.scale(1, 1, widthScale)   stretches local Z → world X (width)
 //
 // Mesh name tokens drive positioning:
-//   Right (no _ws) → mesh.position.x += widthGrowth   clamps to right edge
-//   Back           → back-anchored, suppresses front-anchor shift
-//   Left / none    → left-anchored / front-anchored
+//   Right  (no _ws) → mesh.position.x += widthGrowth      clamps to right edge
+//   Middle (no _ws) → mesh.position.x += widthGrowth / 2  stays centered in width
+//   Back            → back-anchored, suppresses front-anchor shift
+//   Left / none     → left-anchored / front-anchored
 
 const MODULE_WALL = 0.018
 
@@ -70,10 +71,11 @@ function SpecialElementInner({
       mesh.castShadow = true
       mesh.receiveShadow = true
 
-      const hasDS   = mesh.name.includes('_ds')
-      const hasWS   = mesh.name.includes('_ws')
-      const isRight = mesh.name.includes('Right')
-      const isBack  = mesh.name.includes('Back')
+      const hasDS    = mesh.name.includes('_ds')
+      const hasWS    = mesh.name.includes('_ws')
+      const isRight  = mesh.name.includes('Right')
+      const isMiddle = mesh.name.includes('Middle')
+      const isBack   = mesh.name.includes('Back')
 
       // --- Geometry scaling ---
       if (hasDS && hasWS) {
@@ -87,8 +89,11 @@ function SpecialElementInner({
 
       // --- Width positioning ---
       // Right non-_ws: shift world-X to maintain distance from right edge.
+      // Middle non-_ws: shift by half widthGrowth to stay centered.
       if (isRight && !hasWS) {
         mesh.position.x += widthGrowth
+      } else if (isMiddle && !hasWS) {
+        mesh.position.x += widthGrowth / 2
       }
 
       // --- Depth positioning ---

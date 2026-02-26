@@ -4,12 +4,7 @@ import * as THREE from 'three/webgpu'
 import { useLoader } from '@react-three/fiber'
 import { createContext, useContext, useMemo, type ReactNode } from 'react'
 import { useClosetStore } from '../store'
-
-const MATERIAL_COLORS: Record<string, string> = {
-  white: '#ffffff',
-  walnut: '#6b4c3b',
-  black: '#1a1a1a',
-}
+import { MATERIAL_COLORS } from '../materials'
 
 interface MaterialState {
   materialId: string

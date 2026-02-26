@@ -1,21 +1,27 @@
 'use client'
 
 import { Canvas, useThree } from '@react-three/fiber'
+import { HDRLoader } from 'three/addons/loaders/HDRLoader.js';
+
 import { OrbitControls, useGLTF, useTexture } from '@react-three/drei'
 import * as THREE from 'three/webgpu'
-import { Suspense, useMemo, useState, useEffect } from 'react'
+import { Suspense, useMemo, useState, useEffect, useRef } from 'react'
 import { useClosetStore } from '../store'
 import { MODULE_LAYOUTS, getLayoutById, computeModulePositions } from './moduleLayouts'
 import FillZone from './FillZone'
 import SpecialElement from './SpecialElement'
-import ClosetMaterial, { ClosetMaterialProvider } from './ClosetMaterial'
+import ClosetMaterial, { ClosetMaterialProvider, useClosetMaterialInstance } from './ClosetMaterial'
 import PostProcessing from './PostProcessing'
+import CanvasToolbar from './CanvasToolbar'
+import gsap from 'gsap'
 
 const WALL = 0.018 // 1.8cm panel thickness in meters
 const MODULE_WALL = 0.018 // 1.8cm module side panel thickness
+const MODULE_INSIDE_INSET = 0.010 // 10mm gap between shelves and walls to prevent z-fighting
 const ONDERSTEL_HEIGHT = 0.108 // 108mm onderstel (plinth)
 const ONDERSTEL_GAP = 0.010   // 10mm gap between onderstel top and module floor
-const ONDERSTEL_FRONT_INSET = 0.064 // 64mm inset from the front
+const CLOSET_INSIDE_INSET = 0.025 // 25mm inset from the front
+const ONDERSTEL_FRONT_INSET = 0.089 // 89mm inset from the front
 const MODULE_FLOOR_Y = ONDERSTEL_HEIGHT + ONDERSTEL_GAP // 118mm — where modules start
 
 function createGridTexture(moduleCount: number): THREE.CanvasTexture {
@@ -52,7 +58,7 @@ function FloorGrid() {
   const moduleCount = useClosetStore((s) => s.moduleCount)
 
   const innerW = width - WALL * 2
-  const innerD = depth - WALL - ONDERSTEL_FRONT_INSET
+  const innerD = depth - WALL - CLOSET_INSIDE_INSET
 
   const texture = useMemo(() => createGridTexture(moduleCount), [moduleCount])
 
@@ -113,7 +119,7 @@ function TopCabinet() {
 
   // Inner dimensions - fits inside the main closet walls
   const innerW = width - WALL * 2
-  const innerD = depth - WALL - ONDERSTEL_FRONT_INSET
+  const innerD = depth - WALL - CLOSET_INSIDE_INSET
 
   const y = mainH + topH / 2
 
@@ -161,7 +167,7 @@ function Module({ index, layoutId }: { index: number; layoutId: number }) {
   const innerW = width - WALL * 2
   const slotW = innerW / moduleCount
   const moduleHeight = mh - WALL - (MODULE_FLOOR_Y)
-  const moduleDepth = depth - WALL - ONDERSTEL_FRONT_INSET
+  const moduleDepth = depth - WALL - CLOSET_INSIDE_INSET
 
   const doorRotation = doorsOpen ? Math.PI * -0.65 : 0
 
@@ -171,9 +177,12 @@ function Module({ index, layoutId }: { index: number; layoutId: number }) {
   const startX = -innerW / 2
   const x = startX + index * slotW
 
+  // Content depth: inset 10mm from the front face of the module
+  const contentDepth = moduleDepth - MODULE_INSIDE_INSET
+
   // Center offsets for fill zone shelves (relative to this group)
   const centerX = slotW / 2
-  const centerZ = moduleDepth / 2
+  const centerZ = contentDepth / 2
 
   return (
     <group position={[x, MODULE_FLOOR_Y, WALL]}>
@@ -181,7 +190,7 @@ function Module({ index, layoutId }: { index: number; layoutId: number }) {
       <SpecialElement
         layout={layout}
         targetWidth={slotW - MODULE_WALL * 2}
-        targetDepth={moduleDepth}
+        targetDepth={contentDepth}
         positionY={specialElementY}
         doorRotation={doorRotation}
       />
@@ -193,7 +202,7 @@ function Module({ index, layoutId }: { index: number; layoutId: number }) {
           startY={fillAbove.start}
           endY={fillAbove.end}
           width={slotW}
-          depth={moduleDepth}
+          depth={contentDepth}
           centerX={centerX}
           centerZ={centerZ}
         />
@@ -206,7 +215,7 @@ function Module({ index, layoutId }: { index: number; layoutId: number }) {
           startY={fillBelow.start}
           endY={fillBelow.end}
           width={slotW}
-          depth={moduleDepth}
+          depth={contentDepth}
           centerX={centerX}
           centerZ={centerZ}
         />
@@ -221,6 +230,18 @@ function Module({ index, layoutId }: { index: number; layoutId: number }) {
       {/* Right wall */}
       <mesh position={[slotW - MODULE_WALL / 2, moduleHeight / 2, centerZ]} castShadow receiveShadow>
         <boxGeometry args={[MODULE_WALL, moduleHeight, moduleDepth]} />
+        <ClosetMaterial />
+      </mesh>
+
+      {/* Floor */}
+      <mesh position={[slotW / 2, MODULE_WALL / 2, centerZ]} castShadow receiveShadow>
+        <boxGeometry args={[slotW, MODULE_WALL, moduleDepth]} />
+        <ClosetMaterial />
+      </mesh>
+
+      {/* Roof */}
+      <mesh position={[slotW / 2, moduleHeight - MODULE_WALL / 2, centerZ]} castShadow receiveShadow>
+        <boxGeometry args={[slotW, MODULE_WALL, moduleDepth]} />
         <ClosetMaterial />
       </mesh>
     </group>
@@ -240,7 +261,7 @@ function ModuleSlotInteraction({ slotIndex }: { slotIndex: number }) {
   const innerW = width - WALL * 2
   const slotW = innerW / moduleCount
   const moduleHeight = mh - WALL - (MODULE_FLOOR_Y)
-  const moduleDepth = depth - WALL - ONDERSTEL_FRONT_INSET
+  const moduleDepth = depth - WALL - CLOSET_INSIDE_INSET
 
   const isSelected = selectedSlot === slotIndex
 
@@ -275,19 +296,21 @@ function ModuleSlotInteraction({ slotIndex }: { slotIndex: number }) {
 function SceneEnvironment() {
   const { scene } = useThree()
   useEffect(() => {
-    const loader = new THREE.CubeTextureLoader()
-    const texture = loader.load([
-      '/cubemaps/module-highlight/px.png',
-      '/cubemaps/module-highlight/nx.png',
-      '/cubemaps/module-highlight/py.png',
-      '/cubemaps/module-highlight/ny.png',
-      '/cubemaps/module-highlight/pz.png',
-      '/cubemaps/module-highlight/nz.png',
-    ])
-    scene.environment = texture
+
+    const loader = new HDRLoader();
+    let cancelled = false;
+    loader.loadAsync('/hdr.hdr').then((envMap) => {
+      if (cancelled) {
+        envMap.dispose();
+        return;
+      }
+      envMap.mapping = THREE.EquirectangularReflectionMapping;
+      scene.environment = envMap;
+    });
+
     return () => {
-      texture.dispose()
-      scene.environment = null
+      cancelled = true;
+      scene.environment = null;
     }
   }, [scene])
   return null
@@ -305,6 +328,7 @@ function OnderstelPlinth() {
   const width = useClosetStore((s) => s.width) / 100
   const depth = useClosetStore((s) => s.depth) / 100
   const { scene } = useGLTF('/objects/onderstel.glb')
+  const material = useClosetMaterialInstance()
 
   const innerW = width - WALL * 2
   const innerD = depth - WALL - ONDERSTEL_FRONT_INSET
@@ -327,6 +351,14 @@ function OnderstelPlinth() {
       pZ: WALL - box.min.z * sz, // back face aligns with interior back wall (Z=WALL)
     }
   }, [scene, innerW, innerD])
+
+  useEffect(() => {
+    clone.traverse((obj) => {
+      if (obj instanceof THREE.Mesh) {
+        obj.material = material
+      }
+    })
+  }, [clone, material])
 
   return (
     <primitive
@@ -378,16 +410,51 @@ function ClosetScene() {
 }
 
 export default function ThreeCanvas() {
-  const doorsOpen = useClosetStore((s) => s.doorsOpen)
-  const toggleDoors = useClosetStore((s) => s.toggleDoors)
   const setSelectedSlot = useClosetStore((s) => s.setSelectedSlot)
+  const closetWidth = useClosetStore((s) => s.width) / 100
+  const userZoom = useClosetStore((s) => s.userZoom)
+
+  const controlsRef = useRef<any>(null)
+
+  function CameraController({ distance }: { distance: number }) {
+    const { camera } = useThree()
+    const proxyRef = useRef<{ d: number } | null>(null)
+    const tweenRef = useRef<gsap.core.Tween | null>(null)
+
+    useEffect(() => {
+      const target = new THREE.Vector3(0, 1, 0)
+
+      // Lazily init proxy to the actual current camera distance
+      if (!proxyRef.current) {
+        proxyRef.current = { d: camera.position.clone().sub(target).length() }
+      }
+
+      tweenRef.current?.kill()
+      tweenRef.current = gsap.to(proxyRef.current, {
+        d: Math.max(3, distance),
+        duration: 0.6,
+        ease: 'power2.out',
+        onUpdate: () => {
+          const offset = camera.position.clone().sub(target)
+          if (offset.length() === 0) return
+          offset.normalize().multiplyScalar(proxyRef.current!.d)
+          camera.position.copy(target).add(offset)
+          controlsRef.current?.update()
+        },
+      })
+
+      return () => { tweenRef.current?.kill() }
+    }, [distance, camera])
+
+    return null
+  }
 
   return (
     <div className="relative w-full h-full">
       <Canvas
-        camera={{ position: [0.8, 1.6, 5], fov: 45 }}
+        camera={{ position: [0, 1.6, 3], fov: 45 }}
         shadows
-        frameloop="demand"
+        // frameloop="demand"
         onPointerMissed={() => setSelectedSlot(null)}
         gl={async (props: any) => {
           const renderer = new THREE.WebGPURenderer({
@@ -418,6 +485,8 @@ export default function ThreeCanvas() {
           shadow-bias={-0.0005}
           shadow-normalBias={0.02}
         />
+
+        <CameraController distance={5 * closetWidth * userZoom} />
         
         <RaycasterSetup />
         {/* <PostProcessing /> */}
@@ -428,31 +497,28 @@ export default function ThreeCanvas() {
         {/* Back wall plane to receive shadows — sits just behind closet back (Z=0) */}
         <mesh rotation={[0, 0, 0]} position={[0, 0, -0.01]} receiveShadow>
           <planeGeometry args={[20, 20]} />
-          <meshStandardMaterial color="#fafafa" />
+          <meshStandardMaterial color="#fce6cb" />
 
         </mesh>
                 {/* Floor plane to receive shadows */}
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
           <planeGeometry args={[20, 20]} />
-          <meshStandardMaterial color="#fafafa" />
+          <meshStandardMaterial color="#efe9d7" />
         </mesh>
 
         <OrbitControls
-          target={[0.4, 1, 0]}
-          minDistance={2}
+          ref={controlsRef}
+          target={[0, 1, 0]}
+          minDistance={userZoom < 0.5 ? 2 : 5}
           maxDistance={8}
+      
           maxPolarAngle={Math.PI / 2}
           minAzimuthAngle={-Math.PI / 2 + 0.1}
           maxAzimuthAngle={Math.PI / 2 - 0.1}
-          enablePan={false}
+          enablePan={true}
         />
       </Canvas>
-      <button
-        onClick={toggleDoors}
-        className="absolute top-4 left-4 px-4 py-2 bg-white rounded-lg shadow-md text-sm font-medium hover:bg-gray-50 transition-colors border border-gray-200"
-      >
-        {doorsOpen ? 'Sluit deuren' : 'Open deuren'}
-      </button>
+      <CanvasToolbar />
     </div>
   )
 }

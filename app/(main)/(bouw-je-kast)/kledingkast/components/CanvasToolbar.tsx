@@ -1,0 +1,80 @@
+'use client'
+
+import { useClosetStore } from '../store'
+import { Separator } from '@/components/ui/separator'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { cn } from '@/lib/utils'
+import { ZoomIn, ZoomOut, Ruler, DoorOpen, DoorClosed } from 'lucide-react'
+
+function ToolBtn({
+  onClick,
+  disabled,
+  active,
+  tooltip,
+  children,
+}: {
+  onClick: () => void
+  disabled?: boolean
+  active?: boolean
+  tooltip: string
+  children: React.ReactNode
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          onClick={onClick}
+          disabled={disabled}
+          className={cn(
+            'flex items-center justify-center w-11 h-11 rounded-lg transition-colors cursor-pointer',
+            'hover:bg-primary hover:text-background',
+            'disabled:opacity-30 disabled:cursor-not-allowed disabled:pointer-events-none',
+            active && 'bg-primary text-background hover:bg-primary hover:text-background',
+          )}
+        >
+          {children}
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="top" sideOffset={8}>
+        {tooltip}
+      </TooltipContent>
+    </Tooltip>
+  )
+}
+
+export default function CanvasToolbar() {
+  const doorsOpen = useClosetStore((s) => s.doorsOpen)
+  const toggleDoors = useClosetStore((s) => s.toggleDoors)
+  const showMeasurements = useClosetStore((s) => s.showMeasurements)
+  const toggleMeasurements = useClosetStore((s) => s.toggleMeasurements)
+  const userZoom = useClosetStore((s) => s.userZoom)
+  const zoomIn = useClosetStore((s) => s.zoomIn)
+  const zoomOut = useClosetStore((s) => s.zoomOut)
+
+  return (
+    <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex items-center gap-0.5 bg-background/90 backdrop-blur-sm border border-border rounded-xl p-1.5 shadow-lg">
+      <ToolBtn onClick={zoomIn} disabled={userZoom <= 0.4} tooltip="Inzoomen">
+        <ZoomIn className="size-5" />
+      </ToolBtn>
+      <ToolBtn onClick={zoomOut} disabled={userZoom >= 2.0} tooltip="Uitzoomen">
+        <ZoomOut className="size-5" />
+      </ToolBtn>
+
+      <Separator orientation="vertical" className="h-6 mx-1" />
+
+      <ToolBtn onClick={toggleMeasurements} active={showMeasurements} tooltip="Afmetingen tonen">
+        <Ruler className="size-5" />
+      </ToolBtn>
+
+      <Separator orientation="vertical" className="h-6 mx-1" />
+
+      <ToolBtn
+        onClick={toggleDoors}
+        active={doorsOpen}
+        tooltip={doorsOpen ? 'Deuren sluiten' : 'Deuren openen'}
+      >
+        {doorsOpen ? <DoorOpen className="size-5" /> : <DoorClosed className="size-5" />}
+      </ToolBtn>
+    </div>
+  )
+}

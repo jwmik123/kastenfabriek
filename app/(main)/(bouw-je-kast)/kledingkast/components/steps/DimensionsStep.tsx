@@ -1,6 +1,8 @@
 'use client'
 
 import { useClosetStore } from '../../store'
+import { Slider } from '@/components/ui/slider'
+import { cn } from '@/lib/utils'
 
 function DimensionInput({
   label,
@@ -9,6 +11,7 @@ function DimensionInput({
   max,
   unit,
   onChange,
+  hint,
 }: {
   label: string
   value: number
@@ -16,27 +19,27 @@ function DimensionInput({
   max: number
   unit: string
   onChange: (v: number) => void
+  hint?: string
 }) {
   return (
-    <div className="space-y-2">
-      <div className="flex justify-between text-sm">
-        <span className="font-medium text-gray-700">{label}</span>
-        <span className="text-gray-500">
+    <div className="space-y-1">
+      <div className="flex items-center gap-3">
+        <span className="w-14 text-sm font-medium shrink-0">{label}</span>
+        <Slider
+          min={min}
+          max={max}
+          step={1}
+          value={[value]}
+          onValueChange={([v]) => onChange(v)}
+          className="flex-1"
+        />
+        <span className="w-16 text-right text-sm tabular-nums text-muted-foreground shrink-0">
           {value} {unit}
         </span>
       </div>
-      <input
-        type="range"
-        min={min}
-        max={max}
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full accent-black"
-      />
-      <div className="flex justify-between text-xs text-gray-400">
-        <span>{min} {unit}</span>
-        <span>{max} {unit}</span>
-      </div>
+      {hint && (
+        <p className="pl-[4.25rem] text-[11px] text-muted-foreground">{hint}</p>
+      )}
     </div>
   )
 }
@@ -60,25 +63,23 @@ export default function DimensionsStep() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-lg font-semibold text-gray-900">Afmetingen</h2>
-      <p className="text-sm text-gray-500">
-        Stel de totale breedte, hoogte en diepte van je kast in.
-      </p>
+      {/* <div>
+        <h2 className="text-base font-semibold">Afmetingen</h2>
+        <p className="text-sm text-muted-foreground mt-1">
+          Stel de totale breedte, hoogte en diepte van je kast in.
+        </p>
+      </div> */}
 
-      <div className="space-y-5">
-        <div>
-          <DimensionInput
-            label="Breedte"
-            value={width}
-            min={minW}
-            max={maxW}
-            unit="cm"
-            onChange={setWidth}
-          />
-          <div className="text-xs text-gray-400 mt-1">
-            Past {minModules}–{maxModules} modules
-          </div>
-        </div>
+      <div className="space-y-3">
+        <DimensionInput
+          label="Breedte"
+          value={width}
+          min={minW}
+          max={maxW}
+          unit="cm"
+          onChange={setWidth}
+          hint={`${minModules}–${maxModules} modules`}
+        />
         <DimensionInput
           label="Hoogte"
           value={height}
@@ -98,8 +99,11 @@ export default function DimensionsStep() {
       </div>
 
       {needsTopCabinet && (
-        <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
-          Bovenkast wordt automatisch toegevoegd (hoogte {'>'} 275 cm).
+        <div className={cn(
+          'p-3 rounded-md text-sm border',
+          'bg-amber-50 border-amber-200 text-amber-800',
+        )}>
+          Bovenkast wordt automatisch toegevoegd (hoogte &gt; 275 cm).
         </div>
       )}
     </div>

@@ -5,40 +5,58 @@ import DimensionsStep from './steps/DimensionsStep'
 import ModulesStep from './steps/ModulesStep'
 import MaterialStep from './steps/MaterialStep'
 import DoorHandlesStep from './steps/DoorHandlesStep'
+import { Button } from '@/components/ui/button'
+import { Separator } from '@/components/ui/separator'
+import { cn } from '@/lib/utils'
+import { Check } from 'lucide-react'
 
 const STEPS = [
-  { label: 'Afmetingen', number: 1 },
-  { label: 'Modules', number: 2 },
-  { label: 'Materiaal', number: 3 },
-  { label: 'Handgrepen', number: 4 },
+  { label: 'Indeling', number: 1 },
+  { label: 'Materiaal', number: 2 },
+  { label: 'Handgrepen', number: 3 },
 ]
 
 function StepIndicator() {
   const step = useClosetStore((s) => s.step)
+  const setStep = useClosetStore((s) => s.setStep)
 
   return (
-    <div className="flex items-center gap-2 mb-8">
+    <div className="flex items-center">
       {STEPS.map((s, i) => (
-        <div key={s.number} className="flex items-center gap-2">
-          <div
-            className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium transition-colors ${
-              step === s.number
-                ? 'bg-black text-white'
-                : step > s.number
-                  ? 'bg-gray-800 text-white'
-                  : 'bg-gray-200 text-gray-500'
-            }`}
+        <div key={s.number} className="flex items-center flex-1 last:flex-none">
+          <button
+            onClick={() => s.number < step && setStep(s.number)}
+            className={cn(
+              'flex flex-col items-center gap-1.5',
+              s.number < step ? 'cursor-pointer' : 'cursor-default',
+            )}
           >
-            {s.number}
-          </div>
-          <span
-            className={`text-sm hidden sm:inline ${
-              step === s.number ? 'text-black font-medium' : 'text-gray-400'
-            }`}
-          >
-            {s.label}
-          </span>
-          {i < STEPS.length - 1 && <div className="w-6 h-px bg-gray-300" />}
+            <div
+              className={cn(
+                'flex items-center justify-center w-7 h-7 rounded-full text-xs font-semibold border-2 transition-all',
+                step === s.number
+                  ? 'border-foreground bg-foreground text-background'
+                  : step > s.number
+                    ? 'border-foreground bg-foreground text-background'
+                    : 'border-border bg-background text-muted-foreground',
+              )}
+            >
+              {step > s.number ? <Check className="w-3.5 h-3.5" strokeWidth={2.5} /> : s.number}
+            </div>
+            <span
+              className={cn(
+                'text-[11px] font-medium leading-none hidden sm:block whitespace-nowrap',
+                step === s.number ? 'text-foreground' : 'text-muted-foreground',
+              )}
+            >
+              {s.label}
+            </span>
+          </button>
+          {i < STEPS.length - 1 && (
+            <div className="flex-1 mx-2 mb-4">
+              <div className={cn('h-px transition-colors', step > s.number ? 'bg-foreground' : 'bg-border')} />
+            </div>
+          )}
         </div>
       ))}
     </div>
@@ -50,15 +68,16 @@ function CurrentStep() {
 
   switch (step) {
     case 1:
-      return <DimensionsStep />
-    case 2:
-      return <ModulesStep />
-    case 3:
-      return <MaterialStep />
-    case 4:
-      return <DoorHandlesStep />
-    default:
-      return null
+      return (
+        <div className="space-y-8">
+          <DimensionsStep />
+          <Separator />
+          <ModulesStep />
+        </div>
+      )
+    case 2: return <MaterialStep />
+    case 3: return <DoorHandlesStep />
+    default: return null
   }
 }
 
@@ -68,26 +87,20 @@ export default function StepWizard() {
   const prevStep = useClosetStore((s) => s.prevStep)
 
   return (
-    <div className="flex flex-col h-full p-6">
+    <div className="flex flex-col h-full p-6 gap-5">
       <StepIndicator />
-      <div className="flex-1 pb-4">
+      <Separator />
+      <div className="flex-1 overflow-y-auto min-h-0 pr-0.5">
         <CurrentStep />
       </div>
-      <div className="flex justify-between pt-4 border-t border-gray-200">
-        <button
-          onClick={prevStep}
-          disabled={step === 1}
-          className="px-5 py-2 text-sm font-medium rounded-lg border border-gray-300 disabled:opacity-30 hover:bg-gray-50 transition-colors"
-        >
+      <Separator />
+      <div className="flex justify-between gap-3">
+        <Button variant="outline" onClick={prevStep} disabled={step === 1}>
           Vorige
-        </button>
-        <button
-          onClick={nextStep}
-          disabled={step === 4}
-          className="px-5 py-2 text-sm font-medium rounded-lg bg-black text-white disabled:opacity-30 hover:bg-gray-800 transition-colors"
-        >
-          Volgende
-        </button>
+        </Button>
+        <Button onClick={nextStep} disabled={step === STEPS.length}>
+          {step === STEPS.length ? 'Voltooien' : 'Volgende'}
+        </Button>
       </div>
     </div>
   )
