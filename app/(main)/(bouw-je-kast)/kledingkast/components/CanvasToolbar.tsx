@@ -53,10 +53,10 @@ export default function CanvasToolbar() {
 
   return (
     <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex items-center gap-0.5 bg-background/90 backdrop-blur-sm border border-border rounded-xl p-1.5 shadow-lg">
-      <ToolBtn onClick={zoomIn} disabled={userZoom <= 0.4} tooltip="Inzoomen">
+      <ToolBtn onClick={zoomIn} disabled={userZoom <= 0} tooltip="Inzoomen">
         <ZoomIn className="size-5" />
       </ToolBtn>
-      <ToolBtn onClick={zoomOut} disabled={userZoom >= 2.0} tooltip="Uitzoomen">
+      <ToolBtn onClick={zoomOut} disabled={userZoom >= 1} tooltip="Uitzoomen">
         <ZoomOut className="size-5" />
       </ToolBtn>
 

@@ -1,9 +1,10 @@
 'use client'
 
 import { useClosetStore } from '../../store'
-import { MATERIALS } from '../../materials'
+import { MATERIALS, type ColorMaterial, type TextureMaterial } from '../../materials'
 import { cn } from '@/lib/utils'
 import { Check } from 'lucide-react'
+import Image from 'next/image'
 
 /** Decide whether to show a dark or light checkmark based on color luminance */
 function isLightColor(hex: string) {
@@ -11,6 +12,47 @@ function isLightColor(hex: string) {
   const g = parseInt(hex.slice(3, 5), 16)
   const b = parseInt(hex.slice(5, 7), 16)
   return (r * 299 + g * 587 + b * 114) / 1000 > 128
+}
+
+function ColorSwatch({ mat, isSelected }: { mat: ColorMaterial; isSelected: boolean }) {
+  return (
+    <div className="relative">
+      <div
+        className="w-9 h-9 rounded-full border border-black/10"
+        style={{ backgroundColor: mat.color }}
+      />
+      {isSelected && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <Check
+            className="w-4 h-4 drop-shadow"
+            style={{ color: isLightColor(mat.color) ? '#000' : '#fff' }}
+            strokeWidth={3}
+          />
+        </div>
+      )}
+    </div>
+  )
+}
+
+function TextureSwatch({ mat, isSelected }: { mat: TextureMaterial; isSelected: boolean }) {
+  return (
+    <div className="relative">
+      <div className="w-9 h-9 rounded-full border border-black/10 overflow-hidden">
+        <Image
+          src={mat.preview}
+          alt={mat.name}
+          width={36}
+          height={36}
+          className="object-cover w-full h-full"
+        />
+      </div>
+      {isSelected && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <Check className="w-4 h-4 drop-shadow" style={{ color: '#fff' }} strokeWidth={3} />
+        </div>
+      )}
+    </div>
+  )
 }
 
 export default function MaterialStep() {
@@ -38,21 +80,11 @@ export default function MaterialStep() {
                   : 'border-border hover:border-foreground/40',
               )}
             >
-              <div className="relative">
-                <div
-                  className="w-9 h-9 rounded-full border border-black/10"
-                  style={{ backgroundColor: mat.color }}
-                />
-                {isSelected && (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <Check
-                      className="w-4 h-4 drop-shadow"
-                      style={{ color: isLightColor(mat.color) ? '#000' : '#fff' }}
-                      strokeWidth={3}
-                    />
-                  </div>
-                )}
-              </div>
+              {mat.type === 'texture' ? (
+                <TextureSwatch mat={mat} isSelected={isSelected} />
+              ) : (
+                <ColorSwatch mat={mat} isSelected={isSelected} />
+              )}
               <span className="text-[11px] font-medium text-center leading-tight">
                 {mat.name}
               </span>

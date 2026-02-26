@@ -111,18 +111,16 @@ export default function Home() {
     />
 
 
-<SloganSection
-  text="Elke millimeter is op maat gemaakt — van de
-symmetrie in de houtstructuur tot de verfijnde
-afwerking rondom."
-  backgroundImage="/ladingplaceholder.jpg"
-  align="left"
-  buttonText="Ontwerp jouw maatkast"
-/>
+    <SloganSection
+      text="Elke millimeter is op maat gemaakt — van de
+    symmetrie in de houtstructuur tot de verfijnde
+    afwerking rondom."
+      backgroundImage="/ladingplaceholder.jpg"
+      align="left"
+      buttonText="Ontwerp jouw maatkast"
+    />
 
-<ModuleHighlight />
-
-
+    <ModuleHighlight />
     </>
   );
 }

@@ -184,7 +184,7 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
   setDoorHandleId: (doorHandleId) => set({ doorHandleId }),
   toggleDoors: () => set((s) => ({ doorsOpen: !s.doorsOpen })),
   toggleMeasurements: () => set((s) => ({ showMeasurements: !s.showMeasurements })),
-  zoomIn: () => set((s) => ({ userZoom: Math.max(0.4, s.userZoom - 0.1) })),
-  zoomOut: () => set((s) => ({ userZoom: Math.min(2.0, s.userZoom + 0.1) })),
+  zoomIn: () => set((s) => ({ userZoom: Math.max(0, s.userZoom - 0.1) })),
+  zoomOut: () => set((s) => ({ userZoom: Math.min(1, s.userZoom + 0.1) })),
   setSelectedSlot: (slot) => set({ selectedSlot: slot }),
 }))

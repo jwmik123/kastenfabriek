@@ -409,6 +409,38 @@ function ClosetScene() {
   )
 }
 
+function CameraController({ distance, controlsRef }: { distance: number; controlsRef: React.RefObject<any> }) {
+  const { camera } = useThree()
+  const proxyRef = useRef<{ d: number } | null>(null)
+  const tweenRef = useRef<gsap.core.Tween | null>(null)
+
+  useEffect(() => {
+    const target = new THREE.Vector3(0, 1, 0)
+
+    if (!proxyRef.current) {
+      proxyRef.current = { d: camera.position.clone().sub(target).length() }
+    }
+
+    tweenRef.current?.kill()
+    tweenRef.current = gsap.to(proxyRef.current, {
+      d: distance,
+      duration: 0.6,
+      ease: 'power2.out',
+      onUpdate: () => {
+        const offset = camera.position.clone().sub(target)
+        if (offset.length() === 0) return
+        offset.normalize().multiplyScalar(proxyRef.current!.d)
+        camera.position.copy(target).add(offset)
+        controlsRef.current?.update()
+      },
+    })
+
+    return () => { tweenRef.current?.kill() }
+  }, [distance, camera, controlsRef])
+
+  return null
+}
+
 export default function ThreeCanvas() {
   const setSelectedSlot = useClosetStore((s) => s.setSelectedSlot)
   const closetWidth = useClosetStore((s) => s.width) / 100
@@ -416,38 +448,14 @@ export default function ThreeCanvas() {
 
   const controlsRef = useRef<any>(null)
 
-  function CameraController({ distance }: { distance: number }) {
-    const { camera } = useThree()
-    const proxyRef = useRef<{ d: number } | null>(null)
-    const tweenRef = useRef<gsap.core.Tween | null>(null)
-
-    useEffect(() => {
-      const target = new THREE.Vector3(0, 1, 0)
-
-      // Lazily init proxy to the actual current camera distance
-      if (!proxyRef.current) {
-        proxyRef.current = { d: camera.position.clone().sub(target).length() }
-      }
-
-      tweenRef.current?.kill()
-      tweenRef.current = gsap.to(proxyRef.current, {
-        d: Math.max(3, distance),
-        duration: 0.6,
-        ease: 'power2.out',
-        onUpdate: () => {
-          const offset = camera.position.clone().sub(target)
-          if (offset.length() === 0) return
-          offset.normalize().multiplyScalar(proxyRef.current!.d)
-          camera.position.copy(target).add(offset)
-          controlsRef.current?.update()
-        },
-      })
-
-      return () => { tweenRef.current?.kill() }
-    }, [distance, camera])
-
-    return null
-  }
+  // Width-based auto-fit (userZoom=0.5 default): min 5, max 8 at 180 cm
+  // Toolbar/orbit user interaction: min 2, max 8 at 180 cm
+  const autoFitDist = 3 * (closetWidth / 1.8)
+  const maxDist = 4 * (closetWidth / 1.8)
+  // Piecewise: 0.5 anchors to auto-fit; below → down to 2; above → up to maxDist
+  const cameraTargetDist = userZoom <= 0.5
+    ? 2 + (userZoom / 0.5) * (autoFitDist - 2)
+    : autoFitDist + ((userZoom - 0.5) / 0.5) * (maxDist - autoFitDist)
 
   return (
     <div className="relative w-full h-full">
@@ -486,7 +494,7 @@ export default function ThreeCanvas() {
           shadow-normalBias={0.02}
         />
 
-        <CameraController distance={5 * closetWidth * userZoom} />
+        <CameraController distance={cameraTargetDist} controlsRef={controlsRef} />
         
         <RaycasterSetup />
         {/* <PostProcessing /> */}
@@ -509,8 +517,8 @@ export default function ThreeCanvas() {
         <OrbitControls
           ref={controlsRef}
           target={[0, 1, 0]}
-          minDistance={userZoom < 0.5 ? 2 : 5}
-          maxDistance={8}
+          minDistance={5}
+          maxDistance={maxDist}
       
           maxPolarAngle={Math.PI / 2}
           minAzimuthAngle={-Math.PI / 2 + 0.1}
