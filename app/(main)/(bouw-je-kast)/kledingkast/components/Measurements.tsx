@@ -184,7 +184,7 @@ function MeasurementsOverlay({ projectedRef, specs }: OverlayProps) {
   useEffect(() => {
     const root = containerRef.current
     if (!root) return
-    const cache = new Map<string, ReturnType<typeof elCacheRef.current.get>>()
+    const cache = new Map<string, { line: SVGLineElement | null; tickL: SVGLineElement | null; tickR: SVGLineElement | null; label: HTMLDivElement | null }>()
     for (const spec of specs) {
       cache.set(spec.id, {
         line:  root.querySelector(`[data-line="${spec.id}"]`),
