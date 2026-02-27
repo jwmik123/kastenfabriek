@@ -14,6 +14,19 @@ interface MaterialState {
 
 const MaterialContext = createContext<MaterialState | null>(null)
 
+export function useChromeMaterialInstance(): THREE.MeshPhysicalMaterial {
+  return useMemo(() => {
+    return new THREE.MeshPhysicalMaterial({
+      color: 0xd3d3d3,
+      metalness: 0.9,
+      roughness: 0.2,
+      envMapIntensity: 2,
+      clearcoat: 1,
+      clearcoatRoughness: 0,
+    })
+  }, [])
+}
+
 export function ClosetMaterialProvider({ children }: { children: ReactNode }) {
   const materialId = useClosetStore((s) => s.materialId)
 

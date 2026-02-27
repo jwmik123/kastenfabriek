@@ -21,6 +21,18 @@ export function Model({ doorsOpen = false, ...props }) {
     return box.getCenter(new THREE.Vector3()).negate()
   }, [scene])
 
+
+  const chromeMaterial = useMemo(() => {
+    return new THREE.MeshPhysicalMaterial({
+      color: 0xd3d3d3,
+      metalness: 0.9,
+      roughness: 0.2,
+      envMapIntensity: 2,
+      clearcoat: 1,
+      clearcoatRoughness: 0,
+    })
+  }, [])
+
   // Initialize: play once and immediately pause at t=0
   useEffect(() => {
     const action = Object.values(actions)[0]
@@ -49,6 +61,8 @@ export function Model({ doorsOpen = false, ...props }) {
     })
   }, [doorsOpen, actions])
 
+ 
+
   return (
     <group ref={group} {...props} dispose={null}>
       <group position={[offset.x, offset.y, offset.z]}>
@@ -59,14 +73,14 @@ export function Model({ doorsOpen = false, ...props }) {
             <group name="Bone001" position={[0.668, 0, 0.603]} rotation={[-Math.PI / 2, 0, 1.694]}>
               <group name="Bone002" position={[0, 1.409, 0]} rotation={[0, 0, -0.885]}>
                 <group name="Bone005" position={[0, 0.463, 0]} rotation={[0, 0, -1.975]}>
-                  <mesh name="As1_Scharnier1001" geometry={nodes.As1_Scharnier1001.geometry} material={nodes.As1_Scharnier1001.material} position={[0, 1.159, 0]} rotation={[Math.PI / 2, 1.167, 0]} scale={69.753} />
+                  <mesh name="As1_Scharnier1001" geometry={nodes.As1_Scharnier1001.geometry} material={chromeMaterial} position={[0, 1.159, 0]} rotation={[Math.PI / 2, 1.167, 0]} scale={69.753} />
                 </group>
-                <mesh name="Deur_Scharnier1001" geometry={nodes.Deur_Scharnier1001.geometry} material={nodes.Deur_Scharnier1001.material} position={[0.447, 0.229, 0]} rotation={[Math.PI / 2, -0.809, 0]} scale={69.753} />
+                <mesh name="Deur_Scharnier1001" geometry={nodes.Deur_Scharnier1001.geometry} material={chromeMaterial} position={[0.447, 0.229, 0]} rotation={[Math.PI / 2, -0.809, 0]} scale={69.753} />
               </group>
-              <mesh name="As2_Scharnier1001" geometry={nodes.As2_Scharnier1001.geometry} material={nodes.As2_Scharnier1001.material} rotation={[-Math.PI / 2, -1.448, -Math.PI]} scale={69.753} />
+              <mesh name="As2_Scharnier1001" geometry={nodes.As2_Scharnier1001.geometry} material={chromeMaterial}   rotation={[-Math.PI / 2, -1.448, -Math.PI]} scale={69.753} />
             </group>
           </group>
-          <mesh name="Scharnier1_Fixed001" geometry={nodes.Scharnier1_Fixed001.geometry} material={nodes.Scharnier1_Fixed001.material} position={[0.018, 0.318, 0.582]} />
+          <mesh name="Scharnier1_Fixed001" geometry={nodes.Scharnier1_Fixed001.geometry} material={chromeMaterial}  position={[0.018, 0.318, 0.582]} />
         </group>
       </group>
     </group>

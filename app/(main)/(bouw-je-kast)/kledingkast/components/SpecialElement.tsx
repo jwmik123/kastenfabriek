@@ -4,7 +4,7 @@ import { useGLTF } from '@react-three/drei'
 import * as THREE from 'three/webgpu'
 import { useMemo } from 'react'
 import type { ModuleLayoutConfig } from './moduleLayouts'
-import { useClosetMaterialInstance } from './ClosetMaterial'
+import { useClosetMaterialInstance, useChromeMaterialInstance } from './ClosetMaterial'
 
 // All nodes in module GLBs carry a -90° Y rotation.
 // After that rotation: local X → world Z (depth), local Z → world X (width).
@@ -39,6 +39,7 @@ function SpecialElementInner({
 }: SpecialElementProps) {
   const { scene } = useGLTF(layout.specialElement.glbPath!)
   const closetMaterial = useClosetMaterialInstance()
+  const chromeMaterial = useChromeMaterialInstance()
 
   const { clone, offsetX, offsetZ } = useMemo(() => {
     // Capture original bounding box BEFORE any modifications.
@@ -67,7 +68,7 @@ function SpecialElementInner({
       const mesh = child as THREE.Mesh
 
       mesh.geometry = mesh.geometry.clone()
-      mesh.material = closetMaterial
+      mesh.material = mesh.name.includes('Metal') ? chromeMaterial : closetMaterial
       mesh.castShadow = true
       mesh.receiveShadow = true
 
@@ -111,7 +112,7 @@ function SpecialElementInner({
       offsetX: -originalBox.min.x + MODULE_WALL,
       offsetZ: -originalBox.min.z,
     }
-  }, [scene, targetWidth, targetDepth, doorRotation, closetMaterial])
+  }, [scene, targetWidth, targetDepth, doorRotation, closetMaterial, chromeMaterial])
 
   return (
     <primitive object={clone} position={[offsetX, positionY, offsetZ]} rotation={[0, 0, 0]} />

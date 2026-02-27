@@ -14,6 +14,7 @@ import Door from './objects/Door'
 import ClosetMaterial, { ClosetMaterialProvider, useClosetMaterialInstance } from './ClosetMaterial'
 import PostProcessing from './PostProcessing'
 import CanvasToolbar from './CanvasToolbar'
+import { MeasurementProjectorLayer, MeasurementsOverlayLayer, type ProjectedMap } from './Measurements'
 import gsap from 'gsap'
 
 const WALL = 0.018 // 1.8cm panel thickness in meters
@@ -309,6 +310,7 @@ function SceneEnvironment() {
   useEffect(() => {
 
     const loader = new HDRLoader();
+
     let cancelled = false;
     loader.loadAsync('/hdr.hdr').then((envMap) => {
       if (cancelled) {
@@ -317,6 +319,8 @@ function SceneEnvironment() {
       }
       envMap.mapping = THREE.EquirectangularReflectionMapping;
       scene.environment = envMap;
+      scene.environmentRotation = new THREE.Euler(Math.PI /2, 0, 0);; // Rotate environment 90 degrees around Y-axis
+
     });
 
     return () => {
@@ -458,6 +462,7 @@ export default function ThreeCanvas() {
   const userZoom = useClosetStore((s) => s.userZoom)
 
   const controlsRef = useRef<any>(null)
+  const projectedRef = useRef<ProjectedMap>({})
 
   // Width-based auto-fit (userZoom=0.5 default): min 5, max 8 at 180 cm
   // Toolbar/orbit user interaction: min 2, max 8 at 180 cm
@@ -508,6 +513,7 @@ export default function ThreeCanvas() {
         <CameraController distance={cameraTargetDist} controlsRef={controlsRef} />
         
         <RaycasterSetup />
+        <MeasurementProjectorLayer projectedRef={projectedRef} />
         {/* <PostProcessing /> */}
         <Suspense>
           <ClosetScene />
@@ -537,6 +543,7 @@ export default function ThreeCanvas() {
           enablePan={true}
         />
       </Canvas>
+      <MeasurementsOverlayLayer projectedRef={projectedRef} />
       <CanvasToolbar />
     </div>
   )

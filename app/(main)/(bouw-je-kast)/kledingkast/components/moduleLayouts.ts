@@ -91,7 +91,7 @@ export const MODULE_LAYOUTS: ModuleLayoutConfig[] = [
     description: 'Laden onderin, planken erboven',
     specialElement: {
       glbPath: '/objects/ModuleSplit.glb',
-      height: 1.7,
+      height: 1.85,
       anchor: { type: 'bottom' },
     },
     fillZone: {
