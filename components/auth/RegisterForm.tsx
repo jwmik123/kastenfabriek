@@ -52,7 +52,7 @@ export function RegisterForm({ callbackUrl }: { callbackUrl?: string }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {error && (
+      {/* {error && (
         <div className="p-3 text-sm text-red-600 bg-red-50 rounded-lg">
           {error}
         </div>
@@ -153,7 +153,7 @@ export function RegisterForm({ callbackUrl }: { callbackUrl?: string }) {
         className="w-full py-3 px-4 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors disabled:opacity-50 font-medium"
       >
         {isLoading ? "Account aanmaken..." : "Account aanmaken"}
-      </button>
+      </button> */}
     </form>
   );
 }
