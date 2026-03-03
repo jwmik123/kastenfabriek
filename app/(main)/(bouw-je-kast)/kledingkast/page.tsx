@@ -9,9 +9,7 @@ export default async function KledingkastPage() {
   return (
   
   <>
-  <KledingkastConfigurator pricingData={pricingData} />
-
-
-    </>
+    <KledingkastConfigurator pricingData={pricingData} />
+  </>
 )
 }
