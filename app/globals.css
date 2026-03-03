@@ -101,9 +101,9 @@
   @media (min-width: 1633px) { height: calc(52vw - 220.48px); } */
 
   @media (min-width: 1025px) { height: 68vw; }
-  @media (min-width: 1280px) { height: 55vw; }
-  @media (min-width: 1440px) { height: 60vw; }
-  @media (min-width: 1633px) { height: 55vw; }
+  @media (min-width: 1280px) { height: 45vw; }
+  @media (min-width: 1440px) { height: 50vw; }
+  /* @media (min-width: 1633px) { height: 55vw; } */
 }
 
 h1, h2, h3, h4 {

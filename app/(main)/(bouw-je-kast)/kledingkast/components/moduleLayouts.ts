@@ -113,12 +113,40 @@ export const MODULE_LAYOUTS: ModuleLayoutConfig[] = [
       below: { type: 'open' },
     },
   },
-   {
+  {
     id: 6,
     label: 'Shelf Rod',
     description: 'Laden onderin, planken erboven',
     specialElement: {
-      glbPath: '/objects/33_ModuleShelfRod.glb',
+      glbPath: '/objects/ModuleShelfRod.glb',
+      height: 1.718,
+      anchor: { type: 'bottom' },
+    },
+    fillZone: {
+      above: { type: 'shelves', spacing: SHELF_SPACING },
+      below: { type: 'open' },
+    },
+  },
+  {
+    id: 7,
+    label: 'Drawer Rod',
+    description: 'Laden onderin, planken erboven',
+    specialElement: {
+      glbPath: '/objects/DrawerRod.glb',
+      height: 1.718,
+      anchor: { type: 'bottom' },
+    },
+    fillZone: {
+      above: { type: 'shelves', spacing: SHELF_SPACING },
+      below: { type: 'open' },
+    },
+  },
+  {
+    id: 8,
+    label: 'Desk',
+    description: 'Laden onderin, planken erboven',
+    specialElement: {
+      glbPath: '/objects/Desk.glb',
       height: 1.718,
       anchor: { type: 'bottom' },
     },

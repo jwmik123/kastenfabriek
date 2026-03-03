@@ -11,9 +11,10 @@ import { cn } from '@/lib/utils'
 import { Check } from 'lucide-react'
 
 const STEPS = [
-  { label: 'Indeling', number: 1 },
-  { label: 'Materiaal', number: 2 },
-  { label: 'Handgrepen', number: 3 },
+  { label: 'Afmetingen', number: 1 },
+  { label: 'Modules', number: 2 },
+  { label: 'Materiaal', number: 3 },
+  { label: 'Handgrepen', number: 4 },
 ]
 
 function StepIndicator() {
@@ -67,16 +68,10 @@ function CurrentStep() {
   const step = useClosetStore((s) => s.step)
 
   switch (step) {
-    case 1:
-      return (
-        <div className="space-y-8">
-          <DimensionsStep />
-          <Separator />
-          <ModulesStep />
-        </div>
-      )
-    case 2: return <MaterialStep />
-    case 3: return <DoorHandlesStep />
+    case 1: return <DimensionsStep />
+    case 2: return <ModulesStep />
+    case 3: return <MaterialStep />
+    case 4: return <DoorHandlesStep />
     default: return null
   }
 }

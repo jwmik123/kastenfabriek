@@ -159,6 +159,53 @@ export function FullRodShelfSvg({ className }: SvgProps) {
   )
 }
 
+/** Layout 7: Drawer rod  */
+export function DrawerRodShelfSvg({ className }: SvgProps) {
+  const s = { fill: 'none', stroke: 'currentColor', strokeMiterlimit: 10, strokeWidth: 4 }
+  const sRod = { ...s, strokeOpacity: 0.4 }
+  const sRound = { ...s, strokeLinecap: 'round' as const }
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 279" className={className}>
+      <line {...sRod} x1="2" y1="104.5" x2="62" y2="104.5" />
+      <rect {...s} x="2" y="2" width="60" height="275" rx="2.15" ry="2.15" />
+      <g>
+        <line {...s} x1="2" y1="37" x2="62" y2="37" />
+        <line {...s} x1="2" y1="67" x2="62" y2="67" />
+        <line {...s} x1="2" y1="97" x2="62" y2="97" />
+      </g>
+      <g>
+        <line {...s} x1="2" y1="187" x2="62" y2="187" />
+        <line {...s} x1="2" y1="217" x2="62" y2="217" />
+        <line {...s} x1="2" y1="247" x2="62" y2="247" />
+      </g>
+      <g>
+        <line {...sRound} x1="23.86" y1="201.5" x2="40.14" y2="201.5" />
+        <line {...sRound} x1="23.86" y1="231.5" x2="40.14" y2="231.5" />
+        <line {...sRound} x1="23.86" y1="261.5" x2="40.14" y2="261.5" />
+      </g>
+    </svg>
+  )
+}
+
+/** Layout 8: Desk */
+export function DeskShelfSvg({ className }: SvgProps) {
+  const s = { fill: 'none', stroke: 'currentColor', strokeMiterlimit: 10, strokeWidth: 4 }
+  const sRound = { ...s, strokeLinecap: 'round' as const }
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 279" className={className}>
+      <rect {...s} x="2" y="2" width="60" height="275" rx="2.15" ry="2.15" />
+      <line {...sRound} x1="23.86" y1="191.98" x2="40.14" y2="191.98" />
+      <g>
+        <line {...s} x1="2" y1="37" x2="62" y2="37" />
+        <line {...s} x1="2" y1="67" x2="62" y2="67" />
+        <line {...s} x1="2" y1="97" x2="62" y2="97" />
+      </g>
+      <line {...s} x1="2" y1="187" x2="62" y2="187" />
+      <line {...s} x1="2" y1="196.95" x2="62" y2="196.95" />
+    </svg>
+  )
+}
+
 
 
 
@@ -170,4 +217,6 @@ export const LAYOUT_SVGS: Record<number, React.ComponentType<SvgProps>> = {
   4: SplitShelfSvg,
   5: SingleRodShelfSvg,
   6: FullRodShelfSvg,
+  7: DrawerRodShelfSvg,
+  8: DeskShelfSvg,
 }

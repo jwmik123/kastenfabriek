@@ -5,6 +5,7 @@ export interface ModuleSlot {
   slotIndex: number
   layoutId: number | null // null = empty slot
   hasDoor: boolean
+  span: 1 | 2 // 1 = single width, 2 = double (occupies this slot + the next)
 }
 
 interface ClosetState {
@@ -36,6 +37,7 @@ interface ClosetState {
 
   // Selection (shared between 3D scene and step panels)
   selectedSlot: number | null
+  hoveredSlot: number | null
 
   // Derived
   moduleWidthCm: () => number
@@ -55,6 +57,7 @@ interface ClosetState {
   setDepth: (d: number) => void
   setModuleCount: (count: number) => void
   setModuleLayout: (slotIndex: number, layoutId: number) => void
+  setModuleSpan: (slotIndex: number, span: 1 | 2) => void
   toggleModuleDoor: (slotIndex: number) => void
   setMaterialId: (id: string) => void
   setDoorHandleId: (id: string) => void
@@ -63,6 +66,7 @@ interface ClosetState {
   zoomIn: () => void
   zoomOut: () => void
   setSelectedSlot: (slot: number | null) => void
+  setHoveredSlot: (slot: number | null) => void
 }
 
 const TOP_CABINET_THRESHOLD = 275
@@ -84,17 +88,18 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
 
   moduleCount: 3,
   modules: [
-    { slotIndex: 0, layoutId: null, hasDoor: true },
-    { slotIndex: 1, layoutId: null, hasDoor: true },
-    { slotIndex: 2, layoutId: null, hasDoor: true },
+    { slotIndex: 0, layoutId: null, hasDoor: true, span: 1 },
+    { slotIndex: 1, layoutId: null, hasDoor: true, span: 1 },
+    { slotIndex: 2, layoutId: null, hasDoor: true, span: 1 },
   ],
 
   materialId: 'white',
-  doorHandleId: 'default',
-  doorsOpen: false,
+  doorHandleId: '23',
+  doorsOpen: true,
   showMeasurements: false,
   userZoom: 0.5,
   selectedSlot: null,
+  hoveredSlot: null,
 
   // Derived
   moduleWidthCm: () => {
@@ -129,7 +134,7 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
   },
 
   setStep: (step) => set({ step }),
-  nextStep: () => set((s) => ({ step: Math.min(s.step + 1, 3) })),
+  nextStep: () => set((s) => ({ step: Math.min(s.step + 1, 4) })),
   prevStep: () => set((s) => ({ step: Math.max(s.step - 1, 1) })),
 
   setWidth: (width) => {
@@ -172,14 +177,34 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
     const clamped = Math.max(min, Math.min(max, count))
     const existing = get().modules
     const modules: ModuleSlot[] = Array.from({ length: clamped }, (_, i) =>
-      existing[i] ?? { slotIndex: i, layoutId: null, hasDoor: true }
+      existing[i] ?? { slotIndex: i, layoutId: null, hasDoor: true, span: 1 }
+    ).map((m) =>
+      // clear a double that would overflow beyond the new count
+      m.span === 2 && m.slotIndex + 1 >= clamped ? { ...m, span: 1 as const } : m
     )
     set({ moduleCount: clamped, modules })
   },
 
-  setModuleLayout: (slotIndex, layoutId) =>
+  setModuleLayout: (slotIndex: number, layoutId: number) =>
     set((s) => ({
-      modules: s.modules.map((m) => (m.slotIndex === slotIndex ? { ...m, layoutId } : m)),
+      modules: s.modules.map((m) => {
+        if (m.slotIndex === slotIndex) return { ...m, layoutId }
+        // if the previous slot was a double covering this one, clear it
+        if (m.slotIndex === slotIndex - 1 && m.span === 2) return { ...m, span: 1 as const }
+        return m
+      }),
+    })),
+
+  setModuleSpan: (slotIndex: number, span: 1 | 2) =>
+    set((s) => ({
+      modules: s.modules.map((m) => {
+        if (m.slotIndex === slotIndex) return { ...m, span }
+        // when doubling: clear the secondary slot's layout
+        if (span === 2 && m.slotIndex === slotIndex + 1) return { ...m, layoutId: null, span: 1 as const }
+        // when doubling: clear any previous double that was covering this slot
+        if (span === 2 && m.slotIndex === slotIndex - 1 && m.span === 2) return { ...m, span: 1 as const }
+        return m
+      }),
     })),
 
   toggleModuleDoor: (slotIndex) =>
@@ -194,4 +219,5 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
   zoomIn: () => set((s) => ({ userZoom: Math.max(0, s.userZoom - 0.1) })),
   zoomOut: () => set((s) => ({ userZoom: Math.min(1, s.userZoom + 0.1) })),
   setSelectedSlot: (slot) => set({ selectedSlot: slot }),
+  setHoveredSlot: (slot) => set({ hoveredSlot: slot }),
 }))

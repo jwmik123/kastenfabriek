@@ -3,7 +3,7 @@
 import { Canvas, useThree } from '@react-three/fiber'
 import { HDRLoader } from 'three/addons/loaders/HDRLoader.js';
 
-import { OrbitControls, useGLTF, useTexture } from '@react-three/drei'
+import { OrbitControls, useGLTF, useTexture, useProgress } from '@react-three/drei'
 import * as THREE from 'three/webgpu'
 import { Suspense, useMemo, useState, useEffect, useRef } from 'react'
 import { useClosetStore } from '../store'
@@ -16,6 +16,7 @@ import PostProcessing from './PostProcessing'
 import CanvasToolbar from './CanvasToolbar'
 import { MeasurementProjectorLayer, MeasurementsOverlayLayer, type ProjectedMap } from './Measurements'
 import gsap from 'gsap'
+import { useGSAP } from '@gsap/react'
 
 const WALL = 0.018 // 1.8cm panel thickness in meters
 const MODULE_WALL = 0.018 // 1.8cm module side panel thickness
@@ -156,24 +157,28 @@ function TopCabinet() {
   )
 }
 
-function Module({ index, layoutId, hasDoor }: { index: number; layoutId: number; hasDoor: boolean }) {
+function Module({ index, layoutId, hasDoor, span }: { index: number; layoutId: number; hasDoor: boolean; span: 1 | 2 }) {
   const mh = useClosetStore((s) => s.mainHeight()) / 100
   const depth = useClosetStore((s) => s.depth) / 100
   const moduleCount = useClosetStore((s) => s.moduleCount)
   const width = useClosetStore((s) => s.width) / 100
   const doorsOpen = useClosetStore((s) => s.doorsOpen)
+  const hoveredSlot = useClosetStore((s) => s.hoveredSlot)
+  const doorHandleId = useClosetStore((s) => s.doorHandleId)
 
   const layout = getLayoutById(layoutId)
   if (!layout) return null
 
   const innerW = width - WALL * 2
   const slotW = innerW / moduleCount
+  const moduleWidth = span * slotW
   const moduleHeight = mh - WALL - (MODULE_FLOOR_Y)
   const moduleDepth = depth - WALL - CLOSET_INSIDE_INSET
 
-  const doorRotation = doorsOpen ? Math.PI * -0.65 : 0
-
   const { specialElementY, fillAbove, fillBelow } = computeModulePositions(layout, moduleHeight)
+
+  const isLastModule = index + span === moduleCount
+  const mirrorDoor = index % 2 === 1 || isLastModule
 
   // Position this module slot within the closet
   const startX = -innerW / 2
@@ -183,7 +188,7 @@ function Module({ index, layoutId, hasDoor }: { index: number; layoutId: number;
   const contentDepth = moduleDepth - MODULE_INSIDE_INSET
 
   // Center offsets for fill zone shelves (relative to this group)
-  const centerX = slotW / 2
+  const centerX = moduleWidth / 2
   const centerZ = contentDepth / 2
 
   return (
@@ -191,10 +196,10 @@ function Module({ index, layoutId, hasDoor }: { index: number; layoutId: number;
       {/* Special element (GLB) — no Y scaling */}
       <SpecialElement
         layout={layout}
-        targetWidth={slotW - MODULE_WALL * 2}
+        targetWidth={moduleWidth - MODULE_WALL * 2}
         targetDepth={contentDepth}
         positionY={specialElementY}
-        doorRotation={doorRotation}
+        hovered={hoveredSlot === index}
       />
 
       {/* Fill zone above special element */}
@@ -203,7 +208,7 @@ function Module({ index, layoutId, hasDoor }: { index: number; layoutId: number;
           config={layout.fillZone.above}
           startY={fillAbove.start}
           endY={fillAbove.end}
-          width={slotW}
+          width={moduleWidth}
           depth={contentDepth}
           centerX={centerX}
           centerZ={centerZ}
@@ -216,7 +221,7 @@ function Module({ index, layoutId, hasDoor }: { index: number; layoutId: number;
           config={layout.fillZone.below}
           startY={fillBelow.start}
           endY={fillBelow.end}
-          width={slotW}
+          width={moduleWidth}
           depth={contentDepth}
           centerX={centerX}
           centerZ={centerZ}
@@ -230,31 +235,54 @@ function Module({ index, layoutId, hasDoor }: { index: number; layoutId: number;
       </mesh>
 
       {/* Right wall */}
-      <mesh position={[slotW - MODULE_WALL / 2, moduleHeight / 2, centerZ]} castShadow receiveShadow>
+      <mesh position={[moduleWidth - MODULE_WALL / 2, moduleHeight / 2, centerZ]} castShadow receiveShadow>
         <boxGeometry args={[MODULE_WALL, moduleHeight, moduleDepth]} />
         <ClosetMaterial />
       </mesh>
 
       {/* Floor */}
-      <mesh position={[slotW / 2, MODULE_WALL / 2, centerZ]} castShadow receiveShadow>
-        <boxGeometry args={[slotW, MODULE_WALL, moduleDepth]} />
+      <mesh position={[moduleWidth / 2, MODULE_WALL / 2, centerZ]} castShadow receiveShadow>
+        <boxGeometry args={[moduleWidth, MODULE_WALL, moduleDepth]} />
         <ClosetMaterial />
       </mesh>
 
       {/* Roof */}
-      <mesh position={[slotW / 2, moduleHeight - MODULE_WALL / 2, centerZ]} castShadow receiveShadow>
-        <boxGeometry args={[slotW, MODULE_WALL, moduleDepth]} />
+      <mesh position={[moduleWidth / 2, moduleHeight - MODULE_WALL / 2, centerZ]} castShadow receiveShadow>
+        <boxGeometry args={[moduleWidth, MODULE_WALL, moduleDepth]} />
         <ClosetMaterial />
       </mesh>
 
-      {/* Door */}
-      {hasDoor && (
+      {/* Door(s) — single door for span=1, two mirrored doors for span=2 */}
+      {hasDoor && span === 1 && (
         <Door
           moduleHeight={moduleHeight}
           slotW={slotW}
           moduleDepth={moduleDepth}
           doorsOpen={doorsOpen}
+          doorHandleId={doorHandleId}
+          mirror={mirrorDoor}
         />
+      )}
+      {hasDoor && span === 2 && (
+        <>
+          <Door
+            moduleHeight={moduleHeight}
+            slotW={slotW}
+            moduleDepth={moduleDepth}
+            doorsOpen={doorsOpen}
+            doorHandleId={doorHandleId}
+          />
+          <group position={[slotW, 0, 0]}>
+            <Door
+              moduleHeight={moduleHeight}
+              slotW={slotW}
+              moduleDepth={moduleDepth}
+              doorsOpen={doorsOpen}
+              doorHandleId={doorHandleId}
+              mirror
+            />
+          </group>
+        </>
       )}
     </group>
   )
@@ -267,6 +295,7 @@ function ModuleSlotInteraction({ slotIndex }: { slotIndex: number }) {
   const width = useClosetStore((s) => s.width) / 100
   const selectedSlot = useClosetStore((s) => s.selectedSlot)
   const setSelectedSlot = useClosetStore((s) => s.setSelectedSlot)
+  const setHoveredSlot = useClosetStore((s) => s.setHoveredSlot)
 
   const [hovered, setHovered] = useState(false)
 
@@ -282,14 +311,14 @@ function ModuleSlotInteraction({ slotIndex }: { slotIndex: number }) {
     return () => { document.body.style.cursor = 'auto' }
   }, [hovered])
 
-  const opacity = isSelected ? 0.18 : hovered ? 0.32 : 0
+  const opacity = isSelected ? 0.10 : hovered ? 0.05 : 0
 
   return (
     <group position={[(-innerW / 2) + slotIndex * slotW, MODULE_FLOOR_Y, WALL]}>
       <mesh
         position={[slotW / 2, moduleHeight / 2, moduleDepth + 0.002]}
-        onPointerOver={(e) => { e.stopPropagation(); setHovered(true) }}
-        onPointerOut={() => setHovered(false)}
+        onPointerOver={(e) => { e.stopPropagation(); setHovered(true); setHoveredSlot(slotIndex) }}
+        onPointerOut={() => { setHovered(false); setHoveredSlot(null) }}
         onClick={(e) => { e.stopPropagation(); setSelectedSlot(isSelected ? null : slotIndex) }}
         // layers={1}
       >
@@ -351,21 +380,26 @@ function OnderstelPlinth() {
   // Scale to inner closet dimensions, sits on floor (Y=0) between the walls
   // GLTF X → scene X (width), GLTF Z → scene Z (depth)
   // If scaling appears on wrong axis, swap scaleX/scaleZ below
-  const { clone, scaleX, scaleZ, pX, pY, pZ } = useMemo(() => {
+  // Clone once — deep-cloning on every resize was freezing the scene.
+  // The bounding box is fixed per GLB; only scale factors change with closet dimensions.
+  const [{ clone, originalBox }] = useState(() => {
     const c = scene.clone(true)
-    const box = new THREE.Box3().setFromObject(c)
-    const sx = innerW / (box.max.x - box.min.x)
-    const sz = innerD / (box.max.z - box.min.z)
-    const cx = (box.min.x + box.max.x) / 2
+    const b = new THREE.Box3().setFromObject(c)
+    return { clone: c, originalBox: b }
+  })
+
+  const { scaleX, scaleZ, pX, pY, pZ } = useMemo(() => {
+    const sx = innerW / (originalBox.max.x - originalBox.min.x)
+    const sz = innerD / (originalBox.max.z - originalBox.min.z)
+    const cx = (originalBox.min.x + originalBox.max.x) / 2
     return {
-      clone: c,
       scaleX: sx,
       scaleZ: sz,
-      pX: -cx * sx,              // center in scene X
-      pY: -box.min.y,            // bottom of plate sits on floor (Y=0)
-      pZ: WALL - box.min.z * sz, // back face aligns with interior back wall (Z=WALL)
+      pX: -cx * sx,
+      pY: -originalBox.min.y,
+      pZ: WALL - originalBox.min.z * sz,
     }
-  }, [scene, innerW, innerD])
+  }, [originalBox, innerW, innerD])
 
   useEffect(() => {
     clone.traverse((obj) => {
@@ -415,7 +449,7 @@ function ClosetScene() {
       {modules
         .filter((m) => m.layoutId !== null)
         .map((m) => (
-          <Module key={m.slotIndex} index={m.slotIndex} layoutId={m.layoutId!} hasDoor={m.hasDoor} />
+          <Module key={m.slotIndex} index={m.slotIndex} layoutId={m.layoutId!} hasDoor={m.hasDoor} span={m.span} />
         ))}
       {modules.map((m) => (
         <ModuleSlotInteraction key={`hit-${m.slotIndex}`} slotIndex={m.slotIndex} />
@@ -454,6 +488,83 @@ function CameraController({ distance, controlsRef }: { distance: number; control
   }, [distance, camera, controlsRef])
 
   return null
+}
+
+function ThreeLoader() {
+  const wrapperRef = useRef<HTMLDivElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [visible, setVisible] = useState(true)
+  const animDone = useRef(false)
+  const loadDone = useRef(false)
+  const exiting = useRef(false)
+  const hasBeenActive = useRef(false)
+  const { active } = useProgress()
+
+  const doExit = () => {
+    if (exiting.current) return
+    exiting.current = true
+    gsap.to(wrapperRef.current, {
+      opacity: '0',
+      duration: 1,
+      ease: 'power4.inOut',
+      onComplete: () => setVisible(false),
+    })
+  }
+
+  useGSAP(
+    () => {
+      gsap.set('.loader-fill-rect', { scaleX: 0, transformOrigin: 'left center' })
+      gsap.to('.loader-fill-rect', {
+        scaleX: 1,
+        duration: 1.5,
+        ease: 'power4.inOut',
+        onComplete: () => {
+          animDone.current = true
+          if (loadDone.current) doExit()
+        },
+      })
+    },
+    { scope: containerRef }
+  )
+
+  useEffect(() => {
+    if (active) hasBeenActive.current = true
+    if (!active && hasBeenActive.current) {
+      loadDone.current = true
+      if (animDone.current) doExit()
+    }
+  }, [active])
+
+  if (!visible) return null
+
+  return (
+    <div ref={wrapperRef} className="absolute inset-0 z-50 flex items-center justify-center bg-primary-dark">
+      <div ref={containerRef} className="w-[91.5px] h-[55.5px]">
+        <svg className="w-full h-full" viewBox="0 0 183 111" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <clipPath id="loaderClipPath">
+              <rect className="loader-fill-rect" x="0" y="0" width="183" height="111" />
+            </clipPath>
+          </defs>
+          <path
+            d="M13.75 108.5H2.5V2.5H25V108.5H13.75ZM13.75 108.5L13.5 55H45V108.5H35.5M13.75 108.5H35.5M35.5 108.5V34H76V108.5H58M35.5 108.5H58M58 108.5V75H146V108.5H107M58 108.5H95.5M95.5 108.5V57.5H168.5V108.5H107M95.5 108.5H107M107 108.5V93H180.5V108.5H107Z"
+            stroke="var(--color-primary)"
+            strokeWidth="5"
+            fill="none"
+            opacity="0.2"
+          />
+          <path
+            d="M13.75 108.5H2.5V2.5H25V108.5H13.75ZM13.75 108.5L13.5 55H45V108.5H35.5M13.75 108.5H35.5M35.5 108.5V34H76V108.5H58M35.5 108.5H58M58 108.5V75H146V108.5H107M58 108.5H95.5M95.5 108.5V57.5H168.5V108.5H107M95.5 108.5H107M107 108.5V93H180.5V108.5H107Z"
+            stroke="white"
+            strokeWidth="5"
+            fill="none"
+            opacity="0.8"
+            clipPath="url(#loaderClipPath)"
+          />
+        </svg>
+      </div>
+    </div>
+  )
 }
 
 export default function ThreeCanvas() {
@@ -508,7 +619,7 @@ export default function ThreeCanvas() {
           shadow-camera-far={20}
           shadow-bias={-0.0005}
           shadow-normalBias={0.02}
-        />
+        /> 
 
         <CameraController distance={cameraTargetDist} controlsRef={controlsRef} />
         
@@ -533,10 +644,9 @@ export default function ThreeCanvas() {
 
         <OrbitControls
           ref={controlsRef}
-          target={[0, 1, 0]}
+          target={[0, 1.5, 0]}
           minDistance={5}
           maxDistance={maxDist}
-      
           maxPolarAngle={Math.PI / 2}
           minAzimuthAngle={-Math.PI / 2 + 0.1}
           maxAzimuthAngle={Math.PI / 2 - 0.1}
@@ -545,6 +655,7 @@ export default function ThreeCanvas() {
       </Canvas>
       <MeasurementsOverlayLayer projectedRef={projectedRef} />
       <CanvasToolbar />
+      <ThreeLoader />
     </div>
   )
 }

@@ -12,7 +12,7 @@ import gsap from 'gsap'
 export function Model({ doorsOpen = false, ...props }) {
   const group = useRef()
   const proxyRef = useRef({ t: 0 })
-  const { nodes, materials, animations, scene } = useGLTF('/objects/hinge.glb')
+  const { nodes, animations, scene } = useGLTF('/objects/hingeNewt.glb')
   const { actions } = useAnimations(animations, group)
 
   // Center the hinge model at origin so position prop places it correctly
@@ -67,24 +67,14 @@ export function Model({ doorsOpen = false, ...props }) {
     <group ref={group} {...props} dispose={null}>
       <group position={[offset.x, offset.y, offset.z]}>
         <group name="Wardrobe_Elements">
-          <group name="Armature_Scharnier1001" position={[0.026, 0.318, 0.577]} scale={0.014}>
-            <group name="Bone003" position={[-1.066, 0, 0.456]} />
-            <group name="Bone004" position={[-1.066, 0, 0.456]} />
-            <group name="Bone001" position={[0.668, 0, 0.603]} rotation={[-Math.PI / 2, 0, 1.694]}>
-              <group name="Bone002" position={[0, 1.409, 0]} rotation={[0, 0, -0.885]}>
-                <group name="Bone005" position={[0, 0.463, 0]} rotation={[0, 0, -1.975]}>
-                  <mesh name="As1_Scharnier1001" geometry={nodes.As1_Scharnier1001.geometry} material={chromeMaterial} position={[0, 1.159, 0]} rotation={[Math.PI / 2, 1.167, 0]} scale={69.753} />
-                </group>
-                <mesh name="Deur_Scharnier1001" geometry={nodes.Deur_Scharnier1001.geometry} material={chromeMaterial} position={[0.447, 0.229, 0]} rotation={[Math.PI / 2, -0.809, 0]} scale={69.753} />
-              </group>
-              <mesh name="As2_Scharnier1001" geometry={nodes.As2_Scharnier1001.geometry} material={chromeMaterial}   rotation={[-Math.PI / 2, -1.448, -Math.PI]} scale={69.753} />
-            </group>
-          </group>
-          <mesh name="Scharnier1_Fixed001" geometry={nodes.Scharnier1_Fixed001.geometry} material={chromeMaterial}  position={[0.018, 0.318, 0.582]} />
+          <mesh name="Scharnier1_Fixed" geometry={nodes.Scharnier1_Fixed.geometry} material={chromeMaterial} position={[0.018, 0.318, 0.582]} />
+          <mesh name="As1_Scharnier1" geometry={nodes.As1_Scharnier1.geometry} material={chromeMaterial} position={[0.026, 0.318, 0.577]} />
+          <mesh name="Deur_Scharnier1" geometry={nodes.Deur_Scharnier1.geometry} material={chromeMaterial} position={[0.018, 0.318, 0.582]} />
+          <mesh name="As2_Scharnier1" geometry={nodes.As2_Scharnier1.geometry} material={chromeMaterial} position={[0.036, 0.318, 0.586]} />
         </group>
       </group>
     </group>
   )
 }
 
-useGLTF.preload('/objects/hinge.glb')
+useGLTF.preload('/objects/hingeNewt.glb')

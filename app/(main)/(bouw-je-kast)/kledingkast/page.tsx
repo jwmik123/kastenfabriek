@@ -6,5 +6,12 @@ import KledingkastConfigurator from './components/KledingkastConfigurator'
 export default async function KledingkastPage() {
   const pricingData: FullPricingData = await client.fetch(pricingDataQuery)
 
-  return <KledingkastConfigurator pricingData={pricingData} />
+  return (
+  
+  <>
+  <KledingkastConfigurator pricingData={pricingData} />
+
+
+    </>
+)
 }
