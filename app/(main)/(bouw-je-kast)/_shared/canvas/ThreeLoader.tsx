@@ -28,16 +28,25 @@ export default function ThreeLoader() {
 
   useGSAP(
     () => {
-      gsap.set('.loader-fill-rect', { scaleX: 0, transformOrigin: 'left center' })
-      gsap.to('.loader-fill-rect', {
-        scaleX: 1,
-        duration: 1.5,
-        ease: 'power4.inOut',
-        onComplete: () => {
-          animDone.current = true
-          if (loadDone.current) doExit()
-        },
-      })
+      gsap.set('.loader-fill-rect', { attr: { x: -40 } })
+
+      const tween = gsap.fromTo(
+        '.loader-fill-rect',
+        { attr: { x: -40 } },
+        {
+          attr: { x: 183 },
+          duration: 1.2,
+          ease: 'power2.inOut',
+          repeat: -1,
+          onRepeat: () => {
+            if (loadDone.current) {
+              tween.kill()
+              animDone.current = true
+              doExit()
+            }
+          },
+        }
+      )
     },
     { scope: containerRef }
   )
@@ -58,7 +67,7 @@ export default function ThreeLoader() {
         <svg className="w-full h-full" viewBox="0 0 183 111" fill="none" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <clipPath id="loaderClipPath">
-              <rect className="loader-fill-rect" x="0" y="0" width="183" height="111" />
+              <rect className="loader-fill-rect" x="-40" y="0" width="40" height="111" />
             </clipPath>
           </defs>
           <path
