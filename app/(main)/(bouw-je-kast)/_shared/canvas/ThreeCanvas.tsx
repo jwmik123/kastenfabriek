@@ -2,8 +2,9 @@
 
 import { Canvas } from '@react-three/fiber'
 import * as THREE from 'three/webgpu'
-import type { ReactNode } from 'react'
+import { useEffect, type ReactNode } from 'react'
 import SceneEnvironment from './SceneEnvironment'
+import Stats from 'stats.js'
 
 interface ThreeCanvasProps {
   children: ReactNode
@@ -16,6 +17,17 @@ interface ThreeCanvasProps {
  * Scene-specific content (controls, objects, overlays) goes in children.
  */
 export default function ThreeCanvas({ children, onPointerMissed }: ThreeCanvasProps) {
+
+  useEffect(() => {
+    const stats = new Stats()
+    document.body.appendChild(stats.dom)
+    const loop = () => {
+      stats.update()
+      requestAnimationFrame(loop)
+    }
+    loop()
+  }, [])
+  
   return (
     <Canvas
       camera={{ position: [0, 1.6, 3], fov: 45 }}
