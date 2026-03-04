@@ -49,7 +49,7 @@ export default function IntroAnimation() {
   if (hasSeenIntro !== false) return null;
 
   return (
-    <div ref={introWrapper} className="fixed inset-0 z-50 flex items-center justify-center bg-primary-dark">
+    <div ref={introWrapper} className="fixed inset-0 z-50 flex items-center justify-center bg-primary">
       <div ref={container} className="w-[91.5px] h-[55.5px]">
         <svg
           className="w-full h-full"
