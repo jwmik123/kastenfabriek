@@ -6,6 +6,8 @@ export interface ModuleSlot {
   layoutId: number | null // null = empty slot
   hasDoor: boolean
   span: 1 | 2 // 1 = single width, 2 = double (occupies this slot + the next)
+  buitenkantMaterialId?: string // overrides global buitenkant for this module
+  binnenkantMaterialId?: string // overrides global binnenkant for this module
 }
 
 interface ClosetState {
@@ -27,7 +29,8 @@ interface ClosetState {
   modules: ModuleSlot[]
 
   // Appearance
-  materialId: string
+  buitenkantMaterialId: string
+  binnenkantMaterialId: string
   doorHandleId: string
 
   // View options
@@ -59,7 +62,9 @@ interface ClosetState {
   setModuleLayout: (slotIndex: number, layoutId: number) => void
   setModuleSpan: (slotIndex: number, span: 1 | 2) => void
   toggleModuleDoor: (slotIndex: number) => void
-  setMaterialId: (id: string) => void
+  setBuitenkantMaterialId: (id: string) => void
+  setBinnenkantMaterialId: (id: string) => void
+  setModuleMaterial: (slotIndex: number, variant: 'buitenkant' | 'binnenkant', id: string) => void
   setDoorHandleId: (id: string) => void
   toggleDoors: () => void
   toggleMeasurements: () => void
@@ -67,9 +72,13 @@ interface ClosetState {
   zoomOut: () => void
   setSelectedSlot: (slot: number | null) => void
   setHoveredSlot: (slot: number | null) => void
+  randomFill: () => void
 }
 
 const TOP_CABINET_THRESHOLD = 275
+// Side walls always extend 15mm above the interior top panel.
+// This is deducted from the usable interior height so modules fit correctly.
+const SIDE_WALL_EXTRA_CM = 1.5
 
 // Fallback constraints before Sanity data loads
 const FALLBACK_MODULE_MIN_WIDTH = 15
@@ -93,7 +102,8 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
     { slotIndex: 2, layoutId: null, hasDoor: true, span: 1 },
   ],
 
-  materialId: 'white',
+  buitenkantMaterialId: 'green-shadow',
+  binnenkantMaterialId: 'everest-white',
   doorHandleId: '23',
   doorsOpen: true,
   showMeasurements: false,
@@ -118,11 +128,8 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
   },
 
   needsTopCabinet: () => get().height > TOP_CABINET_THRESHOLD,
-  topCabinetHeight: () => {
-    const h = get().height
-    return h > TOP_CABINET_THRESHOLD ? h - TOP_CABINET_THRESHOLD : 0
-  },
-  mainHeight: () => Math.min(get().height, TOP_CABINET_THRESHOLD),
+  topCabinetHeight: () => (get().needsTopCabinet() ? get().height - 225 - SIDE_WALL_EXTRA_CM : 0),
+  mainHeight: () => (get().needsTopCabinet() ? 225 : get().height - SIDE_WALL_EXTRA_CM),
 
   // Actions
   hydrate: (data) => {
@@ -133,9 +140,9 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
     })
   },
 
-  setStep: (step) => set({ step }),
-  nextStep: () => set((s) => ({ step: Math.min(s.step + 1, 4) })),
-  prevStep: () => set((s) => ({ step: Math.max(s.step - 1, 1) })),
+  setStep: (step) => set({ step, selectedSlot: null }),
+  nextStep: () => set((s) => ({ step: Math.min(s.step + 1, 4), selectedSlot: null })),
+  prevStep: () => set((s) => ({ step: Math.max(s.step - 1, 1), selectedSlot: null })),
 
   setWidth: (width) => {
     const minW = get().constraints?.singleCorpus.minWidth ?? FALLBACK_MODULE_MIN_WIDTH
@@ -212,7 +219,24 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
       modules: s.modules.map((m) => (m.slotIndex === slotIndex ? { ...m, hasDoor: !m.hasDoor } : m)),
     })),
 
-  setMaterialId: (materialId) => set({ materialId }),
+  setBuitenkantMaterialId: (buitenkantMaterialId) =>
+    set((s) => ({
+      buitenkantMaterialId,
+      modules: s.modules.map((m) => ({ ...m, buitenkantMaterialId: undefined })),
+    })),
+  setBinnenkantMaterialId: (binnenkantMaterialId) =>
+    set((s) => ({
+      binnenkantMaterialId,
+      modules: s.modules.map((m) => ({ ...m, binnenkantMaterialId: undefined })),
+    })),
+  setModuleMaterial: (slotIndex, variant, id) =>
+    set((s) => ({
+      modules: s.modules.map((m) =>
+        m.slotIndex === slotIndex
+          ? { ...m, [variant === 'buitenkant' ? 'buitenkantMaterialId' : 'binnenkantMaterialId']: id }
+          : m
+      ),
+    })),
   setDoorHandleId: (doorHandleId) => set({ doorHandleId }),
   toggleDoors: () => set((s) => ({ doorsOpen: !s.doorsOpen })),
   toggleMeasurements: () => set((s) => ({ showMeasurements: !s.showMeasurements })),
@@ -220,4 +244,24 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
   zoomOut: () => set((s) => ({ userZoom: Math.min(1, s.userZoom + 0.1) })),
   setSelectedSlot: (slot) => set({ selectedSlot: slot }),
   setHoveredSlot: (slot) => set({ hoveredSlot: slot }),
+  randomFill: () => {
+    const { moduleCount, modules } = get()
+    const layoutIds = [1, 2, 3, 4, 5, 6, 7, 8]
+    const newModules: ModuleSlot[] = []
+    let i = 0
+    while (i < moduleCount) {
+      const canDouble = i + 1 < moduleCount
+      const isDouble = canDouble && Math.random() < 0.3
+      const span: 1 | 2 = isDouble ? 2 : 1
+      const layoutId = layoutIds[Math.floor(Math.random() * layoutIds.length)]
+      newModules.push({ ...modules[i], slotIndex: i, layoutId, span })
+      if (isDouble) {
+        newModules.push({ ...modules[i + 1], slotIndex: i + 1, layoutId: null, span: 1 })
+        i += 2
+      } else {
+        i += 1
+      }
+    }
+    set({ modules: newModules })
+  },
 }))

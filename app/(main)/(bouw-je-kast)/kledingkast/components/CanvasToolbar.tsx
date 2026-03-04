@@ -4,7 +4,7 @@ import { useClosetStore } from '../store'
 import { Separator } from '@/components/ui/separator'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
-import { ZoomIn, ZoomOut, Ruler, DoorOpen, DoorClosed } from 'lucide-react'
+import { ZoomIn, ZoomOut, Ruler, DoorOpen, DoorClosed, Lightbulb, Dices } from 'lucide-react'
 
 function ToolBtn({
   onClick,
@@ -50,6 +50,7 @@ export default function CanvasToolbar() {
   const userZoom = useClosetStore((s) => s.userZoom)
   const zoomIn = useClosetStore((s) => s.zoomIn)
   const zoomOut = useClosetStore((s) => s.zoomOut)
+  const randomFill = useClosetStore((s) => s.randomFill)
 
   return (
     <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex items-center gap-0.5 bg-background/90 backdrop-blur-sm border border-border rounded-xl p-1.5 shadow-lg">
@@ -74,6 +75,12 @@ export default function CanvasToolbar() {
         tooltip={doorsOpen ? 'Deuren sluiten' : 'Deuren openen'}
       >
         {doorsOpen ? <DoorOpen className="size-5" /> : <DoorClosed className="size-5" />}
+      </ToolBtn>
+
+      <Separator orientation="vertical" className="h-6 mx-1" />
+
+      <ToolBtn onClick={randomFill} tooltip="Willekeurige indeling">
+        <Dices className="size-5" />
       </ToolBtn>
     </div>
   )

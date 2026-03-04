@@ -16,6 +16,7 @@ export type Material = ColorMaterial | TextureMaterial
 
 export const MATERIALS: Material[] = [
   { id: 'oak', name: 'Eiken', type: 'texture', preview: '/materials/wood-oak/WoodFineVeneerOak002_COL_1K.jpg' },
+  { id: 'walnut', name: 'Walnoot', type: 'texture', preview: '/materials/walnut.jpg' },
   { id: 'green-shadow', name: 'Groen Schaduw', type: 'color', color: '#767b67' },
   { id: 'shadow', name: 'Schaduw', type: 'color', color: '#6c6764' },
   { id: 'everest-white', name: 'Everest Wit', type: 'color', color: '#fcfcfa' },

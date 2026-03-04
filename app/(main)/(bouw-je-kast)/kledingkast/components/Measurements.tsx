@@ -4,7 +4,7 @@ import { useRef, useEffect, useMemo } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three/webgpu'
 import { useClosetStore } from '../store'
-import { getLayoutById } from './moduleLayouts'
+import { getLayoutById } from '../scene/moduleLayouts'
 
 // Mirror constants from ThreeCanvas
 const WALL = 0.018

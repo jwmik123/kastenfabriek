@@ -1,10 +1,11 @@
 'use client'
 
 import { useClosetStore } from '../store'
-import DimensionsStep from './steps/DimensionsStep'
-import ModulesStep from './steps/ModulesStep'
-import MaterialStep from './steps/MaterialStep'
-import DoorHandlesStep from './steps/DoorHandlesStep'
+import DimensionsStep from '../steps/DimensionsStep'
+import ModulesStep from '../steps/ModulesStep'
+import MaterialStep from '../steps/MaterialStep'
+import DoorHandlesStep from '../steps/DoorHandlesStep'
+import ModuleMaterialPanel from './ModuleMaterialPanel'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
@@ -85,8 +86,9 @@ export default function StepWizard() {
     <div className="flex flex-col h-full p-6 gap-5">
       <StepIndicator />
       <Separator />
-      <div className="flex-1 overflow-y-auto min-h-0 pr-0.5">
+      <div className="relative flex-1 overflow-y-auto min-h-0 pr-0.5">
         <CurrentStep />
+        <ModuleMaterialPanel />
       </div>
       <Separator />
       <div className="flex justify-between gap-3">
