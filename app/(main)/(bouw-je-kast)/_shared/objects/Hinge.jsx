@@ -8,6 +8,7 @@ import { useRef, useEffect, useMemo } from 'react'
 import { useGLTF, useAnimations } from '@react-three/drei'
 import * as THREE from 'three/webgpu'
 import gsap from 'gsap'
+import { useChromeMaterialInstance } from '../materials/ClosetMaterial'
 
 export function Model({ doorsOpen = false, ...props }) {
   const group = useRef()
@@ -22,16 +23,7 @@ export function Model({ doorsOpen = false, ...props }) {
   }, [scene])
 
 
-  const chromeMaterial = useMemo(() => {
-    return new THREE.MeshPhysicalMaterial({
-      color: 0xd3d3d3,
-      metalness: 0.9,
-      roughness: 0.2,
-      envMapIntensity: 2,
-      clearcoat: 1,
-      clearcoatRoughness: 0,
-    })
-  }, [])
+  const chromeMaterial = useChromeMaterialInstance()
 
   // Initialize: play once and immediately pause at t=0
   useEffect(() => {

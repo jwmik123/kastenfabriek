@@ -53,7 +53,7 @@ export default function ThreeLoader() {
   if (!visible) return null
 
   return (
-    <div ref={wrapperRef} className="absolute inset-0 z-50 flex items-center justify-center bg-primary-dark">
+    <div ref={wrapperRef} className="absolute inset-0 z-50 flex items-center justify-center bg-primary">
       <div ref={containerRef} className="w-[91.5px] h-[55.5px]">
         <svg className="w-full h-full" viewBox="0 0 183 111" fill="none" xmlns="http://www.w3.org/2000/svg">
           <defs>

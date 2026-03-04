@@ -1,10 +1,22 @@
 'use client'
 
-import { Canvas } from '@react-three/fiber'
+import { Canvas, useFrame } from '@react-three/fiber'
 import * as THREE from 'three/webgpu'
-import { useEffect, type ReactNode } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 import SceneEnvironment from './SceneEnvironment'
 import Stats from 'stats.js'
+
+function StatsPanel() {
+  const statsRef = useRef<Stats | null>(null)
+  useEffect(() => {
+    const stats = new Stats()
+    document.body.appendChild(stats.dom)
+    statsRef.current = stats
+    return () => { document.body.removeChild(stats.dom) }
+  }, [])
+  useFrame(() => statsRef.current?.update())
+  return null
+}
 
 interface ThreeCanvasProps {
   children: ReactNode
@@ -17,29 +29,20 @@ interface ThreeCanvasProps {
  * Scene-specific content (controls, objects, overlays) goes in children.
  */
 export default function ThreeCanvas({ children, onPointerMissed }: ThreeCanvasProps) {
-
-  useEffect(() => {
-    const stats = new Stats()
-    document.body.appendChild(stats.dom)
-    const loop = () => {
-      stats.update()
-      requestAnimationFrame(loop)
-    }
-    loop()
-  }, [])
-  
   return (
     <Canvas
+      dpr={[1, 2]}
       camera={{ position: [0, 1.6, 3], fov: 45 }}
       shadows
       onPointerMissed={onPointerMissed}
       gl={async (props: any) => {
-        const renderer = new THREE.WebGPURenderer({ ...props })
+        const renderer = new THREE.WebGPURenderer({ ...props, powerPreference: 'high-performance' })
         return renderer.init()
       }}
     >
       <color attach="background" args={['#e8e8e8']} />
       <SceneEnvironment />
+      {process.env.NODE_ENV === 'development' && <StatsPanel />}
       <directionalLight
         position={[-3, 5, 10]}
         intensity={1}

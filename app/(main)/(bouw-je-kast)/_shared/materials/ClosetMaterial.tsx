@@ -12,6 +12,7 @@ interface MaterialState {
   oakMap: THREE.Texture
   oakNormalMap: THREE.Texture
   walnutMap: THREE.Texture
+  chromeMaterial: THREE.MeshPhysicalMaterial
 }
 
 const MaterialContext = createContext<MaterialState | null>(null)
@@ -39,17 +40,9 @@ export function ModuleMaterialOverrideProvider({
   )
 }
 
+/** Returns the single shared chrome material instance for the current provider tree. */
 export function useChromeMaterialInstance(): THREE.MeshPhysicalMaterial {
-  return useMemo(() => {
-    return new THREE.MeshPhysicalMaterial({
-      color: 0xd3d3d3,
-      metalness: 0.9,
-      roughness: 0.2,
-      envMapIntensity: 2,
-      clearcoat: 1,
-      clearcoatRoughness: 0,
-    })
-  }, [])
+  return useContext(MaterialContext)!.chromeMaterial
 }
 
 export function ClosetMaterialProvider({ children }: { children: ReactNode }) {
@@ -68,9 +61,18 @@ export function ClosetMaterialProvider({ children }: { children: ReactNode }) {
     walnutMap.wrapS = walnutMap.wrapT = THREE.RepeatWrapping
   }, [oakMap, oakNormalMap, walnutMap])
 
+  const chromeMaterial = useMemo(() => new THREE.MeshPhysicalMaterial({
+    color: 0xd3d3d3,
+    metalness: 0.9,
+    roughness: 0.2,
+    envMapIntensity: 2,
+    clearcoat: 1,
+    clearcoatRoughness: 0,
+  }), [])
+
   const state = useMemo<MaterialState>(
-    () => ({ buitenkantMaterialId, binnenkantMaterialId, oakMap, oakNormalMap, walnutMap }),
-    [buitenkantMaterialId, binnenkantMaterialId, oakMap, oakNormalMap, walnutMap],
+    () => ({ buitenkantMaterialId, binnenkantMaterialId, oakMap, oakNormalMap, walnutMap, chromeMaterial }),
+    [buitenkantMaterialId, binnenkantMaterialId, oakMap, oakNormalMap, walnutMap, chromeMaterial],
   )
 
   return (
