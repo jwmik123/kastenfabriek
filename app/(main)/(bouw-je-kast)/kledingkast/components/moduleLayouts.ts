@@ -32,8 +32,11 @@ export type ModuleLayoutConfig = {
 export type { Anchor, FillZoneConfig, FillShelves, FillOpen }
 
 // Default shelf spacing and thickness
-export const SHELF_SPACING = 0.30  // 25cm
+// Heights of special elements must be multiples of SHELF_SPACING for clean alignment
+export const SHELF_SPACING = 0.35  // 35cm
 export const SHELF_THICKNESS = 0.018 // 2.5cm
+
+//TODO: afwerk 18 36
 
 /**
  * Module layout registry.
@@ -63,7 +66,7 @@ export const MODULE_LAYOUTS: ModuleLayoutConfig[] = [
     description: 'Laden onderin, planken erboven',
     specialElement: {
       glbPath: '/objects/ModuleDrawer.glb',
-      height: 0.7,
+      height: 0.70,  // 2 × 0.35
       anchor: { type: 'bottom' },
     },
     fillZone: {
@@ -77,7 +80,7 @@ export const MODULE_LAYOUTS: ModuleLayoutConfig[] = [
     description: 'Laden onderin, planken erboven',
     specialElement: {
       glbPath: '/objects/ModuleDoubleRod.glb',
-      height: 1.718,
+      height: 1.75,  // 5 × 0.35
       anchor: { type: 'bottom' },
     },
     fillZone: {
@@ -91,7 +94,7 @@ export const MODULE_LAYOUTS: ModuleLayoutConfig[] = [
     description: 'Laden onderin, planken erboven',
     specialElement: {
       glbPath: '/objects/ModuleSplit.glb',
-      height: 1.85,
+      height: 1.75,  // 5 × 0.35 — GLB top (~1.742) clears this
       anchor: { type: 'bottom' },
     },
     fillZone: {
@@ -105,7 +108,7 @@ export const MODULE_LAYOUTS: ModuleLayoutConfig[] = [
     description: 'Laden onderin, planken erboven',
     specialElement: {
       glbPath: '/objects/ModuleSingleRod.glb',
-      height: 1.118,
+      height: 1.05,  // 3 × 0.35
       anchor: { type: 'bottom' },
     },
     fillZone: {
@@ -119,7 +122,7 @@ export const MODULE_LAYOUTS: ModuleLayoutConfig[] = [
     description: 'Laden onderin, planken erboven',
     specialElement: {
       glbPath: '/objects/ModuleShelfRod.glb',
-      height: 1.718,
+      height: 1.75,  // 5 × 0.35 — GLB top (~1.742) clears this
       anchor: { type: 'bottom' },
     },
     fillZone: {
@@ -133,7 +136,7 @@ export const MODULE_LAYOUTS: ModuleLayoutConfig[] = [
     description: 'Laden onderin, planken erboven',
     specialElement: {
       glbPath: '/objects/DrawerRod.glb',
-      height: 1.718,
+      height: 1.75,  // 5 × 0.35
       anchor: { type: 'bottom' },
     },
     fillZone: {
@@ -147,7 +150,7 @@ export const MODULE_LAYOUTS: ModuleLayoutConfig[] = [
     description: 'Laden onderin, planken erboven',
     specialElement: {
       glbPath: '/objects/Desk.glb',
-      height: 1.718,
+      height: 1.75,  // 5 × 0.35
       anchor: { type: 'bottom' },
     },
     fillZone: {

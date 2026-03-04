@@ -83,7 +83,7 @@ function useMeasurementSpecs(): MeasurementSpec[] {
         p2: new THREE.Vector3(x2, MODULE_FLOOR_Y, frontZ),
         offsetDir: new THREE.Vector3(0, -1, 0),
         offsetDist: 0.06,
-        labelCm:((x2 - x1) * 100).toFixed(2),
+        labelCm:((x2 - x1) * 100).toFixed(1),
       })
     }
 

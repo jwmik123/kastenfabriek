@@ -31,7 +31,10 @@ export default function FillZone({
     if (zoneHeight <= SHELF_THICKNESS * 2) return []
 
     const positions: number[] = []
-    let y = startY + config.spacing
+    // Snap to global grid anchored at Y=0 so shelves align across modules.
+    // Math.round ensures the gap above the special element is always ≥ spacing/2 (never tiny).
+    const firstIndex = Math.round(startY / config.spacing) + 1
+    let y = firstIndex * config.spacing
     while (y + SHELF_THICKNESS < endY) {
       positions.push(y)
       y += config.spacing

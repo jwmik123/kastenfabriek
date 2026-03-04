@@ -12,7 +12,7 @@ import gsap from 'gsap'
 export function Model({ doorsOpen = false, ...props }) {
   const group = useRef()
   const proxyRef = useRef({ t: 0 })
-  const { nodes, animations, scene } = useGLTF('/objects/hingeNewt.glb')
+  const { nodes, animations, scene } = useGLTF('/objects/HingeNewt.glb')
   const { actions } = useAnimations(animations, group)
 
   // Center the hinge model at origin so position prop places it correctly
@@ -77,4 +77,4 @@ export function Model({ doorsOpen = false, ...props }) {
   )
 }
 
-useGLTF.preload('/objects/hingeNewt.glb')
+useGLTF.preload('/objects/HingeNewt.glb')

@@ -317,12 +317,13 @@ function ModuleSlotInteraction({ slotIndex }: { slotIndex: number }) {
     <group position={[(-innerW / 2) + slotIndex * slotW, MODULE_FLOOR_Y, WALL]}>
       <mesh
         position={[slotW / 2, moduleHeight / 2, moduleDepth + 0.002]}
+        scale={[slotW, moduleHeight, 1]}
         onPointerOver={(e) => { e.stopPropagation(); setHovered(true); setHoveredSlot(slotIndex) }}
         onPointerOut={() => { setHovered(false); setHoveredSlot(null) }}
         onClick={(e) => { e.stopPropagation(); setSelectedSlot(isSelected ? null : slotIndex) }}
         // layers={1}
       >
-        <planeGeometry args={[slotW, moduleHeight]} />
+        <planeGeometry />
         <meshBasicMaterial
           color="#22c55e"
           transparent={true}
@@ -424,14 +425,14 @@ function SilhouettePlane() {
 
   const SILHOUETTE_HEIGHT = 1.8
   const img = texture.image as HTMLImageElement
-  const aspect = img.width / img.height
+  const aspect = (img.width && img.height) ? img.width / img.height : 1
   const planeWidth = SILHOUETTE_HEIGHT * aspect
 
   const x = -(width / 2 + 0.3 + planeWidth / 2)
 
   return (
-    <mesh position={[x, SILHOUETTE_HEIGHT / 2 - 0.05, -0.005]}>
-      <planeGeometry args={[planeWidth, SILHOUETTE_HEIGHT]} />
+    <mesh position={[x, SILHOUETTE_HEIGHT / 2 - 0.05, -0.005]} scale={[planeWidth, SILHOUETTE_HEIGHT, 1]}>
+      <planeGeometry />
       <meshBasicMaterial map={texture} transparent opacity={0.25} depthWrite={false} />
     </mesh>
   )
