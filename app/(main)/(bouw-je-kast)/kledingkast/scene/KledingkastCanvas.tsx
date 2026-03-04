@@ -12,6 +12,7 @@ import ClosetScene from './ClosetScene'
 import SilhouettePlane from './SilhouettePlane'
 import { MeasurementProjectorLayer, MeasurementsOverlayLayer, type ProjectedMap } from '../components/Measurements'
 import CanvasToolbar from '../components/CanvasToolbar'
+import CanvasPricePanel from '../components/CanvasPricePanel'
 import { MODULE_LAYOUTS } from './moduleLayouts'
 
 function RaycasterSetup() {
@@ -24,17 +25,9 @@ function RaycasterSetup() {
 
 export default function KledingkastCanvas() {
   const setSelectedSlot = useClosetStore((s) => s.setSelectedSlot)
-  const closetWidth = useClosetStore((s) => s.width) / 100
-  const userZoom = useClosetStore((s) => s.userZoom)
 
   const controlsRef = useRef<any>(null)
   const projectedRef = useRef<ProjectedMap>({})
-
-  const autoFitDist = 3 * (closetWidth / 1.8)
-  const maxDist = 4 * (closetWidth / 1.8)
-  const cameraTargetDist = userZoom <= 0.5
-    ? 2 + (userZoom / 0.5) * (autoFitDist - 2)
-    : autoFitDist + ((userZoom - 0.5) / 0.5) * (maxDist - autoFitDist)
 
   return (
     <div className="relative w-full h-full">
@@ -51,7 +44,7 @@ export default function KledingkastCanvas() {
           <meshStandardMaterial color="#efe9d7" />
         </mesh>
 
-        <CameraController distance={cameraTargetDist} controlsRef={controlsRef} />
+        <CameraController controlsRef={controlsRef} />
         <RaycasterSetup />
         <MeasurementProjectorLayer projectedRef={projectedRef} />
 
@@ -63,8 +56,8 @@ export default function KledingkastCanvas() {
         <OrbitControls
           ref={controlsRef}
           target={[0, 1.5, 0]}
-          minDistance={4}
-          maxDistance={maxDist}
+          minDistance={5}
+          maxDistance={20}
           maxPolarAngle={Math.PI / 2}
           minAzimuthAngle={-Math.PI / 2 + 0.1}
           maxAzimuthAngle={Math.PI / 2 - 0.1}
@@ -74,6 +67,7 @@ export default function KledingkastCanvas() {
 
       <MeasurementsOverlayLayer projectedRef={projectedRef} />
       <CanvasToolbar />
+      <CanvasPricePanel />
       <ThreeLoader />
     </div>
   )

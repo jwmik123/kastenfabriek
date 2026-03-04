@@ -42,7 +42,7 @@ export default function FillZone({
 
     if (positions.length > 0) {
       const lastY = positions[positions.length - 1]
-      const gapAbove = endY - (lastY + SHELF_THICKNESS)
+      const gapAbove = endY - (lastY + SHELF_THICKNESS /2)
       if (gapAbove < config.spacing) {
         positions.pop()
       }

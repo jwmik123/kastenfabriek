@@ -53,7 +53,7 @@ export default function CanvasToolbar() {
   const randomFill = useClosetStore((s) => s.randomFill)
 
   return (
-    <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex items-center gap-0.5 bg-background/90 backdrop-blur-sm border border-border rounded-xl p-1.5 shadow-lg">
+    <div className="absolute bottom-5 left-5 flex items-center gap-0.5 bg-background/90 backdrop-blur-sm border border-border rounded-xl p-1.5 shadow-lg">
       <ToolBtn onClick={zoomIn} disabled={userZoom <= 0} tooltip="Inzoomen">
         <ZoomIn className="size-5" />
       </ToolBtn>

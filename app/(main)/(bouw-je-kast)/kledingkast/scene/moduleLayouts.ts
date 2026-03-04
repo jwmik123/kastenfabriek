@@ -135,7 +135,7 @@ export const MODULE_LAYOUTS: ModuleLayoutConfig[] = [
     label: 'Drawer Rod',
     description: 'Laden onderin, planken erboven',
     specialElement: {
-      glbPath: '/objects/DrawerRod.glb',
+      glbPath: '/objects/ModuleDrawerRod.glb',
       height: 1.75,  // 5 × 0.35
       anchor: { type: 'bottom' },
     },
@@ -149,7 +149,7 @@ export const MODULE_LAYOUTS: ModuleLayoutConfig[] = [
     label: 'Desk',
     description: 'Laden onderin, planken erboven',
     specialElement: {
-      glbPath: '/objects/Desk.glb',
+      glbPath: '/objects/ModuleDesk.glb',
       height: 1.75,  // 5 × 0.35
       anchor: { type: 'bottom' },
     },
