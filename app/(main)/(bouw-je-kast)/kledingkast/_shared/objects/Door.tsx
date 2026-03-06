@@ -14,41 +14,34 @@ const HINGE_PAIR_SPACING = 0.45
 const SPACE = 0.001
 
 interface DoorProps {
-  moduleHeight: number  // min(leftH, rightH) — used for handle positioning
+  moduleHeight: number  // overall height cap (min of leftH/rightH) — used for handle positioning
   slotW: number
   moduleDepth: number
   doorsOpen: boolean
   doorHandleId: string
   mirror?: boolean
-  /**
-   * Ceiling profile in door-local coordinates: x runs 0..slotW, y is the
-   * ceiling height at that x. Must include both endpoints; may include kink
-   * points where the diagonal transitions to flat, so the door top edge
-   * follows the actual ceiling profile rather than interpolating straight.
-   */
-  topProfile: Array<{ x: number; y: number }>
+  // Per-edge heights for diagonal shape. When equal → plain rectangle.
+  leftH: number
+  rightH: number
 }
 
 /**
  * Build the 2D door face shape in the XY plane.
- * Bottom edge is flat; top edge follows topProfile (may have kink points).
+ * Origin is bottom-left of the door slot.
+ * leftH and rightH define the height at each vertical edge.
  */
-function buildDoorShape(slotW: number, topProfile: Array<{ x: number; y: number }>): THREE.Shape {
+function buildDoorShape(slotW: number, leftH: number, rightH: number): THREE.Shape {
   const shape = new THREE.Shape()
   const w = slotW - 2 * SPACE
+  const hL = leftH  - 2 * SPACE
+  const hR = rightH - 2 * SPACE
 
-  // Bottom edge: left → right
   shape.moveTo(SPACE, SPACE)
   shape.lineTo(SPACE + w, SPACE)
-
-  // Top edge: right → left through profile points
-  for (let i = topProfile.length - 1; i >= 0; i--) {
-    const dx = SPACE + (topProfile[i].x / slotW) * w
-    const dy = topProfile[i].y - SPACE
-    shape.lineTo(dx, dy)
-  }
-
+  shape.lineTo(SPACE + w, SPACE + hR)
+  shape.lineTo(SPACE,     SPACE + hL)
   shape.closePath()
+
   return shape
 }
 
@@ -59,25 +52,23 @@ export default function Door({
   doorsOpen,
   doorHandleId,
   mirror = false,
-  topProfile,
+  leftH,
+  rightH,
 }: DoorProps) {
   const pivotRef = useRef<any>(null)
   const posRef   = useRef<any>(null)
 
-  const leftH  = topProfile[0].y
-  const rightH = topProfile[topProfile.length - 1].y
-
   const doorGeometry = useMemo(() => {
-    const shape = buildDoorShape(slotW, topProfile)
+    const shape = buildDoorShape(slotW, leftH, rightH)
     const geo = new THREE.ExtrudeGeometry(shape, {
       depth: DOOR_DEPTH,
       bevelEnabled: false,
     })
+    // Center horizontally and in Z so the mesh can be positioned the same
+    // way as the original RoundedBoxGeometry (pivot at door edge, panel offset by ±slotW/2).
     geo.translate(-slotW / 2, 0, -DOOR_DEPTH / 2)
     return geo
-  // topProfile is a memoized array from Module — reference is stable between renders
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slotW, topProfile])
+  }, [slotW, leftH, rightH])
 
   // Hinge Y positions — clamped to the height at the hinge's edge (left hinges → leftH, right → rightH)
   const hingeEdgeH = mirror ? rightH : leftH
@@ -93,6 +84,8 @@ export default function Door({
   }, [hingeEdgeH])
 
   const pivotX  = mirror ? slotW : 0
+  // Same offset as the original RoundedBoxGeometry setup:
+  // non-mirror: panel hangs right from pivot at X=0; mirror: panel hangs left from pivot at X=slotW
   const panelX  = mirror ? -slotW / 2 : slotW / 2
   const handleX = mirror ? 0.055 - slotW : slotW - 0.055
   const hingeX  = mirror ? slotW - MODULE_WALL - 0.01 : MODULE_WALL + 0.01
@@ -117,11 +110,13 @@ export default function Door({
     <>
       <group ref={pivotRef} position={[pivotX, 0, moduleDepth]}>
         <group ref={posRef}>
+          {/* Door panel — mirrors original RoundedBoxGeometry positioning */}
           <mesh position={[panelX, 0, DOOR_DEPTH / 2]} castShadow receiveShadow>
             <primitive object={doorGeometry} attach="geometry" />
             <ClosetMaterial />
           </mesh>
 
+          {/* Handle */}
           {doorHandleId !== 'none' && (
             <HandleByType
               id={doorHandleId}

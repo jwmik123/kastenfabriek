@@ -1,5 +1,7 @@
 import { create } from 'zustand'
 import type { FullPricingData, ModuleLayout, PricingConstraints } from '@/types/configurator-pricing'
+import type { DiagonalSide } from './scene/diagonalUtils'
+import { isFullHeight } from './scene/diagonalUtils'
 
 export interface ModuleSlot {
   slotIndex: number
@@ -23,6 +25,12 @@ interface ClosetState {
   width: number
   height: number
   depth: number
+
+  // Diagonal walls
+  diagonalSide: DiagonalSide
+  leftDiagStartHeight: number  // cm
+  rightDiagStartHeight: number // cm
+  diagTopWidth: number         // cm — shared for both sides
 
   // Modules
   moduleCount: number
@@ -51,6 +59,10 @@ interface ClosetState {
   mainHeight: () => number
 
   // Actions
+  setDiagonalSide: (side: DiagonalSide) => void
+  setLeftDiagStartHeight: (v: number) => void
+  setRightDiagStartHeight: (v: number) => void
+  setDiagTopWidth: (v: number) => void
   hydrate: (data: FullPricingData) => void
   setStep: (step: number) => void
   nextStep: () => void
@@ -75,6 +87,28 @@ interface ClosetState {
   randomFill: () => void
 }
 
+const WALL_M = 0.018
+
+/** Reset span=2 on any slots that fall under the diagonal zone. */
+function resetDiagDoubles(modules: ModuleSlot[], diagParams: {
+  diagonalSide: DiagonalSide
+  leftDiagStartHeight: number
+  rightDiagStartHeight: number
+  diagTopWidth: number
+  outerWidth: number
+  mainHeight: number
+}, moduleCount: number, widthM: number): ModuleSlot[] {
+  if (diagParams.diagonalSide === 'none') return modules
+  const slotW = (widthM - WALL_M * 2) / moduleCount
+  return modules.map((m) => {
+    if (m.span !== 2) return m
+    const leftX  = WALL_M + m.slotIndex * slotW
+    const rightX = WALL_M + (m.slotIndex + m.span) * slotW
+    if (!isFullHeight(leftX, rightX, diagParams)) return { ...m, span: 1 as const }
+    return m
+  })
+}
+
 const TOP_CABINET_THRESHOLD = 275
 // Side walls always extend 15mm above the interior top panel.
 // This is deducted from the usable interior height so modules fit correctly.
@@ -94,6 +128,11 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
   width: 180,
   height: 240,
   depth: 60,
+
+  diagonalSide: 'none',
+  leftDiagStartHeight: 180,
+  rightDiagStartHeight: 180,
+  diagTopWidth: 50,
 
   moduleCount: 3,
   modules: [
@@ -127,11 +166,71 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
     return Math.floor(get().width / minW)
   },
 
-  needsTopCabinet: () => get().height > TOP_CABINET_THRESHOLD,
+  needsTopCabinet: () => get().diagonalSide === 'none' && get().height > TOP_CABINET_THRESHOLD,
   topCabinetHeight: () => (get().needsTopCabinet() ? get().height - 225 - SIDE_WALL_EXTRA_CM : 0),
   mainHeight: () => (get().needsTopCabinet() ? 225 : get().height - SIDE_WALL_EXTRA_CM),
 
   // Actions
+  setDiagonalSide: (diagonalSide) => {
+    const s = get()
+    const mainH = s.mainHeight()
+    const diagParams = {
+      diagonalSide,
+      leftDiagStartHeight:  Math.min(s.leftDiagStartHeight,  mainH - 20) / 100,
+      rightDiagStartHeight: Math.min(s.rightDiagStartHeight, mainH - 20) / 100,
+      diagTopWidth:  s.diagTopWidth / 100,
+      outerWidth:    s.width / 100,
+      mainHeight:    mainH / 100,
+    }
+    set({ diagonalSide, modules: resetDiagDoubles(s.modules, diagParams, s.moduleCount, s.width / 100) })
+  },
+
+  setLeftDiagStartHeight: (v) => {
+    const s = get()
+    const mainH = s.mainHeight()
+    const clamped = Math.max(100, Math.min(mainH * 100 - 20, v))
+    const diagParams = {
+      diagonalSide: s.diagonalSide,
+      leftDiagStartHeight:  Math.min(clamped, mainH - 20) / 100,
+      rightDiagStartHeight: Math.min(s.rightDiagStartHeight, mainH - 20) / 100,
+      diagTopWidth:  s.diagTopWidth / 100,
+      outerWidth:    s.width / 100,
+      mainHeight:    mainH / 100,
+    }
+    set({ leftDiagStartHeight: clamped, modules: resetDiagDoubles(s.modules, diagParams, s.moduleCount, s.width / 100) })
+  },
+
+  setRightDiagStartHeight: (v) => {
+    const s = get()
+    const mainH = s.mainHeight()
+    const clamped = Math.max(100, Math.min(mainH * 100 - 20, v))
+    const diagParams = {
+      diagonalSide: s.diagonalSide,
+      leftDiagStartHeight:  Math.min(s.leftDiagStartHeight, mainH - 20) / 100,
+      rightDiagStartHeight: Math.min(clamped, mainH - 20) / 100,
+      diagTopWidth:  s.diagTopWidth / 100,
+      outerWidth:    s.width / 100,
+      mainHeight:    mainH / 100,
+    }
+    set({ rightDiagStartHeight: clamped, modules: resetDiagDoubles(s.modules, diagParams, s.moduleCount, s.width / 100) })
+  },
+
+  setDiagTopWidth: (v) => {
+    const s = get()
+    const mainH = s.mainHeight()
+    const halfWidth = s.width / 2 - 5
+    const clamped = Math.max(10, Math.min(halfWidth, v))
+    const diagParams = {
+      diagonalSide: s.diagonalSide,
+      leftDiagStartHeight:  Math.min(s.leftDiagStartHeight,  mainH - 20) / 100,
+      rightDiagStartHeight: Math.min(s.rightDiagStartHeight, mainH - 20) / 100,
+      diagTopWidth:  clamped / 100,
+      outerWidth:    s.width / 100,
+      mainHeight:    mainH / 100,
+    }
+    set({ diagTopWidth: clamped, modules: resetDiagDoubles(s.modules, diagParams, s.moduleCount, s.width / 100) })
+  },
+
   hydrate: (data) => {
     set({
       pricingData: data,

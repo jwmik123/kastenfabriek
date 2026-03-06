@@ -14,6 +14,7 @@ interface FillZoneProps {
   centerX: number // X center of shelves within the module group
   centerZ: number // Z center of shelves within the module group
   hasDoor: boolean
+  fillToTop?: boolean // skip gap-above check, fill right up to the ceiling
 }
 
 export default function FillZone({
@@ -25,6 +26,7 @@ export default function FillZone({
   centerX,
   centerZ,
   hasDoor,
+  fillToTop = false,
 }: FillZoneProps) {
   const shelfPositions = useMemo(() => {
     if (config.type !== 'shelves') return []
@@ -40,16 +42,16 @@ export default function FillZone({
       y += config.spacing
     }
 
-    if (positions.length > 0) {
+    if (!fillToTop && positions.length > 0) {
       const lastY = positions[positions.length - 1]
-      const gapAbove = endY - (lastY + SHELF_THICKNESS /2)
+      const gapAbove = endY - (lastY + SHELF_THICKNESS / 2)
       if (gapAbove < config.spacing) {
         positions.pop()
       }
     }
 
     return positions
-  }, [config, startY, endY])
+  }, [config, startY, endY, fillToTop])
 
   if (config.type === 'open' || shelfPositions.length === 0) return null
 

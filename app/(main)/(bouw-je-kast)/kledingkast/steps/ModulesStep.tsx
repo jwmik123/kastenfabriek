@@ -1,12 +1,19 @@
 'use client'
 
+import { useMemo } from 'react'
 import { useClosetStore } from '../store'
 import { MODULE_LAYOUTS } from '../scene/moduleLayouts'
 import { LAYOUT_SVGS } from '../components/LayoutSvgs'
+import { getDiagHeightAt } from '../scene/diagonalUtils'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { Minus, Plus } from 'lucide-react'
 import type { ModuleSlot } from '../store'
+
+const WALL = 0.018
+const ONDERSTEL_HEIGHT = 0.108
+const ONDERSTEL_GAP = 0.010
+const MODULE_FLOOR_Y = ONDERSTEL_HEIGHT + ONDERSTEL_GAP
 
 type SlotGroup =
   | { type: 'single'; module: ModuleSlot }
@@ -41,6 +48,24 @@ export default function ModulesStep() {
   const selectedSlot = useClosetStore((s) => s.selectedSlot)
   const setSelectedSlot = useClosetStore((s) => s.setSelectedSlot)
 
+  const diagonalSide         = useClosetStore((s) => s.diagonalSide)
+  const leftDiagStartHeight  = useClosetStore((s) => s.leftDiagStartHeight)
+  const rightDiagStartHeight = useClosetStore((s) => s.rightDiagStartHeight)
+  const diagTopWidth         = useClosetStore((s) => s.diagTopWidth)
+  const widthCm              = useClosetStore((s) => s.width)
+  const mainHeightCm         = useClosetStore((s) => s.mainHeight())
+  const widthM               = widthCm / 100
+  const mainHeightM          = mainHeightCm / 100
+
+  const diagParams = useMemo(() => ({
+    diagonalSide,
+    leftDiagStartHeight:  Math.min(leftDiagStartHeight,  mainHeightCm - 20) / 100,
+    rightDiagStartHeight: Math.min(rightDiagStartHeight, mainHeightCm - 20) / 100,
+    diagTopWidth:  diagTopWidth / 100,
+    outerWidth:    widthCm     / 100,
+    mainHeight:    mainHeightM,
+  }), [diagonalSide, leftDiagStartHeight, rightDiagStartHeight, diagTopWidth, widthCm, mainHeightCm, mainHeightM])
+
   const groups = groupModules(modules)
 
   const isCoveredSlot =
@@ -48,8 +73,28 @@ export default function ModulesStep() {
     selectedSlot > 0 &&
     modules[selectedSlot - 1]?.span === 2
 
-  const canBeDouble = selectedSlot !== null && selectedSlot < modules.length - 1
   const isDouble = selectedSlot !== null && modules[selectedSlot]?.span === 2
+
+  // Effective height of the selected slot for diagonal layout filtering
+  const selectedSlotEffectiveHeightM = (() => {
+    if (selectedSlot === null || diagParams.diagonalSide === 'none') return mainHeightM
+    const innerW = widthM - WALL * 2
+    const slotW  = innerW / moduleCount
+    const span   = modules[selectedSlot]?.span ?? 1
+    const leftX  = WALL + selectedSlot * slotW
+    const rightX = WALL + (selectedSlot + span) * slotW
+    const leftH  = Math.max(0, getDiagHeightAt(leftX,  diagParams) - MODULE_FLOOR_Y - WALL)
+    const rightH = Math.max(0, getDiagHeightAt(rightX, diagParams) - MODULE_FLOOR_Y - WALL)
+    return Math.min(leftH, rightH)
+  })()
+
+  const isUnderDiagonal = selectedSlotEffectiveHeightM < mainHeightM - 0.01
+  const canBeDouble = selectedSlot !== null && selectedSlot < modules.length - 1 && !isUnderDiagonal
+
+  // Only show layouts whose special element fits within the effective height
+  const availableLayouts = MODULE_LAYOUTS.filter(
+    (l) => l.specialElement.height <= selectedSlotEffectiveHeightM
+  )
 
   return (
     <div className="space-y-6">
@@ -233,8 +278,13 @@ export default function ModulesStep() {
               {/* Layout picker */}
               <div className="space-y-2">
                 <span className="text-md font-medium">Indeling</span>
+                {isUnderDiagonal && (
+                  <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
+                    Schuin vak — hoogte beperkt tot {Math.round(selectedSlotEffectiveHeightM * 100)} cm. Niet alle indelingen passen.
+                  </p>
+                )}
                 <div className="flex gap-2 mt-2">
-                  {MODULE_LAYOUTS.map((layout) => {
+                  {availableLayouts.map((layout) => {
                     const LayoutSvg = LAYOUT_SVGS[layout.id]
                     const isActive = modules[selectedSlot]?.layoutId === layout.id
                     return (
