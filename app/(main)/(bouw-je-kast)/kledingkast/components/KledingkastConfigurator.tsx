@@ -69,7 +69,8 @@ export default function KledingkastConfigurator({ pricingData, editConfig, editI
           diagonalSide: state.diagonalSide,
           leftDiagStartHeight: state.leftDiagStartHeight,
           rightDiagStartHeight: state.rightDiagStartHeight,
-          diagTopWidth: state.diagTopWidth,
+          leftDiagTopWidth:  state.leftDiagTopWidth,
+          rightDiagTopWidth: state.rightDiagTopWidth,
           hasTopCabinet: state.needsTopCabinet(),
           topCabinetHeightCm: state.topCabinetHeight(),
         }

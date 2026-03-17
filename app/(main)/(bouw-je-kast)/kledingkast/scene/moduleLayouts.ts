@@ -180,7 +180,7 @@ export function computeModulePositions(
 
   switch (anchor.type) {
     case 'bottom':
-      specialElementY = -0.108
+      specialElementY = -0.118
       fillAbove = { start: seHeight, end: moduleHeight }
       break
 

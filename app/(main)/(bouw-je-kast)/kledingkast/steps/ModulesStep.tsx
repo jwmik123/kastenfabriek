@@ -51,7 +51,8 @@ export default function ModulesStep() {
   const diagonalSide         = useClosetStore((s) => s.diagonalSide)
   const leftDiagStartHeight  = useClosetStore((s) => s.leftDiagStartHeight)
   const rightDiagStartHeight = useClosetStore((s) => s.rightDiagStartHeight)
-  const diagTopWidth         = useClosetStore((s) => s.diagTopWidth)
+  const leftDiagTopWidth     = useClosetStore((s) => s.leftDiagTopWidth)
+  const rightDiagTopWidth    = useClosetStore((s) => s.rightDiagTopWidth)
   const widthCm              = useClosetStore((s) => s.width)
   const mainHeightCm         = useClosetStore((s) => s.mainHeight())
   const widthM               = widthCm / 100
@@ -61,10 +62,11 @@ export default function ModulesStep() {
     diagonalSide,
     leftDiagStartHeight:  Math.min(leftDiagStartHeight,  mainHeightCm - 20) / 100,
     rightDiagStartHeight: Math.min(rightDiagStartHeight, mainHeightCm - 20) / 100,
-    diagTopWidth:  diagTopWidth / 100,
-    outerWidth:    widthCm     / 100,
-    mainHeight:    mainHeightM,
-  }), [diagonalSide, leftDiagStartHeight, rightDiagStartHeight, diagTopWidth, widthCm, mainHeightCm, mainHeightM])
+    leftDiagTopWidth:  leftDiagTopWidth  / 100,
+    rightDiagTopWidth: rightDiagTopWidth / 100,
+    outerWidth:        widthCm           / 100,
+    mainHeight:        mainHeightM,
+  }), [diagonalSide, leftDiagStartHeight, rightDiagStartHeight, leftDiagTopWidth, rightDiagTopWidth, widthCm, mainHeightCm, mainHeightM])
 
   const groups = groupModules(modules)
 

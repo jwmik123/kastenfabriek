@@ -84,12 +84,12 @@ function computeDoorProfile(
   const flatH = p.mainHeight - MODULE_FLOOR_Y - WALL
   const kinks: Array<{ x: number; y: number }> = []
 
-  if ((p.diagonalSide === 'left' || p.diagonalSide === 'both') && p.diagTopWidth > 0) {
-    const kx = CORPUS_WALL + p.diagTopWidth
+  if ((p.diagonalSide === 'left' || p.diagonalSide === 'both') && p.leftDiagTopWidth > 0) {
+    const kx = CORPUS_WALL + p.leftDiagTopWidth
     if (kx > leftXOuter && kx < rightXOuter) kinks.push({ x: kx, y: flatH })
   }
-  if ((p.diagonalSide === 'right' || p.diagonalSide === 'both') && p.diagTopWidth > 0) {
-    const kx = p.outerWidth - CORPUS_WALL - p.diagTopWidth
+  if ((p.diagonalSide === 'right' || p.diagonalSide === 'both') && p.rightDiagTopWidth > 0) {
+    const kx = p.outerWidth - CORPUS_WALL - p.rightDiagTopWidth
     if (kx > leftXOuter && kx < rightXOuter) kinks.push({ x: kx, y: flatH })
   }
 
@@ -121,12 +121,12 @@ function computeRoofProfile(
   // y snapped to flatH so the transition sits at the correct height.
   const kinks: Array<{ x: number; y: number }> = []
 
-  if ((p.diagonalSide === 'left' || p.diagonalSide === 'both') && p.diagTopWidth > 0) {
-    const kx = CORPUS_WALL + p.diagTopWidth
+  if ((p.diagonalSide === 'left' || p.diagonalSide === 'both') && p.leftDiagTopWidth > 0) {
+    const kx = CORPUS_WALL + p.leftDiagTopWidth
     if (kx > leftXOuter && kx < rightXOuter) kinks.push({ x: kx, y: flatH })
   }
-  if ((p.diagonalSide === 'right' || p.diagonalSide === 'both') && p.diagTopWidth > 0) {
-    const kx = p.outerWidth - CORPUS_WALL - p.diagTopWidth
+  if ((p.diagonalSide === 'right' || p.diagonalSide === 'both') && p.rightDiagTopWidth > 0) {
+    const kx = p.outerWidth - CORPUS_WALL - p.rightDiagTopWidth
     if (kx > leftXOuter && kx < rightXOuter) kinks.push({ x: kx, y: flatH })
   }
 
@@ -172,13 +172,14 @@ export default function Module({ index, layoutId, hasDoor, span, diagParams: p }
   // Correction = WALL*(rise + run - len) / run  =  WALL*(1 - sinT) / cosT
   const riseLeft  = p.mainHeight - p.leftDiagStartHeight
   const riseRight = p.mainHeight - p.rightDiagStartHeight
-  // run = full outer-face horizontal extent = CORPUS_WALL + diagTopWidth (matches SideWallAssembly)
-  const run       = CORPUS_WALL + p.diagTopWidth
-  const lenLeft   = Math.sqrt(riseLeft  * riseLeft  + run * run)
-  const lenRight  = Math.sqrt(riseRight * riseRight + run * run)
+  // runLeft/runRight = full outer-face horizontal extent per side (matches SideWallAssembly)
+  const runLeft   = CORPUS_WALL + p.leftDiagTopWidth
+  const runRight  = CORPUS_WALL + p.rightDiagTopWidth
+  const lenLeft   = Math.sqrt(riseLeft  * riseLeft  + runLeft  * runLeft)
+  const lenRight  = Math.sqrt(riseRight * riseRight + runRight * runRight)
 
-  const leftWallH  = wallHeightAt(leftWallXOuter,  p) + (hasLeftDiag  ? WALL * (riseLeft  + run - lenLeft)  / run : 0)
-  const rightWallH = wallHeightAt(rightWallXOuter, p) + (hasRightDiag ? WALL * (riseRight + run - lenRight) / run : 0)
+  const leftWallH  = wallHeightAt(leftWallXOuter,  p) + (hasLeftDiag  ? WALL * (riseLeft  + runLeft  - lenLeft)  / runLeft  : 0)
+  const rightWallH = wallHeightAt(rightWallXOuter, p) + (hasRightDiag ? WALL * (riseRight + runRight - lenRight) / runRight : 0)
 
   // Fill zones use the enclosed floor height (min of both walls — shelves must be fully enclosed)
   const roofY = Math.min(leftWallH, rightWallH)
@@ -281,13 +282,13 @@ export default function Module({ index, layoutId, hasDoor, span, diagParams: p }
   // fillToTop only applies when the entire roof is uniformly sloped (no kink inside).
   const hasKinkInRange =
     ((p.diagonalSide === 'left' || p.diagonalSide === 'both') &&
-      p.diagTopWidth > 0 &&
-      CORPUS_WALL + p.diagTopWidth > leftWallXOuter &&
-      CORPUS_WALL + p.diagTopWidth < rightWallXOuter) ||
+      p.leftDiagTopWidth > 0 &&
+      CORPUS_WALL + p.leftDiagTopWidth > leftWallXOuter &&
+      CORPUS_WALL + p.leftDiagTopWidth < rightWallXOuter) ||
     ((p.diagonalSide === 'right' || p.diagonalSide === 'both') &&
-      p.diagTopWidth > 0 &&
-      p.outerWidth - CORPUS_WALL - p.diagTopWidth > leftWallXOuter &&
-      p.outerWidth - CORPUS_WALL - p.diagTopWidth < rightWallXOuter)
+      p.rightDiagTopWidth > 0 &&
+      p.outerWidth - CORPUS_WALL - p.rightDiagTopWidth > leftWallXOuter &&
+      p.outerWidth - CORPUS_WALL - p.rightDiagTopWidth < rightWallXOuter)
   const fillToTop = moduleHasDiag && !hasKinkInRange
   // Diagonal: left wall lower → left diagonal → mirror=true; right wall lower → right diagonal → mirror=false
   const mirrorDoor       = moduleHasDiag ? leftWallH < rightWallH : (index % 2 === 1 || isLastModule)

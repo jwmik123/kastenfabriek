@@ -34,7 +34,10 @@ export interface ClosetConfigSnapshot {
   diagonalSide: DiagonalSide;
   leftDiagStartHeight: number;
   rightDiagStartHeight: number;
-  diagTopWidth: number;
+  leftDiagTopWidth: number;   // horizontal reach of left diagonal in cm
+  rightDiagTopWidth: number;  // horizontal reach of right diagonal in cm
+  /** @deprecated use leftDiagTopWidth / rightDiagTopWidth */
+  diagTopWidth?: number;
 
   // Derived (snapshotted for display)
   hasTopCabinet: boolean;

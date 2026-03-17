@@ -1,9 +1,11 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { useClosetStore } from '../store'
 import { Slider } from '@/components/ui/slider'
 import { cn } from '@/lib/utils'
 import type { DiagonalSide } from '../scene/diagonalUtils'
+import { getWidthRange, getStartHeightRange, clamp, diagAmplification } from '../diagonalConstraints'
 
 function DimensionInput({
   label,
@@ -13,6 +15,7 @@ function DimensionInput({
   unit,
   onChange,
   hint,
+  labelWidth = 'w-14',
 }: {
   label: string
   value: number
@@ -21,11 +24,12 @@ function DimensionInput({
   unit: string
   onChange: (v: number) => void
   hint?: string
+  labelWidth?: string
 }) {
   return (
     <div className="space-y-1">
       <div className="flex items-center gap-3">
-        <span className="w-14 text-sm font-medium shrink-0">{label}</span>
+        <span className={cn(labelWidth, 'text-sm font-medium shrink-0')}>{label}</span>
         <Slider
           min={min}
           max={max}
@@ -39,46 +43,60 @@ function DimensionInput({
         </span>
       </div>
       {hint && (
-        <p className="pl-[4.25rem] text-[11px] text-muted-foreground">{hint}</p>
+        <p className={cn('text-[11px] text-muted-foreground', labelWidth === 'w-14' ? 'pl-[4.25rem]' : 'pl-[5.5rem]')}>{hint}</p>
       )}
     </div>
   )
 }
 
-function NumberInput({
+function DiagNumberInput({
   label,
   value,
   min,
   max,
-  unit,
   onChange,
 }: {
   label: string
   value: number
   min: number
   max: number
-  unit: string
   onChange: (v: number) => void
 }) {
+  const [draft, setDraft] = useState(String(value))
+
+  // Sync draft when the committed value changes externally (e.g. auto-clamp from store)
+  useEffect(() => {
+    setDraft(String(value))
+  }, [value])
+
+  const parsed = Number(draft)
+  const isValid = !isNaN(parsed) && parsed >= min && parsed <= max
+
+  const commit = () => {
+    const clamped = clamp(isNaN(parsed) ? value : parsed, min, max)
+    setDraft(String(clamped))
+    onChange(clamped)
+  }
+
   return (
-    <div className="flex items-center gap-3">
-      <span className="w-36 text-sm shrink-0">{label}</span>
+    <div className="flex items-center gap-2">
+      <span className="w-24 text-sm text-muted-foreground shrink-0">{label}</span>
       <input
         type="number"
         min={min}
         max={max}
-        value={value}
-        onChange={(e) => {
-          const v = parseInt(e.target.value, 10)
-          if (!isNaN(v)) onChange(v)
-        }}
-        onBlur={(e) => {
-          const v = parseInt(e.target.value, 10)
-          if (!isNaN(v)) onChange(Math.max(min, Math.min(max, v)))
-        }}
-        className="w-20 rounded-md border bg-background px-2 py-1 text-sm text-right tabular-nums focus:outline-none focus:ring-2 focus:ring-ring"
+        step={1}
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur() }}
+        className={cn(
+          'w-20 rounded border px-2 py-1 text-sm tabular-nums text-right bg-background focus:outline-none focus:ring-1 focus:ring-ring',
+          isValid ? 'border-input' : 'border-orange-400 bg-orange-50 text-orange-900',
+        )}
       />
-      <span className="text-sm text-muted-foreground">{unit}</span>
+      <span className="text-sm text-muted-foreground shrink-0">cm</span>
+      <span className="text-[11px] text-muted-foreground shrink-0">{min}–{max}</span>
     </div>
   )
 }
@@ -102,24 +120,64 @@ export default function DimensionsStep() {
   const maxModules = useClosetStore((s) => s.maxModules())
   const constraints = useClosetStore((s) => s.constraints)
 
+  const moduleCount = useClosetStore((s) => s.moduleCount)
   const diagonalSide = useClosetStore((s) => s.diagonalSide)
   const leftDiagStartHeight = useClosetStore((s) => s.leftDiagStartHeight)
   const rightDiagStartHeight = useClosetStore((s) => s.rightDiagStartHeight)
-  const diagTopWidth = useClosetStore((s) => s.diagTopWidth)
+  const leftDiagTopWidth = useClosetStore((s) => s.leftDiagTopWidth)
+  const rightDiagTopWidth = useClosetStore((s) => s.rightDiagTopWidth)
   const setDiagonalSide = useClosetStore((s) => s.setDiagonalSide)
   const setLeftDiagStartHeight = useClosetStore((s) => s.setLeftDiagStartHeight)
   const setRightDiagStartHeight = useClosetStore((s) => s.setRightDiagStartHeight)
-  const setDiagTopWidth = useClosetStore((s) => s.setDiagTopWidth)
+  const setLeftDiagTopWidth = useClosetStore((s) => s.setLeftDiagTopWidth)
+  const setRightDiagTopWidth = useClosetStore((s) => s.setRightDiagTopWidth)
   const mainHeight = useClosetStore((s) => s.mainHeight())
+
+  const startHeightRange = getStartHeightRange(mainHeight)
+  const hasLeft  = diagonalSide === 'left'  || diagonalSide === 'both'
+  const hasRight = diagonalSide === 'right' || diagonalSide === 'both'
+  const hasDiagonal = diagonalSide !== 'none'
+
+  // Amplification: how much the diagonal's reach is multiplied from mainH to full closet height.
+  // For non-TC closets this is ~1. For TC closets (height > 275cm) this can be 4-5×.
+  const leftAmp  = diagAmplification(leftDiagStartHeight,  mainHeight, height)
+  const rightAmp = diagAmplification(rightDiagStartHeight, mainHeight, height)
+
+  // Visual widths: what the user sees in the 3D view (reach at full closet height)
+  const leftVisualWidth  = Math.round(leftDiagTopWidth  * leftAmp)
+  const rightVisualWidth = Math.round(rightDiagTopWidth * rightAmp)
+
+  // Constraint ranges in visual space
+  const leftWidthRange  = hasLeft  ? getWidthRange('left',  width, moduleCount, diagonalSide === 'both' ? rightVisualWidth : null) : null
+  const rightWidthRange = hasRight ? getWidthRange('right', width, moduleCount, diagonalSide === 'both' ? leftVisualWidth  : null) : null
+
+  // Auto-clamp when closetWidth, moduleCount, or the other side changes (all in visual space)
+  useEffect(() => {
+    if (!hasLeft) return
+    const rightVis = hasRight
+      ? Math.round(rightDiagTopWidth * diagAmplification(rightDiagStartHeight, mainHeight, height))
+      : null
+    const range = getWidthRange('left', width, moduleCount, rightVis)
+    const amp   = diagAmplification(leftDiagStartHeight, mainHeight, height)
+    const clamped = Math.round(clamp(leftDiagTopWidth * amp, range.min, range.max) / amp)
+    if (clamped !== leftDiagTopWidth) setLeftDiagTopWidth(clamped)
+  }, [width, moduleCount, rightDiagTopWidth, rightDiagStartHeight, diagonalSide]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!hasRight) return
+    const leftVis = hasLeft
+      ? Math.round(leftDiagTopWidth * diagAmplification(leftDiagStartHeight, mainHeight, height))
+      : null
+    const range = getWidthRange('right', width, moduleCount, leftVis)
+    const amp   = diagAmplification(rightDiagStartHeight, mainHeight, height)
+    const clamped = Math.round(clamp(rightDiagTopWidth * amp, range.min, range.max) / amp)
+    if (clamped !== rightDiagTopWidth) setRightDiagTopWidth(clamped)
+  }, [width, moduleCount, leftDiagTopWidth, leftDiagStartHeight, diagonalSide]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const sc = constraints?.singleCorpus
   const topMax = constraints?.topCabinet.maxHeight ?? 110
   const minW = sc?.minWidth ?? 15
   const maxW = (sc?.maxWidth ?? 65) * 8
-
-  const hasLeft = diagonalSide === 'left' || diagonalSide === 'both'
-  const hasRight = diagonalSide === 'right' || diagonalSide === 'both'
-  const hasDiagonal = diagonalSide !== 'none'
 
   return (
     <div className="space-y-6">
@@ -183,35 +241,53 @@ export default function DimensionsStep() {
         </div>
 
         {hasDiagonal && (
-          <div className="space-y-2 pl-1">
+          <div className="space-y-4 pl-1">
             {hasLeft && (
-              <NumberInput
-                label="Hoogte begin schuin links"
-                value={leftDiagStartHeight}
-                min={100}
-                max={Math.floor(mainHeight - 20)}
-                unit="cm"
-                onChange={setLeftDiagStartHeight}
-              />
+              <div className="space-y-2">
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Links</span>
+                <div className="space-y-2 pl-1">
+                  <DiagNumberInput
+                    label="Starthoogte"
+                    value={leftDiagStartHeight}
+                    min={startHeightRange.min}
+                    max={startHeightRange.max}
+                    onChange={setLeftDiagStartHeight}
+                  />
+                  {leftWidthRange && (
+                    <DiagNumberInput
+                      label="Breedte"
+                      value={leftVisualWidth}
+                      min={leftWidthRange.min}
+                      max={leftWidthRange.max}
+                      onChange={(vis) => setLeftDiagTopWidth(Math.round(vis / leftAmp))}
+                    />
+                  )}
+                </div>
+              </div>
             )}
             {hasRight && (
-              <NumberInput
-                label="Hoogte begin schuin rechts"
-                value={rightDiagStartHeight}
-                min={100}
-                max={Math.floor(mainHeight - 20)}
-                unit="cm"
-                onChange={setRightDiagStartHeight}
-              />
+              <div className="space-y-2">
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Rechts</span>
+                <div className="space-y-2 pl-1">
+                  <DiagNumberInput
+                    label="Starthoogte"
+                    value={rightDiagStartHeight}
+                    min={startHeightRange.min}
+                    max={startHeightRange.max}
+                    onChange={setRightDiagStartHeight}
+                  />
+                  {rightWidthRange && (
+                    <DiagNumberInput
+                      label="Breedte"
+                      value={rightVisualWidth}
+                      min={rightWidthRange.min}
+                      max={rightWidthRange.max}
+                      onChange={(vis) => setRightDiagTopWidth(Math.round(vis / rightAmp))}
+                    />
+                  )}
+                </div>
+              </div>
             )}
-            <NumberInput
-              label="Breedte schuin bovenkant"
-              value={diagTopWidth}
-              min={10}
-              max={Math.floor(width / 2 - 5)}
-              unit="cm"
-              onChange={setDiagTopWidth}
-            />
           </div>
         )}
       </div>

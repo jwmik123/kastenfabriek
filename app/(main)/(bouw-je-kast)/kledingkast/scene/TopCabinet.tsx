@@ -5,6 +5,7 @@ import * as THREE from 'three/webgpu'
 import gsap from 'gsap'
 import { useClosetStore } from '../store'
 import ClosetMaterial from '../../_shared/materials/ClosetMaterial'
+import { Model as HingeModel } from '../../_shared/objects/Hinge'
 import { CORPUS_WALL } from './diagonalUtils'
 import type { DiagParams } from './diagonalUtils'
 
@@ -13,28 +14,31 @@ const DOOR_DEPTH = 0.018
 const SPACE = 0.001
 const CLOSET_INSIDE_INSET = 0.025
 const SIDE_WALL_EXTRA = 0.005  // must match ClosetCorpus.tsx
+const HINGE_EDGE_OFFSET = 0.08
 
 // ---------------------------------------------------------------------------
-// Extends getDiagHeightAt above mainHeight using the SAME linear slope.
-// Caps at closetH instead of p.mainHeight — same formula, higher ceiling.
+// Height of the TC ceiling outer face at x (from outer left).
+// Uses the OUTER face formula — same geometry as ClosetCorpus's diagonal
+// panel outer face and topRunLeft calculation — so the kink point lands at
+// exactly the same X as the corpus top panel left edge.
 // ---------------------------------------------------------------------------
 function getFullDiagHeightAt(x: number, p: DiagParams, closetH: number): number {
   let h = closetH
 
   if (p.diagonalSide === 'left' || p.diagonalSide === 'both') {
-    if (p.diagTopWidth > 0 && p.mainHeight > p.leftDiagStartHeight) {
-      const xFromInner = x - CORPUS_WALL
-      const t = xFromInner / p.diagTopWidth
+    if (p.leftDiagTopWidth > 0 && p.mainHeight > p.leftDiagStartHeight) {
+      const fullRun = CORPUS_WALL + p.leftDiagTopWidth   // outer face runs from x=0 to fullRun at mainH
+      const t = x / fullRun
       const hDiag = p.leftDiagStartHeight + (p.mainHeight - p.leftDiagStartHeight) * Math.max(0, t)
       if (hDiag < closetH) h = Math.min(h, hDiag)
     }
   }
 
   if (p.diagonalSide === 'right' || p.diagonalSide === 'both') {
-    if (p.diagTopWidth > 0 && p.mainHeight > p.rightDiagStartHeight) {
+    if (p.rightDiagTopWidth > 0 && p.mainHeight > p.rightDiagStartHeight) {
       const xFromRight = p.outerWidth - x
-      const xFromInner = xFromRight - CORPUS_WALL
-      const t = xFromInner / p.diagTopWidth
+      const fullRun = CORPUS_WALL + p.rightDiagTopWidth
+      const t = xFromRight / fullRun
       const hDiag = p.rightDiagStartHeight + (p.mainHeight - p.rightDiagStartHeight) * Math.max(0, t)
       if (hDiag < closetH) h = Math.min(h, hDiag)
     }
@@ -63,20 +67,21 @@ function computeTCRoofProfile(
   const flatH = closetH - mainH - WALL  // flat-zone ceiling outer-face height (TC-local)
 
   // Kink points where the extended diagonal transitions to flat within this slot.
-  // Same approach as Module.tsx: x = where the diagonal inner face reaches closetH.
+  // Uses outer face formula: x = where the diagonal outer face reaches closetH,
+  // same as ClosetCorpus topRunLeft — so TC kink aligns exactly with corpus top panel.
   const kinks: Array<{ x: number; y: number }> = []
 
   if ((p.diagonalSide === 'left' || p.diagonalSide === 'both') &&
-      p.diagTopWidth > 0 && p.mainHeight > p.leftDiagStartHeight) {
+      p.leftDiagTopWidth > 0 && p.mainHeight > p.leftDiagStartHeight) {
     const scale = (closetH - p.leftDiagStartHeight) / (p.mainHeight - p.leftDiagStartHeight)
-    const kx = CORPUS_WALL + p.diagTopWidth * scale
+    const kx = (CORPUS_WALL + p.leftDiagTopWidth) * scale   // matches ClosetCorpus topRunLeft
     if (kx > lx && kx < rx) kinks.push({ x: kx, y: flatH })
   }
 
   if ((p.diagonalSide === 'right' || p.diagonalSide === 'both') &&
-      p.diagTopWidth > 0 && p.mainHeight > p.rightDiagStartHeight) {
+      p.rightDiagTopWidth > 0 && p.mainHeight > p.rightDiagStartHeight) {
     const scale = (closetH - p.rightDiagStartHeight) / (p.mainHeight - p.rightDiagStartHeight)
-    const kx = p.outerWidth - CORPUS_WALL - p.diagTopWidth * scale
+    const kx = p.outerWidth - (CORPUS_WALL + p.rightDiagTopWidth) * scale   // matches ClosetCorpus topRunRight
     if (kx > lx && kx < rx) kinks.push({ x: kx, y: flatH })
   }
 
@@ -167,41 +172,72 @@ function TopCabinetSlot({
     return new THREE.ExtrudeGeometry(shape, { depth: WALL, bevelEnabled: false })
   }, [roofProfile, slotW])
 
-  // Left divider — simple rectangle. The ceiling panel sits on top of it.
+  // Left divider — trapezoid: outer (left) face at ceiling outer-top height, inner (right)
+  // face interpolated from innerProfile so the top meets the sloped ceiling with no gap.
+  // Same approach as Module.tsx leftWallGeo.
   const leftWallGeo = useMemo(() => {
     if (leftH <= WALL) return null
+    if (innerProfile.length < 2) return null
+    const t = (WALL - innerProfile[0].x) / (innerProfile[1].x - innerProfile[0].x)
+    const hRight = innerProfile[0].y + t * (innerProfile[1].y - innerProfile[0].y)
     const shape = new THREE.Shape()
-    shape.moveTo(0, 0); shape.lineTo(WALL, 0); shape.lineTo(WALL, leftH); shape.lineTo(0, leftH)
+    shape.moveTo(0, 0)
+    shape.lineTo(WALL, 0)
+    shape.lineTo(WALL, hRight)
+    shape.lineTo(0, leftH)
     shape.closePath()
     return new THREE.ExtrudeGeometry(shape, { depth: moduleDepth, bevelEnabled: false })
-  }, [leftH, moduleDepth])
+  }, [leftH, innerProfile, moduleDepth])
 
-  // Right divider — simple rectangle.
+  // Right divider — trapezoid: outer (right) face at ceiling outer-top height, inner (left)
+  // face interpolated from innerProfile.
   const rightWallGeo = useMemo(() => {
     if (rightH <= WALL) return null
+    if (innerProfile.length < 2) return null
+    const n = innerProfile.length
+    const t = (slotW - WALL - innerProfile[n - 2].x) / (innerProfile[n - 1].x - innerProfile[n - 2].x)
+    const hLeft = innerProfile[n - 2].y + t * (innerProfile[n - 1].y - innerProfile[n - 2].y)
     const shape = new THREE.Shape()
-    shape.moveTo(slotW - WALL, 0); shape.lineTo(slotW, 0)
-    shape.lineTo(slotW, rightH); shape.lineTo(slotW - WALL, rightH)
+    shape.moveTo(slotW - WALL, 0)
+    shape.lineTo(slotW, 0)
+    shape.lineTo(slotW, rightH)
+    shape.lineTo(slotW - WALL, hLeft)
     shape.closePath()
     return new THREE.ExtrudeGeometry(shape, { depth: moduleDepth, bevelEnabled: false })
-  }, [rightH, slotW, moduleDepth])
+  }, [rightH, slotW, innerProfile, moduleDepth])
 
-  // Door — rectangle sized to the usable interior height.
+  // Door — polygon whose top edge follows the roofProfile so it matches the module opening
+  // exactly: rectangular in the flat zone, trapezoidal in the diagonal zone.
   const usableH = Math.min(leftH, rightH)
   const hasDoor = slotW > WALL * 4 && usableH > WALL * 4
 
   const doorGeo = useMemo(() => {
     if (!hasDoor) return null
     const shape = new THREE.Shape()
+
+    // Bottom edge (flat)
     shape.moveTo(SPACE, SPACE)
     shape.lineTo(slotW - SPACE, SPACE)
-    shape.lineTo(slotW - SPACE, usableH - SPACE)
-    shape.lineTo(SPACE, usableH - SPACE)
+
+    // Top-right corner — ceiling height at right edge
+    shape.lineTo(slotW - SPACE, roofProfile[roofProfile.length - 1].y - SPACE)
+
+    // Interior kink points (right to left) — present when the diagonal→flat transition
+    // falls inside the slot width.
+    for (let i = roofProfile.length - 2; i >= 1; i--) {
+      const pt = roofProfile[i]
+      const x = Math.max(SPACE, Math.min(slotW - SPACE, pt.x))
+      shape.lineTo(x, pt.y - SPACE)
+    }
+
+    // Top-left corner — ceiling height at left edge
+    shape.lineTo(SPACE, roofProfile[0].y - SPACE)
+
     shape.closePath()
     const geo = new THREE.ExtrudeGeometry(shape, { depth: DOOR_DEPTH, bevelEnabled: false })
     geo.translate(-slotW / 2, 0, -DOOR_DEPTH / 2)
     return geo
-  }, [hasDoor, slotW, usableH])
+  }, [hasDoor, slotW, roofProfile])
 
   useEffect(() => {
     if (!pivotRef.current || !posRef.current) return
@@ -220,6 +256,14 @@ function TopCabinetSlot({
 
   const pivotX = mirror ? slotW : 0
   const panelX = mirror ? -slotW / 2 : slotW / 2
+  const hingeX = mirror ? slotW - WALL - 0.01 : WALL + 0.01
+
+  // Hinges at the pivot edge — clamped to the height at that edge
+  const hingeEdgeH = mirror ? rightH : leftH
+  const hingeYs = useMemo(() => {
+    const maxH = hingeEdgeH - SPACE
+    return [HINGE_EDGE_OFFSET, hingeEdgeH - HINGE_EDGE_OFFSET].filter((y) => y > 0 && y < maxH)
+  }, [hingeEdgeH])
 
   // Flat zone: both edges at full height — add a middle shelf.
   const isFlat = leftH >= flatH - WALL * 0.5 && rightH >= flatH - WALL * 0.5
@@ -237,14 +281,14 @@ function TopCabinetSlot({
         <ClosetMaterial variant="binnenkant" />
       </mesh>
 
-      {/* Left divider — simple rectangle */}
+      {/* Left divider — trapezoid matching ceiling inner face */}
       {leftWallGeo && (
         <mesh position={[0, 0, 0]} geometry={leftWallGeo} castShadow receiveShadow>
           <ClosetMaterial variant="binnenkant" />
         </mesh>
       )}
 
-      {/* Right divider — simple rectangle */}
+      {/* Right divider — trapezoid matching ceiling inner face */}
       {rightWallGeo && (
         <mesh position={[0, 0, 0]} geometry={rightWallGeo} castShadow receiveShadow>
           <ClosetMaterial variant="binnenkant" />
@@ -265,7 +309,7 @@ function TopCabinetSlot({
         </mesh>
       )}
 
-      {/* Push-to-open door */}
+      {/* Door */}
       {hasDoor && doorGeo && (
         <group ref={pivotRef} position={[pivotX, 0, moduleDepth]}>
           <group ref={posRef}>
@@ -276,6 +320,11 @@ function TopCabinetSlot({
           </group>
         </group>
       )}
+
+      {/* Hinges */}
+      {hasDoor && hingeYs.map((y, i) => (
+        <HingeModel key={i} position={[hingeX, y, moduleDepth - 0.03]} doorsOpen={doorsOpen} />
+      ))}
     </>
   )
 }
@@ -296,17 +345,19 @@ export default function TopCabinet() {
   const diagonalSide            = useClosetStore((s) => s.diagonalSide)
   const leftDiagStartHeightCm   = useClosetStore((s) => s.leftDiagStartHeight)
   const rightDiagStartHeightCm  = useClosetStore((s) => s.rightDiagStartHeight)
-  const diagTopWidthCm          = useClosetStore((s) => s.diagTopWidth)
+  const leftDiagTopWidthCm      = useClosetStore((s) => s.leftDiagTopWidth)
+  const rightDiagTopWidthCm     = useClosetStore((s) => s.rightDiagTopWidth)
 
   // Build DiagParams the same way ClosetCorpus does.
   const p = useMemo<DiagParams>(() => ({
     diagonalSide,
     leftDiagStartHeight:  Math.min(leftDiagStartHeightCm,  mainHCm - 20) / 100,
     rightDiagStartHeight: Math.min(rightDiagStartHeightCm, mainHCm - 20) / 100,
-    diagTopWidth:  diagTopWidthCm / 100,
-    outerWidth:    width,
-    mainHeight:    mainH,
-  }), [diagonalSide, leftDiagStartHeightCm, rightDiagStartHeightCm, diagTopWidthCm, width, mainHCm, mainH])
+    leftDiagTopWidth:  leftDiagTopWidthCm  / 100,
+    rightDiagTopWidth: rightDiagTopWidthCm / 100,
+    outerWidth:        width,
+    mainHeight:        mainH,
+  }), [diagonalSide, leftDiagStartHeightCm, rightDiagStartHeightCm, leftDiagTopWidthCm, rightDiagTopWidthCm, width, mainHCm, mainH])
 
   if (!needsTop) return null
 
@@ -334,14 +385,18 @@ export default function TopCabinet() {
         const leftH  = tcWallHeightAt(lx, p, mainH, ceilH)
         const rightH = tcWallHeightAt(rx, p, mainH, ceilH)
 
-        // Skip slots with no usable TC space
-        if (Math.max(leftH, rightH) < WALL * 3) return null
+        // Skip slots where either edge lacks sufficient TC height.
+        // This prevents rendering modules that start in the void below the diagonal,
+        // where the extended slope hasn't yet risen far enough above mainHeight.
+        if (leftH < WALL * 2 || rightH < WALL * 2) return null
 
         const roofProfile = computeTCRoofProfile(lx, rx, p, mainH, ceilH)
 
         const x      = startX + i * slotW         // x from world center (TC group-local)
         const isLast = i === moduleCount - 1
-        const mirror = i % 2 === 1 || isLast
+        // Diagonal slots: pivot at the tallest side. Flat slots: alternate.
+        const isDiagonal = Math.abs(leftH - rightH) > WALL * 0.5
+        const mirror = isDiagonal ? rightH > leftH : (i % 2 === 1 || isLast)
 
         return (
           <group key={i} position={[x, 0, 0]}>

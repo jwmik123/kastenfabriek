@@ -1,7 +1,9 @@
 import { create } from 'zustand'
 import type { FullPricingData, ModuleLayout, PricingConstraints } from '@/types/configurator-pricing'
 import type { DiagonalSide } from './scene/diagonalUtils'
-import { isFullHeight } from './scene/diagonalUtils'
+import { getDiagHeightAt, isFullHeight } from './scene/diagonalUtils'
+import { getWidthRange, getStartHeightRange, clamp, diagAmplification } from './diagonalConstraints'
+import { MODULE_LAYOUTS } from './scene/moduleLayouts'
 import type { ClosetConfigSnapshot } from '@/lib/cart/types'
 
 export interface ModuleSlot {
@@ -29,9 +31,10 @@ interface ClosetState {
 
   // Diagonal walls
   diagonalSide: DiagonalSide
-  leftDiagStartHeight: number  // cm
-  rightDiagStartHeight: number // cm
-  diagTopWidth: number         // cm — shared for both sides
+  leftDiagStartHeight: number   // cm
+  rightDiagStartHeight: number  // cm
+  leftDiagTopWidth: number      // cm — horizontal reach of left diagonal
+  rightDiagTopWidth: number     // cm — horizontal reach of right diagonal
 
   // Modules
   moduleCount: number
@@ -63,7 +66,8 @@ interface ClosetState {
   setDiagonalSide: (side: DiagonalSide) => void
   setLeftDiagStartHeight: (v: number) => void
   setRightDiagStartHeight: (v: number) => void
-  setDiagTopWidth: (v: number) => void
+  setLeftDiagTopWidth: (v: number) => void
+  setRightDiagTopWidth: (v: number) => void
   hydrate: (data: FullPricingData) => void
   setStep: (step: number) => void
   nextStep: () => void
@@ -96,7 +100,8 @@ function resetDiagDoubles(modules: ModuleSlot[], diagParams: {
   diagonalSide: DiagonalSide
   leftDiagStartHeight: number
   rightDiagStartHeight: number
-  diagTopWidth: number
+  leftDiagTopWidth: number
+  rightDiagTopWidth: number
   outerWidth: number
   mainHeight: number
 }, moduleCount: number, widthM: number): ModuleSlot[] {
@@ -134,7 +139,8 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
   diagonalSide: 'none',
   leftDiagStartHeight: 180,
   rightDiagStartHeight: 180,
-  diagTopWidth: 50,
+  leftDiagTopWidth: 50,
+  rightDiagTopWidth: 50,
 
   moduleCount: 3,
   modules: [
@@ -176,61 +182,142 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
   setDiagonalSide: (diagonalSide) => {
     const s = get()
     const mainH = s.mainHeight()
+    const hasBoth = diagonalSide === 'both'
+    const hasLeft = diagonalSide === 'left' || hasBoth
+    const hasRight = diagonalSide === 'right' || hasBoth
+
+    // Compute visual widths (reach at full closet height) for constraint checks
+    const leftAmp  = diagAmplification(s.leftDiagStartHeight,  mainH, s.height)
+    const rightAmp = diagAmplification(s.rightDiagStartHeight, mainH, s.height)
+    const leftVisual  = s.leftDiagTopWidth  * leftAmp
+    const rightVisual = s.rightDiagTopWidth * rightAmp
+
+    const leftRange  = hasLeft  ? getWidthRange('left',  s.width, s.moduleCount, hasBoth ? rightVisual : null) : null
+    const rightRange = hasRight ? getWidthRange('right', s.width, s.moduleCount, hasBoth ? leftVisual  : null) : null
+
+    // Clamp in visual space, convert back to internal
+    const clampedLeft  = leftRange  ? Math.round(clamp(leftVisual,  leftRange.min,  leftRange.max)  / leftAmp)  : s.leftDiagTopWidth
+    const clampedRight = rightRange ? Math.round(clamp(rightVisual, rightRange.min, rightRange.max) / rightAmp) : s.rightDiagTopWidth
+
     const diagParams = {
       diagonalSide,
       leftDiagStartHeight:  Math.min(s.leftDiagStartHeight,  mainH - 20) / 100,
       rightDiagStartHeight: Math.min(s.rightDiagStartHeight, mainH - 20) / 100,
-      diagTopWidth:  s.diagTopWidth / 100,
-      outerWidth:    s.width / 100,
-      mainHeight:    mainH / 100,
+      leftDiagTopWidth:  clampedLeft  / 100,
+      rightDiagTopWidth: clampedRight / 100,
+      outerWidth: s.width / 100,
+      mainHeight: mainH   / 100,
     }
-    set({ diagonalSide, modules: resetDiagDoubles(s.modules, diagParams, s.moduleCount, s.width / 100) })
+    set({
+      diagonalSide,
+      leftDiagTopWidth: clampedLeft,
+      rightDiagTopWidth: clampedRight,
+      modules: resetDiagDoubles(s.modules, diagParams, s.moduleCount, s.width / 100),
+    })
   },
 
   setLeftDiagStartHeight: (v) => {
     const s = get()
     const mainH = s.mainHeight()
-    const clamped = Math.max(100, Math.min(mainH * 100 - 20, v))
+    const { min: shMin, max: shMax } = getStartHeightRange(mainH)
+    const clamped = clamp(v, shMin, shMax)
+
+    // Maintain the visual width (reach at full closet height) constant across the start-height change
+    const oldAmp    = diagAmplification(s.leftDiagStartHeight, mainH, s.height)
+    const newAmp    = diagAmplification(clamped,               mainH, s.height)
+    const currentVisual = s.leftDiagTopWidth * oldAmp
+    const rightVisual   = s.diagonalSide === 'both'
+      ? s.rightDiagTopWidth * diagAmplification(s.rightDiagStartHeight, mainH, s.height)
+      : null
+    const range        = getWidthRange('left', s.width, s.moduleCount, rightVisual)
+    const clampedVisual = clamp(currentVisual, range.min, range.max)
+    const newInternal  = Math.round(clampedVisual / newAmp)
+
     const diagParams = {
       diagonalSide: s.diagonalSide,
       leftDiagStartHeight:  Math.min(clamped, mainH - 20) / 100,
       rightDiagStartHeight: Math.min(s.rightDiagStartHeight, mainH - 20) / 100,
-      diagTopWidth:  s.diagTopWidth / 100,
-      outerWidth:    s.width / 100,
-      mainHeight:    mainH / 100,
+      leftDiagTopWidth:  newInternal         / 100,
+      rightDiagTopWidth: s.rightDiagTopWidth / 100,
+      outerWidth: s.width / 100,
+      mainHeight: mainH   / 100,
     }
-    set({ leftDiagStartHeight: clamped, modules: resetDiagDoubles(s.modules, diagParams, s.moduleCount, s.width / 100) })
+    set({ leftDiagStartHeight: clamped, leftDiagTopWidth: newInternal, modules: resetDiagDoubles(s.modules, diagParams, s.moduleCount, s.width / 100) })
   },
 
   setRightDiagStartHeight: (v) => {
     const s = get()
     const mainH = s.mainHeight()
-    const clamped = Math.max(100, Math.min(mainH * 100 - 20, v))
+    const { min: shMin, max: shMax } = getStartHeightRange(mainH)
+    const clamped = clamp(v, shMin, shMax)
+
+    // Maintain the visual width (reach at full closet height) constant across the start-height change
+    const oldAmp    = diagAmplification(s.rightDiagStartHeight, mainH, s.height)
+    const newAmp    = diagAmplification(clamped,                mainH, s.height)
+    const currentVisual = s.rightDiagTopWidth * oldAmp
+    const leftVisual    = s.diagonalSide === 'both'
+      ? s.leftDiagTopWidth * diagAmplification(s.leftDiagStartHeight, mainH, s.height)
+      : null
+    const range         = getWidthRange('right', s.width, s.moduleCount, leftVisual)
+    const clampedVisual = clamp(currentVisual, range.min, range.max)
+    const newInternal   = Math.round(clampedVisual / newAmp)
+
     const diagParams = {
       diagonalSide: s.diagonalSide,
       leftDiagStartHeight:  Math.min(s.leftDiagStartHeight, mainH - 20) / 100,
-      rightDiagStartHeight: Math.min(clamped, mainH - 20) / 100,
-      diagTopWidth:  s.diagTopWidth / 100,
-      outerWidth:    s.width / 100,
-      mainHeight:    mainH / 100,
+      rightDiagStartHeight: Math.min(clamped, mainH - 20)               / 100,
+      leftDiagTopWidth:  s.leftDiagTopWidth / 100,
+      rightDiagTopWidth: newInternal        / 100,
+      outerWidth: s.width / 100,
+      mainHeight: mainH   / 100,
     }
-    set({ rightDiagStartHeight: clamped, modules: resetDiagDoubles(s.modules, diagParams, s.moduleCount, s.width / 100) })
+    set({ rightDiagStartHeight: clamped, rightDiagTopWidth: newInternal, modules: resetDiagDoubles(s.modules, diagParams, s.moduleCount, s.width / 100) })
   },
 
-  setDiagTopWidth: (v) => {
+  setLeftDiagTopWidth: (v) => {
+    // v is internal (reach at mainH, cm). Clamp in visual space, convert back.
     const s = get()
     const mainH = s.mainHeight()
-    const halfWidth = s.width / 2 - 5
-    const clamped = Math.max(10, Math.min(halfWidth, v))
+    const leftAmp    = diagAmplification(s.leftDiagStartHeight, mainH, s.height)
+    const rightVisual = s.diagonalSide === 'both'
+      ? s.rightDiagTopWidth * diagAmplification(s.rightDiagStartHeight, mainH, s.height)
+      : null
+    const range          = getWidthRange('left', s.width, s.moduleCount, rightVisual)
+    const clampedVisual  = clamp(v * leftAmp, range.min, range.max)
+    const clamped        = Math.round(clampedVisual / leftAmp)
     const diagParams = {
       diagonalSide: s.diagonalSide,
       leftDiagStartHeight:  Math.min(s.leftDiagStartHeight,  mainH - 20) / 100,
       rightDiagStartHeight: Math.min(s.rightDiagStartHeight, mainH - 20) / 100,
-      diagTopWidth:  clamped / 100,
-      outerWidth:    s.width / 100,
-      mainHeight:    mainH / 100,
+      leftDiagTopWidth:  clamped             / 100,
+      rightDiagTopWidth: s.rightDiagTopWidth / 100,
+      outerWidth: s.width / 100,
+      mainHeight: mainH   / 100,
     }
-    set({ diagTopWidth: clamped, modules: resetDiagDoubles(s.modules, diagParams, s.moduleCount, s.width / 100) })
+    set({ leftDiagTopWidth: clamped, modules: resetDiagDoubles(s.modules, diagParams, s.moduleCount, s.width / 100) })
+  },
+
+  setRightDiagTopWidth: (v) => {
+    // v is internal (reach at mainH, cm). Clamp in visual space, convert back.
+    const s = get()
+    const mainH = s.mainHeight()
+    const rightAmp   = diagAmplification(s.rightDiagStartHeight, mainH, s.height)
+    const leftVisual  = s.diagonalSide === 'both'
+      ? s.leftDiagTopWidth * diagAmplification(s.leftDiagStartHeight, mainH, s.height)
+      : null
+    const range          = getWidthRange('right', s.width, s.moduleCount, leftVisual)
+    const clampedVisual  = clamp(v * rightAmp, range.min, range.max)
+    const clamped        = Math.round(clampedVisual / rightAmp)
+    const diagParams = {
+      diagonalSide: s.diagonalSide,
+      leftDiagStartHeight:  Math.min(s.leftDiagStartHeight,  mainH - 20) / 100,
+      rightDiagStartHeight: Math.min(s.rightDiagStartHeight, mainH - 20) / 100,
+      leftDiagTopWidth:  s.leftDiagTopWidth / 100,
+      rightDiagTopWidth: clamped            / 100,
+      outerWidth: s.width / 100,
+      mainHeight: mainH   / 100,
+    }
+    set({ rightDiagTopWidth: clamped, modules: resetDiagDoubles(s.modules, diagParams, s.moduleCount, s.width / 100) })
   },
 
   hydrate: (data) => {
@@ -260,6 +347,31 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
       const newCount = Math.max(min, Math.min(max, state.moduleCount))
       state.setModuleCount(newCount)
     }
+
+    // Re-clamp diagonal widths against the new closet width (constraint in visual space)
+    const s = get()
+    if (s.diagonalSide !== 'none') {
+      const mainH   = s.mainHeight()
+      const hasBoth = s.diagonalSide === 'both'
+      const hasLeft  = s.diagonalSide === 'left'  || hasBoth
+      const hasRight = s.diagonalSide === 'right' || hasBoth
+      const leftAmp  = diagAmplification(s.leftDiagStartHeight,  mainH, s.height)
+      const rightAmp = diagAmplification(s.rightDiagStartHeight, mainH, s.height)
+      const leftVisual  = s.leftDiagTopWidth  * leftAmp
+      const rightVisual = s.rightDiagTopWidth * rightAmp
+      const updates: Partial<ClosetState> = {}
+      if (hasLeft) {
+        const range = getWidthRange('left', clamped, s.moduleCount, hasBoth ? rightVisual : null)
+        const c = Math.round(clamp(leftVisual, range.min, range.max) / leftAmp)
+        if (c !== s.leftDiagTopWidth) updates.leftDiagTopWidth = c
+      }
+      if (hasRight) {
+        const range = getWidthRange('right', clamped, s.moduleCount, hasBoth ? leftVisual : null)
+        const c = Math.round(clamp(rightVisual, range.min, range.max) / rightAmp)
+        if (c !== s.rightDiagTopWidth) updates.rightDiagTopWidth = c
+      }
+      if (Object.keys(updates).length > 0) set(updates)
+    }
   },
 
   setHeight: (height) => {
@@ -268,6 +380,16 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
     const maxH = (c?.maxHeight ?? 275) + topMax
     const minH = c?.minHeight ?? 200
     set({ height: Math.max(minH, Math.min(maxH, height)) })
+
+    // Re-clamp diagonal start heights against the new mainHeight
+    const s = get()
+    const { min, max: maxSH } = getStartHeightRange(s.mainHeight())
+    const updates: Partial<ClosetState> = {}
+    if (s.leftDiagStartHeight > maxSH) updates.leftDiagStartHeight = maxSH
+    if (s.leftDiagStartHeight < min) updates.leftDiagStartHeight = min
+    if (s.rightDiagStartHeight > maxSH) updates.rightDiagStartHeight = maxSH
+    if (s.rightDiagStartHeight < min) updates.rightDiagStartHeight = min
+    if (Object.keys(updates).length > 0) set(updates)
   },
 
   setDepth: (depth) => {
@@ -284,6 +406,30 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
     const max = get().maxModules()
     const clamped = Math.max(min, Math.min(max, count))
     const existing = get().modules
+    // Re-clamp diagonal widths since slot width changes with module count (constraint in visual space)
+    const s = get()
+    if (s.diagonalSide !== 'none') {
+      const mainH   = s.mainHeight()
+      const hasBoth = s.diagonalSide === 'both'
+      const hasLeft  = s.diagonalSide === 'left'  || hasBoth
+      const hasRight = s.diagonalSide === 'right' || hasBoth
+      const leftAmp  = diagAmplification(s.leftDiagStartHeight,  mainH, s.height)
+      const rightAmp = diagAmplification(s.rightDiagStartHeight, mainH, s.height)
+      const leftVisual  = s.leftDiagTopWidth  * leftAmp
+      const rightVisual = s.rightDiagTopWidth * rightAmp
+      const updates: Partial<ClosetState> = {}
+      if (hasLeft) {
+        const range = getWidthRange('left', s.width, clamped, hasBoth ? rightVisual : null)
+        const c = Math.round(clamp(leftVisual, range.min, range.max) / leftAmp)
+        if (c !== s.leftDiagTopWidth) updates.leftDiagTopWidth = c
+      }
+      if (hasRight) {
+        const range = getWidthRange('right', s.width, clamped, hasBoth ? leftVisual : null)
+        const c = Math.round(clamp(rightVisual, range.min, range.max) / rightAmp)
+        if (c !== s.rightDiagTopWidth) updates.rightDiagTopWidth = c
+      }
+      if (Object.keys(updates).length > 0) set(updates)
+    }
     const modules: ModuleSlot[] = Array.from({ length: clamped }, (_, i) =>
       existing[i] ?? { slotIndex: i, layoutId: null, hasDoor: true, span: 1 }
     ).map((m) =>
@@ -346,6 +492,8 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
   setSelectedSlot: (slot) => set({ selectedSlot: slot }),
   setHoveredSlot: (slot) => set({ hoveredSlot: slot }),
   restoreConfig: (config: ClosetConfigSnapshot) => {
+    // Support both new per-side format and legacy shared diagTopWidth
+    const legacyWidth = (config as { diagTopWidth?: number }).diagTopWidth ?? 50
     set({
       width: config.widthCm,
       height: config.heightCm,
@@ -365,21 +513,48 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
       diagonalSide: config.diagonalSide as DiagonalSide,
       leftDiagStartHeight: config.leftDiagStartHeight,
       rightDiagStartHeight: config.rightDiagStartHeight,
-      diagTopWidth: config.diagTopWidth,
+      leftDiagTopWidth:  config.leftDiagTopWidth  ?? legacyWidth,
+      rightDiagTopWidth: config.rightDiagTopWidth ?? legacyWidth,
       step: 1,
       selectedSlot: null,
     })
   },
   randomFill: () => {
-    const { moduleCount, modules } = get()
-    const layoutIds = [1, 2, 3, 4, 5, 6, 7, 8]
+    const { moduleCount, modules, width, diagonalSide, leftDiagStartHeight, rightDiagStartHeight, leftDiagTopWidth, rightDiagTopWidth } = get()
+    const widthM = width / 100
+    const mainHeightM = get().mainHeight() / 100
+    const MODULE_FLOOR_Y = 0.118 // ONDERSTEL_HEIGHT (0.108) + ONDERSTEL_GAP (0.010)
+    const slotW = (widthM - WALL_M * 2) / moduleCount
+    const diagParams = {
+      diagonalSide,
+      leftDiagStartHeight:  leftDiagStartHeight  / 100,
+      rightDiagStartHeight: rightDiagStartHeight / 100,
+      leftDiagTopWidth:  leftDiagTopWidth  / 100,
+      rightDiagTopWidth: rightDiagTopWidth / 100,
+      outerWidth: widthM,
+      mainHeight: mainHeightM,
+    }
+
+    const getEffectiveHeight = (slotIndex: number, span: 1 | 2 = 1) => {
+      const leftX  = WALL_M + slotIndex * slotW
+      const rightX = WALL_M + (slotIndex + span) * slotW
+      const leftH  = Math.max(0, getDiagHeightAt(leftX,  diagParams) - MODULE_FLOOR_Y - WALL_M)
+      const rightH = Math.max(0, getDiagHeightAt(rightX, diagParams) - MODULE_FLOOR_Y - WALL_M)
+      return Math.min(leftH, rightH)
+    }
+
     const newModules: ModuleSlot[] = []
     let i = 0
     while (i < moduleCount) {
-      const canDouble = i + 1 < moduleCount
+      const effectiveHeight = getEffectiveHeight(i)
+      const isUnderDiag = effectiveHeight < mainHeightM - 0.01
+
+      const canDouble = i + 1 < moduleCount && !isUnderDiag && isFullHeight(WALL_M + i * slotW, WALL_M + (i + 2) * slotW, diagParams)
       const isDouble = canDouble && Math.random() < 0.3
       const span: 1 | 2 = isDouble ? 2 : 1
-      const layoutId = layoutIds[Math.floor(Math.random() * layoutIds.length)]
+
+      const availableLayouts = MODULE_LAYOUTS.filter((l) => l.specialElement.height <= effectiveHeight)
+      const layoutId = availableLayouts[Math.floor(Math.random() * availableLayouts.length)]?.id ?? 1
       newModules.push({ ...modules[i], slotIndex: i, layoutId, span })
       if (isDouble) {
         newModules.push({ ...modules[i + 1], slotIndex: i + 1, layoutId: null, span: 1 })

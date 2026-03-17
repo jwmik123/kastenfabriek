@@ -23,9 +23,9 @@ function BackWall({ width, mainH, depth, p }: {
   const geometry = useMemo(() => {
     const shape = new THREE.Shape()
     const leftStartH  = getDiagHeightAt(0, p)
-    const leftTopX    = (p.diagonalSide === 'left'  || p.diagonalSide === 'both') ? CORPUS_WALL + p.diagTopWidth : 0
+    const leftTopX    = (p.diagonalSide === 'left'  || p.diagonalSide === 'both') ? CORPUS_WALL + p.leftDiagTopWidth  : 0
     const rightStartH = getDiagHeightAt(width, p)
-    const rightTopX   = (p.diagonalSide === 'right' || p.diagonalSide === 'both') ? width - CORPUS_WALL - p.diagTopWidth : width
+    const rightTopX   = (p.diagonalSide === 'right' || p.diagonalSide === 'both') ? width - CORPUS_WALL - p.rightDiagTopWidth : width
 
     // Bottom-left → bottom-right (in XY, extruded along Z = depth)
     shape.moveTo(-width / 2, 0)
@@ -99,7 +99,7 @@ function SideWallAssembly({ side, width, mainH, height, depth, p, needsTop }: {
     const topY = needsTop ? height + SIDE_WALL_EXTRA : mainH
     // The outer face runs from x=0 (outer left) to x=CORPUS_WALL+diagTopWidth at mainH.
     // Scale proportionally when topY differs from mainH (top cabinet case).
-    const fullRun = CORPUS_WALL + p.diagTopWidth
+    const fullRun = CORPUS_WALL + (isLeft ? p.leftDiagTopWidth : p.rightDiagTopWidth)
     const topX = mainH > diagStartH
       ? fullRun * (topY - diagStartH) / (mainH - diagStartH)
       : fullRun
@@ -125,7 +125,7 @@ function SideWallAssembly({ side, width, mainH, height, depth, p, needsTop }: {
     }
     shape.closePath()
     return new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: false })
-  }, [hasDiag, isLeft, width, p.diagTopWidth, diagStartH, mainH, height, needsTop, depth])
+  }, [hasDiag, isLeft, width, p.leftDiagTopWidth, p.rightDiagTopWidth, diagStartH, mainH, height, needsTop, depth])
 
   return (
     <>
@@ -159,17 +159,19 @@ export default function ClosetCorpus() {
   const diagonalSide         = useClosetStore((s) => s.diagonalSide)
   const leftDiagStartHeight  = useClosetStore((s) => s.leftDiagStartHeight)
   const rightDiagStartHeight = useClosetStore((s) => s.rightDiagStartHeight)
-  const diagTopWidth         = useClosetStore((s) => s.diagTopWidth)
+  const leftDiagTopWidthCm   = useClosetStore((s) => s.leftDiagTopWidth)
+  const rightDiagTopWidthCm  = useClosetStore((s) => s.rightDiagTopWidth)
   const widthCm              = useClosetStore((s) => s.width)
 
   const p = useMemo(() => ({
     diagonalSide,
     leftDiagStartHeight:  Math.min(leftDiagStartHeight,  mainHCm - 20) / 100,
     rightDiagStartHeight: Math.min(rightDiagStartHeight, mainHCm - 20) / 100,
-    diagTopWidth:  diagTopWidth / 100,
-    outerWidth:    widthCm     / 100,
-    mainHeight:    mainH,
-  }), [diagonalSide, leftDiagStartHeight, rightDiagStartHeight, diagTopWidth, widthCm, mainHCm, mainH])
+    leftDiagTopWidth:  leftDiagTopWidthCm  / 100,
+    rightDiagTopWidth: rightDiagTopWidthCm / 100,
+    outerWidth:        widthCm             / 100,
+    mainHeight:        mainH,
+  }), [diagonalSide, leftDiagStartHeight, rightDiagStartHeight, leftDiagTopWidthCm, rightDiagTopWidthCm, widthCm, mainHCm, mainH])
 
   const hasLeft  = p.diagonalSide === 'left'  || p.diagonalSide === 'both'
   const hasRight = p.diagonalSide === 'right' || p.diagonalSide === 'both'
@@ -185,19 +187,19 @@ export default function ClosetCorpus() {
   // With top cabinet the diagonal has extended further, so compute the run at topPanelWorldY.
   const topPanelWorldY = topPanelY + WALL / 2
   const topRunLeft  = hasLeft  && mainH > p.leftDiagStartHeight
-    ? (CORPUS_WALL + p.diagTopWidth) * (topPanelWorldY - p.leftDiagStartHeight) / (mainH - p.leftDiagStartHeight)
-    : (CORPUS_WALL + p.diagTopWidth)
+    ? (CORPUS_WALL + p.leftDiagTopWidth) * (topPanelWorldY - p.leftDiagStartHeight) / (mainH - p.leftDiagStartHeight)
+    : (CORPUS_WALL + p.leftDiagTopWidth)
   const topRunRight = hasRight && mainH > p.rightDiagStartHeight
-    ? (CORPUS_WALL + p.diagTopWidth) * (topPanelWorldY - p.rightDiagStartHeight) / (mainH - p.rightDiagStartHeight)
-    : (CORPUS_WALL + p.diagTopWidth)
+    ? (CORPUS_WALL + p.rightDiagTopWidth) * (topPanelWorldY - p.rightDiagStartHeight) / (mainH - p.rightDiagStartHeight)
+    : (CORPUS_WALL + p.rightDiagTopWidth)
   const topOffsetLeft   = hasLeft  ? topRunLeft  : 0
   const topOffsetRight  = hasRight ? topRunRight : 0
   const topPanelW       = width - topOffsetLeft - topOffsetRight
   const topPanelCenterX = (topOffsetLeft - topOffsetRight) / 2
 
   // Separator panel trimming: at mainH the diagonal inner face is at WALL + diagTopWidth from outer edge
-  const sepOffsetLeft   = hasLeft  ? WALL + p.diagTopWidth : 0
-  const sepOffsetRight  = hasRight ? WALL + p.diagTopWidth : 0
+  const sepOffsetLeft   = hasLeft  ? WALL + p.leftDiagTopWidth  : 0
+  const sepOffsetRight  = hasRight ? WALL + p.rightDiagTopWidth : 0
   const sepPanelW       = width - sepOffsetLeft - sepOffsetRight
   const sepPanelCenterX = (sepOffsetLeft - sepOffsetRight) / 2
 

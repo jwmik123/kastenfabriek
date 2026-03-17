@@ -3,9 +3,9 @@
 import { useRef, useEffect, useMemo } from 'react'
 import * as THREE from 'three/webgpu'
 import gsap from 'gsap'
-import ClosetMaterial from '../materials/ClosetMaterial'
-import { Model as HingeModel } from './Hinge'
-import { HandleByType } from './Handles'
+import ClosetMaterial from '../../../_shared/materials/ClosetMaterial'
+import { Model as HingeModel } from '../../../_shared/objects/Hinge'
+import { HandleByType } from '../../../_shared/objects/Handles'
 
 const DOOR_DEPTH = 0.018
 const MODULE_WALL = 0.018

@@ -26,12 +26,12 @@ function slotCeilingProfile(
 ): Array<{ x: number; y: number }> {
   const wallH = (x: number) => Math.max(0, getDiagHeightAt(x, p) - MODULE_FLOOR_Y - WALL)
   const xs: number[] = [leftXOuter]
-  if ((p.diagonalSide === 'left' || p.diagonalSide === 'both') && p.diagTopWidth > 0) {
-    const kink = p.diagTopWidth
+  if ((p.diagonalSide === 'left' || p.diagonalSide === 'both') && p.leftDiagTopWidth > 0) {
+    const kink = p.leftDiagTopWidth
     if (kink > leftXOuter && kink < rightXOuter) xs.push(kink)
   }
-  if ((p.diagonalSide === 'right' || p.diagonalSide === 'both') && p.diagTopWidth > 0) {
-    const kink = p.outerWidth - p.diagTopWidth
+  if ((p.diagonalSide === 'right' || p.diagonalSide === 'both') && p.rightDiagTopWidth > 0) {
+    const kink = p.outerWidth - p.rightDiagTopWidth
     if (kink > leftXOuter && kink < rightXOuter) xs.push(kink)
   }
   xs.push(rightXOuter)
@@ -148,7 +148,8 @@ export default function ClosetScene() {
   const diagonalSide         = useClosetStore((s) => s.diagonalSide)
   const leftDiagStartHeight  = useClosetStore((s) => s.leftDiagStartHeight)
   const rightDiagStartHeight = useClosetStore((s) => s.rightDiagStartHeight)
-  const diagTopWidth         = useClosetStore((s) => s.diagTopWidth)
+  const leftDiagTopWidth     = useClosetStore((s) => s.leftDiagTopWidth)
+  const rightDiagTopWidth    = useClosetStore((s) => s.rightDiagTopWidth)
   const outerWidth           = useClosetStore((s) => s.width)
   const mainHeightCm         = useClosetStore((s) => s.mainHeight())
 
@@ -156,10 +157,11 @@ export default function ClosetScene() {
     diagonalSide,
     leftDiagStartHeight:  Math.min(leftDiagStartHeight,  mainHeightCm - 20) / 100,
     rightDiagStartHeight: Math.min(rightDiagStartHeight, mainHeightCm - 20) / 100,
-    diagTopWidth:  diagTopWidth  / 100,
-    outerWidth:    outerWidth    / 100,
-    mainHeight:    mainHeightCm  / 100,
-  }), [diagonalSide, leftDiagStartHeight, rightDiagStartHeight, diagTopWidth, outerWidth, mainHeightCm])
+    leftDiagTopWidth:  leftDiagTopWidth  / 100,
+    rightDiagTopWidth: rightDiagTopWidth / 100,
+    outerWidth:        outerWidth        / 100,
+    mainHeight:        mainHeightCm      / 100,
+  }), [diagonalSide, leftDiagStartHeight, rightDiagStartHeight, leftDiagTopWidth, rightDiagTopWidth, outerWidth, mainHeightCm])
 
   return (
     <ClosetMaterialProvider>

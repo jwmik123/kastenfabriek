@@ -2,11 +2,12 @@ export type DiagonalSide = 'none' | 'left' | 'right' | 'both'
 
 export interface DiagParams {
   diagonalSide: DiagonalSide
-  leftDiagStartHeight: number  // meters
-  rightDiagStartHeight: number // meters
-  diagTopWidth: number         // meters — shared for both sides
-  outerWidth: number           // meters — total closet outer width
-  mainHeight: number           // meters — interior ceiling height
+  leftDiagStartHeight: number   // meters
+  rightDiagStartHeight: number  // meters
+  leftDiagTopWidth: number      // meters — horizontal reach of left diagonal
+  rightDiagTopWidth: number     // meters — horizontal reach of right diagonal
+  outerWidth: number            // meters — total closet outer width
+  mainHeight: number            // meters — interior ceiling height
 }
 
 /**
@@ -24,18 +25,18 @@ export function getDiagHeightAt(xFromOuterLeft: number, p: DiagParams): number {
   let h = p.mainHeight
 
   if (p.diagonalSide === 'left' || p.diagonalSide === 'both') {
-    if (p.diagTopWidth > 0 && xFromOuterLeft < CORPUS_WALL + p.diagTopWidth) {
+    if (p.leftDiagTopWidth > 0 && xFromOuterLeft < CORPUS_WALL + p.leftDiagTopWidth) {
       const xFromInner = xFromOuterLeft - CORPUS_WALL
-      const t = Math.max(0, xFromInner) / p.diagTopWidth
+      const t = Math.max(0, xFromInner) / p.leftDiagTopWidth
       h = Math.min(h, p.leftDiagStartHeight + (p.mainHeight - p.leftDiagStartHeight) * t)
     }
   }
 
   if (p.diagonalSide === 'right' || p.diagonalSide === 'both') {
     const xFromRight = p.outerWidth - xFromOuterLeft
-    if (p.diagTopWidth > 0 && xFromRight < CORPUS_WALL + p.diagTopWidth) {
+    if (p.rightDiagTopWidth > 0 && xFromRight < CORPUS_WALL + p.rightDiagTopWidth) {
       const xFromInner = xFromRight - CORPUS_WALL
-      const t = Math.max(0, xFromInner) / p.diagTopWidth
+      const t = Math.max(0, xFromInner) / p.rightDiagTopWidth
       h = Math.min(h, p.rightDiagStartHeight + (p.mainHeight - p.rightDiagStartHeight) * t)
     }
   }

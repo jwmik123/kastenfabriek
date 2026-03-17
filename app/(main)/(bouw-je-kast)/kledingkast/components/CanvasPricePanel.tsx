@@ -34,7 +34,8 @@ export default function CanvasPricePanel() {
   const diagonalSide = useClosetStore((s) => s.diagonalSide)
   const leftDiagStartHeight = useClosetStore((s) => s.leftDiagStartHeight)
   const rightDiagStartHeight = useClosetStore((s) => s.rightDiagStartHeight)
-  const diagTopWidth = useClosetStore((s) => s.diagTopWidth)
+  const leftDiagTopWidth  = useClosetStore((s) => s.leftDiagTopWidth)
+  const rightDiagTopWidth = useClosetStore((s) => s.rightDiagTopWidth)
   const needsTopCabinet = useClosetStore((s) => s.needsTopCabinet)
   const topCabinetHeight = useClosetStore((s) => s.topCabinetHeight)
   const moduleLayouts = useClosetStore((s) => s.moduleLayouts)
@@ -120,7 +121,8 @@ export default function CanvasPricePanel() {
       diagonalSide,
       leftDiagStartHeight,
       rightDiagStartHeight,
-      diagTopWidth,
+      leftDiagTopWidth,
+      rightDiagTopWidth,
       hasTopCabinet,
       topCabinetHeightCm,
     }
