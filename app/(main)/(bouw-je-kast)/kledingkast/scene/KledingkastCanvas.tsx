@@ -2,9 +2,10 @@
 
 import { Suspense, useRef, useEffect } from 'react'
 import { OrbitControls } from '@react-three/drei'
-import { useThree } from '@react-three/fiber'
+import { useThree, useFrame } from '@react-three/fiber'
 import { useClosetStore } from '../store'
 import { useGLTF } from '@react-three/drei'
+import { setGlCanvas, captureNow } from '@/lib/canvas-capture'
 import ThreeCanvas from '../../_shared/canvas/ThreeCanvas'
 import CameraController from '../../_shared/canvas/CameraController'
 import ThreeLoader from '../../_shared/canvas/ThreeLoader'
@@ -14,12 +15,39 @@ import { MeasurementProjectorLayer, MeasurementsOverlayLayer, type ProjectedMap 
 import CanvasToolbar from '../components/CanvasToolbar'
 import CanvasPricePanel from '../components/CanvasPricePanel'
 import { MODULE_LAYOUTS } from './moduleLayouts'
+import PostProcessing from '../../_shared/effects/PostProcessing'
 
 function RaycasterSetup() {
   const { raycaster } = useThree()
   useEffect(() => {
     raycaster.layers.enable(1)
   }, [raycaster])
+  return null
+}
+
+function ScreenshotCapture() {
+  const { gl } = useThree()
+  const lastCapture = useRef(0)
+
+  // Register the canvas ref — try domElement, fall back to any canvas property
+  useEffect(() => {
+    const canvas =
+      (gl as unknown as { domElement?: HTMLCanvasElement }).domElement ??
+      (gl as unknown as { canvas?: HTMLCanvasElement }).canvas ??
+      null
+    setGlCanvas(canvas)
+    return () => setGlCanvas(null)
+  }, [gl])
+
+  // Schedule capture as a microtask so it fires AFTER gl.render() completes
+  // in the same RAF, but before the browser composites the WebGPU frame.
+  useFrame(() => {
+    const now = performance.now()
+    if (now - lastCapture.current < 1000) return
+    lastCapture.current = now
+    queueMicrotask(captureNow)
+  })
+
   return null
 }
 
@@ -46,6 +74,8 @@ export default function KledingkastCanvas() {
 
         <CameraController controlsRef={controlsRef} />
         <RaycasterSetup />
+        <ScreenshotCapture />
+        <PostProcessing />
         <MeasurementProjectorLayer projectedRef={projectedRef} />
 
         <Suspense>

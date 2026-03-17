@@ -23,6 +23,8 @@ export const order = pgTable("order", {
   shippingAddressSnapshot: jsonb("shipping_address_snapshot"),
   billingAddressSnapshot: jsonb("billing_address_snapshot"),
   notes: text("notes"),
+  stripeCheckoutSessionId: text("stripe_checkout_session_id"),
+  stripePaymentIntentId: text("stripe_payment_intent_id"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
   paidAt: timestamp("paid_at"),

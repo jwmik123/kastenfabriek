@@ -4,7 +4,7 @@ import { useMemo } from 'react'
 import * as THREE from 'three/webgpu'
 import { useClosetStore } from '../store'
 import ClosetMaterial from '../../_shared/materials/ClosetMaterial'
-import { getDiagHeightAt } from './diagonalUtils'
+import { getDiagHeightAt, CORPUS_WALL } from './diagonalUtils'
 import type { DiagParams } from './diagonalUtils'
 
 const WALL = 0.018
@@ -23,9 +23,9 @@ function BackWall({ width, mainH, depth, p }: {
   const geometry = useMemo(() => {
     const shape = new THREE.Shape()
     const leftStartH  = getDiagHeightAt(0, p)
-    const leftTopX    = (p.diagonalSide === 'left'  || p.diagonalSide === 'both') ? p.diagTopWidth : 0
+    const leftTopX    = (p.diagonalSide === 'left'  || p.diagonalSide === 'both') ? CORPUS_WALL + p.diagTopWidth : 0
     const rightStartH = getDiagHeightAt(width, p)
-    const rightTopX   = (p.diagonalSide === 'right' || p.diagonalSide === 'both') ? width - p.diagTopWidth : width
+    const rightTopX   = (p.diagonalSide === 'right' || p.diagonalSide === 'both') ? width - CORPUS_WALL - p.diagTopWidth : width
 
     // Bottom-left → bottom-right (in XY, extruded along Z = depth)
     shape.moveTo(-width / 2, 0)
@@ -68,13 +68,14 @@ function BackWall({ width, mainH, depth, p }: {
 // ---------------------------------------------------------------------------
 // One side wall assembly: shortened straight section + optional diagonal panel
 // ---------------------------------------------------------------------------
-function SideWallAssembly({ side, width, mainH, height, depth, p }: {
+function SideWallAssembly({ side, width, mainH, height, depth, p, needsTop }: {
   side: 'left' | 'right'
   width: number
   mainH: number
   height: number
   depth: number
   p: DiagParams
+  needsTop: boolean
 }) {
   const isLeft = side === 'left'
   const hasDiag = p.diagonalSide === side || p.diagonalSide === 'both'
@@ -93,35 +94,38 @@ function SideWallAssembly({ side, width, mainH, height, depth, p }: {
   // top end is vertical (butts underside of top panel).
   const diagExtrudeGeo = useMemo(() => {
     if (!hasDiag) return null
-    // True perpendicular inner face offset: shift each outer-face corner by WALL in the
-    // inward-normal direction, giving exactly 18 mm perpendicular thickness everywhere.
-    // The inner corners intentionally tuck a few mm inside the adjacent panels (top panel /
-    // side wall) where they are invisible.
-    const rise = mainH - diagStartH
-    const len  = Math.sqrt(p.diagTopWidth * p.diagTopWidth + rise * rise)
-    const sinT = rise / len   // sin of diagonal angle from horizontal
-    const cosT = p.diagTopWidth / len   // cos
+    // When a top cabinet is present, extend the diagonal at the same slope all the way
+    // to the full closet height so it reads as one continuous wall.
+    const topY = needsTop ? height + SIDE_WALL_EXTRA : mainH
+    // The outer face runs from x=0 (outer left) to x=CORPUS_WALL+diagTopWidth at mainH.
+    // Scale proportionally when topY differs from mainH (top cabinet case).
+    const fullRun = CORPUS_WALL + p.diagTopWidth
+    const topX = mainH > diagStartH
+      ? fullRun * (topY - diagStartH) / (mainH - diagStartH)
+      : fullRun
+    const rise = topY - diagStartH
+    const len  = Math.sqrt(topX * topX + rise * rise)
+    const sinT = rise / len
+    const cosT = topX / len
     const shape = new THREE.Shape()
     if (isLeft) {
-      // Inward normal: (sinT, −cosT)  (right-and-down, into the closet interior)
       const xL = -width / 2
-      const xR = -width / 2 + p.diagTopWidth
+      const xR = -width / 2 + topX
       shape.moveTo(xL, diagStartH)
-      shape.lineTo(xR, mainH)
-      shape.lineTo(xR + WALL * sinT, mainH - WALL * cosT)        // C — inside top panel, hidden
-      shape.lineTo(xL + WALL * sinT, diagStartH - WALL * cosT)   // D — inside side wall, hidden
+      shape.lineTo(xR, topY)
+      shape.lineTo(xR + WALL * sinT, topY - WALL * cosT)
+      shape.lineTo(xL + WALL * sinT, diagStartH - WALL * cosT)
     } else {
-      // Inward normal: (−sinT, −cosT)  (left-and-down)
-      const xL = width / 2 - p.diagTopWidth
+      const xL = width / 2 - topX
       const xR = width / 2
-      shape.moveTo(xL, mainH)
+      shape.moveTo(xL, topY)
       shape.lineTo(xR, diagStartH)
-      shape.lineTo(xR - WALL * sinT, diagStartH - WALL * cosT)   // C — inside side wall, hidden
-      shape.lineTo(xL - WALL * sinT, mainH - WALL * cosT)        // D — inside top panel, hidden
+      shape.lineTo(xR - WALL * sinT, diagStartH - WALL * cosT)
+      shape.lineTo(xL - WALL * sinT, topY - WALL * cosT)
     }
     shape.closePath()
     return new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: false })
-  }, [hasDiag, isLeft, width, p.diagTopWidth, diagStartH, mainH, depth])
+  }, [hasDiag, isLeft, width, p.diagTopWidth, diagStartH, mainH, height, needsTop, depth])
 
   return (
     <>
@@ -131,7 +135,7 @@ function SideWallAssembly({ side, width, mainH, height, depth, p }: {
         <ClosetMaterial />
       </mesh>
 
-      {/* Diagonal panel */}
+      {/* Diagonal panel — extends to full height when top cabinet is present */}
       {hasDiag && diagExtrudeGeo && (
         <mesh position={[0, 0, -depth / 2]} geometry={diagExtrudeGeo} castShadow receiveShadow>
           <ClosetMaterial />
@@ -170,13 +174,32 @@ export default function ClosetCorpus() {
   const hasLeft  = p.diagonalSide === 'left'  || p.diagonalSide === 'both'
   const hasRight = p.diagonalSide === 'right' || p.diagonalSide === 'both'
 
-  // Top panel: trimmed inward by diagTopWidth on each active diagonal side
-  const topOffsetLeft  = hasLeft  ? p.diagTopWidth : 0
-  const topOffsetRight = hasRight ? p.diagTopWidth : 0
-  const topPanelW      = width - topOffsetLeft - topOffsetRight
+  // When top cabinet is present, outer top panel goes to full height like a normal closet.
+  // Without top cabinet (diagonal or not), panel sits flush with module roof tops at mainH.
+  const topPanelY = needsTop
+    ? (height - SIDE_WALL_EXTRA) - WALL / 2
+    : mainH - WALL / 2
+
+  // Top panel: trimmed by the diagonal run at the panel's actual world height.
+  // Without top cabinet the run equals diagTopWidth (by definition at mainH).
+  // With top cabinet the diagonal has extended further, so compute the run at topPanelWorldY.
+  const topPanelWorldY = topPanelY + WALL / 2
+  const topRunLeft  = hasLeft  && mainH > p.leftDiagStartHeight
+    ? (CORPUS_WALL + p.diagTopWidth) * (topPanelWorldY - p.leftDiagStartHeight) / (mainH - p.leftDiagStartHeight)
+    : (CORPUS_WALL + p.diagTopWidth)
+  const topRunRight = hasRight && mainH > p.rightDiagStartHeight
+    ? (CORPUS_WALL + p.diagTopWidth) * (topPanelWorldY - p.rightDiagStartHeight) / (mainH - p.rightDiagStartHeight)
+    : (CORPUS_WALL + p.diagTopWidth)
+  const topOffsetLeft   = hasLeft  ? topRunLeft  : 0
+  const topOffsetRight  = hasRight ? topRunRight : 0
+  const topPanelW       = width - topOffsetLeft - topOffsetRight
   const topPanelCenterX = (topOffsetLeft - topOffsetRight) / 2
-  // Top panel sits at mainH (SIDE_WALL_EXTRA is absorbed by full-height side walls when no diagonal)
-  const topPanelY = hasLeft || hasRight ? mainH - WALL / 2 : (height - SIDE_WALL_EXTRA) - WALL / 2
+
+  // Separator panel trimming: at mainH the diagonal inner face is at WALL + diagTopWidth from outer edge
+  const sepOffsetLeft   = hasLeft  ? WALL + p.diagTopWidth : 0
+  const sepOffsetRight  = hasRight ? WALL + p.diagTopWidth : 0
+  const sepPanelW       = width - sepOffsetLeft - sepOffsetRight
+  const sepPanelCenterX = (sepOffsetLeft - sepOffsetRight) / 2
 
   return (
     <group position={[0, 0, depth / 2]}>
@@ -191,6 +214,7 @@ export default function ClosetCorpus() {
         height={height}
         depth={depth}
         p={p}
+        needsTop={needsTop}
       />
 
       {/* Right wall assembly */}
@@ -201,6 +225,7 @@ export default function ClosetCorpus() {
         height={height}
         depth={depth}
         p={p}
+        needsTop={needsTop}
       />
 
       {/* Outer top panel */}
@@ -209,10 +234,10 @@ export default function ClosetCorpus() {
         <ClosetMaterial />
       </mesh>
 
-      {/* Separator panel between main closet and top cabinet */}
+      {/* Separator panel between main closet and top cabinet — trimmed by diagonal at mainH */}
       {needsTop && (
-        <mesh position={[0, mainH - WALL / 2, 0]} castShadow receiveShadow>
-          <boxGeometry args={[width, WALL, depth]} />
+        <mesh position={[sepPanelCenterX, mainH - WALL / 2, 0]} castShadow receiveShadow>
+          <boxGeometry args={[sepPanelW, WALL, depth]} />
           <ClosetMaterial />
         </mesh>
       )}

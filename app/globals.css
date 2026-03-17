@@ -7,16 +7,16 @@
 :root {
   --primary: #34463A;
   --color-primary-50: #f8fbfb;
-    --color-primary-100: #f3f6f6;
-    --color-primary-200: #e2e9e3;
-    --color-primary-300: #ced9d0;
-    --color-primary-400: #97af9d;
-    --color-primary-500: #64806b;
-    --color-primary-600: #485d51;
-    --color-primary: #34463a;
-    --color-primary-800: #212c21;
-    --color-primary-900: #141f16;
-    --color-primary-950: #070e08;
+  --color-primary-100: #f3f6f6;
+  --color-primary-200: #e2e9e3;
+  --color-primary-300: #ced9d0;
+  --color-primary-400: #97af9d;
+  --color-primary-500: #64806b;
+  --color-primary-600: #485d51;
+  --color-primary: #34463a;
+  --color-primary-800: #212c21;
+  --color-primary-900: #141f16;
+  --color-primary-950: #070e08;
   --radius: 0.625rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);

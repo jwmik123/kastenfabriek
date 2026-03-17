@@ -137,7 +137,7 @@ export default function DimensionsStep() {
           label="Hoogte"
           value={height}
           min={sc?.minHeight ?? 200}
-          max={hasDiagonal ? (sc?.maxHeight ?? 275) : (sc?.maxHeight ?? 275) + topMax}
+          max={(sc?.maxHeight ?? 275) + topMax}
           unit="cm"
           onChange={setHeight}
         />

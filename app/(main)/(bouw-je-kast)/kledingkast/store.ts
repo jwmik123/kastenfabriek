@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import type { FullPricingData, ModuleLayout, PricingConstraints } from '@/types/configurator-pricing'
 import type { DiagonalSide } from './scene/diagonalUtils'
 import { isFullHeight } from './scene/diagonalUtils'
+import type { ClosetConfigSnapshot } from '@/lib/cart/types'
 
 export interface ModuleSlot {
   slotIndex: number
@@ -85,6 +86,7 @@ interface ClosetState {
   setSelectedSlot: (slot: number | null) => void
   setHoveredSlot: (slot: number | null) => void
   randomFill: () => void
+  restoreConfig: (config: ClosetConfigSnapshot) => void
 }
 
 const WALL_M = 0.018
@@ -166,7 +168,7 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
     return Math.floor(get().width / minW)
   },
 
-  needsTopCabinet: () => get().diagonalSide === 'none' && get().height > TOP_CABINET_THRESHOLD,
+  needsTopCabinet: () => get().height > TOP_CABINET_THRESHOLD,
   topCabinetHeight: () => (get().needsTopCabinet() ? get().height - 225 - SIDE_WALL_EXTRA_CM : 0),
   mainHeight: () => (get().needsTopCabinet() ? 225 : get().height - SIDE_WALL_EXTRA_CM),
 
@@ -343,6 +345,31 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
   zoomOut: () => set((s) => ({ userZoom: Math.min(1, s.userZoom + 0.1) })),
   setSelectedSlot: (slot) => set({ selectedSlot: slot }),
   setHoveredSlot: (slot) => set({ hoveredSlot: slot }),
+  restoreConfig: (config: ClosetConfigSnapshot) => {
+    set({
+      width: config.widthCm,
+      height: config.heightCm,
+      depth: config.depthCm,
+      moduleCount: config.moduleCount,
+      modules: config.modules.map((m) => ({
+        slotIndex: m.slotIndex,
+        layoutId: m.layoutId,
+        hasDoor: m.hasDoor,
+        span: m.span,
+        buitenkantMaterialId: m.buitenkantMaterialId,
+        binnenkantMaterialId: m.binnenkantMaterialId,
+      })),
+      buitenkantMaterialId: config.buitenkantMaterialId,
+      binnenkantMaterialId: config.binnenkantMaterialId,
+      doorHandleId: config.doorHandleId,
+      diagonalSide: config.diagonalSide as DiagonalSide,
+      leftDiagStartHeight: config.leftDiagStartHeight,
+      rightDiagStartHeight: config.rightDiagStartHeight,
+      diagTopWidth: config.diagTopWidth,
+      step: 1,
+      selectedSlot: null,
+    })
+  },
   randomFill: () => {
     const { moduleCount, modules } = get()
     const layoutIds = [1, 2, 3, 4, 5, 6, 7, 8]

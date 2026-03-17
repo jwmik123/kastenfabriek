@@ -33,7 +33,8 @@ export async function getOrders() {
   if (!user) return [];
 
   return db.query.order.findMany({
-    where: eq(order.userId, user.id),
+    where: (o, { and, ne }) =>
+      and(eq(o.userId, user.id), ne(o.status, "pending")),
     orderBy: (order, { desc }) => [desc(order.createdAt)],
   });
 }

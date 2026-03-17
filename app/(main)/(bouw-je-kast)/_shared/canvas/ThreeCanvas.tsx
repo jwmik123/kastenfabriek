@@ -42,6 +42,7 @@ export default function ThreeCanvas({ children, onPointerMissed }: ThreeCanvasPr
     >
       <color attach="background" args={['#e8e8e8']} />
       <SceneEnvironment />
+      
       {process.env.NODE_ENV === 'development' && <StatsPanel />}
       <directionalLight
         position={[-3, 5, 10]}

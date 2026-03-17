@@ -18,7 +18,7 @@ export interface DiagParams {
  * Inside the right diagonal zone: interpolates between rightDiagStartHeight and mainHeight.
  */
 // Corpus wall thickness — diagonal starts at the inner face of the side wall, not the outer face.
-const CORPUS_WALL = 0.018
+export const CORPUS_WALL = 0.018
 
 export function getDiagHeightAt(xFromOuterLeft: number, p: DiagParams): number {
   let h = p.mainHeight

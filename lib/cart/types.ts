@@ -1,0 +1,80 @@
+import type { DiagonalSide } from "@/app/(main)/(bouw-je-kast)/kledingkast/scene/diagonalUtils";
+
+// Snapshot of a single module slot at cart time
+export interface ModuleSlotSnapshot {
+  slotIndex: number;
+  layoutId: number | null;
+  layoutName: string | null; // snapshot of name from Sanity
+  hasDoor: boolean;
+  span: 1 | 2;
+  buitenkantMaterialId?: string;
+  binnenkantMaterialId?: string;
+}
+
+// Serialized closet configuration — mirrors relevant Zustand store state
+export interface ClosetConfigSnapshot {
+  id: string; // uuid generated at cart time
+  capturedAt: string; // ISO timestamp
+
+  // Dimensions (cm)
+  widthCm: number;
+  heightCm: number;
+  depthCm: number;
+
+  // Module layout
+  moduleCount: number;
+  modules: ModuleSlotSnapshot[];
+
+  // Appearance
+  buitenkantMaterialId: string;
+  binnenkantMaterialId: string;
+  doorHandleId: string;
+
+  // Diagonal walls
+  diagonalSide: DiagonalSide;
+  leftDiagStartHeight: number;
+  rightDiagStartHeight: number;
+  diagTopWidth: number;
+
+  // Derived (snapshotted for display)
+  hasTopCabinet: boolean;
+  topCabinetHeightCm: number;
+}
+
+// Price calculated at "Add to Cart" time
+export interface PriceSnapshot {
+  calculatedAt: string; // ISO timestamp
+  currency: "EUR";
+
+  moduleCost: number; // sum of module layout prices
+  doorCost: number; // all door panel costs (main + top cabinet)
+  mechanismCost: number; // handles or push-to-open
+  ledCost: number; // 0 unless LED enabled
+  deliveryCost: number; // €95 flat
+  subtotal: number; // all of the above combined
+
+  installationTierName: string | null; // e.g. "Groot project"
+  installationCost: number; // €720 | €1440 | €2160
+
+  total: number; // subtotal + installationCost
+}
+
+// One item in the cart (typically quantity=1 for custom closets)
+export interface CartItem {
+  id: string; // uuid
+  addedAt: string; // ISO timestamp
+  configuration: ClosetConfigSnapshot;
+  priceSnapshot: PriceSnapshot;
+  quantity: number;
+  screenshotDataUrl?: string; // base64 JPEG thumbnail captured at add-to-cart time
+}
+
+// The full cart stored in localStorage
+export interface Cart {
+  version: number;
+  items: CartItem[];
+  updatedAt: string;
+}
+
+export const CART_VERSION = 1;
+export const CART_LS_KEY = "kf-cart";

@@ -2,24 +2,47 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { User, ShoppingBasket, Mail, Star } from 'lucide-react'
+import { User, ShoppingBasket, Heart } from 'lucide-react'
 import { useEffect, useState, useRef } from 'react'
 import gsap from 'gsap'
 
+const NAV_LINKS = [
+  { href: '/about', label: 'Onze kasten' },
+  { href: '/projects', label: 'Materialen' },
+  { href: '/contact', label: 'Blog' },
+]
+
+const ICON_LINKS = [
+  { href: '/wishlist', icon: Heart, label: 'Wishlist' },
+  { href: '/cart', icon: ShoppingBasket, label: 'Winkelwagen' },
+  { href: '/account', icon: User, label: 'Account' },
+]
+
 const Navigation = () => {
-  const [isScrolled, setIsScrolled] = useState(false)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const mobileMenuRef = useRef<HTMLDivElement>(null)
   const menuContentRef = useRef<HTMLDivElement>(null)
+  const navRef = useRef<HTMLElement>(null)
+  const highlightRef = useRef<HTMLDivElement>(null)
 
-  // useEffect(() => {
-  //   const handleScroll = () => {
-  //     setIsScrolled(window.scrollY > 50)
-  //   }
+  const handleNavLinkHover = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    const highlight = highlightRef.current
+    if (!highlight) return
+    const link = e.currentTarget
+    gsap.to(highlight, {
+      x: link.offsetLeft,
+      y: link.offsetTop,
+      width: link.offsetWidth,
+      height: link.offsetHeight,
+      opacity: 1,
+      duration: 0.25,
+      ease: 'power2.out',
+    })
+  }
 
-  //   window.addEventListener('scroll', handleScroll)
-  //   return () => window.removeEventListener('scroll', handleScroll)
-  // }, [])
+  const handleNavLeave = () => {
+    gsap.to(highlightRef.current, { opacity: 0, duration: 0.2, ease: 'power2.out' })
+  }
 
   useEffect(() => {
     if (!mobileMenuRef.current || !menuContentRef.current) return
@@ -52,158 +75,130 @@ const Navigation = () => {
     }
   }, [isMenuOpen])
 
-  const handleMenuToggle = () => {
-    setIsMenuOpen(!isMenuOpen)
-  }
-
-  const closeMenu = () => {
-    setIsMenuOpen(false)
-  }
-
   return (
-    <div className="fixed top-0 left-0 right-0 z-30  font-poppins">
-      {/* Top Header */}
-      {/* <div className="hidden lg:block w-full bg-foreground text-white py-1">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between text-sm">
-            <div className="flex items-center gap-2">
-              <Mail size={16} />
-              <span>info@kasten-fabriek.nl</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} size={14} fill="white" />
-                ))}
-              </div>
-              <span>4,9/5 van 700+ reviews</span>
-            </div>
-          </div>
-        </div>
-      </div> */}
+    <div className="fixed top-0 left-0 right-0 z-30 font-poppins pointer-events-none">
+      <div className="flex items-center justify-between px-24 pt-6">
 
-      {/* Main Navigation */}
-      <nav className={`w-full transition-all duration-300 ${
-        isScrolled ? 'py-0' : 'py-0'
-      }`}>
-        {/* ${
-          isScrolled
-            ? 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 bg-white/60 backdrop-blur-md rounded-xl border border-gray-200'
-            : 'bg-white'
-        } */}
-        <div className={`transition-all duration-300 bg-white`}>
-          <div className={`flex items-center justify-between font-poppins text-black transition-all duration-300 ${
-            isScrolled ? 'py-4' : 'py-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'
-          }`}>
-          <Link href="/" className="flex-shrink-0 flex items-center gap-2">
-            <Image
-              src="/logo.svg"
-              alt="Kastenfabriek Logo"
-              width={80}
-              height={40}
-              priority
-              className="w-[50px] h-auto lg:w-[60px]"
-            />
-            {/* <h1 className="text-4xl flex items-center gap-2">
-                <span>KF</span>
-            </h1> */}
+        {/* Logo — floating independently */}
+        <Link
+          href="/"
+          className="pointer-events-auto flex-shrink-0"
+          style={{ mixBlendMode: 'difference', filter: 'invert(1)' }}
+        >
+          <Image
+            src="/logo.svg"
+            alt="Kastenfabriek Logo"
+            width={80}
+            height={40}
+            priority
+            className="w-[50px] h-auto lg:w-[60px]"
+          />
+        </Link>
+
+        {/* Desktop Center Nav — frosted glass pill */}
+        <nav
+          ref={navRef}
+          className="hidden lg:flex pointer-events-auto relative items-center gap-1 bg-white/80 backdrop-blur-md rounded-full px-2 py-2 shadow-sm border border-white/50"
+          onMouseLeave={handleNavLeave}
+        >
+          {/* Sliding highlight */}
+          <div
+            ref={highlightRef}
+            className="absolute top-0 left-0 rounded-full bg-primary-500 pointer-events-none opacity-0"
+          />
+          {NAV_LINKS.map(({ href, label }) => (
+            <Link
+              key={href}
+              href={href}
+              onMouseEnter={handleNavLinkHover}
+              className="relative z-10 px-5 py-2 text-sm font-medium text-gray-700 rounded-full hover:text-white transition-colors duration-150"
+            >
+              {label}
+            </Link>
+          ))}
+          <div className="w-px h-5 bg-gray-300/70 mx-1" />
+          <Link
+            href="/kledingkast"
+            className="relative z-10 px-5 py-2 text-sm font-semibold text-white bg-[#943429] rounded-full hover:opacity-80 transition-opacity duration-150 shadow-sm"
+          >
+            Ontwerp je kast
+          </Link>
+        </nav>
+
+        {/* Desktop Right Icons — each floating independently */}
+        <div className="hidden lg:flex items-center gap-2 pointer-events-auto">
+          {ICON_LINKS.map(({ href, icon: Icon, label }) => (
+            <Link
+              key={href}
+              href={href}
+              aria-label={label}
+              className="flex items-center justify-center w-10 h-10 rounded-full bg-white/80 backdrop-blur-md shadow-sm border border-white/50 text-gray-600 hover:text-primary hover:scale-110 transition-all duration-200"
+            >
+              <Icon size={17} />
+            </Link>
+          ))}
+        </div>
+
+        {/* Mobile Right Section */}
+        <div className="flex lg:hidden items-center gap-3 pointer-events-auto">
+          <Link href="/kledingkast" className="text-white bg-primary px-4 py-2 text-sm rounded-full">
+            Ontwerp je kast
           </Link>
 
-          {/* Desktop Navigation Links */}
-          <div className="hidden lg:flex items-center gap-8 lg:gap-12 text-lg">
-            <Link href="/about" className="transition-colors hover:text-gray-600">
-              Onze kasten
-            </Link>
-            <Link href="/projects" className="transition-colors hover:text-gray-600">
-              Materialen
-            </Link>
-            <Link href="/contact" className="transition-colors hover:text-gray-600">
-              Blog
-            </Link>
-          </div>
-
-          {/* Desktop Right Section */}
-          <div className="hidden lg:flex items-center gap-4">
-            <Link href="/kledingkast" className="text-white bg-primary  border-2 border-primary rounded-sm px-4 py-2 cursor-pointer transition-colors">
-              Ontwerp je maatkast
-            </Link>
-
-            <div className="h-8 w-px bg-gray-300" />
-
-            <Link href="/account" className="hover:text-primary transition-colors">
-              <User size={24} />
-            </Link>
-
-            <Link href="/cart" className="hover:text-primary transition-colors">
-              <ShoppingBasket size={24} />
-            </Link>
-          </div>
-
-          {/* Mobile Right Section */}
-          <div className="flex lg:hidden items-center gap-4">
-            <button className="text-white bg-orange-500 px-4 py-2 text-sm rounded-full cursor-pointer">
-              Ontwerp je kast
-            </button>
-
-            {/* Mobile Hamburger Menu */}
-            <label className="flex flex-col w-[28px] cursor-pointer z-50">
-              <input
-                type="checkbox"
-                className="hidden peer"
-                checked={isMenuOpen}
-                onChange={handleMenuToggle}
-              />
-              <span className="bg-primary rounded-[5px] h-[3px] my-[3px] transition-all duration-400 ease-[cubic-bezier(0.68,-0.6,0.32,1.6)] w-1/2 origin-bottom peer-checked:bg-white peer-checked:rotate-[45deg] peer-checked:translate-x-[4px] peer-checked:translate-y-0" />
-              <span className="bg-primary rounded-[5px] h-[3px] my-[3px] transition-all duration-400 ease-[cubic-bezier(0.68,-0.6,0.32,1.6)] w-full origin-top peer-checked:bg-white peer-checked:rotate-[-45deg]" />
-              <span className="bg-primary rounded-[5px] h-[3px] my-[3px] transition-all duration-400 ease-[cubic-bezier(0.68,-0.6,0.32,1.6)] w-3/4 origin-bottom peer-checked:bg-white peer-checked:w-1/2 peer-checked:translate-x-[12px] peer-checked:translate-y-[-6px] peer-checked:rotate-[45deg]" />
-            </label>
-          </div>
+          <label className="flex flex-col w-[28px] cursor-pointer z-50">
+            <input
+              type="checkbox"
+              className="hidden peer"
+              checked={isMenuOpen}
+              onChange={() => setIsMenuOpen(v => !v)}
+            />
+            <span className="bg-primary rounded-[5px] h-[3px] my-[3px] transition-all duration-400 ease-[cubic-bezier(0.68,-0.6,0.32,1.6)] w-1/2 origin-bottom peer-checked:bg-white peer-checked:rotate-[45deg] peer-checked:translate-x-[4px] peer-checked:translate-y-0" />
+            <span className="bg-primary rounded-[5px] h-[3px] my-[3px] transition-all duration-400 ease-[cubic-bezier(0.68,-0.6,0.32,1.6)] w-full origin-top peer-checked:bg-white peer-checked:rotate-[-45deg]" />
+            <span className="bg-primary rounded-[5px] h-[3px] my-[3px] transition-all duration-400 ease-[cubic-bezier(0.68,-0.6,0.32,1.6)] w-3/4 origin-bottom peer-checked:bg-white peer-checked:w-1/2 peer-checked:translate-x-[12px] peer-checked:translate-y-[-6px] peer-checked:rotate-[45deg]" />
+          </label>
         </div>
       </div>
-      </nav>
 
       {/* Mobile Menu Overlay */}
       <div
         ref={mobileMenuRef}
-        className="fixed inset-0 bg-primary z-40 hidden flex-col items-center justify-center"
+        className="fixed inset-0 bg-primary z-40 hidden flex-col items-center justify-center pointer-events-auto"
         style={{ clipPath: 'circle(0% at top right)' }}
       >
         <div ref={menuContentRef} className="flex flex-col items-center gap-8">
-          <Link
-            href="/about"
-            onClick={closeMenu}
-            className="text-white text-3xl font-medium hover:opacity-80 transition-opacity"
-          >
-            Onze kasten
-          </Link>
-          <Link
-            href="/projects"
-            onClick={closeMenu}
-            className="text-white text-3xl font-medium hover:opacity-80 transition-opacity"
-          >
-            Materialen
-          </Link>
-          <Link
-            href="/contact"
-            onClick={closeMenu}
-            className="text-white text-3xl font-medium hover:opacity-80 transition-opacity"
-          >
-            Blog
-          </Link>
+          {NAV_LINKS.map(({ href, label }) => (
+            <Link
+              key={href}
+              href={href}
+              onClick={() => setIsMenuOpen(false)}
+              className="text-white text-3xl font-medium hover:opacity-80 transition-opacity"
+            >
+              {label}
+            </Link>
+          ))}
 
           <div className="w-16 h-px bg-white/30 my-4" />
 
-          <button className="text-primary bg-white px-8 py-4 rounded-full font-medium">
+          <Link
+            href="/kledingkast"
+            onClick={() => setIsMenuOpen(false)}
+            className="text-primary bg-white px-8 py-4 rounded-full font-medium"
+          >
             Ontwerp je maatkast
-          </button>
+          </Link>
 
           <div className="flex items-center gap-6 mt-4">
-            <Link href="/account" onClick={closeMenu} className="text-white hover:opacity-80 transition-opacity">
-              <User size={28} />
-            </Link>
-            <Link href="/cart" onClick={closeMenu} className="text-white hover:opacity-80 transition-opacity">
-              <ShoppingBasket size={28} />
-            </Link>
+            {ICON_LINKS.map(({ href, icon: Icon, label }) => (
+              <Link
+                key={href}
+                href={href}
+                aria-label={label}
+                onClick={() => setIsMenuOpen(false)}
+                className="text-white hover:opacity-80 transition-opacity"
+              >
+                <Icon size={28} />
+              </Link>
+            ))}
           </div>
         </div>
       </div>
