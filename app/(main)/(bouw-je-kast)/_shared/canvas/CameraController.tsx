@@ -11,7 +11,7 @@ interface CameraControllerProps {
 }
 
 export default function CameraController({ controlsRef }: CameraControllerProps) {
-  const { camera } = useThree()
+  const { camera, size } = useThree()
   const proxyRef = useRef<{ d: number } | null>(null)
   const tweenRef = useRef<gsap.core.Tween | null>(null)
 
@@ -19,8 +19,12 @@ export default function CameraController({ controlsRef }: CameraControllerProps)
   const userZoom = useClosetStore((s) => s.userZoom)
 
   const closetWidth = width / 100
-  const autoFitDist = 3 * (closetWidth / 1.8)
-  const maxDist = 3.5 * (closetWidth / 1.8)
+  // On portrait canvases (mobile) the horizontal FOV is narrower, so pull the
+  // camera back proportionally so the closet fits without feeling zoomed-in.
+  const aspect = size.width / size.height
+  const aspectCorrection = Math.max(1, 1.1 / aspect)
+  const autoFitDist = 3 * (closetWidth / 1.8) * aspectCorrection
+  const maxDist = 3.5 * (closetWidth / 1.8) * aspectCorrection
   const cameraTargetDist = userZoom <= 0.5
     ? 2 + (userZoom / 0.5) * (autoFitDist - 2)
     : autoFitDist + ((userZoom - 0.5) / 0.5) * (maxDist - autoFitDist)
@@ -29,7 +33,7 @@ export default function CameraController({ controlsRef }: CameraControllerProps)
     if (controlsRef.current) {
       controlsRef.current.maxDistance = maxDist
     }
-  }, [maxDist, controlsRef])
+  }, [maxDist, controlsRef, size.width, size.height])
 
   useEffect(() => {
     const target = new THREE.Vector3(0, 1, 0)
@@ -53,7 +57,7 @@ export default function CameraController({ controlsRef }: CameraControllerProps)
     })
 
     return () => { tweenRef.current?.kill() }
-  }, [cameraTargetDist, camera, controlsRef])
+  }, [cameraTargetDist, camera, controlsRef, size.width, size.height])
 
   return null
 }

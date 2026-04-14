@@ -6,6 +6,7 @@ import type { FullPricingData } from '@/types/configurator-pricing'
 import type { ClosetConfigSnapshot } from '@/lib/cart/types'
 import { useClosetStore } from '../store'
 import StepWizard from './StepWizard'
+import MobileSheet from './MobileSheet'
 import { getDraftConfig, saveDraftConfig } from '@/lib/cart/draft-config'
 import { getCart } from '@/lib/cart/cart-store'
 
@@ -86,16 +87,18 @@ export default function KledingkastConfigurator({ pricingData, editConfig, editI
 
   return (
     <>
-      <div className="w-full h-[92vh] flex flex-col lg:flex-row">
-        {/* Canvas — full-height left panel, nav floats over it */}
-        <div className="w-full h-[50vh] lg:h-full lg:w-2/3">
+      <div className="w-full h-[100dvh] md:h-[92vh] flex flex-col lg:flex-row">
+        {/* Canvas — full viewport on mobile, 50vh on tablet, full-height on desktop */}
+        <div className="w-full h-full md:h-[50vh] lg:h-full lg:w-2/3">
           <ThreeCanvas />
         </div>
-        {/* Wizard — right panel, scrolls internally, padded below nav */}
-        <div className="relative w-full lg:w-1/3 h-full bg-white overflow-y-auto pt-24">
+        {/* Wizard — desktop/tablet only, hidden on mobile (sheet handles it) */}
+        <div className="hidden md:block relative w-full lg:w-1/3 h-full bg-white overflow-y-auto pt-24">
           <StepWizard />
         </div>
       </div>
+      {/* Mobile bottom sheet — vaul, only visible below md */}
+      <MobileSheet />
     </>
   )
 }

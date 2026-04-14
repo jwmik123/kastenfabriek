@@ -175,7 +175,7 @@ export default function ClosetScene() {
     // Module.tsx caps module tops at fillerBottomY instead of mainH=closetH.
     let effectiveMainH = mainHM
     if (backDiagonal && flatSecM < 0.001 && !needsTop) {
-      const fillerBottomY = getBackDiagHeightAtZ(depthM - 0.10, {
+      const fillerBottomY = getBackDiagHeightAtZ(depthM - 0.15, {
         backDiagonal: true,
         backDiagKinkHeight: kinkHM,
         backDiagFlatSectionDepth: flatSecM,

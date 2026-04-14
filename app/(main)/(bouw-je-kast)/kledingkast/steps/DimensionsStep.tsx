@@ -3,10 +3,25 @@
 import { useEffect, useState } from 'react'
 import { useClosetStore } from '../store'
 import { Slider } from '@/components/ui/slider'
+import { Toggle } from '@/components/ui/Toggle'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { cn } from '@/lib/utils'
+import { Info } from 'lucide-react'
 import type { DiagonalSide } from '../scene/diagonalUtils'
 import { getWidthRange, getStartHeightRange, clamp, diagAmplification } from '../diagonalConstraints'
 import type { PlacementType } from '../store'
+
+// ─── Section heading ──────────────────────────────────────────────────────────
+
+function SectionHeading({ children }: { children: React.ReactNode }) {
+  return (
+    <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+      {children}
+    </h3>
+  )
+}
+
+// ─── Dimension slider row ─────────────────────────────────────────────────────
 
 function DimensionInput({
   label,
@@ -16,7 +31,6 @@ function DimensionInput({
   unit,
   onChange,
   hint,
-  labelWidth = 'w-14',
 }: {
   label: string
   value: number
@@ -25,30 +39,28 @@ function DimensionInput({
   unit: string
   onChange: (v: number) => void
   hint?: string
-  labelWidth?: string
 }) {
   return (
-    <div className="space-y-1">
-      <div className="flex items-center gap-3">
-        <span className={cn(labelWidth, 'text-sm font-medium shrink-0')}>{label}</span>
-        <Slider
-          min={min}
-          max={max}
-          step={1}
-          value={[value]}
-          onValueChange={([v]) => onChange(v)}
-          className="flex-1"
-        />
-        <span className="w-16 text-right text-sm tabular-nums text-muted-foreground shrink-0">
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-medium">{label}</span>
+        <span className="text-sm tabular-nums text-muted-foreground">
           {value} {unit}
         </span>
       </div>
-      {hint && (
-        <p className={cn('text-[11px] text-muted-foreground', labelWidth === 'w-14' ? 'pl-[4.25rem]' : 'pl-[5.5rem]')}>{hint}</p>
-      )}
+      <Slider
+        min={min}
+        max={max}
+        step={1}
+        value={[value]}
+        onValueChange={([v]) => onChange(v)}
+      />
+      {hint && <p className="text-[11px] text-muted-foreground">{hint}</p>}
     </div>
   )
 }
+
+// ─── Diagonal detail inputs ───────────────────────────────────────────────────
 
 function DiagNumberInput({
   label,
@@ -65,7 +77,6 @@ function DiagNumberInput({
 }) {
   const [draft, setDraft] = useState(String(value))
 
-  // Sync draft when the committed value changes externally (e.g. auto-clamp from store)
   useEffect(() => {
     setDraft(String(value))
   }, [value])
@@ -102,6 +113,8 @@ function DiagNumberInput({
   )
 }
 
+// ─── Option data ──────────────────────────────────────────────────────────────
+
 const DIAGONAL_OPTIONS: { value: DiagonalSide; label: string }[] = [
   { value: 'none',  label: 'Geen' },
   { value: 'left',  label: 'Links' },
@@ -114,33 +127,36 @@ const PLACEMENT_OPTIONS: { value: PlacementType; label: string; hint: string }[]
   { value: 'vrijstaand', label: 'Vrijstaand', hint: 'Alleen achterwand schuin mogelijk' },
 ]
 
+// ─── Main component ───────────────────────────────────────────────────────────
+
 export default function DimensionsStep() {
   const placementType = useClosetStore((s) => s.placementType)
   const setPlacementType = useClosetStore((s) => s.setPlacementType)
 
-  const width = useClosetStore((s) => s.width)
+  const width  = useClosetStore((s) => s.width)
   const height = useClosetStore((s) => s.height)
-  const depth = useClosetStore((s) => s.depth)
-  const setWidth = useClosetStore((s) => s.setWidth)
+  const depth  = useClosetStore((s) => s.depth)
+  const setWidth  = useClosetStore((s) => s.setWidth)
   const setHeight = useClosetStore((s) => s.setHeight)
-  const setDepth = useClosetStore((s) => s.setDepth)
-  const needsTopCabinet = useClosetStore((s) => s.needsTopCabinet())
-  const minModules = useClosetStore((s) => s.minModules())
-  const maxModules = useClosetStore((s) => s.maxModules())
-  const constraints = useClosetStore((s) => s.constraints)
+  const setDepth  = useClosetStore((s) => s.setDepth)
 
+  const minModules  = useClosetStore((s) => s.minModules())
+  const maxModules  = useClosetStore((s) => s.maxModules())
+  const constraints = useClosetStore((s) => s.constraints)
   const moduleCount = useClosetStore((s) => s.moduleCount)
-  const diagonalSide = useClosetStore((s) => s.diagonalSide)
-  const leftDiagStartHeight = useClosetStore((s) => s.leftDiagStartHeight)
+
+  const diagonalSide         = useClosetStore((s) => s.diagonalSide)
+  const leftDiagStartHeight  = useClosetStore((s) => s.leftDiagStartHeight)
   const rightDiagStartHeight = useClosetStore((s) => s.rightDiagStartHeight)
-  const leftDiagTopWidth = useClosetStore((s) => s.leftDiagTopWidth)
-  const rightDiagTopWidth = useClosetStore((s) => s.rightDiagTopWidth)
-  const setDiagonalSide = useClosetStore((s) => s.setDiagonalSide)
-  const setLeftDiagStartHeight = useClosetStore((s) => s.setLeftDiagStartHeight)
-  const setRightDiagStartHeight = useClosetStore((s) => s.setRightDiagStartHeight)
-  const setLeftDiagTopWidth = useClosetStore((s) => s.setLeftDiagTopWidth)
-  const setRightDiagTopWidth = useClosetStore((s) => s.setRightDiagTopWidth)
+  const leftDiagTopWidth     = useClosetStore((s) => s.leftDiagTopWidth)
+  const rightDiagTopWidth    = useClosetStore((s) => s.rightDiagTopWidth)
+  const setDiagonalSide          = useClosetStore((s) => s.setDiagonalSide)
+  const setLeftDiagStartHeight   = useClosetStore((s) => s.setLeftDiagStartHeight)
+  const setRightDiagStartHeight  = useClosetStore((s) => s.setRightDiagStartHeight)
+  const setLeftDiagTopWidth      = useClosetStore((s) => s.setLeftDiagTopWidth)
+  const setRightDiagTopWidth     = useClosetStore((s) => s.setRightDiagTopWidth)
   const mainHeight = useClosetStore((s) => s.mainHeight())
+
   const backDiagonal             = useClosetStore((s) => s.backDiagonal)
   const backDiagKinkHeight       = useClosetStore((s) => s.backDiagKinkHeight)
   const backDiagFlatSectionDepth = useClosetStore((s) => s.backDiagFlatSectionDepth)
@@ -149,33 +165,28 @@ export default function DimensionsStep() {
   const setBackDiagFlatSectionDepth = useClosetStore((s) => s.setBackDiagFlatSectionDepth)
 
   const startHeightRange = getStartHeightRange(mainHeight)
-  const hasLeft  = diagonalSide === 'left'  || diagonalSide === 'both'
-  const hasRight = diagonalSide === 'right' || diagonalSide === 'both'
+  const hasLeft    = diagonalSide === 'left'  || diagonalSide === 'both'
+  const hasRight   = diagonalSide === 'right' || diagonalSide === 'both'
   const hasDiagonal = diagonalSide !== 'none'
-  const backDiagKinkRange = { min: 40, max: Math.floor(mainHeight - 20) }
-  const backDiagFlatRange = { min: 0, max: Math.floor(depth - 10) }
 
-  // Amplification: how much the diagonal's reach is multiplied from mainH to full closet height.
-  // For non-TC closets this is ~1. For TC closets (height > 275cm) this can be 4-5×.
+  const backDiagKinkRange = { min: 40, max: Math.floor(mainHeight - 20) }
+  const backDiagFlatRange = { min: 0,  max: Math.floor(depth - 10) }
+
   const leftAmp  = diagAmplification(leftDiagStartHeight,  mainHeight, height)
   const rightAmp = diagAmplification(rightDiagStartHeight, mainHeight, height)
-
-  // Visual widths: what the user sees in the 3D view (reach at full closet height)
   const leftVisualWidth  = Math.round(leftDiagTopWidth  * leftAmp)
   const rightVisualWidth = Math.round(rightDiagTopWidth * rightAmp)
 
-  // Constraint ranges in visual space
   const leftWidthRange  = hasLeft  ? getWidthRange('left',  width, moduleCount, diagonalSide === 'both' ? rightVisualWidth : null) : null
   const rightWidthRange = hasRight ? getWidthRange('right', width, moduleCount, diagonalSide === 'both' ? leftVisualWidth  : null) : null
 
-  // Auto-clamp when closetWidth, moduleCount, or the other side changes (all in visual space)
   useEffect(() => {
     if (!hasLeft) return
     const rightVis = hasRight
       ? Math.round(rightDiagTopWidth * diagAmplification(rightDiagStartHeight, mainHeight, height))
       : null
-    const range = getWidthRange('left', width, moduleCount, rightVis)
-    const amp   = diagAmplification(leftDiagStartHeight, mainHeight, height)
+    const range   = getWidthRange('left', width, moduleCount, rightVis)
+    const amp     = diagAmplification(leftDiagStartHeight, mainHeight, height)
     const clamped = Math.round(clamp(leftDiagTopWidth * amp, range.min, range.max) / amp)
     if (clamped !== leftDiagTopWidth) setLeftDiagTopWidth(clamped)
   }, [width, moduleCount, rightDiagTopWidth, rightDiagStartHeight, diagonalSide]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -185,22 +196,35 @@ export default function DimensionsStep() {
     const leftVis = hasLeft
       ? Math.round(leftDiagTopWidth * diagAmplification(leftDiagStartHeight, mainHeight, height))
       : null
-    const range = getWidthRange('right', width, moduleCount, leftVis)
-    const amp   = diagAmplification(rightDiagStartHeight, mainHeight, height)
+    const range   = getWidthRange('right', width, moduleCount, leftVis)
+    const amp     = diagAmplification(rightDiagStartHeight, mainHeight, height)
     const clamped = Math.round(clamp(rightDiagTopWidth * amp, range.min, range.max) / amp)
     if (clamped !== rightDiagTopWidth) setRightDiagTopWidth(clamped)
   }, [width, moduleCount, leftDiagTopWidth, leftDiagStartHeight, diagonalSide]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const sc = constraints?.singleCorpus
+  const sc     = constraints?.singleCorpus
   const topMax = constraints?.topCabinet.maxHeight ?? 110
-  const minW = sc?.minWidth ?? 15
-  const maxW = (sc?.maxWidth ?? 65) * 8
+  const minW   = sc?.minWidth  ?? 15
+  const maxW   = (sc?.maxWidth ?? 65) * 8
+
+  // Mutual-exclusion state
+  const backDiagDisabled = hasDiagonal // Zijwand active → disable Achterwand toggle
+  const zijwandDisabledValues: DiagonalSide[] =
+    backDiagonal || placementType === 'vrijstaand' ? ['left', 'right', 'both'] : []
+
+  const handleSetDiagonalSide = (side: DiagonalSide) => {
+    if (side !== 'none' && backDiagonal) {
+      setBackDiagonal(false)
+    }
+    setDiagonalSide(side)
+  }
 
   return (
-    <div className="space-y-6">
-      {/* Placement type selector */}
-      <div className="space-y-2">
-        <span className="text-sm font-medium">Plaatsing</span>
+    <div className="space-y-10">
+
+      {/* ── Section 1: Plaatsing ── */}
+      <section className="space-y-5">
+        <SectionHeading>Plaatsing</SectionHeading>
         <div className="grid grid-cols-2 gap-2">
           {PLACEMENT_OPTIONS.map((opt) => (
             <button
@@ -220,9 +244,12 @@ export default function DimensionsStep() {
             </button>
           ))}
         </div>
-      </div>
+      </section>
 
-      <div className="space-y-3">
+      {/* ── Section 2: Afmetingen ── */}
+      <section className="space-y-5">
+        <SectionHeading>Afmetingen</SectionHeading>
+
         <DimensionInput
           label="Breedte"
           value={width}
@@ -248,50 +275,59 @@ export default function DimensionsStep() {
           unit="cm"
           onChange={setDepth}
         />
-      </div>
 
-      {needsTopCabinet && (
-        <div className={cn(
-          'p-3 rounded-md text-sm border',
-          'bg-amber-50 border-amber-200 text-amber-800',
-        )}>
-          Bovenkast wordt automatisch toegevoegd (hoogte &gt; 275 cm).
+        {/* Always-visible info banner */}
+        <div className="flex items-start gap-2 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 px-3 py-2.5 rounded-md">
+          <Info className="size-4 shrink-0 mt-0.5" />
+          <span className="text-xs">Bovenkast wordt automatisch toegevoegd bij hoogte &gt; 275 cm</span>
         </div>
-      )}
+      </section>
 
-      {/* Diagonal wall section */}
-      <div className="space-y-3">
-        <span className="text-sm font-medium">Schuine wand</span>
-
-        {/* Segmented control */}
-        <div className="flex rounded-md border overflow-hidden">
-          {DIAGONAL_OPTIONS.map((opt) => {
-            const isSide = opt.value !== 'none'
-            const disabled = isSide && placementType === 'vrijstaand'
-            return (
-              <button
-                key={opt.value}
-                onClick={() => !disabled && setDiagonalSide(opt.value)}
-                disabled={disabled}
-                title={disabled ? 'Zijwanden schuin niet mogelijk bij vrijstaande kast' : undefined}
-                className={cn(
-                  'flex-1 py-1.5 text-sm transition-colors',
-                  disabled
-                    ? 'bg-background text-muted-foreground/40 cursor-not-allowed'
-                    : diagonalSide === opt.value
-                      ? 'bg-foreground text-background font-medium'
-                      : 'bg-background text-muted-foreground hover:bg-muted',
-                )}
-              >
-                {opt.label}
-              </button>
-            )
-          })}
+      {/* ── Section 3: Schuine wand ── */}
+      <section className="space-y-5">
+        <div>
+          <SectionHeading>Schuine wand</SectionHeading>
+          <p className="text-xs text-muted-foreground/60 mt-1">Voor zolders en schuine daken</p>
         </div>
-        {placementType === 'vrijstaand' && (
-          <p className="text-[11px] text-muted-foreground">Zijwanden schuin niet mogelijk bij vrijstaande kast.</p>
-        )}
 
+        {/* Combined card */}
+        <div className="bg-muted/40 rounded-lg p-4 space-y-4">
+
+          {/* Zijwand */}
+          <div className="space-y-2">
+            <span className="text-sm font-medium">Zijwand</span>
+            <SegmentedControl
+              options={DIAGONAL_OPTIONS}
+              value={diagonalSide}
+              onChange={handleSetDiagonalSide}
+              disabledValues={zijwandDisabledValues}
+            />
+            {placementType === 'vrijstaand' && (
+              <p className="text-[11px] text-muted-foreground">Zijwanden schuin niet mogelijk bij vrijstaande kast.</p>
+            )}
+          </div>
+
+          {/* Divider + Achterwand */}
+          <div className="border-t pt-3">
+            <div className={cn('flex items-start gap-3 transition-opacity', backDiagDisabled && 'opacity-45')}>
+              <div className="flex-1">
+                <span className="text-sm font-medium">Achterwand</span>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  {backDiagDisabled
+                    ? 'Niet combineerbaar met zijwand'
+                    : 'Diagonaal aan de achterkant'}
+                </p>
+              </div>
+              <Toggle
+                checked={backDiagonal && !backDiagDisabled}
+                onCheckedChange={setBackDiagonal}
+                disabled={backDiagDisabled}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Detailed diagonal controls — shown below card when active */}
         {hasDiagonal && (
           <div className="space-y-4 pl-1">
             {hasLeft && (
@@ -342,39 +378,8 @@ export default function DimensionsStep() {
             )}
           </div>
         )}
-      </div>
 
-      {/* Back diagonal section */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-3">
-          <span className="text-sm font-medium flex-1">Achterdiagonaal</span>
-          <div className="flex rounded-md border overflow-hidden">
-            <button
-              onClick={() => setBackDiagonal(true)}
-              className={cn(
-                'flex-1 px-3 py-1.5 text-sm transition-colors',
-                backDiagonal
-                  ? 'bg-foreground text-background font-medium'
-                  : 'bg-background text-muted-foreground hover:bg-muted',
-              )}
-            >
-              Aan
-            </button>
-            <button
-              onClick={() => setBackDiagonal(false)}
-              className={cn(
-                'flex-1 px-3 py-1.5 text-sm transition-colors',
-                !backDiagonal
-                  ? 'bg-foreground text-background font-medium'
-                  : 'bg-background text-muted-foreground hover:bg-muted',
-              )}
-            >
-              Uit
-            </button>
-          </div>
-        </div>
-
-        {backDiagonal && (
+        {backDiagonal && !backDiagDisabled && (
           <div className="space-y-2 pl-1">
             <DiagNumberInput
               label="Knikhoogte"
@@ -392,7 +397,8 @@ export default function DimensionsStep() {
             />
           </div>
         )}
-      </div>
+      </section>
+
     </div>
   )
 }

@@ -504,7 +504,7 @@ export default function TopCabinet() {
   // so the filler panel closes off the wedge above them.
   const fillerActive = backDiagonal && flatSec < 0.001
   const ceilH = fillerActive
-    ? getBackDiagHeightAtZ(depth - 0.10, p)
+    ? getBackDiagHeightAtZ(depth - 0.15, p)
     : height - SIDE_WALL_EXTRA
 
   const worldZ_cross = backDiagonal && height > kinkH && mainH > kinkH

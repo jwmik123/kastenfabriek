@@ -5,63 +5,50 @@ import { useClosetStore } from '../store'
 import { MODULE_LAYOUTS } from '../scene/moduleLayouts'
 import { LAYOUT_SVGS } from '../components/LayoutSvgs'
 import { getDiagHeightAt, getBackDiagHeightAtZ } from '../scene/diagonalUtils'
-import { Button } from '@/components/ui/button'
+import { Toggle } from '@/components/ui/Toggle'
 import { cn } from '@/lib/utils'
 import { Minus, Plus } from 'lucide-react'
-import type { ModuleSlot } from '../store'
 
 const WALL = 0.018
 const ONDERSTEL_HEIGHT = 0.108
 const ONDERSTEL_GAP = 0.010
 const MODULE_FLOOR_Y = ONDERSTEL_HEIGHT + ONDERSTEL_GAP
 
-type SlotGroup =
-  | { type: 'single'; module: ModuleSlot }
-  | { type: 'double'; primary: ModuleSlot; secondary: ModuleSlot }
-
-function groupModules(modules: ModuleSlot[]): SlotGroup[] {
-  const groups: SlotGroup[] = []
-  let i = 0
-  while (i < modules.length) {
-    const m = modules[i]
-    if (m.span === 2 && i + 1 < modules.length) {
-      groups.push({ type: 'double', primary: m, secondary: modules[i + 1] })
-      i += 2
-    } else {
-      groups.push({ type: 'single', module: m })
-      i++
-    }
-  }
-  return groups
+function SectionHeading({ children }: { children: React.ReactNode }) {
+  return (
+    <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+      {children}
+    </h3>
+  )
 }
 
 export default function ModulesStep() {
-  const moduleCount = useClosetStore((s) => s.moduleCount)
-  const modules = useClosetStore((s) => s.modules)
+  const moduleCount    = useClosetStore((s) => s.moduleCount)
+  const modules        = useClosetStore((s) => s.modules)
   const setModuleCount = useClosetStore((s) => s.setModuleCount)
   const setModuleLayout = useClosetStore((s) => s.setModuleLayout)
-  const setModuleSpan = useClosetStore((s) => s.setModuleSpan)
+  const setModuleSpan  = useClosetStore((s) => s.setModuleSpan)
   const toggleModuleDoor = useClosetStore((s) => s.toggleModuleDoor)
-  const minModules = useClosetStore((s) => s.minModules())
-  const maxModules = useClosetStore((s) => s.maxModules())
-  const moduleWidthCm = useClosetStore((s) => s.moduleWidthCm())
-  const selectedSlot = useClosetStore((s) => s.selectedSlot)
+  const minModules     = useClosetStore((s) => s.minModules())
+  const maxModules     = useClosetStore((s) => s.maxModules())
+  const moduleWidthCm  = useClosetStore((s) => s.moduleWidthCm())
+  const selectedSlot   = useClosetStore((s) => s.selectedSlot)
   const setSelectedSlot = useClosetStore((s) => s.setSelectedSlot)
 
-  const diagonalSide         = useClosetStore((s) => s.diagonalSide)
-  const leftDiagStartHeight  = useClosetStore((s) => s.leftDiagStartHeight)
-  const rightDiagStartHeight = useClosetStore((s) => s.rightDiagStartHeight)
-  const leftDiagTopWidth     = useClosetStore((s) => s.leftDiagTopWidth)
-  const rightDiagTopWidth    = useClosetStore((s) => s.rightDiagTopWidth)
-  const widthCm              = useClosetStore((s) => s.width)
-  const mainHeightCm         = useClosetStore((s) => s.mainHeight())
-  const widthM               = widthCm / 100
-  const mainHeightM          = mainHeightCm / 100
-  const closetHeightCm       = useClosetStore((s) => s.height)
-  const backDiagonal         = useClosetStore((s) => s.backDiagonal)
-  const backDiagKinkHeight   = useClosetStore((s) => s.backDiagKinkHeight)
+  const diagonalSide          = useClosetStore((s) => s.diagonalSide)
+  const leftDiagStartHeight   = useClosetStore((s) => s.leftDiagStartHeight)
+  const rightDiagStartHeight  = useClosetStore((s) => s.rightDiagStartHeight)
+  const leftDiagTopWidth      = useClosetStore((s) => s.leftDiagTopWidth)
+  const rightDiagTopWidth     = useClosetStore((s) => s.rightDiagTopWidth)
+  const widthCm               = useClosetStore((s) => s.width)
+  const mainHeightCm          = useClosetStore((s) => s.mainHeight())
+  const widthM                = widthCm / 100
+  const mainHeightM           = mainHeightCm / 100
+  const closetHeightCm        = useClosetStore((s) => s.height)
+  const backDiagonal          = useClosetStore((s) => s.backDiagonal)
+  const backDiagKinkHeight    = useClosetStore((s) => s.backDiagKinkHeight)
   const backDiagFlatSectionDepth = useClosetStore((s) => s.backDiagFlatSectionDepth)
-  const depthCm              = useClosetStore((s) => s.depth)
+  const depthCm               = useClosetStore((s) => s.depth)
 
   const diagParams = useMemo(() => ({
     diagonalSide,
@@ -73,12 +60,10 @@ export default function ModulesStep() {
     mainHeight:        mainHeightM,
     closetHeight:      closetHeightCm    / 100,
     backDiagonal,
-    backDiagKinkHeight:        backDiagKinkHeight        / 100,
-    backDiagFlatSectionDepth:  backDiagFlatSectionDepth  / 100,
-    outerDepth:                depthCm                   / 100,
+    backDiagKinkHeight:       backDiagKinkHeight       / 100,
+    backDiagFlatSectionDepth: backDiagFlatSectionDepth / 100,
+    outerDepth:               depthCm                  / 100,
   }), [diagonalSide, leftDiagStartHeight, rightDiagStartHeight, leftDiagTopWidth, rightDiagTopWidth, widthCm, mainHeightCm, mainHeightM, closetHeightCm, backDiagonal, backDiagKinkHeight, backDiagFlatSectionDepth, depthCm])
-
-  const groups = groupModules(modules)
 
   const isCoveredSlot =
     selectedSlot !== null &&
@@ -87,11 +72,9 @@ export default function ModulesStep() {
 
   const isDouble = selectedSlot !== null && modules[selectedSlot]?.span === 2
 
-  // Effective height of the selected slot for diagonal layout filtering
   const selectedSlotEffectiveHeightM = (() => {
     if (selectedSlot === null) return mainHeightM
     if (diagParams.backDiagonal) {
-      // For back diagonal: effective height = ceiling at the back of the module (WALL = corpus wall = 0.018m)
       return Math.max(0, Math.min(getBackDiagHeightAtZ(WALL, diagParams), diagParams.mainHeight) - MODULE_FLOOR_Y - WALL)
     }
     if (diagParams.diagonalSide === 'none') return mainHeightM
@@ -109,223 +92,160 @@ export default function ModulesStep() {
   const canBeDouble = selectedSlot !== null && selectedSlot < modules.length - 1 &&
     (diagParams.backDiagonal || !isUnderDiagonal)
 
-  // Only show layouts whose special element fits within the effective height
   const availableLayouts = MODULE_LAYOUTS.filter(
     (l) => l.specialElement.height <= selectedSlotEffectiveHeightM
   )
 
   return (
-    <div className="space-y-6">
-      {/* Module count */}
-      <div className="space-y-2">
-        <div className="flex items-baseline justify-between">
-          <span className="text-sm font-medium">Aantal modules</span>
-          <span className="text-xs text-muted-foreground">{moduleWidthCm.toFixed(0)} cm / module</span>
+    <div className="space-y-10">
+
+      {/* ── Section 1: Aantal modules ── */}
+      <section className="space-y-5">
+        <div className="flex items-center justify-between">
+          <SectionHeading>Aantal modules</SectionHeading>
+          <span className="text-xs text-muted-foreground/60">
+            {moduleWidthCm.toFixed(0)} cm per module
+          </span>
         </div>
+
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-9 w-9 shrink-0"
+          <button
             onClick={() => setModuleCount(moduleCount - 1)}
             disabled={moduleCount <= minModules}
+            className={cn(
+              'h-11 w-11 shrink-0 flex items-center justify-center rounded-md border border-border/50 bg-transparent transition-colors',
+              'hover:bg-muted/60 hover:border-border',
+              'disabled:opacity-40 disabled:pointer-events-none',
+            )}
           >
             <Minus className="w-4 h-4" />
-          </Button>
-          <div className="flex-1 h-9 flex items-center justify-center rounded-md border bg-muted/40">
-            <span className="text-lg font-semibold tabular-nums">{moduleCount}</span>
+          </button>
+
+          <div className="flex-1 h-11 flex items-center justify-center rounded-md bg-muted/40">
+            <span className="text-xl font-medium tabular-nums">{moduleCount}</span>
           </div>
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-9 w-9 shrink-0"
+
+          <button
             onClick={() => setModuleCount(moduleCount + 1)}
             disabled={moduleCount >= maxModules}
+            className={cn(
+              'h-11 w-11 shrink-0 flex items-center justify-center rounded-md border border-border/50 bg-transparent transition-colors',
+              'hover:bg-muted/60 hover:border-border',
+              'disabled:opacity-40 disabled:pointer-events-none',
+            )}
           >
             <Plus className="w-4 h-4" />
-          </Button>
+          </button>
         </div>
-      </div>
+      </section>
 
-      {/* Slot strip */}
-      <div className="space-y-1.5">
-        <span className="text-sm font-medium">Vakken</span>
-        <div className="flex gap-1.5">
-          {groups.map((group) => {
-            if (group.type === 'single') {
-              const m = group.module
-              const isSelected = selectedSlot === m.slotIndex
-              const hasLayout = m.layoutId !== null
-              return (
-                <button
-                  key={m.slotIndex}
-                  onClick={() => setSelectedSlot(m.slotIndex === selectedSlot ? null : m.slotIndex)}
-                  className={cn(
-                    'flex-1 flex flex-col items-center justify-center gap-1.5 py-3 rounded-lg border-2 transition-all',
-                    isSelected
-                      ? 'border-primary bg-primary text-primary-foreground'
-                      : hasLayout
-                        ? 'border-border bg-muted/50 text-foreground hover:border-primary/40'
-                        : 'border-dashed border-border text-muted-foreground hover:border-primary/30',
-                  )}
-                >
-                  <div className={cn(
-                    'w-1.5 h-1.5 rounded-full',
-                    isSelected ? 'bg-primary-foreground' : hasLayout ? 'bg-primary' : 'bg-border',
-                  )} />
-                  <span className="text-[11px] font-medium leading-none">{m.slotIndex + 1}</span>
-                </button>
-              )
-            }
+      {/* ── Section 2: Vak instellen ── */}
+      <section className="space-y-5">
+        <div>
+          <SectionHeading>Vak instellen</SectionHeading>
+          <p className="text-xs text-muted-foreground/60 mt-1">
+            Selecteer een vak om de indeling aan te passen
+          </p>
+        </div>
 
-            // Double group — two joined buttons
-            const { primary, secondary } = group
-            const isPrimarySelected = selectedSlot === primary.slotIndex
-            const isSecondarySelected = selectedSlot === secondary.slotIndex
+        {/* Bay selector grid */}
+        <div className="grid grid-cols-8 gap-1">
+          {modules.map((m) => {
+            const isSelected = selectedSlot === m.slotIndex
+            const isPartOfDouble = m.span === 2 || (m.slotIndex > 0 && modules[m.slotIndex - 1]?.span === 2)
             return (
-              <div key={primary.slotIndex} className="flex-[2] flex">
-                <button
-                  onClick={() => setSelectedSlot(primary.slotIndex === selectedSlot ? null : primary.slotIndex)}
-                  className={cn(
-                    'flex-1 flex flex-col items-center justify-center gap-1.5 py-3 rounded-l-lg border-2 border-r-0 transition-all',
-                    isPrimarySelected
-                      ? 'border-primary bg-primary text-primary-foreground'
-                      : 'border-primary/40 bg-primary/5 text-foreground hover:border-primary/60 hover:bg-primary/10',
-                  )}
-                >
-                  <div className={cn(
-                    'w-1.5 h-1.5 rounded-full',
-                    isPrimarySelected ? 'bg-primary-foreground' : 'bg-primary/60',
-                  )} />
-                  <span className="text-[11px] font-medium leading-none">{primary.slotIndex + 1}</span>
-                </button>
-                <button
-                  onClick={() => setSelectedSlot(secondary.slotIndex === selectedSlot ? null : secondary.slotIndex)}
-                  className={cn(
-                    'flex-1 flex flex-col items-center justify-center gap-1.5 py-3 rounded-r-lg border-2 transition-all',
-                    isSecondarySelected
-                      ? 'border-primary bg-primary text-primary-foreground'
-                      : 'border-primary/40 bg-primary/5 text-foreground hover:border-primary/60 hover:bg-primary/10',
-                  )}
-                >
-                  <div className={cn(
-                    'w-1.5 h-1.5 rounded-full',
-                    isSecondarySelected ? 'bg-primary-foreground' : 'bg-primary/60',
-                  )} />
-                  <span className="text-[11px] font-medium leading-none">{secondary.slotIndex + 1}</span>
-                </button>
-              </div>
+              <button
+                key={m.slotIndex}
+                onClick={() => setSelectedSlot(m.slotIndex === selectedSlot ? null : m.slotIndex)}
+                className={cn(
+                  'aspect-square flex items-center justify-center rounded-md text-sm font-medium transition-colors',
+                  isSelected
+                    ? 'bg-foreground text-background border-0'
+                    : isPartOfDouble
+                      ? 'border border-border/50 bg-transparent text-foreground hover:border-border hover:bg-muted/40'
+                      : 'border border-border/50 bg-transparent text-foreground hover:border-border hover:bg-muted/40',
+                )}
+              >
+                {m.slotIndex + 1}
+              </button>
             )
           })}
         </div>
-        <p className="text-xs text-muted-foreground">Selecteer een vak om de indeling in te stellen</p>
-      </div>
 
-      {/* Layout picker + toggles for selected slot */}
-      {selectedSlot !== null && (
-        <div className="space-y-4">
-          {isCoveredSlot ? (
-            <p className="text-xs text-muted-foreground">
-              Dit vak maakt deel uit van een dubbel module.
-            </p>
-          ) : (
-            <>
-              {/* Deur + Dubbel options */}
-              <div className="flex gap-2">
-                {/* Deur */}
-                <div className="flex-1 space-y-1.5">
-                  <span className="text-sm font-medium">Deur</span>
-                  <div className="flex rounded-lg border overflow-hidden">
-                    <button
-                      onClick={() => { if (!modules[selectedSlot]?.hasDoor) toggleModuleDoor(selectedSlot) }}
-                      className={cn(
-                        'flex-1 py-2 text-sm font-medium transition-all',
-                        modules[selectedSlot]?.hasDoor
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-background text-muted-foreground hover:bg-muted/60',
-                      )}
-                    >
-                      Ja
-                    </button>
-                    <button
-                      onClick={() => { if (modules[selectedSlot]?.hasDoor) toggleModuleDoor(selectedSlot) }}
-                      className={cn(
-                        'flex-1 py-2 text-sm font-medium border-l transition-all',
-                        !modules[selectedSlot]?.hasDoor
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-background text-muted-foreground hover:bg-muted/60',
-                      )}
-                    >
-                      Nee
-                    </button>
+        {/* Config card for selected bay */}
+        {selectedSlot !== null && (
+          <div className="bg-muted/40 rounded-lg p-4 space-y-4">
+
+            {/* Context chip row */}
+            <div className="flex items-center gap-2 pb-3 border-b border-border/30">
+              <div className="w-6 h-6 rounded-full bg-foreground text-background flex items-center justify-center text-xs font-semibold shrink-0">
+                {selectedSlot + 1}
+              </div>
+              <span className="text-sm font-medium">Vak {selectedSlot + 1} instellen</span>
+            </div>
+
+            {isCoveredSlot ? (
+              <p className="text-xs text-muted-foreground">
+                Dit vak maakt deel uit van een dubbel module.
+              </p>
+            ) : (
+              <>
+                {/* Toggles row */}
+                <div className="flex gap-5">
+                  <div className="flex items-center justify-between flex-1">
+                    <span className="text-sm">Deur</span>
+                    <Toggle
+                      checked={modules[selectedSlot]?.hasDoor ?? false}
+                      onCheckedChange={() => toggleModuleDoor(selectedSlot)}
+                    />
                   </div>
-                </div>
-
-                {/* Dubbel */}
-                {canBeDouble && (
-                  <div className="flex-1 space-y-1.5">
-                    <span className="text-sm font-medium">Dubbele module?</span>
-                    <div className="flex rounded-lg border overflow-hidden">
-                      <button
-                        onClick={() => { if (!isDouble) setModuleSpan(selectedSlot, 2) }}
-                        className={cn(
-                          'flex-1 py-2 text-sm font-medium transition-all',
-                          isDouble
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-background text-muted-foreground hover:bg-muted/60',
-                        )}
-                      >
-                        Ja
-                      </button>
-                      <button
-                        onClick={() => { if (isDouble) setModuleSpan(selectedSlot, 1) }}
-                        className={cn(
-                          'flex-1 py-2 text-sm font-medium border-l transition-all',
-                          !isDouble
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-background text-muted-foreground hover:bg-muted/60',
-                        )}
-                      >
-                        Nee
-                      </button>
+                  {canBeDouble && (
+                    <div className="flex items-center justify-between flex-1">
+                      <span className="text-sm">Dubbele module</span>
+                      <Toggle
+                        checked={isDouble}
+                        onCheckedChange={(v) => setModuleSpan(selectedSlot, v ? 2 : 1)}
+                      />
                     </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Layout picker */}
-              <div className="space-y-2">
-                <span className="text-md font-medium">Indeling</span>
-                {isUnderDiagonal && (
-                  <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
-                    Schuin vak — hoogte beperkt tot {Math.round(selectedSlotEffectiveHeightM * 100)} cm. Niet alle indelingen passen.
-                  </p>
-                )}
-                <div className="flex gap-2 mt-2">
-                  {availableLayouts.map((layout) => {
-                    const LayoutSvg = LAYOUT_SVGS[layout.id]
-                    const isActive = modules[selectedSlot]?.layoutId === layout.id
-                    return (
-                      <button
-                        key={layout.id}
-                        onClick={() => setModuleLayout(selectedSlot, layout.id)}
-                        className={cn(
-                          'flex flex-col items-center gap-1.5 p-2 rounded-lg border-2 transition-all',
-                          isActive
-                            ? 'border-primary bg-primary text-primary-foreground'
-                            : 'border-border bg-background text-foreground hover:border-primary/40 hover:bg-muted/50',
-                        )}
-                      >
-                        {LayoutSvg && <LayoutSvg className="h-30 w-auto" />}
-                      </button>
-                    )
-                  })}
+                  )}
                 </div>
-              </div>
-            </>
-          )}
-        </div>
-      )}
+
+                {/* Indeling grid */}
+                <div className="space-y-2.5">
+                  <span className="text-sm text-muted-foreground">Indeling</span>
+                  {isUnderDiagonal && (
+                    <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
+                      Schuin vak — hoogte beperkt tot {Math.round(selectedSlotEffectiveHeightM * 100)} cm. Niet alle indelingen passen.
+                    </p>
+                  )}
+                  <div className="grid grid-cols-4 gap-2">
+                    {availableLayouts.map((layout) => {
+                      const LayoutSvg = LAYOUT_SVGS[layout.id]
+                      const isActive = modules[selectedSlot]?.layoutId === layout.id
+                      return (
+                        <button
+                          key={layout.id}
+                          onClick={() => setModuleLayout(selectedSlot, layout.id)}
+                          style={{ aspectRatio: '0.55' }}
+                          className={cn(
+                            'flex items-center justify-center rounded-md transition-all px-[6px] py-[10px]',
+                            isActive
+                              ? 'bg-foreground text-background border-2 border-foreground'
+                              : 'bg-background text-foreground border border-border/50 hover:border-border',
+                          )}
+                        >
+                          {LayoutSvg && <LayoutSvg className="w-1/3 h-auto" />}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </section>
+
     </div>
   )
 }

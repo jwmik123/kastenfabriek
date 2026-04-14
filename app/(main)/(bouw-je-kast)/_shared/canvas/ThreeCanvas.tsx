@@ -9,10 +9,13 @@ import Stats from 'stats.js'
 function StatsPanel() {
   const statsRef = useRef<Stats | null>(null)
   useEffect(() => {
+    if (window.innerWidth < 768) return
     const stats = new Stats()
     document.body.appendChild(stats.dom)
     statsRef.current = stats
-    return () => { document.body.removeChild(stats.dom) }
+    return () => {
+      if (statsRef.current) document.body.removeChild(statsRef.current.dom)
+    }
   }, [])
   useFrame(() => statsRef.current?.update())
   return null

@@ -33,7 +33,9 @@ export default async function KledingkastPage({
         editConfig={editConfig}
         editItemId={edit ?? null}
       />
-      <ClosetSummarySection />
+      <div className="hidden md:block">
+        <ClosetSummarySection />
+      </div>
     </>
   )
 }

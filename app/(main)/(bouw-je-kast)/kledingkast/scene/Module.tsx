@@ -126,6 +126,7 @@ export default function Module({ index, layoutId, hasDoor, span, diagParams: p }
   const hoveredSlot  = useClosetStore((s) => s.hoveredSlot)
   const doorHandleId = useClosetStore((s) => s.doorHandleId)
   const moduleSlot   = useClosetStore((s) => s.modules.find((m) => m.slotIndex === index))
+  const needsTop     = useClosetStore((s) => s.needsTopCabinet())
 
   const layout = getLayoutById(layoutId)
   if (!layout) return null
@@ -354,12 +355,16 @@ export default function Module({ index, layoutId, hasDoor, span, diagParams: p }
     : (moduleHasDiag ? leftWallH < rightWallH : (index % 2 === 1 || isLastModule))
 
   // Door profile for back diagonal.
-  // Always flat at hFront (= p.mainHeight - MODULE_FLOOR_Y - WALL in world), so main corpus
-  // doors end exactly where TC doors begin. TC doors cover the TC zone and filler panel.
+  // When TC active (needsTop): cap at p.mainHeight so main corpus door ends where TC begins.
+  // When no TC + filler active: use raw shell at slot front face (fillerTopHeight - 18mm).
+  // p.mainHeight is artificially reduced to fillerBottomY by ClosetScene in the no-TC+filler
+  // case, so we bypass that cap and use the actual shell height directly.
   const bdDoorProfile = useMemo((): Array<{ x: number; y: number }> => {
     if (!isBackDiag) return []
-    return [{ x: 0, y: hFront }, { x: slotW, y: hFront }]
-  }, [isBackDiag, hFront, slotW])
+    const rawH = trapNaN(getBackDiagHeightAtZ(WALL + moduleDepth, p), `Module${index}-bdDoor-raw`)
+    const h = Math.max(0, (needsTop ? Math.min(rawH, p.mainHeight) : rawH) - MODULE_FLOOR_Y - WALL)
+    return [{ x: 0, y: h }, { x: slotW, y: h }]
+  }, [isBackDiag, moduleDepth, needsTop, p, slotW])
 
   const startX = -innerW / 2
   const x      = startX + index * slotW
