@@ -39,6 +39,9 @@ export interface ClosetConfigSnapshot {
   /** @deprecated use leftDiagTopWidth / rightDiagTopWidth */
   diagTopWidth?: number;
 
+  // Placement type
+  placementType?: 'vrijstaand' | 'ingebouwd';
+
   // Back diagonal
   backDiagonal?: boolean;
   backDiagKinkHeight?: number;    // cm

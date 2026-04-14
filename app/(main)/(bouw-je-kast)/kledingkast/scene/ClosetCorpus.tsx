@@ -4,12 +4,13 @@ import { useMemo } from 'react'
 import * as THREE from 'three/webgpu'
 import { useClosetStore } from '../store'
 import ClosetMaterial from '../../_shared/materials/ClosetMaterial'
-import { getDiagHeightAt, CORPUS_WALL } from './diagonalUtils'
+import { getDiagHeightAt, getBackDiagHeightAtZ, CORPUS_WALL } from './diagonalUtils'
 import type { DiagParams } from './diagonalUtils'
 import { trapShape, trapGeo, trapNaN } from '@/utils/debugGeometry'
 
 const WALL = 0.018
 const SIDE_WALL_EXTRA = 0.005
+const CLOSET_INSIDE_INSET = 0.025
 
 // ---------------------------------------------------------------------------
 // Back wall — pentagon/hexagon shape following the diagonal silhouette
@@ -150,7 +151,7 @@ function SideWallAssembly({ side, width, mainH, height, depth, p, needsTop }: {
   if (p.backDiagonal && backDiagGeo) {
     const meshX = isLeft ? -width / 2 : width / 2 - WALL
     return (
-      <group key="back-diagonal">
+      <group key={needsTop ? 'back-diagonal-tc' : 'back-diagonal'}>
         <mesh position={[meshX, 0, 0]} geometry={backDiagGeo} castShadow receiveShadow>
           <ClosetMaterial />
         </mesh>
@@ -171,6 +172,62 @@ function SideWallAssembly({ side, width, mainH, height, depth, p, needsTop }: {
         </mesh>
       )}
     </group>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Filler panel — wedge with sloped top following the back-diagonal shell
+// ---------------------------------------------------------------------------
+function TopFillerWedge({
+  width,
+  depth,
+  height,
+  needsTop,
+  p,
+}: {
+  width: number
+  depth: number
+  height: number
+  needsTop: boolean
+  p: DiagParams
+}) {
+  const geo = useMemo(() => {
+    const fillerBottomY = getBackDiagHeightAtZ(depth - 0.15, p)
+    const seamY         = needsTop ? fillerBottomY : fillerBottomY - WALL
+
+    const fillerFrontZ = depth - CLOSET_INSIDE_INSET       // world Z of filler front face
+    const fillerBackZ  = depth - CLOSET_INSIDE_INSET - WALL // world Z of filler back face
+    const frontTopY    = getBackDiagHeightAtZ(fillerFrontZ, p)  // shell height at filler front face
+    const backTopY     = getBackDiagHeightAtZ(fillerBackZ, p)
+
+    if (frontTopY - seamY < 0.001) return null
+
+    // Profile in Z-Y, extruded along X.
+    // After rotateY(PI/2): shape-x maps to -Z_local, so x_shape = depth/2 - worldZ.
+    const xFront = depth / 2 - fillerFrontZ  // = CLOSET_INSIDE_INSET - depth/2
+    const xBack  = depth / 2 - fillerBackZ   // = CLOSET_INSIDE_INSET + WALL - depth/2
+
+    const shape = new THREE.Shape()
+    shape.moveTo(xBack,  seamY)
+    shape.lineTo(xFront, seamY)
+    shape.lineTo(xFront, frontTopY)
+    shape.lineTo(xBack,  backTopY)
+    shape.closePath()
+
+    const extruded = new THREE.ExtrudeGeometry(
+      trapShape(shape, 'FillerWedge'),
+      { depth: width, bevelEnabled: false },
+    )
+    extruded.rotateY(Math.PI / 2)
+    return trapGeo(extruded, 'FillerWedge-geo')
+  }, [width, depth, height, needsTop, p])
+
+  if (!geo) return null
+
+  return (
+    <mesh position={[-width / 2, 0, 0]} castShadow receiveShadow geometry={geo}>
+      <ClosetMaterial />
+    </mesh>
   )
 }
 
@@ -224,36 +281,6 @@ export default function ClosetCorpus() {
     ? depthRunM * (mainH - kinkHm) / heightDropFull
     : 0
 
-  // Slope panel: ExtrudeGeometry with Y-Z profile extruded by width, using rotateY(PI/2).
-  // x_shape = -z_group_local, so after rotation: vertex(x,y,z_ext) → (z_ext, y, -x).
-  // One unified slope panel covering the full shell: worldZ=0 (kinkH) → worldZ=depth-flatSecM (closetHeight).
-  // x_shape maps to worldZ via: worldZ = depth/2 - x_shape (group sits at z=depth/2).
-  const backDiagSlopePanelGeo = useMemo(() => {
-    if (!backDiagonal) return null
-    const slopeLen = Math.sqrt(depthRunM * depthRunM + heightDropFull * heightDropFull)
-    if (slopeLen < 0.001) return null
-
-    trapNaN(depthRunM, 'CorpusSlopePanel-depthRunM')
-    trapNaN(heightDropFull, 'CorpusSlopePanel-heightDropFull')
-
-    const nx = -WALL * heightDropFull / slopeLen
-    const ny = -WALL * depthRunM      / slopeLen
-
-    const xBack      = depth / 2              // → worldZ = 0 (back wall)
-    const xFlatStart = flatSecM - depth / 2   // → worldZ = depth - flatSecM (flat section start)
-
-    const shape = new THREE.Shape()
-    shape.moveTo(xFlatStart, height)
-    shape.lineTo(xBack,  kinkHm)
-    shape.lineTo(xBack      + nx, kinkHm + ny)
-    shape.lineTo(xFlatStart + nx, height  + ny)
-    shape.closePath()
-
-    const geo = new THREE.ExtrudeGeometry(trapShape(shape, 'CorpusSlopePanel'), { depth: width, bevelEnabled: false })
-    geo.rotateY(Math.PI / 2)
-    return trapGeo(geo, 'CorpusSlopePanel-geo')
-  }, [backDiagonal, kinkHm, flatSecM, depthRunM, heightDropFull, depth, height, width])
-
   // ---- Side diagonal top panel trimming (existing logic) ----
   const topPanelY = needsTop
     ? (height - SIDE_WALL_EXTRA) - WALL / 2
@@ -303,8 +330,9 @@ export default function ClosetCorpus() {
         <>
           {/* Flat top panel: covers from crossingWorldZ to depth at Y=mainH.
               For non-TC closets this is approximately the flat section only.
-              For TC closets this also covers the zone where the slope is above mainH. */}
-          {!needsTop && (() => {
+              For TC closets this also covers the zone where the slope is above mainH.
+              Skip when filler is active (flatSec=0): filler panel is the only top element. */}
+          {!needsTop && flatSecM >= 0.001 && (() => {
             const panelDepth = depth - crossingWorldZ
             if (panelDepth < 0.001) return null
             // Center in group-local Z: (crossingWorldZ + depth)/2 - depth/2 = crossingWorldZ/2
@@ -316,11 +344,19 @@ export default function ClosetCorpus() {
               </mesh>
             )
           })()}
-          {/* Slope panel — full shell from kinkH at back to closetHeight at flatStart */}
-          {backDiagSlopePanelGeo && (
-            <mesh key="slope-bd" position={[-width / 2, 0, 0]} geometry={backDiagSlopePanelGeo} castShadow receiveShadow>
-              <ClosetMaterial />
-            </mesh>
+
+          {/* Top-front filler panel: closes off open top wedge when flatSectionDepth=0.
+              Wedge profile — top edge follows the shell slope so no corner pokes above diagonal.
+              Front-top at closetHeight, back-top at shell height at filler back face Z. */}
+          {flatSecM < 0.001 && (
+            <TopFillerWedge
+              key={needsTop ? "top-filler-wedge-bd-tc" : "top-filler-wedge-bd"}
+              width={width}
+              depth={depth}
+              height={height}
+              needsTop={needsTop}
+              p={p}
+            />
           )}
         </>
       ) : (

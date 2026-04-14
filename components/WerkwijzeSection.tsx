@@ -9,17 +9,17 @@ const steps = [
   {
     number: 2,
     image: "/stickfigures/Website poppetje (afbeelding 2).webp",
-    title: "Bevestig je bestelling",
+    title: "Productie op maat",
   },
   {
     number: 3,
     image: "/stickfigures/Website poppetje (afbeelding 3).webp",
-    title: "Productie & levering",
+    title: "levering",
   },
   {
     number: 4,
     image: "/stickfigures/Website poppetje (afbeelding 4).webp",
-    title: "Montage aan huis",
+    title: "Gemakkelijke montage",
   },
   {
     number: 5,

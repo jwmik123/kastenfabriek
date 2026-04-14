@@ -5,7 +5,7 @@ import * as THREE from 'three/webgpu'
 import { uv, float, fract, time, color, uniform, select, positionWorld } from 'three/tsl'
 import { useClosetStore } from '../store'
 import { ClosetMaterialProvider } from '../../_shared/materials/ClosetMaterial'
-import { getDiagHeightAt } from './diagonalUtils'
+import { getDiagHeightAt, getBackDiagHeightAtZ } from './diagonalUtils'
 import type { DiagParams } from './diagonalUtils'
 import { trapNaN, trapGeo } from '@/utils/debugGeometry'
 import ClosetCorpus from './ClosetCorpus'
@@ -161,21 +161,52 @@ export default function ClosetScene() {
   const backDiagKinkHeight     = useClosetStore((s) => s.backDiagKinkHeight)
   const backDiagFlatSectionDepth = useClosetStore((s) => s.backDiagFlatSectionDepth)
   const outerDepthCm           = useClosetStore((s) => s.depth)
+  const needsTop               = useClosetStore((s) => s.needsTopCabinet())
 
-  const diagParams = useMemo(() => ({
-    diagonalSide,
-    leftDiagStartHeight:  Math.min(leftDiagStartHeight,  mainHeightCm - 20) / 100,
-    rightDiagStartHeight: Math.min(rightDiagStartHeight, mainHeightCm - 20) / 100,
-    leftDiagTopWidth:  leftDiagTopWidth  / 100,
-    rightDiagTopWidth: rightDiagTopWidth / 100,
-    outerWidth:        outerWidth        / 100,
-    mainHeight:        mainHeightCm      / 100,
-    closetHeight:      closetHeightCm    / 100,
-    backDiagonal,
-    backDiagKinkHeight:        backDiagKinkHeight        / 100,
-    backDiagFlatSectionDepth:  backDiagFlatSectionDepth  / 100,
-    outerDepth:                outerDepthCm              / 100,
-  }), [diagonalSide, leftDiagStartHeight, rightDiagStartHeight, leftDiagTopWidth, rightDiagTopWidth, outerWidth, mainHeightCm, closetHeightCm, backDiagonal, backDiagKinkHeight, backDiagFlatSectionDepth, outerDepthCm])
+  const diagParams = useMemo<DiagParams>(() => {
+    const depthM    = outerDepthCm / 100
+    const mainHM    = mainHeightCm / 100
+    const closetHM  = closetHeightCm / 100
+    const kinkHM    = backDiagKinkHeight / 100
+    const flatSecM  = backDiagFlatSectionDepth / 100
+
+    // When filler is active (backDiag + flatSec=0) and no TC, reduce effective mainH so
+    // Module.tsx caps module tops at fillerBottomY instead of mainH=closetH.
+    let effectiveMainH = mainHM
+    if (backDiagonal && flatSecM < 0.001 && !needsTop) {
+      const fillerBottomY = getBackDiagHeightAtZ(depthM - 0.15, {
+        backDiagonal: true,
+        backDiagKinkHeight: kinkHM,
+        backDiagFlatSectionDepth: flatSecM,
+        outerDepth: depthM,
+        closetHeight: closetHM,
+        // remaining fields unused by getBackDiagHeightAtZ
+        diagonalSide: 'none',
+        leftDiagStartHeight: 0,
+        rightDiagStartHeight: 0,
+        leftDiagTopWidth: 0,
+        rightDiagTopWidth: 0,
+        outerWidth: outerWidth / 100,
+        mainHeight: mainHM,
+      })
+      effectiveMainH = fillerBottomY
+    }
+
+    return {
+      diagonalSide,
+      leftDiagStartHeight:  Math.min(leftDiagStartHeight,  mainHeightCm - 20) / 100,
+      rightDiagStartHeight: Math.min(rightDiagStartHeight, mainHeightCm - 20) / 100,
+      leftDiagTopWidth:  leftDiagTopWidth  / 100,
+      rightDiagTopWidth: rightDiagTopWidth / 100,
+      outerWidth:        outerWidth        / 100,
+      mainHeight:        effectiveMainH,
+      closetHeight:      closetHM,
+      backDiagonal,
+      backDiagKinkHeight:        kinkHM,
+      backDiagFlatSectionDepth:  flatSecM,
+      outerDepth:                depthM,
+    }
+  }, [diagonalSide, leftDiagStartHeight, rightDiagStartHeight, leftDiagTopWidth, rightDiagTopWidth, outerWidth, mainHeightCm, closetHeightCm, backDiagonal, backDiagKinkHeight, backDiagFlatSectionDepth, outerDepthCm, needsTop])
 
   return (
     <ClosetMaterialProvider>

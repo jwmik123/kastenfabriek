@@ -119,7 +119,7 @@ export default function Home() {
       text="Elke millimeter is op maat gemaakt — van de
     symmetrie in de houtstructuur tot de verfijnde
     afwerking rondom."
-      backgroundImage="/ladingplaceholder.jpg"
+      backgroundImage="/kleding.jpeg"
       align="left"
       buttonText="Ontwerp jouw maatkast"
     />

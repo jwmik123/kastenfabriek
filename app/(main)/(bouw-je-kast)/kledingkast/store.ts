@@ -15,6 +15,8 @@ export interface ModuleSlot {
   binnenkantMaterialId?: string // overrides global binnenkant for this module
 }
 
+export type PlacementType = 'vrijstaand' | 'ingebouwd'
+
 interface ClosetState {
   // Sanity data
   pricingData: FullPricingData | null
@@ -23,6 +25,9 @@ interface ClosetState {
 
   // Wizard
   step: number
+
+  // Placement type
+  placementType: PlacementType
 
   // Dimensions (cm) — total closet dimensions
   width: number
@@ -63,6 +68,7 @@ interface ClosetState {
   mainHeight: () => number
 
   // Actions
+  setPlacementType: (type: PlacementType) => void
   setDiagonalSide: (side: DiagonalSide) => void
   setLeftDiagStartHeight: (v: number) => void
   setRightDiagStartHeight: (v: number) => void
@@ -131,6 +137,8 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
 
   step: 1,
 
+  placementType: 'ingebouwd',
+
   width: 180,
   height: 240,
   depth: 60,
@@ -181,6 +189,14 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
   mainHeight: () => (get().needsTopCabinet() ? 225 : get().height - SIDE_WALL_EXTRA_CM),
 
   // Actions
+  setPlacementType: (type) => {
+    if (type === 'vrijstaand') {
+      set({ placementType: type, diagonalSide: 'none' })
+    } else {
+      set({ placementType: type })
+    }
+  },
+
   setDiagonalSide: (diagonalSide) => {
     const s = get()
     const mainH = s.mainHeight()
@@ -572,6 +588,7 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
       backDiagonal: (config as any).backDiagonal ?? false,
       backDiagKinkHeight: (config as any).backDiagKinkHeight ?? 180,
       backDiagFlatSectionDepth: (config as any).backDiagFlatSectionDepth ?? 0,
+      placementType: (config as any).placementType ?? 'ingebouwd',
       step: 1,
       selectedSlot: null,
     })

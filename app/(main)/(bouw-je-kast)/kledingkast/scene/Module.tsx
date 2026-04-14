@@ -18,6 +18,7 @@ const MODULE_INSIDE_INSET = 0.010
 const ONDERSTEL_HEIGHT = 0.108
 const ONDERSTEL_GAP = 0.010
 const CLOSET_INSIDE_INSET = 0.025
+const DOOR_TOP_GAP = 0.010  // 10mm clearance between door top and closet ceiling
 const MODULE_FLOOR_Y = ONDERSTEL_HEIGHT + ONDERSTEL_GAP
 
 interface ModuleProps {
@@ -353,11 +354,20 @@ export default function Module({ index, layoutId, hasDoor, span, diagParams: p }
     ? (index % 2 === 1 || isLastModule)
     : (moduleHasDiag ? leftWallH < rightWallH : (index % 2 === 1 || isLastModule))
 
-  // Door profile for back diagonal: flat top at hFront (front is always in flat section)
+  // Door profile for back diagonal.
+  // When filler active (flatSec=0): extend door to closetH - DOOR_TOP_GAP so it
+  // covers the filler panel, leaving only a 10mm clearance gap at the top.
+  // Without filler: flat top at hFront as before.
   const bdDoorProfile = useMemo((): Array<{ x: number; y: number }> => {
     if (!isBackDiag) return []
-    return [{ x: 0, y: hFront }, { x: slotW, y: hFront }]
-  }, [isBackDiag, hFront, slotW])
+    const fillerActive = p.backDiagFlatSectionDepth < 0.001
+    const doorTopH = fillerActive
+      // Shell height at door front face Z (= depth - CLOSET_INSIDE_INSET), minus 10mm gap.
+      // Filler is recessed so its top is below closetHeight; door must not exceed it.
+      ? getBackDiagHeightAtZ(WALL + moduleDepth, p) - DOOR_TOP_GAP - MODULE_FLOOR_Y
+      : hFront
+    return [{ x: 0, y: doorTopH }, { x: slotW, y: doorTopH }]
+  }, [isBackDiag, hFront, slotW, moduleDepth, p])
 
   const startX = -innerW / 2
   const x      = startX + index * slotW

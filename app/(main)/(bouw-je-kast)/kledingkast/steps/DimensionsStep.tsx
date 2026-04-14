@@ -6,6 +6,7 @@ import { Slider } from '@/components/ui/slider'
 import { cn } from '@/lib/utils'
 import type { DiagonalSide } from '../scene/diagonalUtils'
 import { getWidthRange, getStartHeightRange, clamp, diagAmplification } from '../diagonalConstraints'
+import type { PlacementType } from '../store'
 
 function DimensionInput({
   label,
@@ -108,7 +109,15 @@ const DIAGONAL_OPTIONS: { value: DiagonalSide; label: string }[] = [
   { value: 'both',  label: 'Beide' },
 ]
 
+const PLACEMENT_OPTIONS: { value: PlacementType; label: string; hint: string }[] = [
+  { value: 'ingebouwd', label: 'Ingebouwd', hint: 'Zij- of achterwand schuin mogelijk' },
+  { value: 'vrijstaand', label: 'Vrijstaand', hint: 'Alleen achterwand schuin mogelijk' },
+]
+
 export default function DimensionsStep() {
+  const placementType = useClosetStore((s) => s.placementType)
+  const setPlacementType = useClosetStore((s) => s.setPlacementType)
+
   const width = useClosetStore((s) => s.width)
   const height = useClosetStore((s) => s.height)
   const depth = useClosetStore((s) => s.depth)
@@ -189,6 +198,30 @@ export default function DimensionsStep() {
 
   return (
     <div className="space-y-6">
+      {/* Placement type selector */}
+      <div className="space-y-2">
+        <span className="text-sm font-medium">Plaatsing</span>
+        <div className="grid grid-cols-2 gap-2">
+          {PLACEMENT_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => setPlacementType(opt.value)}
+              className={cn(
+                'flex flex-col items-start gap-0.5 rounded-md border px-3 py-2.5 text-left transition-colors',
+                placementType === opt.value
+                  ? 'border-foreground bg-foreground text-background'
+                  : 'border-border bg-background text-foreground hover:bg-muted',
+              )}
+            >
+              <span className="text-sm font-medium">{opt.label}</span>
+              <span className={cn('text-[11px]', placementType === opt.value ? 'text-background/70' : 'text-muted-foreground')}>
+                {opt.hint}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="space-y-3">
         <DimensionInput
           label="Breedte"
@@ -232,21 +265,32 @@ export default function DimensionsStep() {
 
         {/* Segmented control */}
         <div className="flex rounded-md border overflow-hidden">
-          {DIAGONAL_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              onClick={() => setDiagonalSide(opt.value)}
-              className={cn(
-                'flex-1 py-1.5 text-sm transition-colors',
-                diagonalSide === opt.value
-                  ? 'bg-foreground text-background font-medium'
-                  : 'bg-background text-muted-foreground hover:bg-muted',
-              )}
-            >
-              {opt.label}
-            </button>
-          ))}
+          {DIAGONAL_OPTIONS.map((opt) => {
+            const isSide = opt.value !== 'none'
+            const disabled = isSide && placementType === 'vrijstaand'
+            return (
+              <button
+                key={opt.value}
+                onClick={() => !disabled && setDiagonalSide(opt.value)}
+                disabled={disabled}
+                title={disabled ? 'Zijwanden schuin niet mogelijk bij vrijstaande kast' : undefined}
+                className={cn(
+                  'flex-1 py-1.5 text-sm transition-colors',
+                  disabled
+                    ? 'bg-background text-muted-foreground/40 cursor-not-allowed'
+                    : diagonalSide === opt.value
+                      ? 'bg-foreground text-background font-medium'
+                      : 'bg-background text-muted-foreground hover:bg-muted',
+                )}
+              >
+                {opt.label}
+              </button>
+            )
+          })}
         </div>
+        {placementType === 'vrijstaand' && (
+          <p className="text-[11px] text-muted-foreground">Zijwanden schuin niet mogelijk bij vrijstaande kast.</p>
+        )}
 
         {hasDiagonal && (
           <div className="space-y-4 pl-1">

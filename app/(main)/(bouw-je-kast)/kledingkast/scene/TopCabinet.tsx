@@ -6,7 +6,7 @@ import gsap from 'gsap'
 import { useClosetStore } from '../store'
 import ClosetMaterial from '../../_shared/materials/ClosetMaterial'
 import { Model as HingeModel } from '../../_shared/objects/Hinge'
-import { CORPUS_WALL } from './diagonalUtils'
+import { CORPUS_WALL, getBackDiagHeightAtZ } from './diagonalUtils'
 import type { DiagParams } from './diagonalUtils'
 import { trapShape, trapGeo, trapNaN } from '@/utils/debugGeometry'
 
@@ -14,6 +14,7 @@ const WALL = 0.018
 const DOOR_DEPTH = 0.018
 const SPACE = 0.001
 const CLOSET_INSIDE_INSET = 0.025
+const DOOR_TOP_GAP = 0.010  // 10mm clearance between door top and closet ceiling
 const SIDE_WALL_EXTRA = 0.005  // must match ClosetCorpus.tsx
 const HINGE_EDGE_OFFSET = 0.08
 
@@ -213,8 +214,8 @@ function TopCabinetSlot({
   const doorGeo = useMemo(() => {
     if (!hasDoor) return null
     const shape = new THREE.Shape()
-    shape.moveTo(SPACE, SPACE)
-    shape.lineTo(slotW - SPACE, SPACE)
+    shape.moveTo(SPACE, -WALL + SPACE)
+    shape.lineTo(slotW - SPACE, -WALL + SPACE)
     shape.lineTo(slotW - SPACE, roofProfile[roofProfile.length - 1].y - SPACE)
     for (let i = roofProfile.length - 2; i >= 1; i--) {
       const pt = roofProfile[i]
@@ -251,7 +252,7 @@ function TopCabinetSlot({
   const hingeEdgeH = mirror ? rightH : leftH
   const hingeYs = useMemo(() => {
     const maxH = hingeEdgeH - SPACE
-    return [HINGE_EDGE_OFFSET, hingeEdgeH - HINGE_EDGE_OFFSET].filter((y) => y > 0 && y < maxH)
+    return [-WALL + HINGE_EDGE_OFFSET, hingeEdgeH - HINGE_EDGE_OFFSET].filter((y) => y > -WALL && y < maxH)
   }, [hingeEdgeH])
 
   // Flat zone: both edges at full height — add a middle shelf.
@@ -336,7 +337,8 @@ interface BackDiagSlotProps {
   slotW: number
   tcBack_local: number  // TC-local z where TC starts (ceiling height = 0)
   tcSlotDepth: number   // usable depth: from tcBack_local to slot front
-  doorCeilH: number     // inner ceiling height at slot front (for door + hinges)
+  doorCeilH: number     // structural ceiling height at slot front (for hasDoor check + hinges)
+  doorTopH: number      // door panel top (extended to cover filler + DOOR_TOP_GAP when filler active)
   dividerGeo: THREE.BufferGeometry | null  // shared trapezoid divider geometry
   ceilGeo: THREE.BufferGeometry | null     // shared ceiling panel following the shell
   shellAtHingeZ: number  // TC-local ceiling height at hinge z position (for hinge clearance)
@@ -345,7 +347,7 @@ interface BackDiagSlotProps {
 }
 
 function BackDiagTCSlot({
-  slotW, tcBack_local, tcSlotDepth, doorCeilH, dividerGeo, ceilGeo, shellAtHingeZ, doorsOpen, mirror,
+  slotW, tcBack_local, tcSlotDepth, doorCeilH, doorTopH, dividerGeo, ceilGeo, shellAtHingeZ, doorsOpen, mirror,
 }: BackDiagSlotProps) {
   const pivotRef = useRef<any>(null)
   const posRef   = useRef<any>(null)
@@ -356,17 +358,17 @@ function BackDiagTCSlot({
   // Rectangular door — ceiling is flat in X for back diagonal.
   const doorGeo = useMemo(() => {
     if (!hasDoor) return null
-    trapNaN(doorCeilH, 'BackDiagTCSlot-doorCeilH')
+    trapNaN(doorTopH, 'BackDiagTCSlot-doorTopH')
     const shape = new THREE.Shape()
-    shape.moveTo(SPACE, SPACE)
-    shape.lineTo(slotW - SPACE, SPACE)
-    shape.lineTo(slotW - SPACE, doorCeilH - SPACE)
-    shape.lineTo(SPACE, doorCeilH - SPACE)
+    shape.moveTo(SPACE, -WALL + SPACE)
+    shape.lineTo(slotW - SPACE, -WALL + SPACE)
+    shape.lineTo(slotW - SPACE, doorTopH - SPACE)
+    shape.lineTo(SPACE, doorTopH - SPACE)
     shape.closePath()
     const geo = new THREE.ExtrudeGeometry(trapShape(shape, 'BackDiagTCSlot-door'), { depth: DOOR_DEPTH, bevelEnabled: false })
     geo.translate(-slotW / 2, 0, -DOOR_DEPTH / 2)
     return trapGeo(geo, 'BackDiagTCSlot-door-geo')
-  }, [hasDoor, slotW, doorCeilH])
+  }, [hasDoor, slotW, doorTopH])
 
   useEffect(() => {
     if (!pivotRef.current || !posRef.current) return
@@ -392,7 +394,7 @@ function BackDiagTCSlot({
   const topHingeY = Math.min(doorCeilH, shellAtHingeZ) - HINGE_EDGE_OFFSET
   const hingeYs = useMemo(() => {
     const maxH = doorCeilH - SPACE
-    return [HINGE_EDGE_OFFSET, topHingeY].filter((y) => y > 0 && y < maxH)
+    return [-WALL + HINGE_EDGE_OFFSET, topHingeY].filter((y) => y > -WALL && y < maxH)
   }, [doorCeilH, topHingeY])
 
   return (
@@ -493,25 +495,37 @@ export default function TopCabinet() {
   const slotW       = innerW / moduleCount
   const moduleDepth = depth - WALL - CLOSET_INSIDE_INSET
 
-  // Effective ceiling height for the TC (outer face Y).
-  const ceilH = height - SIDE_WALL_EXTRA
-
   // Back diagonal derived values
   const kinkH   = p.backDiagKinkHeight
   const flatSec = p.backDiagFlatSectionDepth
   const slopeDepth = depth - flatSec
+
+  // Effective ceiling height for the TC (outer face Y in world space).
+  // When filler active (backDiag + flatSec=0), TC modules top at fillerBottomY
+  // so the filler panel closes off the wedge above them.
+  const fillerActive = backDiagonal && flatSec < 0.001
+  const ceilH = fillerActive
+    ? getBackDiagHeightAtZ(depth - 0.15, p)
+    : height - SIDE_WALL_EXTRA
+
   const worldZ_cross = backDiagonal && height > kinkH && mainH > kinkH
     ? slopeDepth * (mainH - kinkH) / (height - kinkH)
     : 0
   const tcBack_local = Math.max(0, worldZ_cross - WALL)
   const tcSlotDepth = depth - WALL - CLOSET_INSIDE_INSET - tcBack_local
-  const innerCeilH = ceilH - mainH - WALL
+  const innerCeilH = fillerActive ? ceilH - mainH : ceilH - mainH - WALL
+  // TC-local z where the diagonal shell crosses ceilH (= fillerBottomY when filler active).
+  // Adds a kink to ceiling and divider profiles so they flatten at innerCeilH from that point forward.
+  const tcFillerCrossingLZ = fillerActive && (height - kinkH) > 0.001
+    ? slopeDepth * (ceilH - kinkH) / (height - kinkH) - WALL
+    : -1
   const worldZ_slotFront = depth - CLOSET_INSIDE_INSET
   const doorCeilH = (() => {
     if (!backDiagonal) return innerCeilH
     if (worldZ_slotFront >= depth - flatSec) return innerCeilH
     const Y_outer = kinkH + (height - kinkH) * worldZ_slotFront / slopeDepth
-    return Math.max(0, Y_outer - mainH - WALL)
+    // Clamp to innerCeilH so filler-active case caps TC module height at fillerBottomY.
+    return Math.max(0, Math.min(Y_outer - mainH - WALL, innerCeilH))
   })()
 
   // tcSlopePanelGeo removed — the unified slope panel in ClosetCorpus covers the full shell
@@ -536,12 +550,14 @@ export default function TopCabinet() {
       if (xFlatStart > xBack && xFlatStart < xFront) {
         shape.lineTo(-xFlatStart, innerCeilH)
       }
+    } else if (tcFillerCrossingLZ > xBack + 0.001 && tcFillerCrossingLZ < xFront - 0.001) {
+      shape.lineTo(-tcFillerCrossingLZ, innerCeilH)
     }
     shape.closePath()
     const geo = new THREE.ExtrudeGeometry(trapShape(shape, 'TC-tcDivider'), { depth: WALL, bevelEnabled: false })
     geo.rotateY(Math.PI / 2)
     return trapGeo(geo, 'TC-tcDivider-geo')
-  }, [backDiagonal, tcBack_local, moduleDepth, doorCeilH, innerCeilH, flatSec, depth, tcSlotDepth])
+  }, [backDiagonal, tcBack_local, moduleDepth, doorCeilH, innerCeilH, flatSec, depth, tcSlotDepth, tcFillerCrossingLZ])
 
   // Bug 1: TC back-diagonal ceiling panel — interior face of the shared shell.
   // Profile in TC-local z-y space (outer face), same pattern as Module.tsx bdOuterProfile.
@@ -554,10 +570,13 @@ export default function TopCabinet() {
       if (xFlatStart > tcBack_local + 0.001 && xFlatStart < moduleDepth - 0.001) {
         pts.push({ x: xFlatStart, y: trapNaN(innerCeilH, 'TC-bdCeil-innerCeilH') })
       }
+    } else if (tcFillerCrossingLZ > tcBack_local + 0.001 && tcFillerCrossingLZ < moduleDepth - 0.001) {
+      // Filler active: kink where shell crosses fillerBottomY; flatten at innerCeilH from there.
+      pts.push({ x: tcFillerCrossingLZ, y: trapNaN(innerCeilH, 'TC-bdCeil-innerCeilH-filler') })
     }
     pts.push({ x: moduleDepth, y: trapNaN(doorCeilH, 'TC-bdCeil-doorCeilH') })
     return pts
-  }, [backDiagonal, tcBack_local, tcSlotDepth, doorCeilH, flatSec, depth, moduleDepth, innerCeilH])
+  }, [backDiagonal, tcBack_local, tcSlotDepth, doorCeilH, flatSec, depth, moduleDepth, innerCeilH, tcFillerCrossingLZ])
 
   const tcBdInnerProfile = useMemo(
     () => (tcBdOuterProfile.length < 2 ? [] : offsetProfileInward(tcBdOuterProfile, WALL)),
@@ -580,8 +599,18 @@ export default function TopCabinet() {
     return trapGeo(geo, 'TC-bdCeil-geo')
   }, [tcBdOuterProfile, tcBdInnerProfile, slotW])
 
+  // Door panel top height — when filler active, extend door to cover the filler
+  // (closetH - DOOR_TOP_GAP), otherwise match the structural ceiling.
+  // Kept separate from doorCeilH so hinges remain anchored to the structural ceiling.
+  const tcDoorTopH = fillerActive
+    // Shell at door front face Z (= depth - CLOSET_INSIDE_INSET), minus 10mm gap, in TC-local Y.
+    // Filler is recessed so its top is below closetHeight; door must not exceed it.
+    ? getBackDiagHeightAtZ(depth - CLOSET_INSIDE_INSET, p) - DOOR_TOP_GAP - mainH
+    : doorCeilH
+
   // Bug 3b: shell ceiling height at the hinge's Z position (0.03m inside door front face).
   // The hinge sits slightly behind the door front face where the shell is lower than doorCeilH.
+  // Clamped to innerCeilH so filler-active case respects the reduced TC module height.
   const shellAtHingeZ = (() => {
     if (!backDiagonal) return innerCeilH
     const worldZ_hinge = depth - CLOSET_INSIDE_INSET - 0.03
@@ -589,7 +618,7 @@ export default function TopCabinet() {
     const slopeDepthVal = depth - flatSec
     if (slopeDepthVal <= 0) return innerCeilH
     const Y_outer = kinkH + (height - kinkH) * worldZ_hinge / slopeDepthVal
-    return Math.max(0, Y_outer - mainH - WALL)
+    return Math.max(0, Math.min(Y_outer - mainH - WALL, innerCeilH))
   })()
 
   // Non-back-diagonal derived values (side diagonal / flat case)
@@ -627,6 +656,7 @@ export default function TopCabinet() {
                 tcBack_local={tcBack_local}
                 tcSlotDepth={tcSlotDepth}
                 doorCeilH={doorCeilH}
+                doorTopH={tcDoorTopH}
                 dividerGeo={tcDividerGeo}
                 ceilGeo={tcBdCeilGeo}
                 shellAtHingeZ={shellAtHingeZ}

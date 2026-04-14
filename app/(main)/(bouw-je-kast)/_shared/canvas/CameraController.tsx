@@ -20,7 +20,7 @@ export default function CameraController({ controlsRef }: CameraControllerProps)
 
   const closetWidth = width / 100
   const autoFitDist = 3 * (closetWidth / 1.8)
-  const maxDist = 4 * (closetWidth / 1.8)
+  const maxDist = 8 * (closetWidth / 1.8)
   const cameraTargetDist = userZoom <= 0.5
     ? 2 + (userZoom / 0.5) * (autoFitDist - 2)
     : autoFitDist + ((userZoom - 0.5) / 0.5) * (maxDist - autoFitDist)
