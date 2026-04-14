@@ -39,6 +39,11 @@ export interface ClosetConfigSnapshot {
   /** @deprecated use leftDiagTopWidth / rightDiagTopWidth */
   diagTopWidth?: number;
 
+  // Back diagonal
+  backDiagonal?: boolean;
+  backDiagKinkHeight?: number;    // cm
+  backDiagFlatSectionDepth?: number;  // cm
+
   // Derived (snapshotted for display)
   hasTopCabinet: boolean;
   topCabinetHeightCm: number;

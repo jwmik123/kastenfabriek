@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import type { FullPricingData, ModuleLayout, PricingConstraints } from '@/types/configurator-pricing'
-import type { DiagonalSide } from './scene/diagonalUtils'
+import type { DiagonalSide, DiagParams } from './scene/diagonalUtils'
 import { getDiagHeightAt, isFullHeight } from './scene/diagonalUtils'
 import { getWidthRange, getStartHeightRange, clamp, diagAmplification } from './diagonalConstraints'
 import { MODULE_LAYOUTS } from './scene/moduleLayouts'
@@ -68,6 +68,13 @@ interface ClosetState {
   setRightDiagStartHeight: (v: number) => void
   setLeftDiagTopWidth: (v: number) => void
   setRightDiagTopWidth: (v: number) => void
+  // Back diagonal
+  backDiagonal: boolean
+  backDiagKinkHeight: number  // cm
+  backDiagFlatSectionDepth: number  // cm
+  setBackDiagonal: (v: boolean) => void
+  setBackDiagKinkHeight: (v: number) => void
+  setBackDiagFlatSectionDepth: (v: number) => void
   hydrate: (data: FullPricingData) => void
   setStep: (step: number) => void
   nextStep: () => void
@@ -96,15 +103,7 @@ interface ClosetState {
 const WALL_M = 0.018
 
 /** Reset span=2 on any slots that fall under the diagonal zone. */
-function resetDiagDoubles(modules: ModuleSlot[], diagParams: {
-  diagonalSide: DiagonalSide
-  leftDiagStartHeight: number
-  rightDiagStartHeight: number
-  leftDiagTopWidth: number
-  rightDiagTopWidth: number
-  outerWidth: number
-  mainHeight: number
-}, moduleCount: number, widthM: number): ModuleSlot[] {
+function resetDiagDoubles(modules: ModuleSlot[], diagParams: DiagParams, moduleCount: number, widthM: number): ModuleSlot[] {
   if (diagParams.diagonalSide === 'none') return modules
   const slotW = (widthM - WALL_M * 2) / moduleCount
   return modules.map((m) => {
@@ -141,6 +140,9 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
   rightDiagStartHeight: 180,
   leftDiagTopWidth: 50,
   rightDiagTopWidth: 50,
+  backDiagonal: false,
+  backDiagKinkHeight: 180,
+  backDiagFlatSectionDepth: 0,
 
   moduleCount: 3,
   modules: [
@@ -186,6 +188,11 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
     const hasLeft = diagonalSide === 'left' || hasBoth
     const hasRight = diagonalSide === 'right' || hasBoth
 
+    // Clear back diagonal when side diagonal is activated
+    if (diagonalSide !== 'none') {
+      set({ backDiagonal: false })
+    }
+
     // Compute visual widths (reach at full closet height) for constraint checks
     const leftAmp  = diagAmplification(s.leftDiagStartHeight,  mainH, s.height)
     const rightAmp = diagAmplification(s.rightDiagStartHeight, mainH, s.height)
@@ -206,7 +213,12 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
       leftDiagTopWidth:  clampedLeft  / 100,
       rightDiagTopWidth: clampedRight / 100,
       outerWidth: s.width / 100,
-      mainHeight: mainH   / 100,
+      mainHeight:   mainH / 100,
+      closetHeight: mainH / 100,
+      backDiagonal: false,
+      backDiagKinkHeight: 1.8,
+      backDiagFlatSectionDepth: 0,
+      outerDepth: s.width / 100,
     }
     set({
       diagonalSide,
@@ -240,7 +252,12 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
       leftDiagTopWidth:  newInternal         / 100,
       rightDiagTopWidth: s.rightDiagTopWidth / 100,
       outerWidth: s.width / 100,
-      mainHeight: mainH   / 100,
+      mainHeight:   mainH / 100,
+      closetHeight: mainH / 100,
+      backDiagonal: false,
+      backDiagKinkHeight: 1.8,
+      backDiagFlatSectionDepth: 0,
+      outerDepth: s.width / 100,
     }
     set({ leftDiagStartHeight: clamped, leftDiagTopWidth: newInternal, modules: resetDiagDoubles(s.modules, diagParams, s.moduleCount, s.width / 100) })
   },
@@ -269,7 +286,12 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
       leftDiagTopWidth:  s.leftDiagTopWidth / 100,
       rightDiagTopWidth: newInternal        / 100,
       outerWidth: s.width / 100,
-      mainHeight: mainH   / 100,
+      mainHeight:   mainH / 100,
+      closetHeight: mainH / 100,
+      backDiagonal: false,
+      backDiagKinkHeight: 1.8,
+      backDiagFlatSectionDepth: 0,
+      outerDepth: s.width / 100,
     }
     set({ rightDiagStartHeight: clamped, rightDiagTopWidth: newInternal, modules: resetDiagDoubles(s.modules, diagParams, s.moduleCount, s.width / 100) })
   },
@@ -292,7 +314,12 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
       leftDiagTopWidth:  clamped             / 100,
       rightDiagTopWidth: s.rightDiagTopWidth / 100,
       outerWidth: s.width / 100,
-      mainHeight: mainH   / 100,
+      mainHeight:   mainH / 100,
+      closetHeight: mainH / 100,
+      backDiagonal: false,
+      backDiagKinkHeight: 1.8,
+      backDiagFlatSectionDepth: 0,
+      outerDepth: s.width / 100,
     }
     set({ leftDiagTopWidth: clamped, modules: resetDiagDoubles(s.modules, diagParams, s.moduleCount, s.width / 100) })
   },
@@ -315,9 +342,35 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
       leftDiagTopWidth:  s.leftDiagTopWidth / 100,
       rightDiagTopWidth: clamped            / 100,
       outerWidth: s.width / 100,
-      mainHeight: mainH   / 100,
+      mainHeight:   mainH / 100,
+      closetHeight: mainH / 100,
+      backDiagonal: false,
+      backDiagKinkHeight: 1.8,
+      backDiagFlatSectionDepth: 0,
+      outerDepth: s.width / 100,
     }
     set({ rightDiagTopWidth: clamped, modules: resetDiagDoubles(s.modules, diagParams, s.moduleCount, s.width / 100) })
+  },
+
+  setBackDiagonal: (v) => {
+    if (v) {
+      set({ backDiagonal: true, diagonalSide: 'none' })
+    } else {
+      set({ backDiagonal: false })
+    }
+  },
+
+  setBackDiagKinkHeight: (v) => {
+    const s = get()
+    const mainH = s.mainHeight()
+    const clamped = clamp(v, 40, Math.floor(mainH - 20))
+    set({ backDiagKinkHeight: clamped })
+  },
+
+  setBackDiagFlatSectionDepth: (v) => {
+    const s = get()
+    const clamped = clamp(v, 0, Math.floor(s.depth - 10))
+    set({ backDiagFlatSectionDepth: clamped })
   },
 
   hydrate: (data) => {
@@ -390,6 +443,7 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
     if (s.rightDiagStartHeight > maxSH) updates.rightDiagStartHeight = maxSH
     if (s.rightDiagStartHeight < min) updates.rightDiagStartHeight = min
     if (Object.keys(updates).length > 0) set(updates)
+
   },
 
   setDepth: (depth) => {
@@ -515,6 +569,9 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
       rightDiagStartHeight: config.rightDiagStartHeight,
       leftDiagTopWidth:  config.leftDiagTopWidth  ?? legacyWidth,
       rightDiagTopWidth: config.rightDiagTopWidth ?? legacyWidth,
+      backDiagonal: (config as any).backDiagonal ?? false,
+      backDiagKinkHeight: (config as any).backDiagKinkHeight ?? 180,
+      backDiagFlatSectionDepth: (config as any).backDiagFlatSectionDepth ?? 0,
       step: 1,
       selectedSlot: null,
     })
@@ -532,7 +589,12 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
       leftDiagTopWidth:  leftDiagTopWidth  / 100,
       rightDiagTopWidth: rightDiagTopWidth / 100,
       outerWidth: widthM,
-      mainHeight: mainHeightM,
+      mainHeight:   mainHeightM,
+      closetHeight: mainHeightM,
+      backDiagonal: false,
+      backDiagKinkHeight: 1.8,
+      backDiagFlatSectionDepth: 0,
+      outerDepth: widthM,  // dummy, not used when backDiagonal=false
     }
 
     const getEffectiveHeight = (slotIndex: number, span: 1 | 2 = 1) => {

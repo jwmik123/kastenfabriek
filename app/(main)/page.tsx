@@ -2,6 +2,8 @@ import Image from "next/image";
 import ProductOptionsSection from "@/components/ProductOptionsSection";
 import SloganSection from "@/components/SloganSection";
 import ModuleHighlight from "@/components/ModuleHighlight";
+import TestimonialSection from "@/components/TestimonialSection";
+import WerkwijzeSection from "@/components/WerkwijzeSection";
 
 export default function Home() {
   return (
@@ -111,6 +113,8 @@ export default function Home() {
     />
 
 
+    <WerkwijzeSection />
+
     <SloganSection
       text="Elke millimeter is op maat gemaakt — van de
     symmetrie in de houtstructuur tot de verfijnde
@@ -121,6 +125,7 @@ export default function Home() {
     />
 
     <ModuleHighlight />
+    <TestimonialSection />
     </>
   );
 }

@@ -6,6 +6,7 @@ import gsap from 'gsap'
 import ClosetMaterial from '../materials/ClosetMaterial'
 import { Model as HingeModel } from './Hinge'
 import { HandleByType } from './Handles'
+import { trapShape, trapGeo } from '@/utils/debugGeometry'
 
 const DOOR_DEPTH = 0.018
 const MODULE_WALL = 0.018
@@ -69,12 +70,12 @@ export default function Door({
 
   const doorGeometry = useMemo(() => {
     const shape = buildDoorShape(slotW, topProfile)
-    const geo = new THREE.ExtrudeGeometry(shape, {
+    const geo = new THREE.ExtrudeGeometry(trapShape(shape, `Door-slotW${slotW.toFixed(3)}`), {
       depth: DOOR_DEPTH,
       bevelEnabled: false,
     })
     geo.translate(-slotW / 2, 0, -DOOR_DEPTH / 2)
-    return geo
+    return trapGeo(geo, `Door-geo-slotW${slotW.toFixed(3)}`)
   // topProfile is a memoized array from Module — reference is stable between renders
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slotW, topProfile])

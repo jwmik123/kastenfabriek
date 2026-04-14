@@ -4,7 +4,7 @@ import { useMemo } from 'react'
 import { useClosetStore } from '../store'
 import { MODULE_LAYOUTS } from '../scene/moduleLayouts'
 import { LAYOUT_SVGS } from '../components/LayoutSvgs'
-import { getDiagHeightAt } from '../scene/diagonalUtils'
+import { getDiagHeightAt, getBackDiagHeightAtZ } from '../scene/diagonalUtils'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { Minus, Plus } from 'lucide-react'
@@ -57,6 +57,11 @@ export default function ModulesStep() {
   const mainHeightCm         = useClosetStore((s) => s.mainHeight())
   const widthM               = widthCm / 100
   const mainHeightM          = mainHeightCm / 100
+  const closetHeightCm       = useClosetStore((s) => s.height)
+  const backDiagonal         = useClosetStore((s) => s.backDiagonal)
+  const backDiagKinkHeight   = useClosetStore((s) => s.backDiagKinkHeight)
+  const backDiagFlatSectionDepth = useClosetStore((s) => s.backDiagFlatSectionDepth)
+  const depthCm              = useClosetStore((s) => s.depth)
 
   const diagParams = useMemo(() => ({
     diagonalSide,
@@ -66,7 +71,12 @@ export default function ModulesStep() {
     rightDiagTopWidth: rightDiagTopWidth / 100,
     outerWidth:        widthCm           / 100,
     mainHeight:        mainHeightM,
-  }), [diagonalSide, leftDiagStartHeight, rightDiagStartHeight, leftDiagTopWidth, rightDiagTopWidth, widthCm, mainHeightCm, mainHeightM])
+    closetHeight:      closetHeightCm    / 100,
+    backDiagonal,
+    backDiagKinkHeight:        backDiagKinkHeight        / 100,
+    backDiagFlatSectionDepth:  backDiagFlatSectionDepth  / 100,
+    outerDepth:                depthCm                   / 100,
+  }), [diagonalSide, leftDiagStartHeight, rightDiagStartHeight, leftDiagTopWidth, rightDiagTopWidth, widthCm, mainHeightCm, mainHeightM, closetHeightCm, backDiagonal, backDiagKinkHeight, backDiagFlatSectionDepth, depthCm])
 
   const groups = groupModules(modules)
 
@@ -79,7 +89,12 @@ export default function ModulesStep() {
 
   // Effective height of the selected slot for diagonal layout filtering
   const selectedSlotEffectiveHeightM = (() => {
-    if (selectedSlot === null || diagParams.diagonalSide === 'none') return mainHeightM
+    if (selectedSlot === null) return mainHeightM
+    if (diagParams.backDiagonal) {
+      // For back diagonal: effective height = ceiling at the back of the module (WALL = corpus wall = 0.018m)
+      return Math.max(0, Math.min(getBackDiagHeightAtZ(WALL, diagParams), diagParams.mainHeight) - MODULE_FLOOR_Y - WALL)
+    }
+    if (diagParams.diagonalSide === 'none') return mainHeightM
     const innerW = widthM - WALL * 2
     const slotW  = innerW / moduleCount
     const span   = modules[selectedSlot]?.span ?? 1
@@ -91,7 +106,8 @@ export default function ModulesStep() {
   })()
 
   const isUnderDiagonal = selectedSlotEffectiveHeightM < mainHeightM - 0.01
-  const canBeDouble = selectedSlot !== null && selectedSlot < modules.length - 1 && !isUnderDiagonal
+  const canBeDouble = selectedSlot !== null && selectedSlot < modules.length - 1 &&
+    (diagParams.backDiagonal || !isUnderDiagonal)
 
   // Only show layouts whose special element fits within the effective height
   const availableLayouts = MODULE_LAYOUTS.filter(

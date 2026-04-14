@@ -166,6 +166,13 @@ h1, h2, h3, h4 {
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+/* SplitText line mask — clip overflow so lines animate in/out cleanly */
+.text-line-mask {
+  padding-bottom: 0.3em;
+  margin-bottom: -0.3em;
+  overflow: hidden;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

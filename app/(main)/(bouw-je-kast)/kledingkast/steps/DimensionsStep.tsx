@@ -132,11 +132,19 @@ export default function DimensionsStep() {
   const setLeftDiagTopWidth = useClosetStore((s) => s.setLeftDiagTopWidth)
   const setRightDiagTopWidth = useClosetStore((s) => s.setRightDiagTopWidth)
   const mainHeight = useClosetStore((s) => s.mainHeight())
+  const backDiagonal             = useClosetStore((s) => s.backDiagonal)
+  const backDiagKinkHeight       = useClosetStore((s) => s.backDiagKinkHeight)
+  const backDiagFlatSectionDepth = useClosetStore((s) => s.backDiagFlatSectionDepth)
+  const setBackDiagonal          = useClosetStore((s) => s.setBackDiagonal)
+  const setBackDiagKinkHeight    = useClosetStore((s) => s.setBackDiagKinkHeight)
+  const setBackDiagFlatSectionDepth = useClosetStore((s) => s.setBackDiagFlatSectionDepth)
 
   const startHeightRange = getStartHeightRange(mainHeight)
   const hasLeft  = diagonalSide === 'left'  || diagonalSide === 'both'
   const hasRight = diagonalSide === 'right' || diagonalSide === 'both'
   const hasDiagonal = diagonalSide !== 'none'
+  const backDiagKinkRange = { min: 40, max: Math.floor(mainHeight - 20) }
+  const backDiagFlatRange = { min: 0, max: Math.floor(depth - 10) }
 
   // Amplification: how much the diagonal's reach is multiplied from mainH to full closet height.
   // For non-TC closets this is ~1. For TC closets (height > 275cm) this can be 4-5×.
@@ -288,6 +296,56 @@ export default function DimensionsStep() {
                 </div>
               </div>
             )}
+          </div>
+        )}
+      </div>
+
+      {/* Back diagonal section */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-medium flex-1">Achterdiagonaal</span>
+          <div className="flex rounded-md border overflow-hidden">
+            <button
+              onClick={() => setBackDiagonal(true)}
+              className={cn(
+                'flex-1 px-3 py-1.5 text-sm transition-colors',
+                backDiagonal
+                  ? 'bg-foreground text-background font-medium'
+                  : 'bg-background text-muted-foreground hover:bg-muted',
+              )}
+            >
+              Aan
+            </button>
+            <button
+              onClick={() => setBackDiagonal(false)}
+              className={cn(
+                'flex-1 px-3 py-1.5 text-sm transition-colors',
+                !backDiagonal
+                  ? 'bg-foreground text-background font-medium'
+                  : 'bg-background text-muted-foreground hover:bg-muted',
+              )}
+            >
+              Uit
+            </button>
+          </div>
+        </div>
+
+        {backDiagonal && (
+          <div className="space-y-2 pl-1">
+            <DiagNumberInput
+              label="Knikhoogte"
+              value={backDiagKinkHeight}
+              min={backDiagKinkRange.min}
+              max={backDiagKinkRange.max}
+              onChange={setBackDiagKinkHeight}
+            />
+            <DiagNumberInput
+              label="Vlak deel"
+              value={backDiagFlatSectionDepth}
+              min={backDiagFlatRange.min}
+              max={backDiagFlatRange.max}
+              onChange={setBackDiagFlatSectionDepth}
+            />
           </div>
         )}
       </div>

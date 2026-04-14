@@ -16,6 +16,7 @@ import CanvasToolbar from '../components/CanvasToolbar'
 import CanvasPricePanel from '../components/CanvasPricePanel'
 import { MODULE_LAYOUTS } from './moduleLayouts'
 import PostProcessing from '../../_shared/effects/PostProcessing'
+import WebGPURenderGuard from '../../_shared/effects/WebGPURenderGuard'
 
 function RaycasterSetup() {
   const { raycaster } = useThree()
@@ -76,6 +77,7 @@ export default function KledingkastCanvas() {
         <RaycasterSetup />
         <ScreenshotCapture />
         <PostProcessing />
+        <WebGPURenderGuard />
         <MeasurementProjectorLayer projectedRef={projectedRef} />
 
         <Suspense>

@@ -7,16 +7,18 @@ export interface DiagParams {
   leftDiagTopWidth: number      // meters — horizontal reach of left diagonal
   rightDiagTopWidth: number     // meters — horizontal reach of right diagonal
   outerWidth: number            // meters — total closet outer width
-  mainHeight: number            // meters — interior ceiling height
+  mainHeight: number            // meters — corpus/TC separator height (225cm when TC, else ~height-15mm)
+  closetHeight: number          // meters — full outer closet height (defines slope angle)
+  // Back diagonal (mutually exclusive with side diagonal)
+  backDiagonal: boolean
+  backDiagKinkHeight: number       // meters — height at back wall where slope meets wall
+  backDiagFlatSectionDepth: number // meters — flat-top section depth measured from front
+  outerDepth: number               // meters — total closet outer depth
 }
 
 /**
  * Returns the maximum usable height (in meters) at a given X position
  * measured from the closet's outer LEFT edge.
- *
- * Outside the diagonal zone: returns mainHeight.
- * Inside the left diagonal zone: interpolates between leftDiagStartHeight and mainHeight.
- * Inside the right diagonal zone: interpolates between rightDiagStartHeight and mainHeight.
  */
 // Corpus wall thickness — diagonal starts at the inner face of the side wall, not the outer face.
 export const CORPUS_WALL = 0.018
@@ -45,12 +47,21 @@ export function getDiagHeightAt(xFromOuterLeft: number, p: DiagParams): number {
 }
 
 /**
- * Returns the effective inner height (in meters) at a module wall's X position,
- * already accounting for MODULE_FLOOR_Y and top WALL deduction.
- *
- * @param wallXOuter  X from outer left edge in meters (e.g. WALL + index * slotW)
- * @param floorY      MODULE_FLOOR_Y in meters
- * @param topWall     WALL thickness in meters
+ * Returns the ceiling height (in meters) at a given worldZ position when
+ * back diagonal is active.  worldZ=0 is the outer back face of the closet.
+ */
+export function getBackDiagHeightAtZ(worldZ: number, p: DiagParams): number {
+  if (!p.backDiagonal) return p.mainHeight
+  const { backDiagKinkHeight, backDiagFlatSectionDepth, outerDepth, closetHeight } = p
+  const flatStartZ = outerDepth - backDiagFlatSectionDepth
+  if (worldZ >= flatStartZ) return closetHeight
+  if (worldZ <= 0) return backDiagKinkHeight
+  const t = worldZ / flatStartZ
+  return backDiagKinkHeight + t * (closetHeight - backDiagKinkHeight)
+}
+
+/**
+ * Returns the effective inner height (in meters) at a module wall's X position.
  */
 export function getDiagModuleWallHeight(
   wallXOuter: number,
@@ -64,8 +75,10 @@ export function getDiagModuleWallHeight(
 
 /**
  * True when the given X range (from outer left) is fully outside any diagonal zone.
+ * Always returns true for back diagonal since it is X-uniform (double modules allowed).
  */
 export function isFullHeight(xLeft: number, xRight: number, p: DiagParams): boolean {
+  if (p.backDiagonal) return true  // back diagonal is uniform in X — double modules always OK
   return (
     getDiagHeightAt(xLeft, p) >= p.mainHeight &&
     getDiagHeightAt(xRight, p) >= p.mainHeight

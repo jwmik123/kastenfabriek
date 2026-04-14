@@ -19,6 +19,14 @@ export default function PostProcessing() {
 
     const renderer = gl as unknown as THREE.WebGPURenderer
 
+    // R3F calls gl.render(scene, camera) every frame (before the useFrame callback
+    // below). Wrap it with the same guard so transient geometry-init errors don't
+    // surface as uncaught exceptions in the default render path either.
+    const origRender = renderer.render.bind(renderer)
+    ;(renderer as any).render = (...args: Parameters<typeof origRender>) => {
+      try { return origRender(...args) } catch(e) { console.error('[PostProcessing] origRender threw:', e) }
+    }
+
     // 1. MRT — no velocity needed without TRAA
     const scenePass = pass(scene, camera)
     scenePass.setMRT(mrt({
@@ -73,6 +81,7 @@ export default function PostProcessing() {
     ppRef.current = postProcessing
 
     return () => {
+      renderer.render = origRender
       postProcessing.dispose()
       ppRef.current = null
     }
@@ -82,7 +91,14 @@ export default function PostProcessing() {
     const pp = ppRef.current
     if (!pp) return
     ;(gl as unknown as THREE.WebGPURenderer).setClearAlpha(0)
-    pp.render()
+    try {
+      pp.render()
+    } catch(e) {
+      // New geometry was added to the scene this frame before its WebGPU buffers
+      // were initialized (React 18 concurrent scene update mid-loop). Skip this
+      // frame — the next frame will render correctly once buffers are ready.
+      console.error('[PostProcessing] pp.render() threw:', e)
+    }
   }, 1)
 
   return null

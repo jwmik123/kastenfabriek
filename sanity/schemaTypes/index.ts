@@ -6,12 +6,14 @@ import { accessory } from "./accessory";
 import { doorType } from "./doorType";
 import { installationTier } from "./installationTier";
 import { pricingConfig } from "./pricingConfig";
+import { testimonial } from "./testimonial";
 
 export const schema: { types: SchemaTypeDefinition[] } = {
   types: [
     // Site/CMS
     page,
     siteSettings,
+    testimonial,
     // Configurator Pricing
     moduleLayout,
     accessory,

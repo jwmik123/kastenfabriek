@@ -119,7 +119,7 @@ const Navigation = () => {
           <div className="w-px h-5 bg-gray-300/70 mx-1" />
           <Link
             href="/kledingkast"
-            className="relative z-10 px-5 py-2 text-sm font-semibold text-white bg-[#943429] rounded-full hover:opacity-80 transition-opacity duration-150 shadow-sm"
+            className="relative z-10 px-5 py-2 text-sm font-semibold text-white bg-[#aa382b] rounded-full hover:opacity-80 transition-opacity duration-150 shadow-sm"
           >
             Ontwerp je kast
           </Link>

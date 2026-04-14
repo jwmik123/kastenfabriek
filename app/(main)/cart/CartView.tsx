@@ -77,12 +77,12 @@ export default function CartView({ isAuthenticated, initialDbItems }: CartViewPr
   )
 
   if (isPending && items.length === 0) {
-    return <div className="text-center py-20 text-gray-500">Laden...</div>
+    return <div className="text-center pt-24 py-20 text-gray-500">Laden...</div>
   }
 
   if (items.length === 0) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-16">
+      <div className="max-w-4xl mx-auto px-4 pt-24 pb-16">
         <div className="bg-white rounded-2xl shadow-sm p-16 text-center">
           <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <ShoppingBag className="w-10 h-10 text-gray-400" />
@@ -101,7 +101,7 @@ export default function CartView({ isAuthenticated, initialDbItems }: CartViewPr
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-12">
+    <div className="max-w-4xl mx-auto px-4 pt-24 pb-12">
       <h1 className="text-3xl font-bold text-gray-900 mb-8">Winkelwagen</h1>
 
       <div className="space-y-4 mb-8">

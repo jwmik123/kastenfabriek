@@ -4,7 +4,7 @@ import Image from 'next/image'
 
 const Footer = () => {
   return (
-    <footer className="bg-primary text-white font-poppins mt-[300px]">
+    <footer className="bg-primary text-white font-poppins">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 pb-0">
 
         <div className="relative w-20 h-20 lg:w-24 lg:h-24 flex-shrink-0 pb-12 flex items-center">
@@ -120,7 +120,7 @@ const Footer = () => {
               </div>
             </div>
 
-            <h3 className="text-lg font-semibold mb-3">Beoordelingen</h3>
+            {/* <h3 className="text-lg font-semibold mb-3">Beoordelingen</h3>
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <div className="flex">
@@ -131,7 +131,7 @@ const Footer = () => {
                 <span className="text-sm text-white">4,9/5</span>
               </div>
               <p className="text-xs text-white/50">700+ reviews op Trustpilot</p>
-            </div>
+            </div> */}
           </div>
         </div>
 

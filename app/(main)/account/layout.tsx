@@ -22,7 +22,7 @@ export default async function AccountLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-[72px] lg:pt-[112px]">
+    <div className="bg-primary-200 py-24">
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="flex flex-col md:flex-row gap-8">
           {/* Sidebar */}

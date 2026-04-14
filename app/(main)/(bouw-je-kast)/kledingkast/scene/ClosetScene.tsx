@@ -7,6 +7,7 @@ import { useClosetStore } from '../store'
 import { ClosetMaterialProvider } from '../../_shared/materials/ClosetMaterial'
 import { getDiagHeightAt } from './diagonalUtils'
 import type { DiagParams } from './diagonalUtils'
+import { trapNaN, trapGeo } from '@/utils/debugGeometry'
 import ClosetCorpus from './ClosetCorpus'
 import TopCabinet from './TopCabinet'
 import OnderstelPlinth from './OnderstelPlinth'
@@ -67,6 +68,8 @@ function ModuleSlotInteraction({ slotIndex, span, diagParams }: { slotIndex: num
   const maxProfileH = Math.max(...profile.map((pt) => pt.y))
 
   const shapeGeo = useMemo(() => {
+    trapNaN(totalW, `SlotInteraction${slotIndex}-totalW`)
+    trapNaN(maxProfileH, `SlotInteraction${slotIndex}-maxProfileH`)
     const shape = new THREE.Shape()
     shape.moveTo(0, 0)
     shape.lineTo(totalW, 0)
@@ -75,15 +78,16 @@ function ModuleSlotInteraction({ slotIndex, span, diagParams }: { slotIndex: num
     }
     shape.closePath()
     const geo = new THREE.ShapeGeometry(shape)
-    // ShapeGeometry uses raw x,y as UVs (in metres); normalize to [0,1] for the border shader
     const pos = geo.attributes.position
     const uvArr = new Float32Array(pos.count * 2)
+    const safeW = totalW > 0 ? totalW : 1
+    const safeH = maxProfileH > 0 ? maxProfileH : 1
     for (let i = 0; i < pos.count; i++) {
-      uvArr[i * 2]     = pos.getX(i) / totalW
-      uvArr[i * 2 + 1] = pos.getY(i) / maxProfileH
+      uvArr[i * 2]     = pos.getX(i) / safeW
+      uvArr[i * 2 + 1] = pos.getY(i) / safeH
     }
     geo.setAttribute('uv', new THREE.BufferAttribute(uvArr, 2))
-    return geo
+    return trapGeo(geo, `SlotInteraction${slotIndex}-shapeGeo`)
   }, [profile, totalW, maxProfileH])
 
   useEffect(() => {
@@ -151,7 +155,12 @@ export default function ClosetScene() {
   const leftDiagTopWidth     = useClosetStore((s) => s.leftDiagTopWidth)
   const rightDiagTopWidth    = useClosetStore((s) => s.rightDiagTopWidth)
   const outerWidth           = useClosetStore((s) => s.width)
+  const closetHeightCm       = useClosetStore((s) => s.height)
   const mainHeightCm         = useClosetStore((s) => s.mainHeight())
+  const backDiagonal           = useClosetStore((s) => s.backDiagonal)
+  const backDiagKinkHeight     = useClosetStore((s) => s.backDiagKinkHeight)
+  const backDiagFlatSectionDepth = useClosetStore((s) => s.backDiagFlatSectionDepth)
+  const outerDepthCm           = useClosetStore((s) => s.depth)
 
   const diagParams = useMemo(() => ({
     diagonalSide,
@@ -161,7 +170,12 @@ export default function ClosetScene() {
     rightDiagTopWidth: rightDiagTopWidth / 100,
     outerWidth:        outerWidth        / 100,
     mainHeight:        mainHeightCm      / 100,
-  }), [diagonalSide, leftDiagStartHeight, rightDiagStartHeight, leftDiagTopWidth, rightDiagTopWidth, outerWidth, mainHeightCm])
+    closetHeight:      closetHeightCm    / 100,
+    backDiagonal,
+    backDiagKinkHeight:        backDiagKinkHeight        / 100,
+    backDiagFlatSectionDepth:  backDiagFlatSectionDepth  / 100,
+    outerDepth:                outerDepthCm              / 100,
+  }), [diagonalSide, leftDiagStartHeight, rightDiagStartHeight, leftDiagTopWidth, rightDiagTopWidth, outerWidth, mainHeightCm, closetHeightCm, backDiagonal, backDiagKinkHeight, backDiagFlatSectionDepth, outerDepthCm])
 
   return (
     <ClosetMaterialProvider>
