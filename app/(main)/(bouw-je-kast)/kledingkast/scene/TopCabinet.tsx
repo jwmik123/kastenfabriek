@@ -284,8 +284,8 @@ function TopCabinetSlot({
         </mesh>
       )}
 
-      {/* Floor */}
-      <mesh position={[slotW / 2, WALL / 2, moduleDepth / 2]} castShadow receiveShadow>
+      {/* Floor — lowered by WALL so bottom face meets module roof top face (no gap) */}
+      <mesh position={[slotW / 2, -WALL / 2, moduleDepth / 2]} castShadow receiveShadow>
         <boxGeometry args={[slotW, WALL, moduleDepth]} />
         <ClosetMaterial variant="binnenkant" />
       </mesh>
@@ -327,10 +327,10 @@ function TopCabinetSlot({
 // the flat section start, then flat.
 //
 // Coordinate convention for divider/ceiling geometry:
-//   x_shape = TC-group-local-z = worldZ - WALL
-// After rotateY(PI/2): x_shape → z_geo, extrusion (Z) → X.
-// Mesh positioned at [WALL, 0, 0] (left divider) or [slotW, 0, 0] (right divider)
-// puts the WALL in x from [slot_left to slot_left+WALL] or [slot_right-WALL to slot_right].
+//   x_shape = -(TC-group-local-z) — NEGATIVE z, matching Module.tsx bdRoofGeo/bdSideWallGeo.
+// After rotateY(PI/2): (x_shape, y, z_ext) → (z_ext, y, -x_shape) = (z_ext, y, z_local).
+// Left divider at [0, 0, 0] → x ∈ [0, WALL] ✓
+// Right divider at [slotW-WALL, 0, 0] → x ∈ [slotW-WALL, slotW] ✓
 // ---------------------------------------------------------------------------
 interface BackDiagSlotProps {
   slotW: number
@@ -338,12 +338,14 @@ interface BackDiagSlotProps {
   tcSlotDepth: number   // usable depth: from tcBack_local to slot front
   doorCeilH: number     // inner ceiling height at slot front (for door + hinges)
   dividerGeo: THREE.BufferGeometry | null  // shared trapezoid divider geometry
+  ceilGeo: THREE.BufferGeometry | null     // shared ceiling panel following the shell
+  shellAtHingeZ: number  // TC-local ceiling height at hinge z position (for hinge clearance)
   doorsOpen: boolean
   mirror: boolean
 }
 
 function BackDiagTCSlot({
-  slotW, tcBack_local, tcSlotDepth, doorCeilH, dividerGeo, doorsOpen, mirror,
+  slotW, tcBack_local, tcSlotDepth, doorCeilH, dividerGeo, ceilGeo, shellAtHingeZ, doorsOpen, mirror,
 }: BackDiagSlotProps) {
   const pivotRef = useRef<any>(null)
   const posRef   = useRef<any>(null)
@@ -384,30 +386,41 @@ function BackDiagTCSlot({
   const pivotX = mirror ? slotW : 0
   const panelX = mirror ? -slotW / 2 : slotW / 2
   const hingeX = mirror ? slotW - WALL - 0.01 : WALL + 0.01
+
+  // Bug 3b: top hinge clamped to shell ceiling at hinge Z position (not just doorCeilH at front).
+  // The hinge sits 0.03m inside from the door front face, where the shell is slightly lower.
+  const topHingeY = Math.min(doorCeilH, shellAtHingeZ) - HINGE_EDGE_OFFSET
   const hingeYs = useMemo(() => {
     const maxH = doorCeilH - SPACE
-    return [HINGE_EDGE_OFFSET, doorCeilH - HINGE_EDGE_OFFSET].filter((y) => y > 0 && y < maxH)
-  }, [doorCeilH])
+    return [HINGE_EDGE_OFFSET, topHingeY].filter((y) => y > 0 && y < maxH)
+  }, [doorCeilH, topHingeY])
 
   return (
     <>
-      {/* Left divider — trapezoidal Y-Z profile, WALL thick in X */}
-      {dividerGeo && (
-        <mesh position={[WALL, 0, 0]} geometry={dividerGeo} castShadow receiveShadow>
+      {/* Ceiling panel — Bug 1: interior face of the diagonal shell, binnenkant material */}
+      {ceilGeo && (
+        <mesh key="ceil-bd" position={[0, 0, 0]} geometry={ceilGeo} castShadow receiveShadow>
           <ClosetMaterial variant="binnenkant" />
         </mesh>
       )}
 
-      {/* Right divider */}
+      {/* Left divider — Bug 2 fix: position [0,0,0] so geo (new_x=z_ext∈[0,WALL]) → x∈[0,WALL] */}
       {dividerGeo && (
-        <mesh position={[slotW, 0, 0]} geometry={dividerGeo} castShadow receiveShadow>
+        <mesh position={[0, 0, 0]} geometry={dividerGeo} castShadow receiveShadow>
           <ClosetMaterial variant="binnenkant" />
         </mesh>
       )}
 
-      {/* Floor — flat at Y=WALL/2 (TC-local), spanning tcSlotDepth */}
+      {/* Right divider — Bug 2 fix: position [slotW-WALL,0,0] → x∈[slotW-WALL,slotW] */}
+      {dividerGeo && (
+        <mesh position={[slotW - WALL, 0, 0]} geometry={dividerGeo} castShadow receiveShadow>
+          <ClosetMaterial variant="binnenkant" />
+        </mesh>
+      )}
+
+      {/* Floor — lowered by WALL so bottom face meets module roof top face (no gap) */}
       <mesh
-        position={[slotW / 2, WALL / 2, tcBack_local + tcSlotDepth / 2]}
+        position={[slotW / 2, -WALL / 2, tcBack_local + tcSlotDepth / 2]}
         castShadow
         receiveShadow
       >
@@ -507,25 +520,77 @@ export default function TopCabinet() {
   const tcDividerGeo = useMemo(() => {
     if (!backDiagonal || tcSlotDepth <= WALL * 2) return null
     if (doorCeilH <= WALL) return null
+    // Bug 2 fix: use NEGATIVE x_shape (x_shape = -z_local) so after rotateY(PI/2)
+    // new_z = -x_shape = z_local → geometry spans z ∈ [tcBack_local, moduleDepth] ✓
+    // (positive x_shape would map to negative z, placing dividers behind the back wall)
     const xBack  = tcBack_local
-    const xFront = depth - WALL - CLOSET_INSIDE_INSET
+    const xFront = moduleDepth
     trapNaN(doorCeilH, 'TC-tcDivider-doorCeilH')
     trapNaN(innerCeilH, 'TC-tcDivider-innerCeilH')
     const shape = new THREE.Shape()
-    shape.moveTo(xBack,  0)
-    shape.lineTo(xFront, 0)
-    shape.lineTo(xFront, doorCeilH)
+    shape.moveTo(-xBack,  0)
+    shape.lineTo(-xFront, 0)
+    shape.lineTo(-xFront, doorCeilH)
     if (flatSec > 0) {
       const xFlatStart = depth - flatSec - WALL
       if (xFlatStart > xBack && xFlatStart < xFront) {
-        shape.lineTo(xFlatStart, innerCeilH)
+        shape.lineTo(-xFlatStart, innerCeilH)
       }
     }
     shape.closePath()
     const geo = new THREE.ExtrudeGeometry(trapShape(shape, 'TC-tcDivider'), { depth: WALL, bevelEnabled: false })
     geo.rotateY(Math.PI / 2)
     return trapGeo(geo, 'TC-tcDivider-geo')
-  }, [backDiagonal, tcBack_local, doorCeilH, innerCeilH, flatSec, depth, tcSlotDepth])
+  }, [backDiagonal, tcBack_local, moduleDepth, doorCeilH, innerCeilH, flatSec, depth, tcSlotDepth])
+
+  // Bug 1: TC back-diagonal ceiling panel — interior face of the shared shell.
+  // Profile in TC-local z-y space (outer face), same pattern as Module.tsx bdOuterProfile.
+  // x_shape = -z_local so after rotateY(PI/2): new_z = z_local ∈ [tcBack_local, moduleDepth].
+  const tcBdOuterProfile = useMemo((): Array<{ x: number; y: number }> => {
+    if (!backDiagonal || tcSlotDepth <= WALL * 2 || doorCeilH <= 0) return []
+    const pts: Array<{ x: number; y: number }> = [{ x: tcBack_local, y: 0 }]
+    if (flatSec > 0) {
+      const xFlatStart = depth - flatSec - WALL
+      if (xFlatStart > tcBack_local + 0.001 && xFlatStart < moduleDepth - 0.001) {
+        pts.push({ x: xFlatStart, y: trapNaN(innerCeilH, 'TC-bdCeil-innerCeilH') })
+      }
+    }
+    pts.push({ x: moduleDepth, y: trapNaN(doorCeilH, 'TC-bdCeil-doorCeilH') })
+    return pts
+  }, [backDiagonal, tcBack_local, tcSlotDepth, doorCeilH, flatSec, depth, moduleDepth, innerCeilH])
+
+  const tcBdInnerProfile = useMemo(
+    () => (tcBdOuterProfile.length < 2 ? [] : offsetProfileInward(tcBdOuterProfile, WALL)),
+    [tcBdOuterProfile],
+  )
+
+  const tcBdCeilGeo = useMemo(() => {
+    if (tcBdOuterProfile.length < 2 || tcBdInnerProfile.length < 2) return null
+    const shape = new THREE.Shape()
+    shape.moveTo(-tcBdOuterProfile[0].x, tcBdOuterProfile[0].y)
+    for (let i = 1; i < tcBdOuterProfile.length; i++) {
+      shape.lineTo(-tcBdOuterProfile[i].x, tcBdOuterProfile[i].y)
+    }
+    for (let i = tcBdInnerProfile.length - 1; i >= 0; i--) {
+      shape.lineTo(-tcBdInnerProfile[i].x, tcBdInnerProfile[i].y)
+    }
+    shape.closePath()
+    const geo = new THREE.ExtrudeGeometry(trapShape(shape, 'TC-bdCeil'), { depth: slotW, bevelEnabled: false })
+    geo.rotateY(Math.PI / 2)
+    return trapGeo(geo, 'TC-bdCeil-geo')
+  }, [tcBdOuterProfile, tcBdInnerProfile, slotW])
+
+  // Bug 3b: shell ceiling height at the hinge's Z position (0.03m inside door front face).
+  // The hinge sits slightly behind the door front face where the shell is lower than doorCeilH.
+  const shellAtHingeZ = (() => {
+    if (!backDiagonal) return innerCeilH
+    const worldZ_hinge = depth - CLOSET_INSIDE_INSET - 0.03
+    if (worldZ_hinge >= depth - flatSec) return innerCeilH
+    const slopeDepthVal = depth - flatSec
+    if (slopeDepthVal <= 0) return innerCeilH
+    const Y_outer = kinkH + (height - kinkH) * worldZ_hinge / slopeDepthVal
+    return Math.max(0, Y_outer - mainH - WALL)
+  })()
 
   // Non-back-diagonal derived values (side diagonal / flat case)
   const flatH = ceilH - mainH - WALL
@@ -563,6 +628,8 @@ export default function TopCabinet() {
                 tcSlotDepth={tcSlotDepth}
                 doorCeilH={doorCeilH}
                 dividerGeo={tcDividerGeo}
+                ceilGeo={tcBdCeilGeo}
+                shellAtHingeZ={shellAtHingeZ}
                 doorsOpen={doorsOpen}
                 mirror={mirror}
               />

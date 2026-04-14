@@ -271,11 +271,6 @@ export default function ClosetCorpus() {
   const topPanelW       = width - topOffsetLeft - topOffsetRight
   const topPanelCenterX = (topOffsetLeft - topOffsetRight) / 2
 
-  const sepOffsetLeft   = hasLeft  ? WALL + p.leftDiagTopWidth  : 0
-  const sepOffsetRight  = hasRight ? WALL + p.rightDiagTopWidth : 0
-  const sepPanelW       = width - sepOffsetLeft - sepOffsetRight
-  const sepPanelCenterX = (sepOffsetLeft - sepOffsetRight) / 2
-
   return (
     <group position={[0, 0, depth / 2]}>
       {/* Back wall */}
@@ -309,7 +304,7 @@ export default function ClosetCorpus() {
           {/* Flat top panel: covers from crossingWorldZ to depth at Y=mainH.
               For non-TC closets this is approximately the flat section only.
               For TC closets this also covers the zone where the slope is above mainH. */}
-          {(() => {
+          {!needsTop && (() => {
             const panelDepth = depth - crossingWorldZ
             if (panelDepth < 0.001) return null
             // Center in group-local Z: (crossingWorldZ + depth)/2 - depth/2 = crossingWorldZ/2
@@ -335,13 +330,6 @@ export default function ClosetCorpus() {
         </mesh>
       )}
 
-      {/* Separator panel between main closet and top cabinet */}
-      {needsTop && !backDiagonal && (
-        <mesh position={[sepPanelCenterX, mainH - WALL / 2, 0]} castShadow receiveShadow>
-          <boxGeometry args={[sepPanelW, WALL, depth]} />
-          <ClosetMaterial />
-        </mesh>
-      )}
     </group>
   )
 }
