@@ -6,12 +6,26 @@ import { createContext, useContext, useMemo, type ReactNode } from 'react'
 import { useClosetStore } from '../../kledingkast/store'
 import { MATERIAL_COLORS } from '../../kledingkast/materials'
 
+const TEXTURE_IDS = [
+  'h1199-thermo-eik',
+  'h1714-lincoln-notelaar',
+  'h3158-vicenza-eik-grijs',
+  'h3165-vicenza-eik-licht',
+  'h3190-fineline-antraciet',
+] as const
+
+const TEXTURE_PATHS: Record<string, string> = {
+  'h1199-thermo-eik': '/materials/H1199 ST12 Thermo eik zwartbruin.webp',
+  'h1714-lincoln-notelaar': '/materials/H1714 ST19 Lincoln notelaar.jpg',
+  'h3158-vicenza-eik-grijs': '/materials/H3158 ST19 Vicenza eik grijs.webp',
+  'h3165-vicenza-eik-licht': '/materials/H3165 ST12 Vicenza eik licht.webp',
+  'h3190-fineline-antraciet': '/materials/H3190 ST19 Fineline metallic antraciet.webp',
+}
+
 interface MaterialState {
   buitenkantMaterialId: string
   binnenkantMaterialId: string
-  oakMap: THREE.Texture
-  oakNormalMap: THREE.Texture
-  walnutMap: THREE.Texture
+  textureMaps: Record<string, THREE.Texture>
   chromeMaterial: THREE.MeshPhysicalMaterial
 }
 
@@ -49,17 +63,21 @@ export function ClosetMaterialProvider({ children }: { children: ReactNode }) {
   const buitenkantMaterialId = useClosetStore((s) => s.buitenkantMaterialId)
   const binnenkantMaterialId = useClosetStore((s) => s.binnenkantMaterialId)
 
-  const [oakMap, oakNormalMap, walnutMap] = useLoader(THREE.TextureLoader, [
-    '/materials/wood-oak/WoodFineVeneerOak002_COL_1K.jpg',
-    '/materials/wood-oak/WoodFineVeneerOak002_NRM_1K.jpg',
-    '/materials/walnut.jpg',
-  ])
+  const loadedTextures = useLoader(THREE.TextureLoader, Object.values(TEXTURE_PATHS))
 
-  useMemo(() => {
-    oakMap.wrapS = oakMap.wrapT = THREE.RepeatWrapping
-    oakNormalMap.wrapS = oakNormalMap.wrapT = THREE.RepeatWrapping
-    walnutMap.wrapS = walnutMap.wrapT = THREE.RepeatWrapping
-  }, [oakMap, oakNormalMap, walnutMap])
+  const textureMaps = useMemo(() => {
+    const map: Record<string, THREE.Texture> = {}
+    TEXTURE_IDS.forEach((id, i) => {
+      const tex = loadedTextures[i]
+      tex.rotation = 0
+      tex.wrapS = THREE.MirroredRepeatWrapping
+      tex.wrapT = THREE.MirroredRepeatWrapping
+      tex.center.set(0.5, 0.5)
+      tex.needsUpdate = true
+      map[id] = tex
+    })
+    return map
+  }, [loadedTextures])
 
   const chromeMaterial = useMemo(() => new THREE.MeshPhysicalMaterial({
     color: 0xd3d3d3,
@@ -71,8 +89,8 @@ export function ClosetMaterialProvider({ children }: { children: ReactNode }) {
   }), [])
 
   const state = useMemo<MaterialState>(
-    () => ({ buitenkantMaterialId, binnenkantMaterialId, oakMap, oakNormalMap, walnutMap, chromeMaterial }),
-    [buitenkantMaterialId, binnenkantMaterialId, oakMap, oakNormalMap, walnutMap, chromeMaterial],
+    () => ({ buitenkantMaterialId, binnenkantMaterialId, textureMaps, chromeMaterial }),
+    [buitenkantMaterialId, binnenkantMaterialId, textureMaps, chromeMaterial],
   )
 
   return (
@@ -92,17 +110,10 @@ export function useClosetMaterialInstance(
     : (override?.buitenkantMaterialId ?? ctx?.buitenkantMaterialId)
 
   return useMemo(() => {
-    if (materialId === 'oak') {
+    if (materialId && ctx?.textureMaps[materialId]) {
       return new THREE.MeshStandardMaterial({
-        map: ctx?.oakMap,
-        normalMap: ctx?.oakNormalMap,
+        map: ctx.textureMaps[materialId],
         roughness: 0.7,
-      })
-    }
-    if (materialId === 'walnut') {
-      return new THREE.MeshStandardMaterial({
-        map: ctx?.walnutMap,
-        roughness: 0.8,
       })
     }
     const color = MATERIAL_COLORS[materialId ?? 'green-shadow'] || '#767b67'
@@ -125,25 +136,13 @@ export default function ClosetMaterial({
   const materialId = variant === 'binnenkant'
     ? (override?.binnenkantMaterialId ?? ctx.binnenkantMaterialId)
     : (override?.buitenkantMaterialId ?? ctx.buitenkantMaterialId)
-  const { oakMap, oakNormalMap, walnutMap } = ctx
 
-  if (materialId === 'oak') {
+  if (ctx.textureMaps[materialId]) {
     return (
       <meshStandardMaterial
-        key={`oak-${variant}`}
-        map={oakMap}
-        normalMap={oakNormalMap}
+        key={`${materialId}-${variant}`}
+        map={ctx.textureMaps[materialId]}
         roughness={0.7}
-      />
-    )
-  }
-
-  if (materialId === 'walnut') {
-    return (
-      <meshStandardMaterial
-        key={`walnut-${variant}`}
-        map={walnutMap}
-        roughness={0.8}
       />
     )
   }

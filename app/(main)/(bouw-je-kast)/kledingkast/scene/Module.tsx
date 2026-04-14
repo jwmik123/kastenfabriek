@@ -18,7 +18,6 @@ const MODULE_INSIDE_INSET = 0.010
 const ONDERSTEL_HEIGHT = 0.108
 const ONDERSTEL_GAP = 0.010
 const CLOSET_INSIDE_INSET = 0.025
-const DOOR_TOP_GAP = 0.010  // 10mm clearance between door top and closet ceiling
 const MODULE_FLOOR_Y = ONDERSTEL_HEIGHT + ONDERSTEL_GAP
 
 interface ModuleProps {
@@ -355,20 +354,12 @@ export default function Module({ index, layoutId, hasDoor, span, diagParams: p }
     : (moduleHasDiag ? leftWallH < rightWallH : (index % 2 === 1 || isLastModule))
 
   // Door profile for back diagonal.
-  // When filler active (flatSec=0): extend door to closetH - DOOR_TOP_GAP so it
-  // covers the filler panel, leaving only a 10mm clearance gap at the top.
-  // Without filler: flat top at hFront as before.
+  // Always flat at hFront (= p.mainHeight - MODULE_FLOOR_Y - WALL in world), so main corpus
+  // doors end exactly where TC doors begin. TC doors cover the TC zone and filler panel.
   const bdDoorProfile = useMemo((): Array<{ x: number; y: number }> => {
     if (!isBackDiag) return []
-    const fillerActive = p.backDiagFlatSectionDepth < 0.001
-    const doorTopH = fillerActive
-      // Shell height at door front face Z (= depth - CLOSET_INSIDE_INSET), minus 10mm gap.
-      // Clamp to p.mainHeight so TC-active doors don't extend into the TC zone above mainH.
-      // (When no TC, mainHeight ≈ closetHeight - 5mm so the clamp is effectively a no-op.)
-      ? Math.min(getBackDiagHeightAtZ(WALL + moduleDepth, p), p.mainHeight) - DOOR_TOP_GAP - MODULE_FLOOR_Y
-      : hFront
-    return [{ x: 0, y: doorTopH }, { x: slotW, y: doorTopH }]
-  }, [isBackDiag, hFront, slotW, moduleDepth, p])
+    return [{ x: 0, y: hFront }, { x: slotW, y: hFront }]
+  }, [isBackDiag, hFront, slotW])
 
   const startX = -innerW / 2
   const x      = startX + index * slotW
@@ -477,55 +468,44 @@ export default function Module({ index, layoutId, hasDoor, span, diagParams: p }
         </mesh>
       )}
 
-      {/* Door(s)
-          Key encodes isBackDiag + TC-active state so WebGPU RenderObject is rebuilt
-          when doorTopH changes structurally (diagonal toggle, or height crossing TC threshold).
-          tcActive: closetH - mainH > 0.1 → TC separator zone is live. */}
-      {hasDoor && span === 1 && (() => {
-        const tcActive = p.closetHeight - p.mainHeight > 0.1
-        const doorKey = isBackDiag ? `door-bd-${tcActive ? 'tc' : 'notc'}` : 'door-sd'
-        return (
+      {/* Door(s) */}
+      {hasDoor && span === 1 && (
+        <Door
+          key={isBackDiag ? 'door-bd' : 'door-sd'}
+          moduleHeight={isBackDiag ? hFront : roofY}
+          slotW={slotW}
+          moduleDepth={moduleDepth}
+          doorsOpen={doorsOpen}
+          doorHandleId={doorHandleId}
+          mirror={mirrorDoor}
+          topProfile={isBackDiag ? bdDoorProfile : doorProfile}
+        />
+      )}
+      {hasDoor && span === 2 && (
+        <>
           <Door
-            key={doorKey}
-            moduleHeight={isBackDiag ? hFront : roofY}
+            key="door-L"
+            moduleHeight={isBackDiag ? hFront : Math.min(leftDoorProfile[0].y, leftDoorProfile[leftDoorProfile.length - 1].y)}
             slotW={slotW}
             moduleDepth={moduleDepth}
             doorsOpen={doorsOpen}
             doorHandleId={doorHandleId}
-            mirror={mirrorDoor}
-            topProfile={isBackDiag ? bdDoorProfile : doorProfile}
+            topProfile={isBackDiag ? bdDoorProfile : leftDoorProfile}
           />
-        )
-      })()}
-      {hasDoor && span === 2 && (() => {
-        const tcActive = p.closetHeight - p.mainHeight > 0.1
-        const doorKey = isBackDiag ? `door-bd-${tcActive ? 'tc' : 'notc'}` : 'door-sd'
-        return (
-          <>
+          <group position={[slotW, 0, 0]}>
             <Door
-              key={`${doorKey}-L`}
-              moduleHeight={isBackDiag ? hFront : Math.min(leftDoorProfile[0].y, leftDoorProfile[leftDoorProfile.length - 1].y)}
+              key="door-R"
+              moduleHeight={isBackDiag ? hFront : Math.min(rightDoorProfile[0].y, rightDoorProfile[rightDoorProfile.length - 1].y)}
               slotW={slotW}
               moduleDepth={moduleDepth}
               doorsOpen={doorsOpen}
               doorHandleId={doorHandleId}
-              topProfile={isBackDiag ? bdDoorProfile : leftDoorProfile}
+              mirror
+              topProfile={isBackDiag ? bdDoorProfile : rightDoorProfile}
             />
-            <group position={[slotW, 0, 0]}>
-              <Door
-                key={`${doorKey}-R`}
-                moduleHeight={isBackDiag ? hFront : Math.min(rightDoorProfile[0].y, rightDoorProfile[rightDoorProfile.length - 1].y)}
-                slotW={slotW}
-                moduleDepth={moduleDepth}
-                doorsOpen={doorsOpen}
-                doorHandleId={doorHandleId}
-                mirror
-                topProfile={isBackDiag ? bdDoorProfile : rightDoorProfile}
-              />
-            </group>
-          </>
-        )
-      })()}
+          </group>
+        </>
+      )}
     </group>
     </ModuleMaterialOverrideProvider>
   )

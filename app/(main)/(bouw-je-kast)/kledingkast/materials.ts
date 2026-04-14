@@ -15,8 +15,11 @@ export type TextureMaterial = {
 export type Material = ColorMaterial | TextureMaterial
 
 export const MATERIALS: Material[] = [
-  { id: 'oak', name: 'Eiken', type: 'texture', preview: '/materials/wood-oak/WoodFineVeneerOak002_COL_1K.jpg' },
-  { id: 'walnut', name: 'Walnoot', type: 'texture', preview: '/materials/walnut.jpg' },
+  { id: 'h1199-thermo-eik', name: 'Thermo Eik Zwartbruin', type: 'texture', preview: '/materials/H1199 ST12 Thermo eik zwartbruin.webp' },
+  { id: 'h1714-lincoln-notelaar', name: 'Lincoln Notelaar', type: 'texture', preview: '/materials/H1714 ST19 Lincoln notelaar.jpg' },
+  { id: 'h3158-vicenza-eik-grijs', name: 'Vicenza Eik Grijs', type: 'texture', preview: '/materials/H3158 ST19 Vicenza eik grijs.webp' },
+  { id: 'h3165-vicenza-eik-licht', name: 'Vicenza Eik Licht', type: 'texture', preview: '/materials/H3165 ST12 Vicenza eik licht.webp' },
+  { id: 'h3190-fineline-antraciet', name: 'Fineline Metallic Antraciet', type: 'texture', preview: '/materials/H3190 ST19 Fineline metallic antraciet.webp' },
   { id: 'green-shadow', name: 'Groen Schaduw', type: 'color', color: '#767b67' },
   { id: 'shadow', name: 'Schaduw', type: 'color', color: '#6c6764' },
   { id: 'everest-white', name: 'Everest Wit', type: 'color', color: '#fcfcfa' },

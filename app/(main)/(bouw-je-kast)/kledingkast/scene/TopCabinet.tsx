@@ -14,7 +14,6 @@ const WALL = 0.018
 const DOOR_DEPTH = 0.018
 const SPACE = 0.001
 const CLOSET_INSIDE_INSET = 0.025
-const DOOR_TOP_GAP = 0.010  // 10mm clearance between door top and closet ceiling
 const SIDE_WALL_EXTRA = 0.005  // must match ClosetCorpus.tsx
 const HINGE_EDGE_OFFSET = 0.08
 
@@ -344,11 +343,10 @@ interface BackDiagSlotProps {
   shellAtHingeZ: number  // TC-local ceiling height at hinge z position (for hinge clearance)
   doorsOpen: boolean
   mirror: boolean
-  geoKey: string         // changes when height changes — forces geometry mesh remount to clear stale WebGPU buffers
 }
 
 function BackDiagTCSlot({
-  slotW, tcBack_local, tcSlotDepth, doorCeilH, doorTopH, dividerGeo, ceilGeo, shellAtHingeZ, doorsOpen, mirror, geoKey,
+  slotW, tcBack_local, tcSlotDepth, doorCeilH, doorTopH, dividerGeo, ceilGeo, shellAtHingeZ, doorsOpen, mirror,
 }: BackDiagSlotProps) {
   const pivotRef = useRef<any>(null)
   const posRef   = useRef<any>(null)
@@ -402,21 +400,21 @@ function BackDiagTCSlot({
     <>
       {/* Ceiling panel — Bug 1: interior face of the diagonal shell, binnenkant material */}
       {ceilGeo && (
-        <mesh key={`ceil-bd-${geoKey}`} position={[0, 0, 0]} geometry={ceilGeo} castShadow receiveShadow>
+        <mesh position={[0, 0, 0]} geometry={ceilGeo} castShadow receiveShadow>
           <ClosetMaterial variant="binnenkant" />
         </mesh>
       )}
 
       {/* Left divider — Bug 2 fix: position [0,0,0] so geo (new_x=z_ext∈[0,WALL]) → x∈[0,WALL] */}
       {dividerGeo && (
-        <mesh key={`div-L-${geoKey}`} position={[0, 0, 0]} geometry={dividerGeo} castShadow receiveShadow>
+        <mesh position={[0, 0, 0]} geometry={dividerGeo} castShadow receiveShadow>
           <ClosetMaterial variant="binnenkant" />
         </mesh>
       )}
 
       {/* Right divider — Bug 2 fix: position [slotW-WALL,0,0] → x∈[slotW-WALL,slotW] */}
       {dividerGeo && (
-        <mesh key={`div-R-${geoKey}`} position={[slotW - WALL, 0, 0]} geometry={dividerGeo} castShadow receiveShadow>
+        <mesh position={[slotW - WALL, 0, 0]} geometry={dividerGeo} castShadow receiveShadow>
           <ClosetMaterial variant="binnenkant" />
         </mesh>
       )}
@@ -600,14 +598,12 @@ export default function TopCabinet() {
     return trapGeo(geo, 'TC-bdCeil-geo')
   }, [tcBdOuterProfile, tcBdInnerProfile, slotW])
 
-  // Door panel top height — when filler active, extend door to cover the filler
-  // (closetH - DOOR_TOP_GAP), otherwise match the structural ceiling.
-  // Kept separate from doorCeilH so hinges remain anchored to the structural ceiling.
-  const tcDoorTopH = fillerActive
-    // Shell at door front face Z (= depth - CLOSET_INSIDE_INSET), minus 10mm gap, in TC-local Y.
-    // Filler is recessed so its top is below closetHeight; door must not exceed it.
-    ? getBackDiagHeightAtZ(depth - CLOSET_INSIDE_INSET, p) - DOOR_TOP_GAP - mainH
-    : doorCeilH
+  // Door panel top height.
+  // When filler is active (backDiag + no flat section): extend to fillerTopHeight - WALL
+  // so the TC door covers the filler panel zone. fillerTopHeight = shell at slot front face.
+  // Hinges remain anchored to the structural ceiling (doorCeilH), not doorTopH.
+  // When filler is not active: match the structural ceiling (doorCeilH).
+  const tcDoorTopH = fillerActive ? getBackDiagHeightAtZ(worldZ_slotFront, p) - WALL - mainH : doorCeilH
 
   // Bug 3b: shell ceiling height at the hinge's Z position (0.03m inside door front face).
   // The hinge sits slightly behind the door front face where the shell is lower than doorCeilH.
@@ -627,18 +623,13 @@ export default function TopCabinet() {
   const startX = -innerW / 2
 
   // Diagonal-state discriminator — mirrors Module.tsx "-bd" / "-sd-*" suffix convention.
-  // Encodes full diagonal state so any change forces slot group unmount+remount,
-  // clearing stale WebGPU RenderObject buffers on fresh TC mount.
+  // Encodes full diagonal + filler state so any structural change (including fillerActive toggle)
+  // forces slot group unmount+remount, clearing stale WebGPU RenderObject buffers.
   const diagVariant = backDiagonal
-    ? 'bd'
+    ? (fillerActive ? 'bd-f' : 'bd-nf')
     : diagonalSide === 'none'
       ? 'flat'
       : diagonalSide  // 'left' | 'right' | 'both'
-
-  // Geometry key — changes on every height tick so individual geometry meshes (ceiling,
-  // dividers, walls) remount with fresh WebGPU RenderObject buffers when TC dimensions change.
-  // Door groups are keyed separately (animation state) and are NOT affected by geoKey.
-  const geoKey = `${Math.round(height * 1000)}`
 
   if (!needsTop) return null
 
@@ -678,7 +669,6 @@ export default function TopCabinet() {
                 shellAtHingeZ={shellAtHingeZ}
                 doorsOpen={doorsOpen}
                 mirror={mirror}
-                geoKey={geoKey}
               />
             </group>
           )
@@ -710,7 +700,6 @@ export default function TopCabinet() {
               flatH={flatH}
               doorsOpen={doorsOpen}
               mirror={mirror}
-              geoKey={geoKey}
             />
           </group>
         )
