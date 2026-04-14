@@ -38,10 +38,11 @@ interface MaterialColorWheelProps {
   materialId: string
   onSelect: (id: string) => void
   size?: number
+  hideOutsideOnly?: boolean
 }
 
-export default function MaterialColorWheel({ materialId, onSelect, size = 300 }: MaterialColorWheelProps) {
-  const colorMats = MATERIALS.filter((m): m is ColorMaterial => m.type === 'color')
+export default function MaterialColorWheel({ materialId, onSelect, size = 300, hideOutsideOnly = false }: MaterialColorWheelProps) {
+  const colorMats = MATERIALS.filter((m): m is ColorMaterial => m.type === 'color' && (!hideOutsideOnly || !m.outsideOnly))
   const textureMats = MATERIALS.filter((m): m is TextureMaterial => m.type === 'texture')
   const colorSegAngle = 360 / colorMats.length
 

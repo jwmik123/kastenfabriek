@@ -51,7 +51,7 @@ export default function MaterialStep() {
       </div>
 
       <div className="flex flex-col items-center gap-3">
-        <MaterialColorWheel materialId={materialId} onSelect={setMaterialId} size={300} />
+        <MaterialColorWheel materialId={materialId} onSelect={setMaterialId} size={300} hideOutsideOnly={activeTab === 'binnenkant'} />
         {selectedMaterial && (
           <p className="text-sm font-medium">{selectedMaterial.name}</p>
         )}

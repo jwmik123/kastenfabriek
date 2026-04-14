@@ -3,6 +3,7 @@ export type ColorMaterial = {
   name: string
   type: 'color'
   color: string
+  outsideOnly?: boolean
 }
 
 export type TextureMaterial = {
@@ -15,26 +16,28 @@ export type TextureMaterial = {
 export type Material = ColorMaterial | TextureMaterial
 
 export const MATERIALS: Material[] = [
+  // Textures (outside & inside)
   { id: 'h1199-thermo-eik', name: 'Thermo Eik Zwartbruin', type: 'texture', preview: '/materials/H1199 ST12 Thermo eik zwartbruin.webp' },
-  { id: 'h1714-lincoln-notelaar', name: 'Lincoln Notelaar', type: 'texture', preview: '/materials/H1714 ST19 Lincoln notelaar.jpg' },
-  { id: 'h3158-vicenza-eik-grijs', name: 'Vicenza Eik Grijs', type: 'texture', preview: '/materials/H3158 ST19 Vicenza eik grijs.webp' },
   { id: 'h3165-vicenza-eik-licht', name: 'Vicenza Eik Licht', type: 'texture', preview: '/materials/H3165 ST12 Vicenza eik licht.webp' },
+  { id: 'h3158-vicenza-eik-grijs', name: 'Vicenza Eik Grijs', type: 'texture', preview: '/materials/H3158 ST19 Vicenza eik grijs.webp' },
+  { id: 'h1714-lincoln-notelaar', name: 'Lincoln Notelaar', type: 'texture', preview: '/materials/H1714 ST19 Lincoln notelaar.jpg' },
   { id: 'h3190-fineline-antraciet', name: 'Fineline Metallic Antraciet', type: 'texture', preview: '/materials/H3190 ST19 Fineline metallic antraciet.webp' },
-  { id: 'green-shadow', name: 'Groen Schaduw', type: 'color', color: '#767b67' },
-  { id: 'shadow', name: 'Schaduw', type: 'color', color: '#6c6764' },
-  { id: 'everest-white', name: 'Everest Wit', type: 'color', color: '#fcfcfa' },
-  { id: 'industrial-green', name: 'Industrieel Groen', type: 'color', color: '#a4b6a0' },
-  { id: 'elegant-black', name: 'Elegant Zwart', type: 'color', color: '#12100f' },
-  { id: 'mojave', name: 'Mojave', type: 'color', color: '#b1a08f' },
-  { id: 'pale-green', name: 'Bleek Groen', type: 'color', color: '#ddebda' },
-  { id: 'stone-grey', name: 'Steen Grijs', type: 'color', color: '#312c29' },
-  { id: 'dune-beige', name: 'Duin Beige', type: 'color', color: '#ccc1af' },
-  { id: 'night', name: 'Nacht', type: 'color', color: '#2f373a' },
-  { id: 'silver-blue', name: 'Zilver Blauw', type: 'color', color: '#859aaf' },
-  { id: 'shade-brown', name: 'Schaduw Bruin', type: 'color', color: '#6b5f53' },
-  { id: 'evening-red', name: 'Avond Rood', type: 'color', color: '#743136' },
-  { id: 'ink-blue', name: 'Ink Blauw', type: 'color', color: '#1c315c' },
-  { id: 'mokka', name: 'Mokka', type: 'color', color: '#93857a' },
+  // Colors — outside & inside
+  { id: 'zwart', name: 'Zwart', type: 'color', color: '#050407' },
+  { id: 'premium-wit', name: 'Premium Wit', type: 'color', color: '#FBFDF5' },
+  { id: 'zandbeige', name: 'Zandbeige', type: 'color', color: '#E7D6C2' },
+  { id: 'eucalyptus-groen', name: 'Eucalyptus Groen', type: 'color', color: '#747F74' },
+  { id: 'amandelbeige', name: 'Amandelbeige', type: 'color', color: '#B6A294' },
+  { id: 'truffelbruin', name: 'Truffelbruin', type: 'color', color: '#685A51' },
+  { id: 'donkertaupe', name: 'Donkertaupe', type: 'color', color: '#90877A' },
+  { id: 'koolstofgrijs', name: 'Koolstofgrijs', type: 'color', color: '#36383E' },
+  { id: 'mistblauw', name: 'Mistblauw', type: 'color', color: '#556F84' },
+  // Colors — outside only
+  { id: 'cosmosblauw', name: 'Cosmosblauw', type: 'color', color: '#122744', outsideOnly: true },
+  { id: 'granaatappelrood', name: 'Granaatappelrood', type: 'color', color: '#5f1e22', outsideOnly: true },
+  { id: 'pistachegroen', name: 'Pistachegroen', type: 'color', color: '#c8d2c1', outsideOnly: true },
+  { id: 'olijfgroen', name: 'Olijfgroen', type: 'color', color: '#9b9971', outsideOnly: true },
+  { id: 'steengroen', name: 'Steengroen', type: 'color', color: '#526261', outsideOnly: true },
 ]
 
 export const MATERIAL_COLORS: Record<string, string> = Object.fromEntries(
