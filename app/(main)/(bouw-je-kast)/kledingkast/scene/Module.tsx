@@ -363,8 +363,9 @@ export default function Module({ index, layoutId, hasDoor, span, diagParams: p }
     const fillerActive = p.backDiagFlatSectionDepth < 0.001
     const doorTopH = fillerActive
       // Shell height at door front face Z (= depth - CLOSET_INSIDE_INSET), minus 10mm gap.
-      // Filler is recessed so its top is below closetHeight; door must not exceed it.
-      ? getBackDiagHeightAtZ(WALL + moduleDepth, p) - DOOR_TOP_GAP - MODULE_FLOOR_Y
+      // Clamp to p.mainHeight so TC-active doors don't extend into the TC zone above mainH.
+      // (When no TC, mainHeight ≈ closetHeight - 5mm so the clamp is effectively a no-op.)
+      ? Math.min(getBackDiagHeightAtZ(WALL + moduleDepth, p), p.mainHeight) - DOOR_TOP_GAP - MODULE_FLOOR_Y
       : hFront
     return [{ x: 0, y: doorTopH }, { x: slotW, y: doorTopH }]
   }, [isBackDiag, hFront, slotW, moduleDepth, p])
@@ -476,41 +477,55 @@ export default function Module({ index, layoutId, hasDoor, span, diagParams: p }
         </mesh>
       )}
 
-      {/* Door(s) */}
-      {hasDoor && span === 1 && (
-        <Door
-          moduleHeight={isBackDiag ? hFront : roofY}
-          slotW={slotW}
-          moduleDepth={moduleDepth}
-          doorsOpen={doorsOpen}
-          doorHandleId={doorHandleId}
-          mirror={mirrorDoor}
-          topProfile={isBackDiag ? bdDoorProfile : doorProfile}
-        />
-      )}
-      {hasDoor && span === 2 && (
-        <>
+      {/* Door(s)
+          Key encodes isBackDiag + TC-active state so WebGPU RenderObject is rebuilt
+          when doorTopH changes structurally (diagonal toggle, or height crossing TC threshold).
+          tcActive: closetH - mainH > 0.1 → TC separator zone is live. */}
+      {hasDoor && span === 1 && (() => {
+        const tcActive = p.closetHeight - p.mainHeight > 0.1
+        const doorKey = isBackDiag ? `door-bd-${tcActive ? 'tc' : 'notc'}` : 'door-sd'
+        return (
           <Door
-            moduleHeight={isBackDiag ? hFront : Math.min(leftDoorProfile[0].y, leftDoorProfile[leftDoorProfile.length - 1].y)}
+            key={doorKey}
+            moduleHeight={isBackDiag ? hFront : roofY}
             slotW={slotW}
             moduleDepth={moduleDepth}
             doorsOpen={doorsOpen}
             doorHandleId={doorHandleId}
-            topProfile={isBackDiag ? bdDoorProfile : leftDoorProfile}
+            mirror={mirrorDoor}
+            topProfile={isBackDiag ? bdDoorProfile : doorProfile}
           />
-          <group position={[slotW, 0, 0]}>
+        )
+      })()}
+      {hasDoor && span === 2 && (() => {
+        const tcActive = p.closetHeight - p.mainHeight > 0.1
+        const doorKey = isBackDiag ? `door-bd-${tcActive ? 'tc' : 'notc'}` : 'door-sd'
+        return (
+          <>
             <Door
-              moduleHeight={isBackDiag ? hFront : Math.min(rightDoorProfile[0].y, rightDoorProfile[rightDoorProfile.length - 1].y)}
+              key={`${doorKey}-L`}
+              moduleHeight={isBackDiag ? hFront : Math.min(leftDoorProfile[0].y, leftDoorProfile[leftDoorProfile.length - 1].y)}
               slotW={slotW}
               moduleDepth={moduleDepth}
               doorsOpen={doorsOpen}
               doorHandleId={doorHandleId}
-              mirror
-              topProfile={isBackDiag ? bdDoorProfile : rightDoorProfile}
+              topProfile={isBackDiag ? bdDoorProfile : leftDoorProfile}
             />
-          </group>
-        </>
-      )}
+            <group position={[slotW, 0, 0]}>
+              <Door
+                key={`${doorKey}-R`}
+                moduleHeight={isBackDiag ? hFront : Math.min(rightDoorProfile[0].y, rightDoorProfile[rightDoorProfile.length - 1].y)}
+                slotW={slotW}
+                moduleDepth={moduleDepth}
+                doorsOpen={doorsOpen}
+                doorHandleId={doorHandleId}
+                mirror
+                topProfile={isBackDiag ? bdDoorProfile : rightDoorProfile}
+              />
+            </group>
+          </>
+        )
+      })()}
     </group>
     </ModuleMaterialOverrideProvider>
   )

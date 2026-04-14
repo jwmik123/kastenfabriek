@@ -192,7 +192,7 @@ function TopFillerWedge({
   p: DiagParams
 }) {
   const geo = useMemo(() => {
-    const fillerBottomY = getBackDiagHeightAtZ(depth - 0.15, p)
+    const fillerBottomY = getBackDiagHeightAtZ(depth - 0.10, p)
     const seamY         = needsTop ? fillerBottomY : fillerBottomY - WALL
 
     const fillerFrontZ = depth - CLOSET_INSIDE_INSET       // world Z of filler front face

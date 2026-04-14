@@ -344,10 +344,11 @@ interface BackDiagSlotProps {
   shellAtHingeZ: number  // TC-local ceiling height at hinge z position (for hinge clearance)
   doorsOpen: boolean
   mirror: boolean
+  geoKey: string         // changes when height changes — forces geometry mesh remount to clear stale WebGPU buffers
 }
 
 function BackDiagTCSlot({
-  slotW, tcBack_local, tcSlotDepth, doorCeilH, doorTopH, dividerGeo, ceilGeo, shellAtHingeZ, doorsOpen, mirror,
+  slotW, tcBack_local, tcSlotDepth, doorCeilH, doorTopH, dividerGeo, ceilGeo, shellAtHingeZ, doorsOpen, mirror, geoKey,
 }: BackDiagSlotProps) {
   const pivotRef = useRef<any>(null)
   const posRef   = useRef<any>(null)
@@ -401,21 +402,21 @@ function BackDiagTCSlot({
     <>
       {/* Ceiling panel — Bug 1: interior face of the diagonal shell, binnenkant material */}
       {ceilGeo && (
-        <mesh key="ceil-bd" position={[0, 0, 0]} geometry={ceilGeo} castShadow receiveShadow>
+        <mesh key={`ceil-bd-${geoKey}`} position={[0, 0, 0]} geometry={ceilGeo} castShadow receiveShadow>
           <ClosetMaterial variant="binnenkant" />
         </mesh>
       )}
 
       {/* Left divider — Bug 2 fix: position [0,0,0] so geo (new_x=z_ext∈[0,WALL]) → x∈[0,WALL] */}
       {dividerGeo && (
-        <mesh position={[0, 0, 0]} geometry={dividerGeo} castShadow receiveShadow>
+        <mesh key={`div-L-${geoKey}`} position={[0, 0, 0]} geometry={dividerGeo} castShadow receiveShadow>
           <ClosetMaterial variant="binnenkant" />
         </mesh>
       )}
 
       {/* Right divider — Bug 2 fix: position [slotW-WALL,0,0] → x∈[slotW-WALL,slotW] */}
       {dividerGeo && (
-        <mesh position={[slotW - WALL, 0, 0]} geometry={dividerGeo} castShadow receiveShadow>
+        <mesh key={`div-R-${geoKey}`} position={[slotW - WALL, 0, 0]} geometry={dividerGeo} castShadow receiveShadow>
           <ClosetMaterial variant="binnenkant" />
         </mesh>
       )}
@@ -486,7 +487,7 @@ export default function TopCabinet() {
     backDiagKinkHeight:        backDiagKinkHeightCm        / 100,
     backDiagFlatSectionDepth:  backDiagFlatSectionDepthCm  / 100,
     outerDepth:                depth,
-  }), [diagonalSide, leftDiagStartHeightCm, rightDiagStartHeightCm, leftDiagTopWidthCm, rightDiagTopWidthCm, width, mainHCm, mainH, backDiagonal, backDiagKinkHeightCm, backDiagFlatSectionDepthCm, depth])
+  }), [diagonalSide, leftDiagStartHeightCm, rightDiagStartHeightCm, leftDiagTopWidthCm, rightDiagTopWidthCm, width, mainHCm, mainH, height, backDiagonal, backDiagKinkHeightCm, backDiagFlatSectionDepthCm, depth])
 
   // ---------------------------------------------------------------------------
   // All derived values and hooks must be declared BEFORE any early return
@@ -505,7 +506,7 @@ export default function TopCabinet() {
   // so the filler panel closes off the wedge above them.
   const fillerActive = backDiagonal && flatSec < 0.001
   const ceilH = fillerActive
-    ? getBackDiagHeightAtZ(depth - 0.15, p)
+    ? getBackDiagHeightAtZ(depth - 0.10, p)
     : height - SIDE_WALL_EXTRA
 
   const worldZ_cross = backDiagonal && height > kinkH && mainH > kinkH
@@ -625,6 +626,20 @@ export default function TopCabinet() {
   const flatH = ceilH - mainH - WALL
   const startX = -innerW / 2
 
+  // Diagonal-state discriminator — mirrors Module.tsx "-bd" / "-sd-*" suffix convention.
+  // Encodes full diagonal state so any change forces slot group unmount+remount,
+  // clearing stale WebGPU RenderObject buffers on fresh TC mount.
+  const diagVariant = backDiagonal
+    ? 'bd'
+    : diagonalSide === 'none'
+      ? 'flat'
+      : diagonalSide  // 'left' | 'right' | 'both'
+
+  // Geometry key — changes on every height tick so individual geometry meshes (ceiling,
+  // dividers, walls) remount with fresh WebGPU RenderObject buffers when TC dimensions change.
+  // Door groups are keyed separately (animation state) and are NOT affected by geoKey.
+  const geoKey = `${Math.round(height * 1000)}`
+
   if (!needsTop) return null
 
   return (
@@ -632,6 +647,7 @@ export default function TopCabinet() {
       {/* ── Back diagonal ceiling: slope panel lives in ClosetCorpus (full shell). Flat section cap below. ── */}
       {backDiagonal && flatSec > 0 && tcSlotDepth > WALL * 2 && (
         <mesh
+          key="top-flat-bd"
           position={[0, (ceilH - mainH) - WALL / 2, depth - flatSec / 2 - WALL]}
           castShadow
           receiveShadow
@@ -650,7 +666,7 @@ export default function TopCabinet() {
           if (tcSlotDepth <= WALL * 2) return null
           const mirror = i % 2 === 1 || i === moduleCount - 1
           return (
-            <group key={i} position={[x, 0, 0]}>
+            <group key={`${i}-${diagVariant}`} position={[x, 0, 0]}>
               <BackDiagTCSlot
                 slotW={slotW}
                 tcBack_local={tcBack_local}
@@ -662,6 +678,7 @@ export default function TopCabinet() {
                 shellAtHingeZ={shellAtHingeZ}
                 doorsOpen={doorsOpen}
                 mirror={mirror}
+                geoKey={geoKey}
               />
             </group>
           )
@@ -683,7 +700,7 @@ export default function TopCabinet() {
         const mirror     = isDiagonal ? rightH > leftH : (i % 2 === 1 || isLast)
 
         return (
-          <group key={i} position={[x, 0, 0]}>
+          <group key={`${i}-${diagVariant}`} position={[x, 0, 0]}>
             <TopCabinetSlot
               slotW={slotW}
               moduleDepth={moduleDepth}
@@ -693,6 +710,7 @@ export default function TopCabinet() {
               flatH={flatH}
               doorsOpen={doorsOpen}
               mirror={mirror}
+              geoKey={geoKey}
             />
           </group>
         )

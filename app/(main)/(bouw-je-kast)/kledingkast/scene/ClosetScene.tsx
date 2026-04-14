@@ -12,6 +12,7 @@ import ClosetCorpus from './ClosetCorpus'
 import TopCabinet from './TopCabinet'
 import OnderstelPlinth from './OnderstelPlinth'
 import Module from './Module'
+import StructuralKinkShelf from './StructuralKinkShelf'
 
 const WALL = 0.018
 const ONDERSTEL_HEIGHT = 0.108
@@ -174,7 +175,7 @@ export default function ClosetScene() {
     // Module.tsx caps module tops at fillerBottomY instead of mainH=closetH.
     let effectiveMainH = mainHM
     if (backDiagonal && flatSecM < 0.001 && !needsTop) {
-      const fillerBottomY = getBackDiagHeightAtZ(depthM - 0.15, {
+      const fillerBottomY = getBackDiagHeightAtZ(depthM - 0.10, {
         backDiagonal: true,
         backDiagKinkHeight: kinkHM,
         backDiagFlatSectionDepth: flatSecM,
@@ -229,6 +230,23 @@ export default function ClosetScene() {
         const isConsumed = i > 0 && modules[i - 1].span === 2
         if (isConsumed) return null
         return <ModuleSlotInteraction key={`hit-${m.slotIndex}`} slotIndex={m.slotIndex} span={m.span} diagParams={diagParams} />
+      })}
+      {/* Structural kink shelf — one per module, auto-inserted when backDiagonal is active.
+          Distinct key prefix `kink-` prevents WebGPU RenderObject reuse with module/hit meshes. */}
+      {backDiagonal && modules.map((m, i) => {
+        const isConsumed = i > 0 && modules[i - 1].span === 2
+        if (isConsumed) return null
+        return (
+          <StructuralKinkShelf
+            key={`kink-${m.slotIndex}`}
+            isStructural
+            slotIndex={m.slotIndex}
+            span={m.span}
+            hasDoor={m.hasDoor}
+            buitenkantMaterialId={m.buitenkantMaterialId}
+            binnenkantMaterialId={m.binnenkantMaterialId}
+          />
+        )
       })}
     </ClosetMaterialProvider>
   )

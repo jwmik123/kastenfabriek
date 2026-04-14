@@ -32,7 +32,7 @@ export default function ThreeCanvas({ children, onPointerMissed }: ThreeCanvasPr
   return (
     <Canvas
       dpr={[1, 2]}
-      camera={{ position: [0, 1.6, 3], fov: 45 }}
+      camera={{ position: [0, 1.6, 3], fov: 55 }}
       shadows
       onPointerMissed={onPointerMissed}
       gl={async (props: any) => {
