@@ -59,10 +59,12 @@ export default function TestimonialLines({
       const slides = testimonials.map((_, i) => ({
         item: itemRefs.current[i],
         image: imgRefs.current[i] ?? null,
-        splitTargets: [
-          textRefs.current[i],
-          ...(detailRefs.current[i] ?? []),
-        ].filter((el): el is HTMLElement => el != null),
+        splitTargets: (
+          [
+            textRefs.current[i],
+            ...(detailRefs.current[i] ?? []),
+          ] as (HTMLElement | undefined)[]
+        ).filter((el): el is HTMLElement => el != null),
         splitInstances: [] as InstanceType<typeof SplitText>[],
         getLines(): HTMLElement[] {
           return this.splitInstances.flatMap(
