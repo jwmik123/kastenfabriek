@@ -116,7 +116,7 @@ export function useClosetMaterialInstance(
         roughness: 0.7,
       })
     }
-    const color = MATERIAL_COLORS[materialId ?? 'green-shadow'] || '#767b67'
+    const color = MATERIAL_COLORS[materialId ?? 'premium-wit'] || '#ffffff'
     return new THREE.MeshStandardMaterial({ color })
   }, [ctx, materialId])
 }

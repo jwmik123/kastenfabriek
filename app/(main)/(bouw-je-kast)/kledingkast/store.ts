@@ -159,8 +159,8 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
     { slotIndex: 2, layoutId: null, hasDoor: true, span: 1 },
   ],
 
-  buitenkantMaterialId: 'green-shadow',
-  binnenkantMaterialId: 'everest-white',
+  buitenkantMaterialId: 'premium-wit',
+  binnenkantMaterialId: 'premium-wit',
   doorHandleId: '23',
   doorsOpen: true,
   showMeasurements: false,
