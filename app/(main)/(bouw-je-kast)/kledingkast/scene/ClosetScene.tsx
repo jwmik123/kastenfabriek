@@ -13,6 +13,8 @@ import TopCabinet from './TopCabinet'
 import OnderstelPlinth from './OnderstelPlinth'
 import Module from './Module'
 import StructuralKinkShelf from './StructuralKinkShelf'
+import InstancedLightStrips from './InstancedLightStrips'
+import { StripWarmthProvider } from '../../_shared/materials/StripWarmthContext'
 
 const WALL = 0.018
 const ONDERSTEL_HEIGHT = 0.108
@@ -163,6 +165,8 @@ export default function ClosetScene() {
   const backDiagFlatSectionDepth = useClosetStore((s) => s.backDiagFlatSectionDepth)
   const outerDepthCm           = useClosetStore((s) => s.depth)
   const needsTop               = useClosetStore((s) => s.needsTopCabinet())
+  const lightStripsEnabled     = useClosetStore((s) => s.lightStripsEnabled)
+  const doorsOpen              = useClosetStore((s) => s.doorsOpen)
 
   const diagParams = useMemo<DiagParams>(() => {
     const depthM    = outerDepthCm / 100
@@ -212,20 +216,33 @@ export default function ClosetScene() {
   return (
     <ClosetMaterialProvider>
       <ClosetCorpus />
+      {lightStripsEnabled && doorsOpen && <InstancedLightStrips diagParams={diagParams} />}
       <TopCabinet />
       <OnderstelPlinth />
       {modules
         .filter((m) => m.layoutId !== null)
-        .map((m) => (
-          <Module
-            key={m.slotIndex}
-            index={m.slotIndex}
-            layoutId={m.layoutId!}
-            hasDoor={m.hasDoor}
-            span={m.span}
-            diagParams={diagParams}
-          />
-        ))}
+        .map((m) =>
+          lightStripsEnabled ? (
+            <StripWarmthProvider key={m.slotIndex} slotIndex={m.slotIndex} span={m.span} diagParams={diagParams}>
+              <Module
+                index={m.slotIndex}
+                layoutId={m.layoutId!}
+                hasDoor={m.hasDoor}
+                span={m.span}
+                diagParams={diagParams}
+              />
+            </StripWarmthProvider>
+          ) : (
+            <Module
+              key={m.slotIndex}
+              index={m.slotIndex}
+              layoutId={m.layoutId!}
+              hasDoor={m.hasDoor}
+              span={m.span}
+              diagParams={diagParams}
+            />
+          )
+        )}
       {modules.map((m, i) => {
         const isConsumed = i > 0 && modules[i - 1].span === 2
         if (isConsumed) return null

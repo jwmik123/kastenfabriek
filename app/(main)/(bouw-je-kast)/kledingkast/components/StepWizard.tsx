@@ -5,6 +5,7 @@ import DimensionsStep from '../steps/DimensionsStep'
 import ModulesStep from '../steps/ModulesStep'
 import MaterialStep from '../steps/MaterialStep'
 import DoorHandlesStep from '../steps/DoorHandlesStep'
+import LightingStep from '../steps/LightingStep'
 import ModuleMaterialPanel from './ModuleMaterialPanel'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
@@ -16,6 +17,7 @@ const STEPS = [
   { label: 'Modules', number: 2 },
   { label: 'Materiaal', number: 3 },
   { label: 'Handgrepen', number: 4 },
+  { label: 'Verlichting', number: 5 },
 ]
 
 function StepIndicator() {
@@ -73,6 +75,7 @@ function CurrentStep() {
     case 2: return <ModulesStep />
     case 3: return <MaterialStep />
     case 4: return <DoorHandlesStep />
+    case 5: return <LightingStep />
     default: return null
   }
 }

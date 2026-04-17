@@ -49,6 +49,7 @@ interface ClosetState {
   buitenkantMaterialId: string
   binnenkantMaterialId: string
   doorHandleId: string
+  lightStripsEnabled: boolean
 
   // View options
   doorsOpen: boolean
@@ -96,6 +97,7 @@ interface ClosetState {
   setBinnenkantMaterialId: (id: string) => void
   setModuleMaterial: (slotIndex: number, variant: 'buitenkant' | 'binnenkant', id: string) => void
   setDoorHandleId: (id: string) => void
+  setLightStripsEnabled: (v: boolean) => void
   toggleDoors: () => void
   toggleMeasurements: () => void
   zoomIn: () => void
@@ -162,6 +164,7 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
   buitenkantMaterialId: 'premium-wit',
   binnenkantMaterialId: 'premium-wit',
   doorHandleId: '23',
+  lightStripsEnabled: false,
   doorsOpen: true,
   showMeasurements: false,
   userZoom: 0.5,
@@ -398,7 +401,7 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
   },
 
   setStep: (step) => set({ step, selectedSlot: null }),
-  nextStep: () => set((s) => ({ step: Math.min(s.step + 1, 4), selectedSlot: null })),
+  nextStep: () => set((s) => ({ step: Math.min(s.step + 1, 5), selectedSlot: null })),
   prevStep: () => set((s) => ({ step: Math.max(s.step - 1, 1), selectedSlot: null })),
 
   setWidth: (width) => {
@@ -555,6 +558,7 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
       ),
     })),
   setDoorHandleId: (doorHandleId) => set({ doorHandleId }),
+  setLightStripsEnabled: (lightStripsEnabled) => set({ lightStripsEnabled }),
   toggleDoors: () => set((s) => ({ doorsOpen: !s.doorsOpen })),
   toggleMeasurements: () => set((s) => ({ showMeasurements: !s.showMeasurements })),
   zoomIn: () => set((s) => ({ userZoom: Math.max(0, s.userZoom - 0.1) })),
