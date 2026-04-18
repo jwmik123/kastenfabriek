@@ -8,18 +8,19 @@ import {
   uniform,
   select,
   max,
+  type Node,
 } from 'three/tsl'
 import * as THREE from 'three/webgpu'
 
 export interface StripWarmthUniforms {
-  uEnabled: ReturnType<typeof uniform>
-  uStartA: ReturnType<typeof uniform>
-  uEndA: ReturnType<typeof uniform>
-  uStartB: ReturnType<typeof uniform>
-  uEndB: ReturnType<typeof uniform>
-  uRadius: ReturnType<typeof uniform>
-  uColor: ReturnType<typeof uniform>
-  uIntensity: ReturnType<typeof uniform>
+  uEnabled: Node
+  uStartA: Node
+  uEndA: Node
+  uStartB: Node
+  uEndB: Node
+  uRadius: Node
+  uColor: Node
+  uIntensity: Node
 }
 
 export function createStripWarmthUniforms(): StripWarmthUniforms {
@@ -36,12 +37,12 @@ export function createStripWarmthUniforms(): StripWarmthUniforms {
 }
 
 function warmthFromStrip(
-  fragPos: ReturnType<typeof positionWorld>,
-  segStart: ReturnType<typeof uniform>,
-  segEnd: ReturnType<typeof uniform>,
-  radius: ReturnType<typeof uniform>,
-  color: ReturnType<typeof uniform>,
-  intensity: ReturnType<typeof uniform>,
+  fragPos: Node,
+  segStart: Node,
+  segEnd: Node,
+  radius: Node,
+  color: Node,
+  intensity: Node,
 ) {
   // Closest point on the strip line segment (clamped)
   const ab = (segEnd as any).sub(segStart)

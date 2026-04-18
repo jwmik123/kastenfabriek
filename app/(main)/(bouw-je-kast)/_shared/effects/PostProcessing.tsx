@@ -5,6 +5,7 @@ import * as THREE from 'three/webgpu'
 import {
   pass, mrt, output, diffuseColor, normalView,
   directionToColor, colorToDirection, add, vec4,
+  uniform, mix,
 } from 'three/tsl'
 import { ssgi } from 'three/addons/tsl/display/SSGINode.js'
 import { bloom } from 'three/addons/tsl/display/BloomNode.js'
@@ -17,12 +18,13 @@ export default function PostProcessing() {
   const ppRef             = useRef<THREE.PostProcessing | null>(null)
   const giIntensityRef    = useRef<{ value: number } | null>(null)
   const bloomStrengthRef  = useRef<{ value: number } | null>(null)
+  const aoBlendRef        = useRef<{ value: number } | null>(null)
   const lightStripsEnabled = useClosetStore((s) => s.lightStripsEnabled)
   const doorsOpen          = useClosetStore((s) => s.doorsOpen)
 
   // Rebuild the entire post-processing pipeline when lightStripsEnabled changes.
   // OFF pipeline: baseline composition (raw ao, no bloom, giIntensity=0.3 fixed).
-  // ON  pipeline: warmth composition (aoLifted, bloom node, giIntensity controlled by doorsOpen).
+  // ON  pipeline: warmth composition (bloom node; giIntensity/aoBlend/bloomStrength controlled by doorsOpen).
   useEffect(() => {
     if (!(gl as any).isWebGPURenderer) return
 
@@ -76,22 +78,30 @@ export default function PostProcessing() {
     let outputNode: ReturnType<typeof vec4>
 
     if (lightStripsEnabled) {
-      // WARMTH PIPELINE — aoLifted remap + bloom; giIntensity driven by doorsOpen ref
+      // WARMTH PIPELINE — bloom; giIntensity and aoBlend driven by doorsOpen ref.
+      // aoBlend=0 (doors closed) → raw ao = pre-warmth baseline.
+      // aoBlend=1 (doors open, strips illuminating) → aoLifted remap.
       giIntensityRef.current   = giPass.giIntensity
       const bloomPass = bloom(scenePassColor, 0, 0.35, 1.2)
       bloomStrengthRef.current = bloomPass.strength
 
-      // Remap ao → [0.5, 1.0] so interior panels stay visible under SSGI occlusion
+      const aoBlend  = uniform(0.0)
+      aoBlendRef.current = aoBlend
       const aoLifted = ao.mul(0.5).add(0.5)
-      const composited = add(scenePassColor.rgb.mul(aoLifted), scenePassDiffuse.rgb.mul(gi))
+      const aoFinal  = mix(ao, aoLifted, aoBlend)
+      // GI color only added in warmth pipeline, scaled by aoBlend so it only
+      // activates when strips are on (doors open). Avoids double-ambient on IBL.
+      const giScaled = scenePassDiffuse.rgb.mul(gi).mul(aoBlend)
+      const composited = add(scenePassColor.rgb.mul(aoFinal), giScaled)
       outputNode = vec4(add(composited, bloomPass.rgb), scenePassColor.a)
     } else {
-      // BASELINE PIPELINE — raw ao, no bloom node, giIntensity fixed at 0.3
+      // BASELINE PIPELINE — AO darkening only. No GI color added: scenePassColor already
+      // contains IBL from the environment map. Adding diffuse×gi on top = double ambient.
       giIntensityRef.current   = null
       bloomStrengthRef.current = null
+      aoBlendRef.current       = null
 
-      const composited = add(scenePassColor.rgb.mul(ao), scenePassDiffuse.rgb.mul(gi))
-      outputNode = vec4(composited, scenePassColor.a)
+      outputNode = vec4(scenePassColor.rgb.mul(ao), scenePassColor.a)
     }
 
     const postProcessing = new THREE.PostProcessing(renderer)
@@ -104,15 +114,17 @@ export default function PostProcessing() {
       ppRef.current = null
       giIntensityRef.current   = null
       bloomStrengthRef.current = null
+      aoBlendRef.current       = null
     }
   }, [gl, scene, camera, lightStripsEnabled])
 
-  // Adjust GI intensity and bloom strength based on doors state (warmth pipeline only)
+  // Adjust GI intensity, bloom strength, and AO remap based on doors state (warmth pipeline only)
   useEffect(() => {
     if (!lightStripsEnabled) return
     const lightsActive = doorsOpen
     if (giIntensityRef.current)   giIntensityRef.current.value   = lightsActive ? 0.7 : 0.3
     if (bloomStrengthRef.current) bloomStrengthRef.current.value = lightsActive ? 0.4 : 0
+    if (aoBlendRef.current)       aoBlendRef.current.value       = lightsActive ? 1.0 : 0.0
   }, [lightStripsEnabled, doorsOpen])
 
   useFrame(() => {

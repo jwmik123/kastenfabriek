@@ -40,7 +40,10 @@ export default function ThreeCanvas({ children, onPointerMissed }: ThreeCanvasPr
       onPointerMissed={onPointerMissed}
       gl={async (props: any) => {
         const renderer = new THREE.WebGPURenderer({ ...props, powerPreference: 'high-performance' })
-        return renderer.init()
+        await renderer.init()
+        renderer.toneMapping = THREE.NeutralToneMapping
+        renderer.toneMappingExposure = 1
+        return renderer
       }}
     >
       <color attach="background" args={['#e8e8e8']} />
@@ -49,7 +52,7 @@ export default function ThreeCanvas({ children, onPointerMissed }: ThreeCanvasPr
       {process.env.NODE_ENV === 'development' && <StatsPanel />}
       <directionalLight
         position={[-3, 5, 10]}
-        intensity={1}
+        intensity={0.5}
         castShadow
         shadow-mapSize-width={2048}
         shadow-mapSize-height={2048}

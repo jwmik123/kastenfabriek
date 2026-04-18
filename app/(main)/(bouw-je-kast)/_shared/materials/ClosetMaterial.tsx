@@ -71,6 +71,7 @@ export function ClosetMaterialProvider({ children }: { children: ReactNode }) {
     const map: Record<string, THREE.Texture> = {}
     TEXTURE_IDS.forEach((id, i) => {
       const tex = loadedTextures[i]
+      tex.colorSpace = THREE.SRGBColorSpace
       tex.rotation = 0
       tex.wrapS = THREE.MirroredRepeatWrapping
       tex.wrapT = THREE.MirroredRepeatWrapping
@@ -122,6 +123,18 @@ function applyBasePropsStandard(
   if (materialId && ctx?.textureMaps[materialId]) {
     mat.map = ctx.textureMaps[materialId]
     mat.color.set(0xffffff)
+    // TEMP DIAGNOSTIC — remove once colorspace confirmed correct
+    console.log('WOOD TEXTURE AUDIT [standard]', {
+      colorSpace: mat.map.colorSpace,
+      flipY: mat.map.flipY,
+      wrapS: mat.map.wrapS,
+      wrapT: mat.map.wrapT,
+      mapping: mat.map.mapping,
+      generateMipmaps: mat.map.generateMipmaps,
+      format: mat.map.format,
+      type: mat.map.type,
+      sourceUrl: (mat.map.source?.data as any)?.src ?? 'unknown',
+    })
   } else {
     mat.map = null
     mat.color.set(MATERIAL_COLORS[materialId ?? 'premium-wit'] ?? '#ffffff')
@@ -137,7 +150,20 @@ function applyBasePropsNode(
 ) {
   mat.roughness = 0.7
   if (materialId && ctx?.textureMaps[materialId]) {
-    mat.colorNode = tslTexture(ctx.textureMaps[materialId]) as any
+    const tex = ctx.textureMaps[materialId]
+    // TEMP DIAGNOSTIC — remove once colorspace confirmed correct
+    console.log('WOOD TEXTURE AUDIT [node]', {
+      colorSpace: tex.colorSpace,
+      flipY: tex.flipY,
+      wrapS: tex.wrapS,
+      wrapT: tex.wrapT,
+      mapping: tex.mapping,
+      generateMipmaps: tex.generateMipmaps,
+      format: tex.format,
+      type: tex.type,
+      sourceUrl: (tex.source?.data as any)?.src ?? 'unknown',
+    })
+    mat.colorNode = tslTexture(tex) as any
   } else {
     mat.colorNode = tslColor(MATERIAL_COLORS[materialId ?? 'premium-wit'] ?? '#ffffff') as any
   }
