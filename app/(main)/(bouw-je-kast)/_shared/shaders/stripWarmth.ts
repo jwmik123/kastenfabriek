@@ -8,9 +8,11 @@ import {
   uniform,
   select,
   max,
-  type Node,
 } from 'three/tsl'
 import * as THREE from 'three/webgpu'
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Node = ReturnType<typeof uniform>
 
 export interface StripWarmthUniforms {
   uEnabled: Node
