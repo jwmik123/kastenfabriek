@@ -1,5 +1,6 @@
 import React from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 
 interface OptionItem {
   id: string;
@@ -8,6 +9,7 @@ interface OptionItem {
   icon?: React.ReactNode;
   image?: string;
   comingSoon?: boolean;
+  href?: string;
 }
 
 interface ProductOptionsSectionProps {
@@ -40,7 +42,18 @@ const ProductOptionsSection: React.FC<ProductOptionsSectionProps> = ({
                 fill
                 className="object-cover transition-transform duration-500 group-hover:scale-105"
               />
-              <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors duration-300" />
+              <div className="absolute inset-0 bg-black/10 group-hover:bg-black/40 transition-colors duration-500" />
+              <div className="absolute bottom-0 left-0 right-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-[cubic-bezier(0.625,0.05,0,1)]">
+                {option.href ? (
+                  <Link href={option.href} className="block w-full bg-primary text-white py-3 px-4 rounded-lg font-semibold text-sm text-center">
+                    Ontwerp je kast
+                  </Link>
+                ) : (
+                  <button className="w-full bg-primary text-white py-3 px-4 rounded-lg font-semibold text-sm text-center">
+                    Ontwerp je kast
+                  </button>
+                )}
+              </div>
             </>
           ) : (
             <>

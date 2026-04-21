@@ -207,3 +207,24 @@ h1, h2, h3, h4 {
     border-radius: 9999px;
   }
 }
+
+/* Hero button animation */
+.hero-btn .btn-anim {
+  transition: transform 0.525s cubic-bezier(0.625, 0.05, 0, 1);
+}
+
+.hero-btn__text {
+  --text-gap: 1.6em;
+  text-shadow: 0px var(--text-gap) currentColor;
+}
+
+.hero-btn__sweep {
+  transform: translateY(175%) rotate(15deg);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .hero-btn:hover .hero-btn__text    { transform: translateY(calc(-1 * var(--text-gap))); }
+  .hero-btn:hover .hero-btn__icon-bg { transform: rotate(90deg); }
+  .hero-btn:hover .hero-btn__arrow   { transform: translateX(200%); }
+  .hero-btn:hover .hero-btn__sweep   { transform: translateY(0) rotate(0deg); }
+}

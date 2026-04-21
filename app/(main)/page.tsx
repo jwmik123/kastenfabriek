@@ -1,10 +1,11 @@
 import Image from "next/image";
-import { ArrowRight, Hammer } from "lucide-react";
+import { Hammer } from "lucide-react";
 import ProductOptionsSection from "@/components/ProductOptionsSection";
 import SloganSection from "@/components/SloganSection";
 import ModuleHighlight from "@/components/ModuleHighlight";
 import TestimonialSection from "@/components/TestimonialSection";
 import WerkwijzeSection from "@/components/WerkwijzeSection";
+import MaterialsSection from "@/components/MaterialsSection";
 
 export default function Home() {
   return (
@@ -27,9 +28,25 @@ export default function Home() {
           <p className="text-xl md:text-xl max-w-2xl text-left">
             Ontwerp zelf. Op maat gemaakte kledingkasten. Volledig afgestemd op jouw wensen.
           </p>
-          <button className="flex-shrink-0 bg-[var(--color-secondary)] text-white px-8 py-4 rounded-xl text-lg font-semibold hover:opacity-80 transition-opacity flex items-center gap-2">
-            Start configurator
-            <ArrowRight size={20} />
+          <button className="hero-btn flex-shrink-0 flex items-center gap-3 bg-primary text-white px-8 py-4 rounded-sm text-lg font-semibold relative overflow-hidden cursor-pointer">
+            <div className="relative z-10 overflow-hidden pb-[0.2em] -mb-[0.2em]">
+              <span className="btn-anim hero-btn__text block leading-none">
+                Start configurator
+              </span>
+            </div>
+            <div className="relative z-10 flex items-center justify-center w-[1.1em] h-[1.1em] text-[1.1em]">
+              <div className="btn-anim hero-btn__icon-bg absolute inset-0 bg-white/20 rounded-[0.125em]" />
+              <div className="relative overflow-hidden w-full h-full flex items-center justify-end">
+                <div className="flex items-center h-full">
+                  {[0, 1, 2].map((i) => (
+                    <svg key={i} className="btn-anim hero-btn__arrow flex-none w-[1em] h-full p-[0.2em]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 8" fill="none">
+                      <path d="M4.45231 0.385986H6.02531L9.30131 3.99999L6.02531 7.61399H4.45231L7.40331 4.58499H0.695312V3.42799H7.41631L4.45231 0.385986Z" fill="currentColor" />
+                    </svg>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="btn-anim hero-btn__sweep absolute left-[-10%] bottom-0 w-[120%] h-full bg-black/30 z-0" />
           </button>
         </div>
       </div>
@@ -50,6 +67,7 @@ export default function Home() {
           title: 'Kledingkast',
           description: 'Volledig op maat gemaakt, perfect passend in jouw ruimte',
           image: '/images/kledingkast.png',
+          href: '/kledingkast',
         },
         {
           id: 'wasmachinekast',
@@ -114,6 +132,8 @@ export default function Home() {
       ]}
     />
 
+
+    <MaterialsSection />
 
     <WerkwijzeSection />
 
