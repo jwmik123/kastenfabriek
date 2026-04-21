@@ -285,7 +285,7 @@ export default function TestimonialLines({
         <button
           onClick={handlePrev}
           aria-label="Vorige testimonial"
-          className="bg-transparent border border-black/20 rounded flex items-center justify-center cursor-pointer"
+          className="!bg-transparent border border-black/20 text-primary rounded flex items-center justify-center cursor-pointer"
           style={{ width: "2.5em", height: "2.5em", padding: 0 }}
         >
           <svg
@@ -303,7 +303,7 @@ export default function TestimonialLines({
         <button
           onClick={handleNext}
           aria-label="Volgende testimonial"
-          className="bg-transparent border border-black/20 rounded flex items-center justify-center cursor-pointer"
+          className="!bg-transparent border border-black/20 text-primary rounded flex items-center justify-center cursor-pointer"
           style={{ width: "2.5em", height: "2.5em", padding: 0 }}
         >
           <svg

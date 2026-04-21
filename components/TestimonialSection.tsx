@@ -18,8 +18,10 @@ export default async function TestimonialSection() {
   if (!testimonials.length) return null;
 
   return (
-    <section className="px-4 md:px-8 py-20 md:py-32 max-w-7xl mx-auto">
-      <TestimonialLines testimonials={testimonials} />
+    <section className="w-full bg-primary/20 py-20 md:py-32">
+      <div className="max-w-7xl mx-auto px-4 md:px-8">
+        <TestimonialLines testimonials={testimonials} />
+      </div>
     </section>
   );
 }

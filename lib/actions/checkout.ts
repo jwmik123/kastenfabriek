@@ -38,7 +38,8 @@ export async function createCheckoutSession(
     configuration: row.configuration as CartItem["configuration"],
     priceSnapshot: row.priceSnapshot as CartItem["priceSnapshot"],
     quantity: row.quantity,
-    screenshotDataUrl: row.screenshotDataUrl ?? undefined,
+    screenshotClosedUrl: row.screenshotClosedUrl ?? undefined,
+    screenshotOpenUrl: row.screenshotOpenUrl ?? undefined,
   })) satisfies CartItem[];
 
   // Fetch shipping address for snapshot
@@ -81,7 +82,8 @@ export async function createCheckoutSession(
       configurationSnapshot: {
         configuration: item.configuration,
         priceSnapshot: item.priceSnapshot,
-        screenshotDataUrl: item.screenshotDataUrl ?? null,
+        screenshotClosedUrl: item.screenshotClosedUrl ?? null,
+        screenshotOpenUrl: item.screenshotOpenUrl ?? null,
       },
       quantity: item.quantity,
       unitPrice: Math.round(item.priceSnapshot.total * 100),

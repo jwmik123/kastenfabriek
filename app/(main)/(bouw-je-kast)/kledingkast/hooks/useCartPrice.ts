@@ -1,11 +1,12 @@
 'use client'
 
+import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useSession } from '@/lib/auth-client'
 import { useClosetStore } from '../store'
 import { MATERIALS } from '../materials'
 import { addItem } from '@/lib/cart/cart-store'
-import { getLatestCapture } from '@/lib/canvas-capture'
+import { requestCapture, resetToFrontView } from '@/lib/canvas-capture'
 import { PricingEngine } from '@/lib/configurator/pricing-engine'
 import type { CartItem, ClosetConfigSnapshot, PriceSnapshot } from '@/lib/cart/types'
 
@@ -17,6 +18,7 @@ export const formatter = new Intl.NumberFormat('nl-NL', {
 })
 
 export function useCartPrice() {
+  const [isCapturing, setIsCapturing] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
   const editItemId = searchParams.get('edit')
@@ -98,8 +100,9 @@ export function useCartPrice() {
   const totalPrice = moduleCost + doorCost + mechanismCost + ledCost
   const grandTotal = subtotal + installationCost
 
-  const handleAddToCart = () => {
-    if (!pricingData) return
+  const handleAddToCart = async () => {
+    if (!pricingData || isCapturing) return
+    setIsCapturing(true)
 
     const itemId = editItemId ?? crypto.randomUUID()
 
@@ -157,13 +160,25 @@ export function useCartPrice() {
       total: grandTotal,
     }
 
+    const H = useClosetStore.getState().height / 100
+    resetToFrontView(H)
+
+    useClosetStore.setState({ doorsOpen: false })
+    await new Promise<void>((r) => setTimeout(r, 700))
+    const screenshotClosedUrl = (await requestCapture()) ?? undefined
+
+    useClosetStore.setState({ doorsOpen: true })
+    await new Promise<void>((r) => setTimeout(r, 700))
+    const screenshotOpenUrl = (await requestCapture()) ?? undefined
+
     const cartItem: CartItem = {
       id: itemId,
       addedAt: configSnapshot.capturedAt,
       configuration: configSnapshot,
       priceSnapshot,
       quantity: 1,
-      screenshotDataUrl: getLatestCapture() ?? undefined,
+      screenshotClosedUrl,
+      screenshotOpenUrl,
     }
 
     addItem(cartItem)
@@ -181,6 +196,7 @@ export function useCartPrice() {
     pricingData,
     editItemId,
     handleAddToCart,
+    isCapturing,
     formatter,
   }
 }

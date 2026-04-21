@@ -5,7 +5,7 @@ import { CameraControls, CameraControlsImpl, useGLTF } from '@react-three/drei'
 import { useThree, useFrame } from '@react-three/fiber'
 import * as THREE from 'three/webgpu'
 import { useClosetStore } from '../store'
-import { setGlCanvas, captureNow } from '@/lib/canvas-capture'
+import { setGlCanvas, captureNow, tickCapture, setCameraControls } from '@/lib/canvas-capture'
 import ThreeCanvas from '../../_shared/canvas/ThreeCanvas'
 import ThreeLoader from '../../_shared/canvas/ThreeLoader'
 import ClosetScene from './ClosetScene'
@@ -107,6 +107,7 @@ function ScreenshotCapture() {
   }, [gl])
 
   useFrame(() => {
+    queueMicrotask(tickCapture)
     const now = performance.now()
     if (now - lastCapture.current < 1000) return
     lastCapture.current = now
@@ -137,6 +138,12 @@ function CameraSystem() {
   const cameraTargetDist = userZoom <= 0.5
     ? 2 + (userZoom / 0.5) * (autoFitDist - 2)
     : autoFitDist + ((userZoom - 0.5) / 0.5) * (maxDist - autoFitDist)
+
+  // Register camera controls for programmatic access (e.g. screenshot capture)
+  useEffect(() => {
+    setCameraControls(cameraRef.current)
+    return () => setCameraControls(null)
+  }, [])
 
   // Set initial view after CameraControls mounts
   useEffect(() => {

@@ -82,7 +82,8 @@ export interface CartItem {
   configuration: ClosetConfigSnapshot;
   priceSnapshot: PriceSnapshot;
   quantity: number;
-  screenshotDataUrl?: string; // base64 JPEG thumbnail captured at add-to-cart time
+  screenshotClosedUrl?: string; // base64 JPEG with doors closed, front-facing
+  screenshotOpenUrl?: string;   // base64 JPEG with doors open, front-facing
 }
 
 // The full cart stored in localStorage

@@ -19,7 +19,8 @@ export async function syncCartItems(items: CartItem[]): Promise<void> {
         configuration: item.configuration as unknown as Record<string, unknown>,
         priceSnapshot: item.priceSnapshot as unknown as Record<string, unknown>,
         quantity: item.quantity,
-        screenshotDataUrl: item.screenshotDataUrl ?? null,
+        screenshotClosedUrl: item.screenshotClosedUrl ?? null,
+        screenshotOpenUrl: item.screenshotOpenUrl ?? null,
         addedAt: new Date(item.addedAt),
       })
       .onConflictDoUpdate({
@@ -28,7 +29,8 @@ export async function syncCartItems(items: CartItem[]): Promise<void> {
           configuration: item.configuration as unknown as Record<string, unknown>,
           priceSnapshot: item.priceSnapshot as unknown as Record<string, unknown>,
           quantity: item.quantity,
-          screenshotDataUrl: item.screenshotDataUrl ?? null,
+          screenshotClosedUrl: item.screenshotClosedUrl ?? null,
+          screenshotOpenUrl: item.screenshotOpenUrl ?? null,
           updatedAt: new Date(),
         },
       });
@@ -50,7 +52,8 @@ export async function getDbCartItems(): Promise<CartItem[]> {
     configuration: row.configuration as CartItem["configuration"],
     priceSnapshot: row.priceSnapshot as CartItem["priceSnapshot"],
     quantity: row.quantity,
-    screenshotDataUrl: row.screenshotDataUrl ?? undefined,
+    screenshotClosedUrl: row.screenshotClosedUrl ?? undefined,
+    screenshotOpenUrl: row.screenshotOpenUrl ?? undefined,
   }));
 }
 
@@ -80,7 +83,8 @@ export async function getDbCartItemById(itemId: string): Promise<CartItem | null
     configuration: row.configuration as CartItem["configuration"],
     priceSnapshot: row.priceSnapshot as CartItem["priceSnapshot"],
     quantity: row.quantity,
-    screenshotDataUrl: row.screenshotDataUrl ?? undefined,
+    screenshotClosedUrl: row.screenshotClosedUrl ?? undefined,
+    screenshotOpenUrl: row.screenshotOpenUrl ?? undefined,
   };
 }
 

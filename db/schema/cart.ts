@@ -9,7 +9,8 @@ export const cartItem = pgTable("cart_item", {
   configuration: jsonb("configuration").notNull(),
   priceSnapshot: jsonb("price_snapshot").notNull(),
   quantity: integer("quantity").notNull().default(1),
-  screenshotDataUrl: text("screenshot_data_url"),
+  screenshotClosedUrl: text("screenshot_closed_url"),
+  screenshotOpenUrl: text("screenshot_open_url"),
   addedAt: timestamp("added_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

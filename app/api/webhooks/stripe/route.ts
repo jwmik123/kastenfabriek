@@ -83,12 +83,14 @@ export async function POST(request: NextRequest) {
           const snapshot = item.configurationSnapshot as {
             configuration: ClosetConfigSnapshot;
             priceSnapshot: PriceSnapshot;
-            screenshotDataUrl?: string | null;
+            screenshotClosedUrl?: string | null;
+            screenshotOpenUrl?: string | null;
           };
           return {
             configuration: snapshot.configuration,
             priceSnapshot: snapshot.priceSnapshot,
-            screenshotDataUrl: snapshot.screenshotDataUrl ?? undefined,
+            screenshotClosedUrl: snapshot.screenshotClosedUrl ?? undefined,
+            screenshotOpenUrl: snapshot.screenshotOpenUrl ?? undefined,
           };
         });
 

@@ -102,7 +102,7 @@ export default function CartView({ isAuthenticated, initialDbItems }: CartViewPr
 
   return (
     <div className="max-w-4xl mx-auto px-4 pt-24 pb-12">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">Winkelwagen</h1>
+      <h1 className="text-3xl font-bold text-gray-900 mb-8 pt-20">Winkelwagen</h1>
 
       <div className="space-y-4 mb-8">
         {items.map((item) => (
@@ -178,23 +178,32 @@ function CartItemCard({ item, onRemove, editHref }: { item: CartItem; onRemove: 
   const configuredModules = config.modules.filter((m) => m.layoutId !== null)
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm p-6 flex gap-5">
+    <div className="bg-white rounded-2xl shadow-sm overflow-hidden flex gap-0">
       {/* Thumbnail */}
-      {item.screenshotDataUrl ? (
-        <div className="shrink-0 w-1/4 aspect-video rounded-xl overflow-hidden bg-gray-100">
-          <img
-            src={item.screenshotDataUrl}
-            alt="Configuratie preview"
-            className="w-full h-full object-cover"
-          />
+      {item.screenshotClosedUrl || item.screenshotOpenUrl ? (
+        <div className="shrink-0 w-1/4 self-stretch flex flex-col overflow-hidden bg-gray-100">
+          {item.screenshotClosedUrl && (
+            <img
+              src={item.screenshotClosedUrl}
+              alt="Deuren dicht"
+              className="w-full flex-1 object-cover"
+            />
+          )}
+          {item.screenshotOpenUrl && (
+            <img
+              src={item.screenshotOpenUrl}
+              alt="Deuren open"
+              className="w-full flex-1 object-cover"
+            />
+          )}
         </div>
       ) : (
-        <div className="shrink-0 w-36 h-24 rounded-xl bg-gray-100 flex items-center justify-center text-gray-300 text-xs">
+        <div className="shrink-0 w-36 self-stretch bg-gray-100 flex items-center justify-center text-gray-300 text-xs">
           Geen preview
         </div>
       )}
 
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 p-6">
       <div className="flex items-start justify-between mb-4">
         <div>
           <h3 className="font-semibold text-gray-900 text-lg">Maatwerkkast</h3>

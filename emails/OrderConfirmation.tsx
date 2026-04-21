@@ -31,7 +31,8 @@ interface AddressSnapshot {
 interface OrderItemSnapshot {
   configuration: ClosetConfigSnapshot;
   priceSnapshot: PriceSnapshot;
-  screenshotDataUrl?: string;
+  screenshotClosedUrl?: string;
+  screenshotOpenUrl?: string;
 }
 
 export interface OrderConfirmationProps {
@@ -144,13 +145,28 @@ export default function OrderConfirmation({
                   Maatwerkkast {items.length > 1 ? `${i + 1} ` : ""}— {c.widthCm} × {c.heightCm} × {c.depthCm} cm
                 </Heading>
 
-                {/* Screenshot */}
-                {item.screenshotDataUrl && (
-                  <Img
-                    src={item.screenshotDataUrl}
-                    alt={`Kast ${c.widthCm}×${c.heightCm}×${c.depthCm} cm`}
-                    style={screenshot}
-                  />
+                {/* Screenshots — closed and open side-by-side */}
+                {(item.screenshotClosedUrl || item.screenshotOpenUrl) && (
+                  <Row style={{ marginBottom: "16px" }}>
+                    {item.screenshotClosedUrl && (
+                      <Column style={{ paddingRight: item.screenshotOpenUrl ? "6px" : "0" }}>
+                        <Img
+                          src={item.screenshotClosedUrl}
+                          alt="Deuren dicht"
+                          style={screenshot}
+                        />
+                      </Column>
+                    )}
+                    {item.screenshotOpenUrl && (
+                      <Column style={{ paddingLeft: item.screenshotClosedUrl ? "6px" : "0" }}>
+                        <Img
+                          src={item.screenshotOpenUrl}
+                          alt="Deuren open"
+                          style={screenshot}
+                        />
+                      </Column>
+                    )}
+                  </Row>
                 )}
 
                 {/* Config details */}

@@ -67,7 +67,7 @@ function MobileStepIndicator() {
 }
 
 function MobilePriceBar() {
-  const { totalPrice, pricingData, editItemId, handleAddToCart } = useCartPrice()
+  const { totalPrice, pricingData, editItemId, handleAddToCart, isCapturing } = useCartPrice()
 
   return (
     <div className="flex items-center gap-3 px-4 py-3">
@@ -80,11 +80,11 @@ function MobilePriceBar() {
 
       <button
         onClick={handleAddToCart}
-        disabled={!pricingData}
+        disabled={!pricingData || isCapturing}
         className="flex-1 flex items-center justify-center gap-2 h-11 bg-primary text-background rounded-md text-sm font-medium hover:bg-primary/90 transition-colors cursor-pointer disabled:opacity-50 whitespace-nowrap"
       >
         <ShoppingCart className="size-4 shrink-0" />
-        {editItemId ? 'Wijzigingen opslaan' : 'Voeg toe aan winkelwagen'}
+        {isCapturing ? 'Bezig...' : editItemId ? 'Wijzigingen opslaan' : 'Voeg toe aan winkelwagen'}
       </button>
 
       <button className="flex items-center justify-center w-11 h-11 rounded-md border border-border/50 hover:bg-muted transition-colors cursor-pointer shrink-0">
