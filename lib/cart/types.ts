@@ -29,6 +29,7 @@ export interface ClosetConfigSnapshot {
   buitenkantMaterialId: string;
   binnenkantMaterialId: string;
   doorHandleId: string;
+  doorHandleName?: string | null;
 
   // Diagonal walls
   diagonalSide: DiagonalSide;

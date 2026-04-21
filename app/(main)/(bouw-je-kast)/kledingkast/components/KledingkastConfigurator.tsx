@@ -67,6 +67,11 @@ export default function KledingkastConfigurator({ pricingData, editConfig, editI
           buitenkantMaterialId: state.buitenkantMaterialId,
           binnenkantMaterialId: state.binnenkantMaterialId,
           doorHandleId: state.doorHandleId,
+          doorHandleName: state.doorHandleId === 'none'
+            ? 'Greeploos (push-to-open)'
+            : (state.pricingData?.handles.find((h) => h.id === state.doorHandleId)?.nameNl
+              ?? state.pricingData?.handles.find((h) => h.id === state.doorHandleId)?.name
+              ?? null),
           diagonalSide: state.diagonalSide,
           leftDiagStartHeight: state.leftDiagStartHeight,
           rightDiagStartHeight: state.rightDiagStartHeight,

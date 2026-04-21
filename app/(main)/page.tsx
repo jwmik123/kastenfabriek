@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { ArrowRight, Hammer } from "lucide-react";
 import ProductOptionsSection from "@/components/ProductOptionsSection";
 import SloganSection from "@/components/SloganSection";
 import ModuleHighlight from "@/components/ModuleHighlight";
@@ -8,27 +9,36 @@ import WerkwijzeSection from "@/components/WerkwijzeSection";
 export default function Home() {
   return (
     <>
+      {/* Promo Strip */}
+      
     <div className="relative w-full h-screen -mt-6 font-poppins" data-nav-theme="dark">
       {/* <Image src="/homeplaceholder.png" alt="Home" fill className="object-cover" /> */}
+       
       <video autoPlay muted loop className="absolute inset-0 w-full h-full object-cover">
       <source className="" src="https://www.maatkastenonline.be/themes/maatkastenonline/assets/images/maatkastenonline-home-mobile.webm" type="video/webm"></source>
       </video>
       <div className="absolute inset-0 bg-black/10 z-10" />
 
       <div className="relative z-10 flex flex-col justify-end pb-24 h-full text-white px-4 max-w-7xl mx-auto">
-        <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6 text-left">
-          Kasten-fabriek.nl
+        <h1 className="text-5xl md:text-6xl font-bold mb-6 text-left">
+          Kasten die <span className="italic">precies</span> passen.
         </h1>
-        <p className="text-xl md:text-2xl mb-8 max-w-2xl text-left">
-        Op maat gemaakte kledingkasten.
-        Volledig afgestemd op jouw wensen.
-        </p>
-        <div>
-          <button className="bg-primary text-white px-8 py-4 rounded-xl text-lg font-semibold hover:bg-primary/90 transition-colors">
-            Ontwerp je maatkast
+        <div className="flex items-end justify-between gap-8">
+          <p className="text-xl md:text-xl max-w-2xl text-left">
+            Ontwerp zelf. Op maat gemaakte kledingkasten. Volledig afgestemd op jouw wensen.
+          </p>
+          <button className="flex-shrink-0 bg-[var(--color-secondary)] text-white px-8 py-4 rounded-xl text-lg font-semibold hover:opacity-80 transition-opacity flex items-center gap-2">
+            Start configurator
+            <ArrowRight size={20} />
           </button>
         </div>
       </div>
+    </div>
+
+    {/* Promo Strip */}
+    <div className="w-full bg-primary text-white py-6 px-6 flex items-center justify-center gap-3 text-xl font-semibold">
+      <Hammer size={22} className="flex-shrink-0" />
+      <span>Alle kasten nu met <strong>gratis montage</strong> bij oplevering!</span>
     </div>
 
     <ProductOptionsSection
@@ -39,21 +49,13 @@ export default function Home() {
           id: 'kledingkast',
           title: 'Kledingkast',
           description: 'Volledig op maat gemaakt, perfect passend in jouw ruimte',
-          icon: (
-            <svg className="w-10 h-10 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3zM14 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1h-4a1 1 0 01-1-1v-3z" />
-            </svg>
-          ),
+          image: '/images/kledingkast.png',
         },
         {
           id: 'wasmachinekast',
           title: 'Wasmachinekast',
           description: 'Functionele kast voor je wasmachine en droger',
-          icon: (
-            <svg className="w-10 h-10 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
-            </svg>
-          ),
+          image: '/images/wasmachinekast.png',
         },
         {
           id: 'ikea-pax',

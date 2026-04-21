@@ -2,12 +2,12 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { User, ShoppingBasket, Heart } from 'lucide-react'
+import { User, ShoppingBasket, Heart, Hammer } from 'lucide-react'
 import { useEffect, useState, useRef } from 'react'
 import gsap from 'gsap'
 
 const NAV_LINKS = [
-  { href: '/about', label: 'Onze kasten' },
+  { href: '/', label: 'Home' },
   { href: '/projects', label: 'Materialen' },
   { href: '/contact', label: 'Blog' },
 ]
@@ -77,6 +77,10 @@ const Navigation = () => {
 
   return (
     <div className="fixed top-0 left-0 right-0 z-30 font-poppins pointer-events-none">
+      <div className="w-full bg-primary text-white py-2.5 px-6 flex items-center justify-center gap-2 text-sm font-medium pointer-events-auto">
+        <Hammer size={14} className="flex-shrink-0" />
+        <span>Alle kasten nu met <strong>gratis montage</strong> bij oplevering!</span>
+      </div>
       <div className="flex items-center justify-between px-24 pt-6">
 
         {/* Logo — floating independently */}
@@ -119,7 +123,7 @@ const Navigation = () => {
           <div className="w-px h-5 bg-gray-300/70 mx-1" />
           <Link
             href="/kledingkast"
-            className="relative z-10 px-5 py-2 text-sm font-semibold text-white bg-[#aa382b] rounded-full hover:opacity-80 transition-opacity duration-150 shadow-sm"
+            className="relative z-10 px-5 py-2 text-sm font-semibold text-white bg-[var(--color-secondary)] rounded-full hover:opacity-80 transition-opacity duration-150 shadow-sm"
           >
             Ontwerp je kast
           </Link>

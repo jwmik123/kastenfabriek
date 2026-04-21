@@ -1,10 +1,12 @@
 import React from 'react';
+import Image from 'next/image';
 
 interface OptionItem {
   id: string;
   title: string;
   description: string;
-  icon: React.ReactNode;
+  icon?: React.ReactNode;
+  image?: string;
   comingSoon?: boolean;
 }
 
@@ -30,27 +32,44 @@ const ProductOptionsSection: React.FC<ProductOptionsSectionProps> = ({
         className={`group ${isComingSoon ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
       >
         <div className="aspect-square bg-neutral-50 overflow-hidden mb-4 relative">
-          {isComingSoon ? (
+          {option.image ? (
             <>
-              <div className="absolute inset-0 bg-gray-400/10" />
-              <div className="absolute top-4 right-4 bg-gray-700 text-white px-3 py-1 rounded-full text-xs font-semibold">
-                Binnenkort
-              </div>
+              <Image
+                src={option.image}
+                alt={option.title}
+                fill
+                className="object-cover transition-transform duration-500 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors duration-300" />
             </>
           ) : (
-            <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-          )}
-          <div className="w-full h-full flex items-center justify-center">
-            <div className="text-center space-y-4">
-              <div
-                className={`w-20 h-20 mx-auto rounded-full flex items-center justify-center ${
-                  isComingSoon ? 'bg-gray-200' : 'bg-primary/10'
-                }`}
-              >
-                {option.icon}
+            <>
+              {isComingSoon ? (
+                <>
+                  <div className="absolute inset-0 bg-gray-400/10" />
+                  <div className="absolute top-4 right-4 bg-gray-700 text-white px-3 py-1 rounded-full text-xs font-semibold">
+                    Binnenkort
+                  </div>
+                </>
+              ) : (
+                <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              )}
+              <div className="w-full h-full flex items-center justify-center">
+                <div
+                  className={`w-20 h-20 rounded-full flex items-center justify-center ${
+                    isComingSoon ? 'bg-gray-200' : 'bg-primary/10'
+                  }`}
+                >
+                  {option.icon}
+                </div>
               </div>
+            </>
+          )}
+          {isComingSoon && option.image && (
+            <div className="absolute top-4 right-4 bg-gray-700 text-white px-3 py-1 rounded-full text-xs font-semibold">
+              Binnenkort
             </div>
-          </div>
+          )}
         </div>
         <h3
           className={`text-xl font-semibold mb-2 ${

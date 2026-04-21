@@ -34,10 +34,10 @@ export default function WerkwijzeSection() {
       <div className="max-w-7xl mx-auto px-4 md:px-8">
         <div className="mb-16">
           <p className="text-white/60 text-sm uppercase tracking-widest font-semibold mb-3">
-            Zo werkt het
+            Onze werkwijze
           </p>
           <h2 className="text-4xl md:text-5xl font-bold text-white">
-            Onze werkwijze
+            Van ontwerp to montage<span className="italic"> in een stroom.</span>
           </h2>
         </div>
 

@@ -125,6 +125,9 @@ export function useCartPrice() {
       buitenkantMaterialId,
       binnenkantMaterialId,
       doorHandleId,
+      doorHandleName: doorHandleId === 'none'
+        ? 'Greeploos (push-to-open)'
+        : (engine?.getHandle(doorHandleId)?.nameNl ?? engine?.getHandle(doorHandleId)?.name ?? null),
       diagonalSide,
       leftDiagStartHeight,
       rightDiagStartHeight,

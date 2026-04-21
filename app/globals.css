@@ -14,6 +14,7 @@
   --color-primary-500: #64806b;
   --color-primary-600: #485d51;
   --color-primary: #34463a;
+  --color-secondary: #aa382b;
   --color-primary-800: #212c21;
   --color-primary-900: #141f16;
   --color-primary-950: #070e08;
@@ -61,6 +62,7 @@
   --color-primary-500: var(--color-primary-500);
   --color-primary-600: var(--color-primary-600);
   --color-primary: var(--primary);
+  --color-secondary: var(--color-secondary);
   --color-primary-800: var(--color-primary-800);
   --color-primary-900: var(--color-primary-900);
   --color-primary-950: var(--color-primary-950);

@@ -12,7 +12,7 @@ export function setGlCanvas(canvas: HTMLCanvasElement | null) {
  * stores the result. Called from inside useFrame so the canvas content
  * is guaranteed to be from the last rendered frame.
  */
-export function captureNow(maxW = 480, maxH = 300): void {
+export function captureNow(maxW = 1440, maxH = 900): void {
   // Try the registered ref first, fall back to the first canvas in the DOM
   const src: HTMLCanvasElement | null =
     glCanvas ??
@@ -36,7 +36,7 @@ export function captureNow(maxW = 480, maxH = 300): void {
     if (!ctx) return
 
     ctx.drawImage(src, 0, 0, w, h)
-    latestCapture = offscreenCanvas.toDataURL('image/jpeg', 0.75)
+    latestCapture = offscreenCanvas.toDataURL('image/jpeg', 0.85)
   } catch {
     // drawImage can throw for cross-origin or context-lost canvases
   }
