@@ -19,11 +19,9 @@ export default defineConfig({
   projectId,
   dataset,
   schema,
-  i18n: {
-    bundles: [nlNLLocale],
-  },
   plugins: [
     structureTool({structure}),
     visionTool({defaultApiVersion: apiVersion}),
+    nlNLLocale(),
   ],
 })

@@ -117,7 +117,7 @@ export default function Home() {
 
     <WerkwijzeSection />
 
-    <SloganSection
+    {/* <SloganSection
       text="Elke millimeter is op maat gemaakt — van de
     symmetrie in de houtstructuur tot de verfijnde
     afwerking rondom."
@@ -126,7 +126,7 @@ export default function Home() {
       buttonText="Ontwerp jouw maatkast"
     />
 
-    <ModuleHighlight />
+    <ModuleHighlight /> */}
     <TestimonialSection />
     </>
   );
