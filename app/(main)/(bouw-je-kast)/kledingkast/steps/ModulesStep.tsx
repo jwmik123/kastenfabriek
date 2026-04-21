@@ -160,7 +160,7 @@ export default function ModulesStep() {
                 className={cn(
                   'aspect-square flex items-center justify-center rounded-md text-sm font-medium transition-colors',
                   isSelected
-                    ? 'bg-foreground text-background border-0'
+                    ? 'bg-primary text-primary-foreground border-0'
                     : isPartOfDouble
                       ? 'border border-border/50 bg-transparent text-foreground hover:border-border hover:bg-muted/40'
                       : 'border border-border/50 bg-transparent text-foreground hover:border-border hover:bg-muted/40',
@@ -178,7 +178,7 @@ export default function ModulesStep() {
 
             {/* Context chip row */}
             <div className="flex items-center gap-2 pb-3 border-b border-border/30">
-              <div className="w-6 h-6 rounded-full bg-foreground text-background flex items-center justify-center text-xs font-semibold shrink-0">
+              <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-semibold shrink-0">
                 {selectedSlot + 1}
               </div>
               <span className="text-sm font-medium">Vak {selectedSlot + 1} instellen</span>
@@ -212,7 +212,6 @@ export default function ModulesStep() {
 
                 {/* Indeling grid */}
                 <div className="space-y-2.5">
-                  <span className="text-sm text-muted-foreground">Indeling</span>
                   {isUnderDiagonal && (
                     <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
                       Schuin vak — hoogte beperkt tot {Math.round(selectedSlotEffectiveHeightM * 100)} cm. Niet alle indelingen passen.
@@ -230,7 +229,7 @@ export default function ModulesStep() {
                           className={cn(
                             'flex items-center justify-center rounded-md transition-all px-[6px] py-[10px]',
                             isActive
-                              ? 'bg-foreground text-background border-2 border-foreground'
+                              ? 'bg-primary text-primary-foreground border-2 border-primary'
                               : 'bg-background text-foreground border border-border/50 hover:border-border',
                           )}
                         >

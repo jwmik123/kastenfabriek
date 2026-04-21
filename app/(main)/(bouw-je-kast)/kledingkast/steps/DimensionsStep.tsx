@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import { useClosetStore } from '../store'
 import { Slider } from '@/components/ui/slider'
-import { Toggle } from '@/components/ui/Toggle'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { cn } from '@/lib/utils'
 import { Info } from 'lucide-react'
@@ -40,22 +39,47 @@ function DimensionInput({
   onChange: (v: number) => void
   hint?: string
 }) {
+  const [draft, setDraft] = useState(String(value))
+
+  useEffect(() => {
+    setDraft(String(value))
+  }, [value])
+
+  const commit = () => {
+    const parsed = Number(draft)
+    const clamped = clamp(isNaN(parsed) ? value : parsed, min, max)
+    setDraft(String(clamped))
+    onChange(clamped)
+  }
+
   return (
-    <div className="space-y-1.5">
-      <div className="flex items-center justify-between">
-        <span className="text-sm font-medium">{label}</span>
-        <span className="text-sm tabular-nums text-muted-foreground">
-          {value} {unit}
-        </span>
+    <div className="space-y-1">
+      <div className="flex items-center gap-3">
+        <span className="w-16 shrink-0 text-sm font-medium">{label}</span>
+        <Slider
+          min={min}
+          max={max}
+          step={1}
+          value={[value]}
+          onValueChange={([v]) => onChange(v)}
+          className="flex-1"
+        />
+        <div className="flex items-center gap-1 shrink-0">
+          <input
+            type="number"
+            min={min}
+            max={max}
+            step={1}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={commit}
+            onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur() }}
+            className="w-18 rounded border border-input px-2 py-1 text-sm tabular-nums text-right bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+          />
+          <span className="text-xs text-muted-foreground">{unit}</span>
+        </div>
       </div>
-      <Slider
-        min={min}
-        max={max}
-        step={1}
-        value={[value]}
-        onValueChange={([v]) => onChange(v)}
-      />
-      {hint && <p className="text-[11px] text-muted-foreground">{hint}</p>}
+      {hint && <p className="text-[11px] text-muted-foreground pl-[4.75rem]">{hint}</p>}
     </div>
   )
 }
@@ -233,12 +257,12 @@ export default function DimensionsStep() {
               className={cn(
                 'flex flex-col items-start gap-0.5 rounded-md border px-3 py-2.5 text-left transition-colors',
                 placementType === opt.value
-                  ? 'border-foreground bg-foreground text-background'
+                  ? 'border-foreground bg-primary text-primary-foreground'
                   : 'border-border bg-background text-foreground hover:bg-muted',
               )}
             >
               <span className="text-sm font-medium">{opt.label}</span>
-              <span className={cn('text-[11px]', placementType === opt.value ? 'text-background/70' : 'text-muted-foreground')}>
+              <span className={cn('text-[11px]', placementType === opt.value ? 'text-primary-foreground/70' : 'text-muted-foreground')}>
                 {opt.hint}
               </span>
             </button>
@@ -285,118 +309,105 @@ export default function DimensionsStep() {
 
       {/* ── Section 3: Schuine wand ── */}
       <section className="space-y-5">
-        <div>
-          <SectionHeading>Schuine wand</SectionHeading>
-          <p className="text-xs text-muted-foreground/60 mt-1">Voor zolders en schuine daken</p>
-        </div>
 
         {/* Combined card */}
         <div className="bg-muted/40 rounded-lg p-4 space-y-4">
 
-          {/* Zijwand */}
-          <div className="space-y-2">
-            <span className="text-sm font-medium">Zijwand</span>
-            <SegmentedControl
-              options={DIAGONAL_OPTIONS}
-              value={diagonalSide}
-              onChange={handleSetDiagonalSide}
-              disabledValues={zijwandDisabledValues}
-            />
+          {/* Zijwand row */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-medium w-24 shrink-0">Zijwand</span>
+              <SegmentedControl
+                options={DIAGONAL_OPTIONS}
+                value={diagonalSide}
+                onChange={handleSetDiagonalSide}
+                disabledValues={zijwandDisabledValues}
+                className="flex-1"
+              />
+            </div>
             {placementType === 'vrijstaand' && (
               <p className="text-[11px] text-muted-foreground">Zijwanden schuin niet mogelijk bij vrijstaande kast.</p>
             )}
+            {hasDiagonal && (
+              <div className="space-y-3">
+                {hasLeft && (
+                  <div className="space-y-1.5">
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Links</span>
+                    <DiagNumberInput
+                      label="Starthoogte"
+                      value={leftDiagStartHeight}
+                      min={startHeightRange.min}
+                      max={startHeightRange.max}
+                      onChange={setLeftDiagStartHeight}
+                    />
+                    {leftWidthRange && (
+                      <DiagNumberInput
+                        label="Breedte"
+                        value={leftVisualWidth}
+                        min={leftWidthRange.min}
+                        max={leftWidthRange.max}
+                        onChange={(vis) => setLeftDiagTopWidth(Math.round(vis / leftAmp))}
+                      />
+                    )}
+                  </div>
+                )}
+                {hasRight && (
+                  <div className="space-y-1.5">
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Rechts</span>
+                    <DiagNumberInput
+                      label="Starthoogte"
+                      value={rightDiagStartHeight}
+                      min={startHeightRange.min}
+                      max={startHeightRange.max}
+                      onChange={setRightDiagStartHeight}
+                    />
+                    {rightWidthRange && (
+                      <DiagNumberInput
+                        label="Breedte"
+                        value={rightVisualWidth}
+                        min={rightWidthRange.min}
+                        max={rightWidthRange.max}
+                        onChange={(vis) => setRightDiagTopWidth(Math.round(vis / rightAmp))}
+                      />
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* Divider + Achterwand */}
-          <div className="border-t pt-3">
-            <div className={cn('flex items-start gap-3 transition-opacity', backDiagDisabled && 'opacity-45')}>
-              <div className="flex-1">
-                <span className="text-sm font-medium">Achterwand</span>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
-                  {backDiagDisabled
-                    ? 'Niet combineerbaar met zijwand'
-                    : 'Diagonaal aan de achterkant'}
-                </p>
-              </div>
-              <Toggle
-                checked={backDiagonal && !backDiagDisabled}
-                onCheckedChange={setBackDiagonal}
-                disabled={backDiagDisabled}
+          {/* Achterwand row */}
+          <div className={cn('space-y-3 border-t pt-3 transition-opacity', backDiagDisabled && 'opacity-45')}>
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-medium w-24 shrink-0">Achterwand</span>
+              <SegmentedControl
+                options={[{ value: 'geen', label: 'Geen' }, { value: 'aan', label: 'Aan' }]}
+                value={backDiagonal && !backDiagDisabled ? 'aan' : 'geen'}
+                onChange={(v) => !backDiagDisabled && setBackDiagonal(v === 'aan')}
+                className="flex-1"
               />
             </div>
+            {backDiagonal && !backDiagDisabled && (
+              <div className="space-y-1.5">
+                <DiagNumberInput
+                  label="Knikhoogte"
+                  value={backDiagKinkHeight}
+                  min={backDiagKinkRange.min}
+                  max={backDiagKinkRange.max}
+                  onChange={setBackDiagKinkHeight}
+                />
+                <DiagNumberInput
+                  label="Vlak deel"
+                  value={backDiagFlatSectionDepth}
+                  min={backDiagFlatRange.min}
+                  max={backDiagFlatRange.max}
+                  onChange={setBackDiagFlatSectionDepth}
+                />
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Detailed diagonal controls — shown below card when active */}
-        {hasDiagonal && (
-          <div className="space-y-4 pl-1">
-            {hasLeft && (
-              <div className="space-y-2">
-                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Links</span>
-                <div className="space-y-2 pl-1">
-                  <DiagNumberInput
-                    label="Starthoogte"
-                    value={leftDiagStartHeight}
-                    min={startHeightRange.min}
-                    max={startHeightRange.max}
-                    onChange={setLeftDiagStartHeight}
-                  />
-                  {leftWidthRange && (
-                    <DiagNumberInput
-                      label="Breedte"
-                      value={leftVisualWidth}
-                      min={leftWidthRange.min}
-                      max={leftWidthRange.max}
-                      onChange={(vis) => setLeftDiagTopWidth(Math.round(vis / leftAmp))}
-                    />
-                  )}
-                </div>
-              </div>
-            )}
-            {hasRight && (
-              <div className="space-y-2">
-                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Rechts</span>
-                <div className="space-y-2 pl-1">
-                  <DiagNumberInput
-                    label="Starthoogte"
-                    value={rightDiagStartHeight}
-                    min={startHeightRange.min}
-                    max={startHeightRange.max}
-                    onChange={setRightDiagStartHeight}
-                  />
-                  {rightWidthRange && (
-                    <DiagNumberInput
-                      label="Breedte"
-                      value={rightVisualWidth}
-                      min={rightWidthRange.min}
-                      max={rightWidthRange.max}
-                      onChange={(vis) => setRightDiagTopWidth(Math.round(vis / rightAmp))}
-                    />
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {backDiagonal && !backDiagDisabled && (
-          <div className="space-y-2 pl-1">
-            <DiagNumberInput
-              label="Knikhoogte"
-              value={backDiagKinkHeight}
-              min={backDiagKinkRange.min}
-              max={backDiagKinkRange.max}
-              onChange={setBackDiagKinkHeight}
-            />
-            <DiagNumberInput
-              label="Vlak deel"
-              value={backDiagFlatSectionDepth}
-              min={backDiagFlatRange.min}
-              max={backDiagFlatRange.max}
-              onChange={setBackDiagFlatSectionDepth}
-            />
-          </div>
-        )}
       </section>
 
     </div>

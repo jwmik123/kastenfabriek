@@ -47,6 +47,10 @@ export interface ClosetConfigSnapshot {
   backDiagKinkHeight?: number;    // cm
   backDiagFlatSectionDepth?: number;  // cm
 
+  // Lighting & extras
+  lightStripsEnabled: boolean;
+  powerCableHolesEnabled: boolean;
+
   // Derived (snapshotted for display)
   hasTopCabinet: boolean;
   topCabinetHeightCm: number;

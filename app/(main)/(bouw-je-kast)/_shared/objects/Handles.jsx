@@ -49,7 +49,7 @@ export const HANDLE_TYPES = [
   { id: '29', name: '29_Z2168' },
 ]
 
-export function HandleByType({ id, ...props }) {
+export function HandleByType({ id, mirror = false, ...props }) {
   const { nodes } = useGLTF('/objects/Handles-transformed.glb')
 
   const nodeKey = id ? Object.keys(nodes).find((k) => k.startsWith(`${id}_`)) : null
@@ -85,7 +85,7 @@ export function HandleByType({ id, ...props }) {
   if (!node) return null
 
   return (
-    <group {...props}>
+    <group {...props} scale={mirror ? [-1, 1, 1] : undefined}>
       <mesh geometry={node.geometry} material={chromeMaterial} position={meshOffset} rotation={[0, Math.PI, 0]} />
     </group>
   )

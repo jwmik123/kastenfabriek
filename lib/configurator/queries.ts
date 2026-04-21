@@ -40,6 +40,14 @@ export const pricingDataQuery = groq`{
     price,
     days,
     people
+  },
+  "handles": *[_type == "handle"] | order(handleId.current asc) {
+    "id": handleId.current,
+    name,
+    nameNl,
+    productCode,
+    "imageUrl": image.asset->url,
+    price
   }
 }`;
 

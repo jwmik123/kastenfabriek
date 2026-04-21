@@ -286,6 +286,38 @@ const pricingData = {
     },
   ],
 
+  handles: [
+    { id: "1",  productCode: "W4080", name: "W4080 - variant 1",  price: 35 },
+    { id: "2",  productCode: "W4080", name: "W4080 - variant 2",  price: 35 },
+    { id: "3",  productCode: "W4080", name: "W4080 - variant 3",  price: 35 },
+    { id: "4",  productCode: "W4080", name: "W4080 - variant 4",  price: 35 },
+    { id: "5",  productCode: "W4080", name: "W4080 - variant 5",  price: 35 },
+    { id: "6",  productCode: "W4080", name: "W4080 - variant 6",  price: 35 },
+    { id: "7",  productCode: "W7822", name: "W7822 - variant 1",  price: 35 },
+    { id: "8",  productCode: "W7822", name: "W7822 - variant 2",  price: 35 },
+    { id: "9",  productCode: "W7840", name: "W7840 - variant 1",  price: 35 },
+    { id: "10", productCode: "W7840", name: "W7840 - variant 2",  price: 35 },
+    { id: "11", productCode: "W7840", name: "W7840 - variant 3",  price: 35 },
+    { id: "12", productCode: "W7871", name: "W7871 - variant 1",  price: 35 },
+    { id: "13", productCode: "W7870", name: "W7870 - variant 1",  price: 35 },
+    { id: "14", productCode: "W7870", name: "W7870 - variant 2",  price: 35 },
+    { id: "15", productCode: "W7988", name: "W7988 - variant 1",  price: 35 },
+    { id: "16", productCode: "W7988", name: "W7988 - variant 2",  price: 35 },
+    { id: "17", productCode: "W7988", name: "W7988 - variant 3",  price: 35 },
+    { id: "18", productCode: "W7988", name: "W7988 - variant 4",  price: 35 },
+    { id: "19", productCode: "Z1080", name: "Z1080 - variant 1",  price: 35 },
+    { id: "20", productCode: "Z1080", name: "Z1080 - variant 2",  price: 35 },
+    { id: "21", productCode: "Z1080", name: "Z1080 - variant 3",  price: 35 },
+    { id: "22", productCode: "Z7849", name: "Z7849 - variant 1",  price: 35 },
+    { id: "23", productCode: "W7845", name: "W7845 - variant 1",  price: 35 },
+    { id: "24", productCode: "Z0056", name: "Z0056 - variant 1",  price: 35 },
+    { id: "25", productCode: "Z0056", name: "Z0056 - variant 2",  price: 35 },
+    { id: "26", productCode: "Z0056", name: "Z0056 - variant 3",  price: 35 },
+    { id: "27", productCode: "Z0056", name: "Z0056 - variant 4",  price: 35 },
+    { id: "28", productCode: "Z2168", name: "Z2168 - variant 1",  price: 35 },
+    { id: "29", productCode: "Z2168", name: "Z2168 - variant 2",  price: 35 },
+  ],
+
   installation: [
     {
       name: "Small Project",
@@ -382,6 +414,21 @@ async function seedPricingData() {
     }
     console.log("");
 
+    // Create handles
+    console.log("📦 Creating handles...");
+    for (const h of pricingData.handles) {
+      await client.createOrReplace({
+        _id: `handle-${h.id}`,
+        _type: "handle",
+        handleId: { _type: "slug", current: h.id },
+        name: h.name,
+        productCode: h.productCode,
+        price: h.price,
+      });
+      console.log(`   ✅ ${h.name} (€${h.price})`);
+    }
+    console.log("");
+
     // Create installation tiers
     console.log("📦 Creating installation tiers...");
     for (const tier of pricingData.installation) {
@@ -408,6 +455,7 @@ async function seedPricingData() {
     console.log(`   - ${pricingData.modules.length} module layouts`);
     console.log(`   - ${pricingData.accessories.length} accessories`);
     console.log(`   - ${pricingData.doors.length} door types`);
+    console.log(`   - ${pricingData.handles.length} handles`);
     console.log(`   - ${pricingData.installation.length} installation tiers`);
   } catch (error) {
     console.error("❌ Error seeding data:", error);

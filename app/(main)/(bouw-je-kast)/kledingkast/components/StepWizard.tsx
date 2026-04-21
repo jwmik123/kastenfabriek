@@ -39,9 +39,9 @@ function StepIndicator() {
               className={cn(
                 'flex items-center justify-center w-7 h-7 rounded-full text-xs font-semibold border-2 transition-all',
                 step === s.number
-                  ? 'border-foreground bg-foreground text-background'
+                  ? 'border-primary bg-primary text-primary-foreground'
                   : step > s.number
-                    ? 'border-foreground bg-foreground text-background'
+                    ? 'border-primary bg-primary text-primary-foreground'
                     : 'border-border bg-background text-muted-foreground',
               )}
             >
@@ -50,7 +50,7 @@ function StepIndicator() {
             <span
               className={cn(
                 'text-[11px] font-medium leading-none hidden sm:block whitespace-nowrap',
-                step === s.number ? 'text-foreground' : 'text-muted-foreground',
+                step === s.number ? 'text-primary' : 'text-muted-foreground',
               )}
             >
               {s.label}
@@ -58,7 +58,7 @@ function StepIndicator() {
           </button>
           {i < STEPS.length - 1 && (
             <div className="flex-1 mx-2 mb-4">
-              <div className={cn('h-px transition-colors', step > s.number ? 'bg-foreground' : 'bg-border')} />
+              <div className={cn('h-px transition-colors', step > s.number ? 'bg-primary' : 'bg-border')} />
             </div>
           )}
         </div>
@@ -84,17 +84,25 @@ export default function StepWizard() {
   const step = useClosetStore((s) => s.step)
   const nextStep = useClosetStore((s) => s.nextStep)
   const prevStep = useClosetStore((s) => s.prevStep)
+  const selectedSlot = useClosetStore((s) => s.selectedSlot)
+  const isPanelOpen = step === 3 && selectedSlot !== null
+
+  const blurClass = 'transition-[filter] duration-200 blur-sm pointer-events-none select-none'
 
   return (
     <div className="flex flex-col h-full p-6 gap-5">
-      <StepIndicator />
-      <Separator />
-      <div className="relative flex-1 overflow-y-auto min-h-0 pr-0.5">
-        <CurrentStep />
+      <div className={cn(isPanelOpen && blurClass)}>
+        <StepIndicator />
+      </div>
+      <Separator className={cn('transition-opacity duration-200', isPanelOpen && 'opacity-20')} />
+      <div className="relative flex-1 overflow-y-auto min-h-0 px-5 scrollbar-primary">
+        <div className={cn(isPanelOpen && blurClass)}>
+          <CurrentStep />
+        </div>
         <ModuleMaterialPanel />
       </div>
-      <Separator />
-      <div className="flex justify-between gap-3">
+      <Separator className={cn('transition-opacity duration-200', isPanelOpen && 'opacity-20')} />
+      <div className={cn('flex justify-between gap-3', isPanelOpen && blurClass)}>
         <Button variant="outline" onClick={prevStep} disabled={step === 1}>
           Vorige
         </Button>

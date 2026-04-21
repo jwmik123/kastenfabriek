@@ -4,6 +4,7 @@ import { siteSettings } from "./siteSettings";
 import { moduleLayout } from "./moduleLayout";
 import { accessory } from "./accessory";
 import { doorType } from "./doorType";
+import { handle } from "./handle";
 import { installationTier } from "./installationTier";
 import { pricingConfig } from "./pricingConfig";
 import { testimonial } from "./testimonial";
@@ -18,6 +19,7 @@ export const schema: { types: SchemaTypeDefinition[] } = {
     moduleLayout,
     accessory,
     doorType,
+    handle,
     installationTier,
     pricingConfig,
   ],

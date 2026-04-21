@@ -79,12 +79,22 @@ export interface PricingConfig {
   constraints: PricingConstraints;
 }
 
+export interface HandleType {
+  id: string;
+  name: string;
+  nameNl?: string;
+  productCode: string;
+  imageUrl?: string;
+  price: number;
+}
+
 export interface FullPricingData {
   config: PricingConfig;
   modules: ModuleLayout[];
   accessories: Accessory[];
   doors: DoorType[];
   installation: InstallationTier[];
+  handles: HandleType[];
 }
 
 export type CorpusType = "single" | "double";

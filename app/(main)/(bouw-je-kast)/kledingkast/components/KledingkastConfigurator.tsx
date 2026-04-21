@@ -72,6 +72,12 @@ export default function KledingkastConfigurator({ pricingData, editConfig, editI
           rightDiagStartHeight: state.rightDiagStartHeight,
           leftDiagTopWidth:  state.leftDiagTopWidth,
           rightDiagTopWidth: state.rightDiagTopWidth,
+          placementType: state.placementType,
+          backDiagonal: state.backDiagonal,
+          backDiagKinkHeight: state.backDiagKinkHeight,
+          backDiagFlatSectionDepth: state.backDiagFlatSectionDepth,
+          lightStripsEnabled: state.lightStripsEnabled,
+          powerCableHolesEnabled: state.powerCableHolesEnabled,
           hasTopCabinet: state.needsTopCabinet(),
           topCabinetHeightCm: state.topCabinetHeight(),
         }

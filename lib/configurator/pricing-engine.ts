@@ -5,6 +5,7 @@ import type {
   CorpusType,
   Accessory,
   InstallationTier,
+  HandleType,
 } from "@/types/configurator-pricing";
 
 export class PricingEngine {
@@ -44,6 +45,15 @@ export class PricingEngine {
     if (moduleCount === 0) return 0;
     const { basePrice, pricePerModule } = this.data.config.led;
     return basePrice + pricePerModule * moduleCount;
+  }
+
+  getHandle(handleId: string): HandleType | undefined {
+    return this.data.handles.find((h) => h.id === handleId);
+  }
+
+  getHandlePrice(handleId: string): number {
+    if (handleId === "none") return this.getAccessoryPrice("push-to-open");
+    return this.getHandle(handleId)?.price ?? 0;
   }
 
   getInstallationTier(subtotal: number): InstallationTier | undefined {

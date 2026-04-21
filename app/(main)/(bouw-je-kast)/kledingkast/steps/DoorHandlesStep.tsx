@@ -1,17 +1,17 @@
 'use client'
 
+import Image from 'next/image'
 import { useClosetStore } from '../store'
+import { formatter } from '../hooks/useCartPrice'
 import { cn } from '@/lib/utils'
-import { HANDLE_TYPES } from '../../_shared/objects/Handles'
-
-const ALL_OPTIONS = [
-  ...HANDLE_TYPES,
-  { id: 'none', name: 'Geen (push-to-open)' },
-]
 
 export default function DoorHandlesStep() {
   const doorHandleId = useClosetStore((s) => s.doorHandleId)
   const setDoorHandleId = useClosetStore((s) => s.setDoorHandleId)
+  const pricingData = useClosetStore((s) => s.pricingData)
+  const pushToOpenPrice = pricingData?.accessories.find((a) => a.id === 'push-to-open')?.price ?? 0
+
+  const handles = pricingData?.handles ?? []
 
   return (
     <div className="space-y-7">
@@ -23,23 +23,53 @@ export default function DoorHandlesStep() {
       </div>
 
       <div className="grid grid-cols-2 gap-2">
-        {ALL_OPTIONS.map((h) => {
+        {handles.map((h) => {
           const isSelected = doorHandleId === h.id
           return (
             <button
               key={h.id}
               onClick={() => setDoorHandleId(h.id)}
               className={cn(
-                'flex items-center justify-center p-4 rounded-md border-2 transition-all text-center',
+                'flex flex-col items-center gap-2 p-3 rounded-md border-2 transition-all text-center',
                 isSelected
-                  ? 'border-foreground bg-foreground text-background'
+                  ? 'border-foreground bg-primary text-primary-foreground'
                   : 'border-border bg-background text-foreground hover:border-foreground/40 hover:bg-muted',
               )}
             >
-              <span className="text-sm font-medium">{h.name}</span>
+              {h.imageUrl && (
+                <div className="relative w-full aspect-square rounded overflow-hidden bg-muted">
+                  <Image
+                    src={h.imageUrl}
+                    alt={h.nameNl ?? h.name}
+                    fill
+                    className="object-contain"
+                    sizes="(max-width: 768px) 50vw, 150px"
+                  />
+                </div>
+              )}
+              <span className="text-sm font-medium leading-tight">{h.nameNl ?? h.name}</span>
+              <span className={cn('text-xs', isSelected ? 'text-primary-foreground/70' : 'text-muted-foreground')}>
+                {formatter.format(h.price)} / deur
+              </span>
             </button>
           )
         })}
+
+        {/* Push-to-open — no handle */}
+        <button
+          onClick={() => setDoorHandleId('none')}
+          className={cn(
+            'flex flex-col items-center justify-center gap-2 p-3 rounded-md border-2 transition-all text-center',
+            doorHandleId === 'none'
+              ? 'border-foreground bg-primary text-primary-foreground'
+              : 'border-border bg-background text-foreground hover:border-foreground/40 hover:bg-muted',
+          )}
+        >
+          <span className="text-sm font-medium">Geen (push-to-open)</span>
+          <span className={cn('text-xs', doorHandleId === 'none' ? 'text-primary-foreground/70' : 'text-muted-foreground')}>
+            {formatter.format(pushToOpenPrice)} / deur
+          </span>
+        </button>
       </div>
     </div>
   )

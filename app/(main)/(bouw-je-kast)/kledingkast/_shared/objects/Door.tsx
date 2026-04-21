@@ -46,7 +46,6 @@ function buildDoorShape(slotW: number, leftH: number, rightH: number): THREE.Sha
 }
 
 export default function Door({
-  moduleHeight,
   slotW,
   moduleDepth,
   doorsOpen,
@@ -89,7 +88,7 @@ export default function Door({
   const panelX  = mirror ? -slotW / 2 : slotW / 2
   const handleX = mirror ? 0.055 - slotW : slotW - 0.055
   const hingeX  = mirror ? slotW - MODULE_WALL - 0.01 : MODULE_WALL + 0.01
-  const handleY = moduleHeight / 2
+  const handleY = 0.9
 
   useEffect(() => {
     if (!pivotRef.current || !posRef.current) return
@@ -120,6 +119,7 @@ export default function Door({
           {doorHandleId !== 'none' && (
             <HandleByType
               id={doorHandleId}
+              mirror={mirror}
               position={[handleX, handleY, -DOOR_DEPTH / 2]}
             />
           )}

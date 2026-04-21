@@ -34,7 +34,7 @@ export default function MaterialStep() {
           onClick={() => setActiveTab('buitenkant')}
           className={cn(
             'flex-1 py-2 transition-colors',
-            activeTab === 'buitenkant' ? 'bg-foreground text-background' : 'hover:bg-muted',
+            activeTab === 'buitenkant' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted',
           )}
         >
           Buitenkant
@@ -43,7 +43,7 @@ export default function MaterialStep() {
           onClick={() => setActiveTab('binnenkant')}
           className={cn(
             'flex-1 py-2 transition-colors border-l border-border',
-            activeTab === 'binnenkant' ? 'bg-foreground text-background' : 'hover:bg-muted',
+            activeTab === 'binnenkant' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted',
           )}
         >
           Binnenkant

@@ -36,7 +36,7 @@ export default function ModuleMaterialPanel() {
   }
 
   return (
-    <div className="absolute inset-0 bg-primary text-white border border-border rounded-md z-10 flex flex-col p-6 gap-5 overflow-y-auto">
+    <div className="absolute inset-0 bg-primary text-white rounded-md z-10 flex flex-col p-6 gap-5 overflow-y-auto">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

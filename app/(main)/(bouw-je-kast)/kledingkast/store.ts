@@ -98,6 +98,8 @@ interface ClosetState {
   setModuleMaterial: (slotIndex: number, variant: 'buitenkant' | 'binnenkant', id: string) => void
   setDoorHandleId: (id: string) => void
   setLightStripsEnabled: (v: boolean) => void
+  powerCableHolesEnabled: boolean
+  setPowerCableHolesEnabled: (v: boolean) => void
   toggleDoors: () => void
   toggleMeasurements: () => void
   zoomIn: () => void
@@ -165,6 +167,7 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
   binnenkantMaterialId: 'premium-wit',
   doorHandleId: '23',
   lightStripsEnabled: false,
+  powerCableHolesEnabled: false,
   doorsOpen: true,
   showMeasurements: false,
   userZoom: 0.5,
@@ -559,6 +562,7 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
     })),
   setDoorHandleId: (doorHandleId) => set({ doorHandleId }),
   setLightStripsEnabled: (lightStripsEnabled) => set({ lightStripsEnabled }),
+  setPowerCableHolesEnabled: (powerCableHolesEnabled) => set({ powerCableHolesEnabled }),
   toggleDoors: () => set((s) => ({ doorsOpen: !s.doorsOpen })),
   toggleMeasurements: () => set((s) => ({ showMeasurements: !s.showMeasurements })),
   zoomIn: () => set((s) => ({ userZoom: Math.max(0, s.userZoom - 0.1) })),
@@ -593,6 +597,8 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
       backDiagKinkHeight: (config as any).backDiagKinkHeight ?? 180,
       backDiagFlatSectionDepth: (config as any).backDiagFlatSectionDepth ?? 0,
       placementType: (config as any).placementType ?? 'ingebouwd',
+      lightStripsEnabled: config.lightStripsEnabled ?? false,
+      powerCableHolesEnabled: config.powerCableHolesEnabled ?? false,
       step: 1,
       selectedSlot: null,
     })

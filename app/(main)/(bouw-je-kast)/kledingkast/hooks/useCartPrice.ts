@@ -6,6 +6,7 @@ import { useClosetStore } from '../store'
 import { MATERIALS } from '../materials'
 import { addItem } from '@/lib/cart/cart-store'
 import { getLatestCapture } from '@/lib/canvas-capture'
+import { PricingEngine } from '@/lib/configurator/pricing-engine'
 import type { CartItem, ClosetConfigSnapshot, PriceSnapshot } from '@/lib/cart/types'
 
 export const formatter = new Intl.NumberFormat('nl-NL', {
@@ -27,6 +28,7 @@ export function useCartPrice() {
   const buitenkantMaterialId = useClosetStore((s) => s.buitenkantMaterialId)
   const binnenkantMaterialId = useClosetStore((s) => s.binnenkantMaterialId)
   const doorHandleId = useClosetStore((s) => s.doorHandleId)
+  const lightStripsEnabled = useClosetStore((s) => s.lightStripsEnabled)
   const width = useClosetStore((s) => s.width)
   const height = useClosetStore((s) => s.height)
   const depth = useClosetStore((s) => s.depth)
@@ -35,6 +37,11 @@ export function useCartPrice() {
   const rightDiagStartHeight = useClosetStore((s) => s.rightDiagStartHeight)
   const leftDiagTopWidth = useClosetStore((s) => s.leftDiagTopWidth)
   const rightDiagTopWidth = useClosetStore((s) => s.rightDiagTopWidth)
+  const placementType = useClosetStore((s) => s.placementType)
+  const backDiagonal = useClosetStore((s) => s.backDiagonal)
+  const backDiagKinkHeight = useClosetStore((s) => s.backDiagKinkHeight)
+  const backDiagFlatSectionDepth = useClosetStore((s) => s.backDiagFlatSectionDepth)
+  const powerCableHolesEnabled = useClosetStore((s) => s.powerCableHolesEnabled)
   const needsTopCabinet = useClosetStore((s) => s.needsTopCabinet)
   const topCabinetHeight = useClosetStore((s) => s.topCabinetHeight)
   const moduleLayouts = useClosetStore((s) => s.moduleLayouts)
@@ -42,52 +49,53 @@ export function useCartPrice() {
   const hasTopCabinet = needsTopCabinet()
   const topCabinetHeightCm = topCabinetHeight()
 
+  const engine = pricingData ? new PricingEngine(pricingData) : null
+
   // --- Module interior costs ---
   const moduleCost = modules.reduce((sum, module) => {
-    if (module.layoutId === null) return sum
-    const layout = pricingData?.modules.find((l) => l.layoutId === module.layoutId)
-    if (!layout) return sum
-    return sum + (module.span === 2 ? layout.priceDouble : layout.priceSingle)
+    if (module.layoutId === null || !engine) return sum
+    try {
+      const type = module.span === 2 ? 'double' : 'single'
+      return sum + engine.getModulePrice(module.layoutId, type)
+    } catch {
+      return sum
+    }
   }, 0)
 
   // --- Door panel costs ---
-  const standardDoorPrice = pricingData?.doors.find((d) => d.variant === 'standard')?.price ?? 0
-  const veneerDoorPrice = pricingData?.doors.find((d) => d.variant === 'veneer')?.price ?? 0
-  const smallDoorPrice = pricingData?.doors.find((d) => d.variant === 'small')?.price ?? 0
-
   let moduleDoorCost = 0
   let moduleDoorCount = 0
 
   for (const module of modules) {
-    if (!module.hasDoor || module.layoutId === null) continue
+    if (!module.hasDoor || module.layoutId === null || !engine) continue
     const effectiveMaterialId = module.buitenkantMaterialId ?? buitenkantMaterialId
     const material = MATERIALS.find((m) => m.id === effectiveMaterialId)
-    const doorPrice = material?.type === 'texture' ? veneerDoorPrice : standardDoorPrice
+    const variant = material?.type === 'texture' ? 'veneer' : 'standard'
     const count = module.span === 2 ? 2 : 1
-    moduleDoorCost += doorPrice * count
+    moduleDoorCost += engine.getDoorPrice(variant) * count
     moduleDoorCount += count
   }
 
   // Top cabinet doors are always small variant
   const topCabinetDoorCount = hasTopCabinet ? moduleCount : 0
-  const topCabinetDoorCost = topCabinetDoorCount * smallDoorPrice
+  const topCabinetDoorCost = topCabinetDoorCount * (engine?.getDoorPrice('small') ?? 0)
 
   const doorCost = moduleDoorCost + topCabinetDoorCost
   const totalDoorCount = moduleDoorCount + topCabinetDoorCount
 
   // --- Handle / push-to-open costs ---
-  const handlePrice = pricingData?.accessories.find((a) => a.id === 'handle')?.price ?? 0
-  const pushToOpenPrice = pricingData?.accessories.find((a) => a.id === 'push-to-open')?.price ?? 0
-  const mechanismCost = totalDoorCount * (doorHandleId === 'none' ? pushToOpenPrice : handlePrice)
+  const mechanismCost = engine ? totalDoorCount * engine.getHandlePrice(doorHandleId) : 0
+
+  // --- LED lighting ---
+  const ledCost = lightStripsEnabled && engine ? engine.calculateLedPrice(moduleCount) : 0
 
   // --- Delivery & Installation ---
-  const deliveryCost = pricingData?.config.deliveryPrice ?? 95
-  const subtotal = moduleCost + doorCost + mechanismCost + deliveryCost
-  const installationTier =
-    pricingData?.installation.find((t) => subtotal >= t.minTotal && subtotal < t.maxTotal) ?? null
+  const deliveryCost = engine?.deliveryPrice ?? 95
+  const subtotal = moduleCost + doorCost + mechanismCost + ledCost + deliveryCost
+  const installationTier = engine?.getInstallationTier(subtotal) ?? null
   const installationCost = installationTier?.price ?? 0
 
-  const totalPrice = moduleCost + doorCost + mechanismCost
+  const totalPrice = moduleCost + doorCost + mechanismCost + ledCost
   const grandTotal = subtotal + installationCost
 
   const handleAddToCart = () => {
@@ -122,6 +130,12 @@ export function useCartPrice() {
       rightDiagStartHeight,
       leftDiagTopWidth,
       rightDiagTopWidth,
+      placementType,
+      backDiagonal,
+      backDiagKinkHeight,
+      backDiagFlatSectionDepth,
+      lightStripsEnabled,
+      powerCableHolesEnabled,
       hasTopCabinet,
       topCabinetHeightCm,
     }
@@ -132,7 +146,7 @@ export function useCartPrice() {
       moduleCost,
       doorCost,
       mechanismCost,
-      ledCost: 0,
+      ledCost,
       deliveryCost,
       subtotal,
       installationTierName: installationTier?.name ?? null,
