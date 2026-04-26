@@ -202,16 +202,6 @@ function TCFillerPanel({ slotW, moduleDepth, roofProfile, diagCutLeft, diagCutRi
     return geos
   }, [roofProfile])
 
-  // Back wall — same profile as TopCabinetSlot backWallGeo.
-  const backWallGeo = useMemo(() => {
-    const shape = new THREE.Shape()
-    shape.moveTo(0, 0)
-    shape.lineTo(slotW, 0)
-    for (let i = roofProfile.length - 1; i >= 0; i--) shape.lineTo(roofProfile[i].x, roofProfile[i].y)
-    shape.closePath()
-    return trapGeo(new THREE.ExtrudeGeometry(trapShape(shape, 'TCFiller-backWall'), { depth: WALL, bevelEnabled: false }), 'TCFiller-backWall-geo')
-  }, [slotW, roofProfile])
-
   // Left wall — only when leftH > WALL (matches TopCabinetSlot logic).
   const leftWallGeo = useMemo(() => {
     if (leftH <= WALL || innerProfile.length < 2) return null
@@ -254,16 +244,6 @@ function TCFillerPanel({ slotW, moduleDepth, roofProfile, diagCutLeft, diagCutRi
           <ClosetMaterial />
         </mesh>
       ))}
-      {/* Back wall */}
-      <mesh position={[0, 0, 0]} castShadow receiveShadow>
-        <primitive object={backWallGeo} attach="geometry" />
-        <ClosetMaterial variant="binnenkant" />
-      </mesh>
-      {/* Floor — edge-to-edge, matches TC slot floor position */}
-      <mesh position={[slotW / 2, -WALL / 2, moduleDepth / 2]} castShadow receiveShadow>
-        <boxGeometry args={[slotW, WALL, moduleDepth]} />
-        <ClosetMaterial variant="binnenkant" />
-      </mesh>
       {leftWallGeo && (
         <mesh position={[0, 0, 0]} castShadow receiveShadow>
           <primitive object={leftWallGeo} attach="geometry" />
