@@ -128,6 +128,159 @@ function offsetProfileInward(
 }
 
 // ---------------------------------------------------------------------------
+// Filler panel — covers the triangular/trapezoidal opening in TC slots that are
+// too short for a full TopCabinetSlot (side diagonal only). Front face flush with
+// TC doors. Top edge follows the inner ceiling face (innerProfile) so the angle
+// matches where the diagonal wall ends inside. Includes floor, back wall, and
+// side walls to close the full space.
+// ---------------------------------------------------------------------------
+interface FillerPanelProps {
+  slotW: number
+  moduleDepth: number
+  roofProfile: Array<{ x: number; y: number }>
+  diagCutLeft: number   // slot-local x where left diagonal wall hits y=0 (bottom of TC space)
+  diagCutRight: number  // slot-local x where right diagonal wall hits y=0
+}
+
+function TCFillerPanel({ slotW, moduleDepth, roofProfile, diagCutLeft, diagCutRight }: FillerPanelProps) {
+  const leftH  = roofProfile[0].y
+  const rightH = roofProfile[roofProfile.length - 1].y
+
+  const innerProfile = useMemo(() => offsetProfileInward(roofProfile, WALL), [roofProfile])
+
+  // Front panel(s) — only the diagonal portion(s) of the profile.
+  // When the kink falls within the slot, the profile includes a flat zone at maxY.
+  // We skip that flat zone so the panel ends exactly at the diagonal wall intersection.
+  const diagPanelGeos = useMemo(() => {
+    const maxY = roofProfile.reduce((m, pt) => Math.max(m, pt.y), 0)
+    const eps  = 1e-4
+
+    // Index of first / last interior point that has reached maxY (kink points).
+    let firstKinkIdx = -1
+    for (let i = 1; i < roofProfile.length; i++) {
+      if (roofProfile[i].y >= maxY - eps) { firstKinkIdx = i; break }
+    }
+    let lastKinkIdx = -1
+    for (let i = roofProfile.length - 2; i >= 0; i--) {
+      if (roofProfile[i].y >= maxY - eps) { lastKinkIdx = i; break }
+    }
+
+    const buildGeo = (pts: Array<{ x: number; y: number }>, label: string) => {
+      const bLeft  = Math.max(pts[0].x, diagCutLeft)
+      const bRight = Math.min(pts[pts.length - 1].x, diagCutRight)
+      const leftY  = bLeft  > pts[0].x               ? 0 : pts[0].y
+      const rightY = bRight < pts[pts.length - 1].x  ? 0 : pts[pts.length - 1].y
+      const shape = new THREE.Shape()
+      shape.moveTo(bLeft, -WALL)
+      shape.lineTo(bRight, -WALL)
+      shape.lineTo(bRight, rightY)
+      for (let i = pts.length - 2; i >= 1; i--) {
+        if (pts[i].x > bLeft && pts[i].x < bRight) shape.lineTo(pts[i].x, pts[i].y)
+      }
+      shape.lineTo(bLeft, leftY)
+      shape.closePath()
+      const geo = new THREE.ExtrudeGeometry(trapShape(shape, label), { depth: DOOR_DEPTH, bevelEnabled: false })
+      return trapGeo(geo, label + '-geo')
+    }
+
+    const geos: THREE.BufferGeometry[] = []
+
+    // Left diagonal: profile rises from left edge (low) up to firstKinkIdx.
+    const hasLeftKink = firstKinkIdx > 0 &&
+      firstKinkIdx < roofProfile.length - 1 &&
+      roofProfile[0].y < maxY - eps
+    // Right diagonal: profile rises from right edge (low) up to lastKinkIdx.
+    const hasRightKink = lastKinkIdx > 0 &&
+      lastKinkIdx < roofProfile.length - 1 &&
+      roofProfile[roofProfile.length - 1].y < maxY - eps
+
+    if (hasLeftKink)  geos.push(buildGeo(roofProfile.slice(0, firstKinkIdx + 1), 'TCFiller-leftDiag'))
+    if (hasRightKink) geos.push(buildGeo(roofProfile.slice(lastKinkIdx),          'TCFiller-rightDiag'))
+    // No interior kink — full profile (original single-panel behaviour).
+    if (!hasLeftKink && !hasRightKink) geos.push(buildGeo(roofProfile, 'TCFiller-full'))
+
+    return geos
+  }, [roofProfile])
+
+  // Back wall — same profile as TopCabinetSlot backWallGeo.
+  const backWallGeo = useMemo(() => {
+    const shape = new THREE.Shape()
+    shape.moveTo(0, 0)
+    shape.lineTo(slotW, 0)
+    for (let i = roofProfile.length - 1; i >= 0; i--) shape.lineTo(roofProfile[i].x, roofProfile[i].y)
+    shape.closePath()
+    return trapGeo(new THREE.ExtrudeGeometry(trapShape(shape, 'TCFiller-backWall'), { depth: WALL, bevelEnabled: false }), 'TCFiller-backWall-geo')
+  }, [slotW, roofProfile])
+
+  // Left wall — only when leftH > WALL (matches TopCabinetSlot logic).
+  const leftWallGeo = useMemo(() => {
+    if (leftH <= WALL || innerProfile.length < 2) return null
+    const denom = innerProfile[1].x - innerProfile[0].x
+    if (Math.abs(denom) < 1e-9) return null
+    const t = (WALL - innerProfile[0].x) / denom
+    const hRight = innerProfile[0].y + t * (innerProfile[1].y - innerProfile[0].y)
+    const shape = new THREE.Shape()
+    shape.moveTo(0, 0)
+    shape.lineTo(WALL, 0)
+    shape.lineTo(WALL, hRight)
+    shape.lineTo(0, leftH)
+    shape.closePath()
+    return trapGeo(new THREE.ExtrudeGeometry(trapShape(shape, 'TCFiller-leftWall'), { depth: moduleDepth, bevelEnabled: false }), 'TCFiller-leftWall-geo')
+  }, [leftH, innerProfile, moduleDepth])
+
+  // Right wall — only when rightH > WALL.
+  const rightWallGeo = useMemo(() => {
+    if (rightH <= WALL || innerProfile.length < 2) return null
+    const n = innerProfile.length
+    const denom = innerProfile[n - 1].x - innerProfile[n - 2].x
+    if (Math.abs(denom) < 1e-9) return null
+    const t = (slotW - WALL - innerProfile[n - 2].x) / denom
+    const hLeft = innerProfile[n - 2].y + t * (innerProfile[n - 1].y - innerProfile[n - 2].y)
+    const shape = new THREE.Shape()
+    shape.moveTo(slotW - WALL, 0)
+    shape.lineTo(slotW, 0)
+    shape.lineTo(slotW, rightH)
+    shape.lineTo(slotW - WALL, hLeft)
+    shape.closePath()
+    return trapGeo(new THREE.ExtrudeGeometry(trapShape(shape, 'TCFiller-rightWall'), { depth: moduleDepth, bevelEnabled: false }), 'TCFiller-rightWall-geo')
+  }, [rightH, slotW, innerProfile, moduleDepth])
+
+  return (
+    <>
+      {/* Front panel(s) — buitenkant, flush with TC doors, diagonal portions only */}
+      {diagPanelGeos.map((geo, idx) => (
+        <mesh key={idx} position={[0, 0, moduleDepth]} castShadow receiveShadow>
+          <primitive object={geo} attach="geometry" />
+          <ClosetMaterial />
+        </mesh>
+      ))}
+      {/* Back wall */}
+      <mesh position={[0, 0, 0]} castShadow receiveShadow>
+        <primitive object={backWallGeo} attach="geometry" />
+        <ClosetMaterial variant="binnenkant" />
+      </mesh>
+      {/* Floor — edge-to-edge, matches TC slot floor position */}
+      <mesh position={[slotW / 2, -WALL / 2, moduleDepth / 2]} castShadow receiveShadow>
+        <boxGeometry args={[slotW, WALL, moduleDepth]} />
+        <ClosetMaterial variant="binnenkant" />
+      </mesh>
+      {leftWallGeo && (
+        <mesh position={[0, 0, 0]} castShadow receiveShadow>
+          <primitive object={leftWallGeo} attach="geometry" />
+          <ClosetMaterial variant="binnenkant" />
+        </mesh>
+      )}
+      {rightWallGeo && (
+        <mesh position={[0, 0, 0]} castShadow receiveShadow>
+          <primitive object={rightWallGeo} attach="geometry" />
+          <ClosetMaterial variant="binnenkant" />
+        </mesh>
+      )}
+    </>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Per-slot component (side-diagonal / flat case — unchanged)
 // ---------------------------------------------------------------------------
 interface SlotProps {
@@ -622,6 +775,24 @@ export default function TopCabinet() {
   const flatH = ceilH - mainH - WALL
   const startX = -innerW / 2
 
+  // Perpendicular WALL correction for filler panels — matches ClosetCorpus inner face geometry.
+  // tcWallHeightAt subtracts WALL vertically; ClosetCorpus offsets perpendicular (WALL * sec θ).
+  // Delta = WALL * (sec θ − 1) = WALL * (√(1 + slope²) − 1).
+  const fillerWallPerpDelta = useMemo(() => {
+    let delta = 0
+    if ((p.diagonalSide === 'left' || p.diagonalSide === 'both') &&
+        p.leftDiagTopWidth > 0 && mainH > p.leftDiagStartHeight) {
+      const slope = (mainH - p.leftDiagStartHeight) / (CORPUS_WALL + p.leftDiagTopWidth)
+      delta = Math.max(delta, WALL * (Math.sqrt(1 + slope * slope) - 1))
+    }
+    if ((p.diagonalSide === 'right' || p.diagonalSide === 'both') &&
+        p.rightDiagTopWidth > 0 && mainH > p.rightDiagStartHeight) {
+      const slope = (mainH - p.rightDiagStartHeight) / (CORPUS_WALL + p.rightDiagTopWidth)
+      delta = Math.max(delta, WALL * (Math.sqrt(1 + slope * slope) - 1))
+    }
+    return delta
+  }, [p, mainH])
+
   // Diagonal-state discriminator — mirrors Module.tsx "-bd" / "-sd-*" suffix convention.
   // Encodes full diagonal + filler state so any structural change (including fillerActive toggle)
   // forces slot group unmount+remount, clearing stale WebGPU RenderObject buffers.
@@ -681,7 +852,30 @@ export default function TopCabinet() {
         const leftH  = tcWallHeightAt(lx, p, mainH, ceilH)
         const rightH = tcWallHeightAt(rx, p, mainH, ceilH)
 
-        if (leftH < WALL * 2 || rightH < WALL * 2) return null
+        if (leftH < WALL * 2 || rightH < WALL * 2) {
+          if (Math.max(leftH, rightH) <= WALL) return null
+          const rawProfile = computeTCRoofProfile(lx, rx, p, mainH, ceilH)
+          const fillerProfile = fillerWallPerpDelta > 0
+            ? rawProfile.map(pt => ({ x: pt.x, y: Math.max(0, pt.y - fillerWallPerpDelta) }))
+            : rawProfile
+          const leftFullRun  = (p.diagonalSide === 'left'  || p.diagonalSide === 'both')
+            ? CORPUS_WALL + p.leftDiagTopWidth : 0
+          const rightFullRun = (p.diagonalSide === 'right' || p.diagonalSide === 'both')
+            ? p.outerWidth - (CORPUS_WALL + p.rightDiagTopWidth) : p.outerWidth
+          const diagCutLeft  = Math.max(0, leftFullRun - lx)
+          const diagCutRight = Math.min(slotW, rightFullRun - lx)
+          return (
+            <group key={`${i}-${diagVariant}-filler`} position={[x, 0, 0]}>
+              <TCFillerPanel
+                slotW={slotW}
+                moduleDepth={moduleDepth}
+                roofProfile={fillerProfile}
+                diagCutLeft={diagCutLeft}
+                diagCutRight={diagCutRight}
+              />
+            </group>
+          )
+        }
 
         const roofProfile = computeTCRoofProfile(lx, rx, p, mainH, ceilH)
 
