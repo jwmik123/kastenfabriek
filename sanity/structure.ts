@@ -26,6 +26,18 @@ export const structure: StructureResolver = (S) =>
       S.divider(),
 
       S.listItem()
+        .title('Commerce')
+        .child(
+          S.list()
+            .title('Commerce')
+            .items([
+              S.documentTypeListItem('coupon').title('Kortingscodes'),
+            ]),
+        ),
+
+      S.divider(),
+
+      S.listItem()
         .title('Configurator')
         .child(
           S.list()
