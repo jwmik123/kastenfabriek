@@ -20,7 +20,8 @@ function generateOrderNumber(): string {
 }
 
 export async function createCheckoutSession(
-  shippingAddressId: string
+  shippingAddressId: string,
+  coupon?: { couponCode: string; discountAmount: number }
 ): Promise<{ url: string }> {
   const user = await getCurrentUser();
   if (!user) throw new Error("Not authenticated");

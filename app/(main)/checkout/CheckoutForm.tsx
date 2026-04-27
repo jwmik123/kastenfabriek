@@ -1,9 +1,12 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { MapPin, Package, CreditCard, Plus, Check } from 'lucide-react'
+import { MapPin, Package, CreditCard, Plus, Check, X } from 'lucide-react'
 import { createCheckoutSession } from '@/lib/actions/checkout'
 import { createAddress } from '@/lib/actions/address'
+import { validateCoupon } from '@/lib/actions/coupon'
+import type { ValidateCouponResult } from '@/lib/actions/coupon'
+import { calculateDiscount } from '@/lib/cart/discount'
 import type { CartItem } from '@/lib/cart/types'
 
 type Address = {
@@ -31,6 +34,12 @@ const fmt = new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR',
 
 type Step = 'address' | 'review' | 'payment'
 
+type AppliedCoupon = {
+  code: string
+  discountType: 'percent' | 'fixed'
+  discountValue: number
+}
+
 export default function CheckoutForm({ addresses, cartItems }: CheckoutFormProps) {
   const [step, setStep] = useState<Step>('address')
   const [selectedAddressId, setSelectedAddressId] = useState<string>(
@@ -38,7 +47,13 @@ export default function CheckoutForm({ addresses, cartItems }: CheckoutFormProps
   )
   const [showNewAddress, setShowNewAddress] = useState(addresses.length === 0)
   const [isPending, startTransition] = useTransition()
+  const [couponIsPending, startCouponTransition] = useTransition()
   const [error, setError] = useState('')
+
+  // Coupon state
+  const [couponInput, setCouponInput] = useState('')
+  const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null)
+  const [couponError, setCouponError] = useState('')
 
   // New address form state
   const [newAddr, setNewAddr] = useState({
@@ -54,6 +69,36 @@ export default function CheckoutForm({ addresses, cartItems }: CheckoutFormProps
     }),
     { subtotal: 0, installation: 0, total: 0 }
   )
+
+  const discountAmountEur = appliedCoupon
+    ? calculateDiscount(totals.subtotal, appliedCoupon)
+    : 0
+  const discountedTotal = totals.total - discountAmountEur
+  const discountAmountCents = Math.round(discountAmountEur * 100)
+
+  const handleApplyCoupon = () => {
+    if (!couponInput.trim()) return
+    setCouponError('')
+    startCouponTransition(async () => {
+      const result: ValidateCouponResult = await validateCoupon(couponInput)
+      if (result.valid) {
+        setAppliedCoupon(result.discount)
+        setCouponInput('')
+      } else {
+        const messages = {
+          not_found: 'Couponcode niet gevonden.',
+          expired: 'Deze couponcode is verlopen.',
+          limit_reached: 'Deze couponcode is niet meer geldig (limiet bereikt).',
+        }
+        setCouponError(messages[result.error])
+      }
+    })
+  }
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null)
+    setCouponError('')
+  }
 
   const selectedAddress = addresses.find((a) => a.id === selectedAddressId)
 
@@ -89,7 +134,10 @@ export default function CheckoutForm({ addresses, cartItems }: CheckoutFormProps
     setError('')
     startTransition(async () => {
       try {
-        const { url } = await createCheckoutSession(selectedAddressId)
+        const { url } = await createCheckoutSession(
+          selectedAddressId,
+          appliedCoupon ? { couponCode: appliedCoupon.code, discountAmount: discountAmountCents } : undefined
+        )
         window.location.href = url
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Er ging iets mis. Probeer opnieuw.')
@@ -104,7 +152,7 @@ export default function CheckoutForm({ addresses, cartItems }: CheckoutFormProps
   ]
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-12">
+    <div className="max-w-2xl mx-auto px-4 pt-40 pb-12">
       <h1 className="text-3xl font-bold text-gray-900 mb-8">Afrekenen</h1>
 
       {/* Step indicator */}
@@ -271,13 +319,64 @@ export default function CheckoutForm({ addresses, cartItems }: CheckoutFormProps
 
             <div className="pt-4 space-y-1.5 text-sm text-gray-600">
               <div className="flex justify-between"><span>Subtotaal</span><span>{fmt.format(totals.subtotal)}</span></div>
+              {discountAmountEur > 0 && appliedCoupon && (
+                <div className="flex justify-between text-green-700">
+                  <span>Korting ({appliedCoupon.code})</span>
+                  <span>-{fmt.format(discountAmountEur)}</span>
+                </div>
+              )}
               {totals.installation > 0 && (
                 <div className="flex justify-between"><span>Installatie</span><span>{fmt.format(totals.installation)}</span></div>
               )}
               <div className="flex justify-between font-semibold text-gray-900 text-base pt-2 border-t border-gray-100">
-                <span>Totaal (incl. BTW)</span><span>{fmt.format(totals.total)}</span>
+                <span>Totaal (incl. BTW)</span><span>{fmt.format(discountedTotal)}</span>
               </div>
             </div>
+          </div>
+
+          {/* Coupon input */}
+          <div className="bg-white rounded-2xl shadow-sm p-6">
+            <h2 className="font-semibold text-gray-900 text-lg mb-4">Kortingscode</h2>
+            {appliedCoupon ? (
+              <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+                <div className="text-sm">
+                  <span className="font-medium text-green-800">{appliedCoupon.code}</span>
+                  <span className="text-green-600 ml-2">-{fmt.format(discountAmountEur)}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleRemoveCoupon}
+                  aria-label="Verwijder kortingscode"
+                  className="text-green-600 hover:text-green-800 ml-3"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={couponInput}
+                    onChange={(e) => { setCouponInput(e.target.value); setCouponError('') }}
+                    onKeyDown={(e) => e.key === 'Enter' && handleApplyCoupon()}
+                    placeholder="Voer je code in"
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleApplyCoupon}
+                    disabled={couponIsPending || !couponInput.trim()}
+                    className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                  >
+                    {couponIsPending ? 'Controleren...' : 'Toepassen'}
+                  </button>
+                </div>
+                {couponError && (
+                  <p className="text-sm text-red-600">{couponError}</p>
+                )}
+              </div>
+            )}
           </div>
 
           <button
@@ -302,10 +401,16 @@ export default function CheckoutForm({ addresses, cartItems }: CheckoutFormProps
             </p>
           </div>
 
-          <div className="bg-gray-50 rounded-xl p-4 text-left">
-            <div className="flex justify-between text-sm text-gray-600">
+          <div className="bg-gray-50 rounded-xl p-4 text-left space-y-1.5 text-sm text-gray-600">
+            {discountAmountEur > 0 && appliedCoupon && (
+              <div className="flex justify-between text-green-700">
+                <span>Korting ({appliedCoupon.code})</span>
+                <span>-{fmt.format(discountAmountEur)}</span>
+              </div>
+            )}
+            <div className="flex justify-between">
               <span>Te betalen</span>
-              <span className="font-semibold text-gray-900 text-base">{fmt.format(totals.total)}</span>
+              <span className="font-semibold text-gray-900 text-base">{fmt.format(discountedTotal)}</span>
             </div>
           </div>
 
@@ -314,7 +419,7 @@ export default function CheckoutForm({ addresses, cartItems }: CheckoutFormProps
             disabled={isPending}
             className="w-full py-4 bg-primary text-white rounded-xl font-semibold text-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
           >
-            {isPending ? 'Doorsturen naar Stripe...' : `Betaal ${fmt.format(totals.total)}`}
+            {isPending ? 'Doorsturen naar Stripe...' : `Betaal ${fmt.format(discountedTotal)}`}
           </button>
 
           <button onClick={() => setStep('review')} className="text-sm text-gray-500 hover:underline">
