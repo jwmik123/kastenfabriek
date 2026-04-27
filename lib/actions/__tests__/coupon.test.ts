@@ -1,12 +1,21 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
+const mockCommit = vi.hoisted(() => vi.fn().mockResolvedValue({}));
+const mockInc = vi.hoisted(() => vi.fn().mockReturnValue({ commit: mockCommit }));
+const mockPatch = vi.hoisted(() => vi.fn().mockReturnValue({ inc: mockInc }));
+const mockWriteFetch = vi.hoisted(() => vi.fn());
+
 vi.mock("@/sanity/lib/client", () => ({
   client: {
     fetch: vi.fn(),
   },
+  writeClient: {
+    fetch: mockWriteFetch,
+    patch: mockPatch,
+  },
 }));
 
-import { validateCoupon } from "../coupon";
+import { validateCoupon, incrementCouponUseCount } from "../coupon";
 import { client } from "@/sanity/lib/client";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -85,5 +94,24 @@ describe("validateCoupon", () => {
       expect.any(String),
       expect.objectContaining({ code: "SAVE10" })
     );
+  });
+});
+
+describe("incrementCouponUseCount", () => {
+  it("patches currentUses by 1 when coupon document found", async () => {
+    mockWriteFetch.mockResolvedValueOnce({ _id: "coupon-doc-123" });
+
+    await incrementCouponUseCount("SAVE10");
+
+    expect(mockPatch).toHaveBeenCalledWith("coupon-doc-123");
+    expect(mockInc).toHaveBeenCalledWith({ currentUses: 1 });
+    expect(mockCommit).toHaveBeenCalled();
+  });
+
+  it("does nothing when coupon not found in Sanity", async () => {
+    mockWriteFetch.mockResolvedValueOnce(null);
+
+    await expect(incrementCouponUseCount("UNKNOWN")).resolves.toBeUndefined();
+    expect(mockPatch).not.toHaveBeenCalled();
   });
 });

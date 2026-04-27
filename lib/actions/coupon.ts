@@ -1,7 +1,7 @@
 "use server";
 
 import { groq } from "next-sanity";
-import { client } from "@/sanity/lib/client";
+import { client, writeClient } from "@/sanity/lib/client";
 
 type CouponDiscount = {
   code: string;
@@ -32,6 +32,14 @@ const couponByCodeQuery = groq`
     currentUses
   }
 `;
+
+const couponIdByCodeQuery = groq`*[_type == "coupon" && code == $code][0] { _id }`;
+
+export async function incrementCouponUseCount(code: string): Promise<void> {
+  const doc = await writeClient.fetch<{ _id: string } | null>(couponIdByCodeQuery, { code });
+  if (!doc) return;
+  await writeClient.patch(doc._id).inc({ currentUses: 1 }).commit();
+}
 
 export async function validateCoupon(
   rawCode: string

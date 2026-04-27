@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { order, orderItem, cartItem } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { sendOrderConfirmationEmail } from "@/lib/email/resend";
+import { incrementCouponUseCount } from "@/lib/actions/coupon";
 import type { ClosetConfigSnapshot, PriceSnapshot } from "@/lib/cart/types";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -55,12 +56,22 @@ export async function POST(request: NextRequest) {
       await db.delete(cartItem).where(eq(cartItem.userId, userId));
     }
 
+    const fullOrder = await db.query.order.findFirst({
+      where: eq(order.id, orderId),
+    });
+
+    // Increment coupon use count post-payment
+    if (fullOrder?.couponCode) {
+      try {
+        await incrementCouponUseCount(fullOrder.couponCode);
+      } catch (err) {
+        console.error("Failed to increment coupon use count:", err);
+      }
+    }
+
     // Send order confirmation email
     const customerEmail = session.customer_email;
     if (customerEmail) {
-      const fullOrder = await db.query.order.findFirst({
-        where: eq(order.id, orderId),
-      });
       const orderItems = await db.query.orderItem.findMany({
         where: eq(orderItem.orderId, orderId),
       });
