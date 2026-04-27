@@ -73,6 +73,10 @@ export interface PriceSnapshot {
   installationCost: number; // €720 | €1440 | €2160
 
   total: number; // subtotal + installationCost
+
+  discountCode?: string;
+  discountAmount?: number; // cents
+  discountType?: "percent" | "fixed";
 }
 
 // One item in the cart (typically quantity=1 for custom closets)

@@ -57,6 +57,9 @@ export async function createCheckoutSession(
     0
   );
 
+  const discountCents = coupon ? Math.min(coupon.discountAmount, totalCents) : 0;
+  const discountedTotal = totalCents - discountCents;
+
   // Create order
   const orderId = crypto.randomUUID();
   const orderNumber = generateOrderNumber();
@@ -66,11 +69,13 @@ export async function createCheckoutSession(
     userId: user.id,
     orderNumber,
     status: "pending",
-    totalAmount: totalCents,
+    totalAmount: discountedTotal,
     shippingAddressId,
     billingAddressId: shippingAddressId,
     shippingAddressSnapshot: shippingAddr,
     billingAddressSnapshot: shippingAddr,
+    couponCode: coupon?.couponCode ?? null,
+    discountAmount: coupon ? discountCents : null,
   });
 
   // Create order items
@@ -82,7 +87,10 @@ export async function createCheckoutSession(
       productName: "Maatwerkkast",
       configurationSnapshot: {
         configuration: item.configuration,
-        priceSnapshot: item.priceSnapshot,
+        priceSnapshot: {
+          ...item.priceSnapshot,
+          ...(coupon && { discountCode: coupon.couponCode, discountAmount: discountCents }),
+        },
         screenshotClosedUrl: item.screenshotClosedUrl ?? null,
         screenshotOpenUrl: item.screenshotOpenUrl ?? null,
       },
@@ -109,6 +117,17 @@ export async function createCheckoutSession(
       };
     }
   );
+
+  if (coupon && discountCents > 0) {
+    lineItems.push({
+      price_data: {
+        currency: "eur",
+        product_data: { name: `Korting (${coupon.couponCode})` },
+        unit_amount: -discountCents,
+      },
+      quantity: 1,
+    });
+  }
 
   const baseUrl = process.env.NEXT_PUBLIC_BETTER_AUTH_URL || "http://localhost:3000";
 
