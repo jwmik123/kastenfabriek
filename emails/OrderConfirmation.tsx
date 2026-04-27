@@ -227,6 +227,9 @@ export default function OrderConfirmation({
                     p.doorCost > 0 && { label: "Deuren", amount: p.doorCost },
                     p.mechanismCost > 0 && { label: "Handgrepen", amount: p.mechanismCost },
                     p.ledCost > 0 && { label: "LED-strips", amount: p.ledCost },
+                    p.discountAmount && p.discountAmount > 0 && p.discountCode
+                      ? { label: `Korting (${p.discountCode})`, amount: -(p.discountAmount / 100) }
+                      : false,
                     { label: "Bezorging", amount: p.deliveryCost },
                     p.installationCost > 0 && {
                       label: `Montage${p.installationTierName ? ` (${p.installationTierName})` : ""}`,
@@ -246,7 +249,7 @@ export default function OrderConfirmation({
                   <table width="100%" cellPadding="0" cellSpacing="0">
                     <tr>
                       <td><Text style={totalLabel}>Totaal</Text></td>
-                      <td style={{ textAlign: "right" }}><Text style={totalAmountStyle}>{formatPrice(p.total)}</Text></td>
+                      <td style={{ textAlign: "right" }}><Text style={totalAmountStyle}>{formatPrice(p.total - (p.discountAmount ?? 0) / 100)}</Text></td>
                     </tr>
                   </table>
                 </Section>
