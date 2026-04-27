@@ -8,6 +8,7 @@ import { handle } from "./handle";
 import { installationTier } from "./installationTier";
 import { pricingConfig } from "./pricingConfig";
 import { testimonial } from "./testimonial";
+import { coupon } from "./coupon";
 
 export const schema: { types: SchemaTypeDefinition[] } = {
   types: [
@@ -22,5 +23,7 @@ export const schema: { types: SchemaTypeDefinition[] } = {
     handle,
     installationTier,
     pricingConfig,
+    // Commerce
+    coupon,
   ],
 };
