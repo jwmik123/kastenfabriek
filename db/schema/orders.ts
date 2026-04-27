@@ -25,6 +25,8 @@ export const order = pgTable("order", {
   notes: text("notes"),
   stripeCheckoutSessionId: text("stripe_checkout_session_id"),
   stripePaymentIntentId: text("stripe_payment_intent_id"),
+  couponCode: text("coupon_code"),
+  discountAmount: integer("discount_amount"), // in cents, nullable
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
   paidAt: timestamp("paid_at"),
