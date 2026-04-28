@@ -4,11 +4,20 @@ import { useState, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useClosetStore } from '../store'
 import { useDebugPricing } from '../hooks/useDebugPricing'
-import type { DebugSlotRow, DebugTopCabinetRow } from '../hooks/useDebugPricing'
+import type { DebugSlotRow, DebugTopCabinetRow, DebugMaterialInfo } from '../hooks/useDebugPricing'
 
 const fmt = new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 })
 const cm = (m: number) => (m * 100).toFixed(1)
 const dims = (d: { w: number; h: number; d: number }) => `${cm(d.w)} × ${cm(d.h)} × ${cm(d.d)}`
+
+function MaterialLine({ label, info }: { label: string; info: DebugMaterialInfo }) {
+  return (
+    <div className={`flex gap-1 ${info.isOverride ? 'text-amber-400' : ''}`}>
+      <span>{info.isOverride ? '↑' : '↓'}</span>
+      <span>{label}: {info.name} ({info.id})</span>
+    </div>
+  )
+}
 
 function SlotRow({ row }: { row: DebugSlotRow }) {
   if (row.isEmpty) {
@@ -18,8 +27,10 @@ function SlotRow({ row }: { row: DebugSlotRow }) {
           <span className="font-mono text-[10px] w-4 shrink-0">{row.slotIndex}</span>
           <span className="italic">Leeg</span>
         </div>
-        <div className="pl-5 font-mono text-[10px] text-muted-foreground/40">
-          {dims(row.dimensions.nominal)} cm
+        <div className="pl-5 font-mono text-[10px] text-muted-foreground/40 flex flex-col gap-px">
+          <span>{dims(row.dimensions.nominal)} cm</span>
+          <MaterialLine label="buiten" info={row.buitenkant} />
+          <MaterialLine label="binnen" info={row.binnenkant} />
         </div>
       </div>
     )
@@ -62,6 +73,8 @@ function SlotRow({ row }: { row: DebugSlotRow }) {
         <div className="flex justify-between text-muted-foreground/50">
           <span>↳ {dims(row.dimensions.innerClear)} cm</span>
         </div>
+        <MaterialLine label="buiten" info={row.buitenkant} />
+        <MaterialLine label="binnen" info={row.binnenkant} />
       </div>
     </div>
   )

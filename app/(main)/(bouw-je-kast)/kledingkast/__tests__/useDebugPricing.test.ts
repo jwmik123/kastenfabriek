@@ -165,6 +165,7 @@ const baseSlotParams = {
   pricingData: basePricingData,
   moduleCount: 1,
   buitenkantMaterialId: 'premium-wit',
+  binnenkantMaterialId: 'premium-wit',
   doorHandleId: 'h1',
   moduleLayouts: [{ layoutId: 1, name: 'Open', description: '', contents: { shelves: 2, rods: 0, drawers: 0 }, priceSingle: 200, priceDouble: 350, availableForTopCabinet: false }],
   hasTopCabinet: false,
@@ -363,5 +364,87 @@ describe('moduleDebugDimensions', () => {
   it('inner-clear depth subtracts back wall and front inset', () => {
     const dims = moduleDebugDimensions({ totalWidthM: 2.0, mainHeightM: 2.25, depthM: 0.6, moduleCount: 4, span: 1 })
     expect(dims.innerClear.d).toBeCloseTo(0.6 - WALL - CLOSET_INSIDE_INSET)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// computeDebugSlots — material info
+// ---------------------------------------------------------------------------
+
+describe('computeDebugSlots — material info: buitenkant inherited', () => {
+  it('no per-module override → isOverride false, resolves name from MATERIALS', () => {
+    const { slots } = computeDebugSlots({
+      ...baseSlotParams,
+      buitenkantMaterialId: 'premium-wit',
+      modules: [{ slotIndex: 0, layoutId: 1, hasDoor: false, span: 1 }],
+    })
+    expect(slots[0].buitenkant.isOverride).toBe(false)
+    expect(slots[0].buitenkant.id).toBe('premium-wit')
+    expect(slots[0].buitenkant.name).toBe('Premium Wit')
+  })
+})
+
+describe('computeDebugSlots — material info: buitenkant override', () => {
+  it('per-module buitenkantMaterialId set → isOverride true', () => {
+    const { slots } = computeDebugSlots({
+      ...baseSlotParams,
+      buitenkantMaterialId: 'premium-wit',
+      modules: [{ slotIndex: 0, layoutId: 1, hasDoor: false, span: 1, buitenkantMaterialId: 'zwart' }],
+    })
+    expect(slots[0].buitenkant.isOverride).toBe(true)
+    expect(slots[0].buitenkant.id).toBe('zwart')
+    expect(slots[0].buitenkant.name).toBe('Zwart')
+  })
+})
+
+describe('computeDebugSlots — material info: binnenkant inherited', () => {
+  it('no per-module binnenkant override → isOverride false, resolves name', () => {
+    const { slots } = computeDebugSlots({
+      ...baseSlotParams,
+      binnenkantMaterialId: 'premium-wit',
+      modules: [{ slotIndex: 0, layoutId: 1, hasDoor: false, span: 1 }],
+    })
+    expect(slots[0].binnenkant.isOverride).toBe(false)
+    expect(slots[0].binnenkant.id).toBe('premium-wit')
+    expect(slots[0].binnenkant.name).toBe('Premium Wit')
+  })
+})
+
+describe('computeDebugSlots — material info: binnenkant override', () => {
+  it('per-module binnenkantMaterialId set → isOverride true', () => {
+    const { slots } = computeDebugSlots({
+      ...baseSlotParams,
+      binnenkantMaterialId: 'premium-wit',
+      modules: [{ slotIndex: 0, layoutId: 1, hasDoor: false, span: 1, binnenkantMaterialId: 'zwart' }],
+    })
+    expect(slots[0].binnenkant.isOverride).toBe(true)
+    expect(slots[0].binnenkant.id).toBe('zwart')
+    expect(slots[0].binnenkant.name).toBe('Zwart')
+  })
+})
+
+describe('computeDebugSlots — material info: unknown ID fallback', () => {
+  it('unknown material ID → name falls back to raw ID', () => {
+    const { slots } = computeDebugSlots({
+      ...baseSlotParams,
+      buitenkantMaterialId: 'unknown-id-xyz',
+      modules: [{ slotIndex: 0, layoutId: 1, hasDoor: false, span: 1 }],
+    })
+    expect(slots[0].buitenkant.name).toBe('unknown-id-xyz')
+  })
+})
+
+describe('computeDebugSlots — material info: empty slot', () => {
+  it('empty slot also carries inherited material info', () => {
+    const { slots } = computeDebugSlots({
+      ...baseSlotParams,
+      buitenkantMaterialId: 'premium-wit',
+      binnenkantMaterialId: 'zwart',
+      modules: [{ slotIndex: 0, layoutId: null, hasDoor: false, span: 1 }],
+    })
+    expect(slots[0].buitenkant.id).toBe('premium-wit')
+    expect(slots[0].buitenkant.isOverride).toBe(false)
+    expect(slots[0].binnenkant.id).toBe('zwart')
+    expect(slots[0].binnenkant.isOverride).toBe(false)
   })
 })

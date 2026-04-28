@@ -36,6 +36,12 @@ export function moduleDebugDimensions(params: {
   }
 }
 
+export interface DebugMaterialInfo {
+  id: string
+  name: string
+  isOverride: boolean
+}
+
 export interface DebugPricingGlobal {
   ledCost: number
   ledModuleCount: number
@@ -61,6 +67,8 @@ export interface DebugSlotRow {
   powerHoleCost: number
   slotSubtotal: number
   dimensions: DebugDimensions
+  buitenkant: DebugMaterialInfo
+  binnenkant: DebugMaterialInfo
 }
 
 export interface DebugTopCabinetRow {
@@ -138,11 +146,18 @@ export function computeDebugGlobal(params: {
   }
 }
 
+function resolveMaterial(slotId: string | undefined, globalId: string): DebugMaterialInfo {
+  const id = slotId ?? globalId
+  const mat = MATERIALS.find((m) => m.id === id)
+  return { id, name: mat?.name ?? id, isOverride: slotId !== undefined }
+}
+
 export function computeDebugSlots(params: {
   pricingData: FullPricingData
   modules: ModuleSlot[]
   moduleCount: number
   buitenkantMaterialId: string
+  binnenkantMaterialId: string
   doorHandleId: string
   moduleLayouts: ModuleLayout[]
   hasTopCabinet: boolean
@@ -150,7 +165,7 @@ export function computeDebugSlots(params: {
   mainHeightM: number
   depthM: number
 }): { slots: DebugSlotRow[]; topCabinet: DebugTopCabinetRow | null } {
-  const { pricingData, modules, moduleCount, buitenkantMaterialId, doorHandleId, moduleLayouts, hasTopCabinet, totalWidthM, mainHeightM, depthM } = params
+  const { pricingData, modules, moduleCount, buitenkantMaterialId, binnenkantMaterialId, doorHandleId, moduleLayouts, hasTopCabinet, totalWidthM, mainHeightM, depthM } = params
   const engine = new PricingEngine(pricingData)
   const handlePrice = engine.getHandlePrice(doorHandleId)
   const powerHolePrice = engine.getAccessoryPrice('power-cable-holes')
@@ -174,6 +189,8 @@ export function computeDebugSlots(params: {
         powerHoleCost: 0,
         slotSubtotal: 0,
         dimensions,
+        buitenkant: resolveMaterial(m.buitenkantMaterialId, buitenkantMaterialId),
+        binnenkant: resolveMaterial(m.binnenkantMaterialId, binnenkantMaterialId),
       }
     }
 
@@ -218,6 +235,8 @@ export function computeDebugSlots(params: {
       powerHoleCost,
       slotSubtotal,
       dimensions,
+      buitenkant: resolveMaterial(m.buitenkantMaterialId, buitenkantMaterialId),
+      binnenkant: resolveMaterial(m.binnenkantMaterialId, binnenkantMaterialId),
     }
   })
 
@@ -243,6 +262,7 @@ export function useDebugPricing(): DebugPricingResult | null {
   const moduleCount = useClosetStore((s) => s.moduleCount)
   const pricingData = useClosetStore((s) => s.pricingData)
   const buitenkantMaterialId = useClosetStore((s) => s.buitenkantMaterialId)
+  const binnenkantMaterialId = useClosetStore((s) => s.binnenkantMaterialId)
   const doorHandleId = useClosetStore((s) => s.doorHandleId)
   const lightStripsEnabled = useClosetStore((s) => s.lightStripsEnabled)
   const needsTopCabinet = useClosetStore((s) => s.needsTopCabinet)
@@ -270,6 +290,7 @@ export function useDebugPricing(): DebugPricingResult | null {
     modules,
     moduleCount,
     buitenkantMaterialId,
+    binnenkantMaterialId,
     doorHandleId,
     moduleLayouts,
     hasTopCabinet,
