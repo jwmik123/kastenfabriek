@@ -4,14 +4,35 @@ import Image from 'next/image'
 import { useClosetStore } from '../store'
 import { formatter } from '../hooks/useCartPrice'
 import { cn } from '@/lib/utils'
+import Carousel from '../components/Carousel'
+import type { HandleType } from '@/types/configurator-pricing'
+
+type HandleItem = HandleType | { id: 'none'; name: string; nameNl: string; price: number; imageUrl?: undefined }
+
+const MATERIALS = [
+  { value: 'chrome' as const, label: 'Chrome' },
+  { value: 'black' as const,  label: 'Zwart'  },
+  { value: 'gold' as const,   label: 'Goud'   },
+]
 
 export default function DoorHandlesStep() {
-  const doorHandleId = useClosetStore((s) => s.doorHandleId)
-  const setDoorHandleId = useClosetStore((s) => s.setDoorHandleId)
-  const pricingData = useClosetStore((s) => s.pricingData)
-  const pushToOpenPrice = pricingData?.accessories.find((a) => a.id === 'push-to-open')?.price ?? 0
+  const doorHandleId        = useClosetStore((s) => s.doorHandleId)
+  const setDoorHandleId     = useClosetStore((s) => s.setDoorHandleId)
+  const doorHandleMaterial  = useClosetStore((s) => s.doorHandleMaterial)
+  const setDoorHandleMaterial = useClosetStore((s) => s.setDoorHandleMaterial)
+  const pricingData         = useClosetStore((s) => s.pricingData)
 
-  const handles = pricingData?.handles ?? []
+  const pushToOpenPrice = pricingData?.accessories.find((a) => a.id === 'push-to-open')?.price ?? 0
+  const handles         = pricingData?.handles ?? []
+
+  const pushToOpenItem: HandleItem = {
+    id: 'none',
+    name: 'Push-to-open',
+    nameNl: 'Geen (push-to-open)',
+    price: pushToOpenPrice,
+  }
+
+  const allItems: HandleItem[] = [...handles, pushToOpenItem]
 
   return (
     <div className="space-y-7">
@@ -22,55 +43,59 @@ export default function DoorHandlesStep() {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
-        {handles.map((h) => {
-          const isSelected = doorHandleId === h.id
-          return (
-            <button
-              key={h.id}
-              onClick={() => setDoorHandleId(h.id)}
-              className={cn(
-                'flex flex-col items-center gap-2 p-3 rounded-md border-2 transition-all text-center',
-                isSelected
-                  ? 'border-foreground bg-primary text-primary-foreground'
-                  : 'border-border bg-background text-foreground hover:border-foreground/40 hover:bg-muted',
-              )}
-            >
-              {h.imageUrl && (
-                <div className="relative w-full aspect-square rounded overflow-hidden bg-muted">
-                  <Image
-                    src={h.imageUrl}
-                    alt={h.nameNl ?? h.name}
-                    fill
-                    className="object-contain"
-                    sizes="(max-width: 768px) 50vw, 150px"
-                  />
-                </div>
-              )}
-              <span className="text-sm font-medium leading-tight">{h.nameNl ?? h.name}</span>
-              <span className={cn('text-xs', isSelected ? 'text-primary-foreground/70' : 'text-muted-foreground')}>
-                {formatter.format(h.price)} / deur
-              </span>
-            </button>
-          )
-        })}
+      <Carousel
+        items={allItems}
+        activeId={doorHandleId}
+        renderItem={(item, isActive) => (
+          <button
+            onClick={() => setDoorHandleId(item.id)}
+            className={cn(
+              'flex flex-col items-center gap-2 p-3 rounded-md border-2 transition-all text-center w-full',
+              isActive
+                ? 'border-foreground bg-primary text-primary-foreground'
+                : 'border-border bg-background text-foreground hover:border-foreground/40 hover:bg-muted',
+            )}
+          >
+            {item.imageUrl && (
+              <div className="relative w-full aspect-square rounded overflow-hidden bg-muted">
+                <Image
+                  src={item.imageUrl}
+                  alt={item.nameNl ?? item.name}
+                  fill
+                  className="object-contain"
+                  sizes="(max-width: 768px) 33vw, 120px"
+                />
+              </div>
+            )}
+            <span className="text-sm font-medium leading-tight">{item.nameNl ?? item.name}</span>
+            <span className={cn('text-xs', isActive ? 'text-primary-foreground/70' : 'text-muted-foreground')}>
+              {formatter.format(item.price)} / deur
+            </span>
+          </button>
+        )}
+      />
 
-        {/* Push-to-open — no handle */}
-        <button
-          onClick={() => setDoorHandleId('none')}
-          className={cn(
-            'flex flex-col items-center justify-center gap-2 p-3 rounded-md border-2 transition-all text-center',
-            doorHandleId === 'none'
-              ? 'border-foreground bg-primary text-primary-foreground'
-              : 'border-border bg-background text-foreground hover:border-foreground/40 hover:bg-muted',
-          )}
-        >
-          <span className="text-sm font-medium">Geen (push-to-open)</span>
-          <span className={cn('text-xs', doorHandleId === 'none' ? 'text-primary-foreground/70' : 'text-muted-foreground')}>
-            {formatter.format(pushToOpenPrice)} / deur
-          </span>
-        </button>
-      </div>
+      {doorHandleId !== 'none' && (
+        <div>
+          <p className="text-sm font-medium mb-2">Afwerking</p>
+          <div className="flex gap-2">
+            {MATERIALS.map((m) => (
+              <button
+                key={m.value}
+                onClick={() => setDoorHandleMaterial(m.value)}
+                className={cn(
+                  'flex-1 py-2 px-3 rounded-md border-2 text-sm font-medium transition-all',
+                  doorHandleMaterial === m.value
+                    ? 'border-foreground bg-primary text-primary-foreground'
+                    : 'border-border bg-background text-foreground hover:border-foreground/40 hover:bg-muted',
+                )}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

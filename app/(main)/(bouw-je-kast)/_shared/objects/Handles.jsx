@@ -49,22 +49,36 @@ export const HANDLE_TYPES = [
   { id: '29', name: '29_Z2168' },
 ]
 
-export function HandleByType({ id, mirror = false, ...props }) {
+export function HandleByType({ id, mirror = false, material = 'chrome', ...props }) {
   const { nodes } = useGLTF('/objects/Handles-transformed.glb')
 
   const nodeKey = id ? Object.keys(nodes).find((k) => k.startsWith(`${id}_`)) : null
   const node = nodeKey ? nodes[nodeKey] : null
 
-  const chromeMaterial = useMemo(() => {
-      return new THREE.MeshPhysicalMaterial({
-        color: 0xd3d3d3,
-        metalness: 0.9,
-        roughness: 0.2,
-        envMapIntensity: 2,
-        clearcoat: 1,
-        clearcoatRoughness: 0,
-      })
-    }, [])
+  const chromeMaterial = useMemo(() => new THREE.MeshPhysicalMaterial({
+    color: 0xd3d3d3,
+    metalness: 0.9,
+    roughness: 0.2,
+    envMapIntensity: 2,
+    clearcoat: 1,
+    clearcoatRoughness: 0,
+  }), [])
+
+  const blackMaterial = useMemo(() => new THREE.MeshPhysicalMaterial({
+    color: 0x1a1a1a,
+    metalness: 0.9,
+    roughness: 0.35,
+    envMapIntensity: 2,
+  }), [])
+
+  const goldMaterial = useMemo(() => new THREE.MeshPhysicalMaterial({
+    color: 0xc9a84c,
+    metalness: 0.9,
+    roughness: 0.3,
+    envMapIntensity: 2,
+  }), [])
+
+  const activeMaterial = material === 'black' ? blackMaterial : material === 'gold' ? goldMaterial : chromeMaterial
 
   // Offset the mesh so its back face (min z) sits at z=0 relative to the group,
   // making the handle protrude outward from whichever face the group is placed on.
@@ -86,7 +100,7 @@ export function HandleByType({ id, mirror = false, ...props }) {
 
   return (
     <group {...props} scale={mirror ? [-1, 1, 1] : undefined}>
-      <mesh geometry={node.geometry} material={chromeMaterial} position={meshOffset} rotation={[0, Math.PI, 0]} />
+      <mesh geometry={node.geometry} material={activeMaterial} position={meshOffset} rotation={[0, Math.PI, 0]} />
     </group>
   )
 }

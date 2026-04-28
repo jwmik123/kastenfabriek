@@ -22,6 +22,7 @@ interface DoorProps {
   moduleDepth: number
   doorsOpen: boolean
   doorHandleId: string
+  doorHandleMaterial?: 'chrome' | 'black' | 'gold'
   mirror?: boolean
   extendToFloor?: boolean
   /**
@@ -61,6 +62,7 @@ export default function Door({
   moduleDepth,
   doorsOpen,
   doorHandleId,
+  doorHandleMaterial = 'chrome',
   mirror = false,
   extendToFloor = false,
   topProfile,
@@ -134,6 +136,7 @@ export default function Door({
             <HandleByType
               id={doorHandleId}
               mirror={mirror}
+              material={doorHandleMaterial}
               position={[handleX, handleY, -DOOR_DEPTH / 2]}
             />
           )}
