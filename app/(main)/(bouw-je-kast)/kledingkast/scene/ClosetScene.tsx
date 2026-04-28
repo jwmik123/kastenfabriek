@@ -13,6 +13,7 @@ import TopCabinet from './TopCabinet'
 import OnderstelPlinth from './OnderstelPlinth'
 import Module from './Module'
 import StructuralKinkShelf from './StructuralKinkShelf'
+import StructuralSideKinkShelf from './StructuralSideKinkShelf'
 import InstancedLightStrips from './InstancedLightStrips'
 import { StripWarmthProvider } from '../../_shared/materials/StripWarmthContext'
 
@@ -259,6 +260,41 @@ export default function ClosetScene() {
             isStructural
             slotIndex={m.slotIndex}
             span={m.span}
+            hasDoor={m.hasDoor}
+            buitenkantMaterialId={m.buitenkantMaterialId}
+            binnenkantMaterialId={m.binnenkantMaterialId}
+          />
+        )
+      })}
+      {/* Structural side kink shelves — per module, per active side diagonal. */}
+      {(diagonalSide === 'left' || diagonalSide === 'both') && modules.map((m, i) => {
+        const isConsumed = i > 0 && modules[i - 1].span === 2
+        if (isConsumed) return null
+        return (
+          <StructuralSideKinkShelf
+            key={`side-kink-left-${m.slotIndex}`}
+            isStructural
+            slotIndex={m.slotIndex}
+            span={m.span}
+            side="left"
+            diagParams={diagParams}
+            hasDoor={m.hasDoor}
+            buitenkantMaterialId={m.buitenkantMaterialId}
+            binnenkantMaterialId={m.binnenkantMaterialId}
+          />
+        )
+      })}
+      {(diagonalSide === 'right' || diagonalSide === 'both') && modules.map((m, i) => {
+        const isConsumed = i > 0 && modules[i - 1].span === 2
+        if (isConsumed) return null
+        return (
+          <StructuralSideKinkShelf
+            key={`side-kink-right-${m.slotIndex}`}
+            isStructural
+            slotIndex={m.slotIndex}
+            span={m.span}
+            side="right"
+            diagParams={diagParams}
             hasDoor={m.hasDoor}
             buitenkantMaterialId={m.buitenkantMaterialId}
             binnenkantMaterialId={m.binnenkantMaterialId}

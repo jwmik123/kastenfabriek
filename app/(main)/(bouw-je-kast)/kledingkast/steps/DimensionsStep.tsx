@@ -248,7 +248,7 @@ export default function DimensionsStep() {
 
       {/* ── Section 1: Plaatsing ── */}
       <section className="space-y-5">
-        <SectionHeading>Plaatsing</SectionHeading>
+        {/* <SectionHeading>Plaatsing</SectionHeading> */}
         <div className="grid grid-cols-2 gap-2">
           {PLACEMENT_OPTIONS.map((opt) => (
             <button
@@ -272,7 +272,7 @@ export default function DimensionsStep() {
 
       {/* ── Section 2: Afmetingen ── */}
       <section className="space-y-5">
-        <SectionHeading>Afmetingen</SectionHeading>
+        {/* <SectionHeading>Afmetingen</SectionHeading> */}
 
         <DimensionInput
           label="Breedte"

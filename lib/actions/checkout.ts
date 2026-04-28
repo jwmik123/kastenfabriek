@@ -118,23 +118,24 @@ export async function createCheckoutSession(
     }
   );
 
-  if (coupon && discountCents > 0) {
-    lineItems.push({
-      price_data: {
-        currency: "eur",
-        product_data: { name: `Korting (${coupon.couponCode})` },
-        unit_amount: -discountCents,
-      },
-      quantity: 1,
-    });
-  }
-
   const baseUrl = process.env.NEXT_PUBLIC_BETTER_AUTH_URL || "http://localhost:3000";
+
+  let stripeDiscounts: Stripe.Checkout.SessionCreateParams.Discount[] | undefined;
+  if (coupon && discountCents > 0) {
+    const stripeCoupon = await stripe.coupons.create({
+      amount_off: discountCents,
+      currency: "eur",
+      duration: "once",
+      name: `Korting (${coupon.couponCode})`,
+    });
+    stripeDiscounts = [{ coupon: stripeCoupon.id }];
+  }
 
   // Create Stripe Checkout session
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
     line_items: lineItems,
+    ...(stripeDiscounts && { discounts: stripeDiscounts }),
     success_url: `${baseUrl}/order/${orderId}?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${baseUrl}/checkout`,
     metadata: { orderId, userId: user.id },
