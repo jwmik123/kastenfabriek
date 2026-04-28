@@ -3,7 +3,7 @@
 import { useClosetStore } from '../store'
 import { MATERIALS } from '../materials'
 import { PricingEngine } from '@/lib/configurator/pricing-engine'
-import type { FullPricingData } from '@/types/configurator-pricing'
+import type { FullPricingData, ModuleLayout } from '@/types/configurator-pricing'
 import type { ModuleSlot } from '../store'
 
 export interface DebugPricingGlobal {
@@ -14,6 +14,36 @@ export interface DebugPricingGlobal {
   installationCost: number
   subtotal: number
   grandTotal: number
+}
+
+export interface DebugSlotRow {
+  slotIndex: number
+  isEmpty: boolean
+  layoutId: number | null
+  layoutName: string | null
+  pricingTier: 'single' | 'double' | null
+  interiorCost: number
+  hasDoor: boolean
+  doorVariant: 'standard' | 'veneer' | null
+  doorCount: number
+  doorCost: number
+  handleCost: number
+  powerHoleCost: number
+  slotSubtotal: number
+}
+
+export interface DebugTopCabinetRow {
+  doorCount: number
+  doorVariant: 'small'
+  doorCost: number
+  handleCost: number
+  subtotal: number
+}
+
+export interface DebugPricingResult {
+  slots: DebugSlotRow[]
+  topCabinet: DebugTopCabinetRow | null
+  global: DebugPricingGlobal
 }
 
 export function computeDebugGlobal(params: {
@@ -77,7 +107,100 @@ export function computeDebugGlobal(params: {
   }
 }
 
-export function useDebugPricing(): DebugPricingGlobal | null {
+export function computeDebugSlots(params: {
+  pricingData: FullPricingData
+  modules: ModuleSlot[]
+  moduleCount: number
+  buitenkantMaterialId: string
+  doorHandleId: string
+  moduleLayouts: ModuleLayout[]
+  hasTopCabinet: boolean
+}): { slots: DebugSlotRow[]; topCabinet: DebugTopCabinetRow | null } {
+  const { pricingData, modules, moduleCount, buitenkantMaterialId, doorHandleId, moduleLayouts, hasTopCabinet } = params
+  const engine = new PricingEngine(pricingData)
+  const handlePrice = engine.getHandlePrice(doorHandleId)
+  const powerHolePrice = engine.getAccessoryPrice('power-cable-holes')
+
+  const slots: DebugSlotRow[] = modules.map((m) => {
+    if (m.layoutId === null) {
+      return {
+        slotIndex: m.slotIndex,
+        isEmpty: true,
+        layoutId: null,
+        layoutName: null,
+        pricingTier: null,
+        interiorCost: 0,
+        hasDoor: false,
+        doorVariant: null,
+        doorCount: 0,
+        doorCost: 0,
+        handleCost: 0,
+        powerHoleCost: 0,
+        slotSubtotal: 0,
+      }
+    }
+
+    const pricingTier = m.span === 2 ? 'double' : 'single'
+    let interiorCost = 0
+    try {
+      interiorCost = engine.getModulePrice(m.layoutId, pricingTier)
+    } catch { /* unknown layout — cost stays 0 */ }
+
+    const layoutEntry = moduleLayouts.find((l) => l.layoutId === m.layoutId)
+    const layoutName = layoutEntry?.name ?? null
+
+    let doorVariant: 'standard' | 'veneer' | null = null
+    let doorCount = 0
+    let doorCost = 0
+    let handleCost = 0
+
+    if (m.hasDoor) {
+      const effectiveMaterialId = m.buitenkantMaterialId ?? buitenkantMaterialId
+      const material = MATERIALS.find((mat) => mat.id === effectiveMaterialId)
+      doorVariant = material?.type === 'texture' ? 'veneer' : 'standard'
+      doorCount = m.span === 2 ? 2 : 1
+      doorCost = engine.getDoorPrice(doorVariant) * doorCount
+      handleCost = handlePrice * doorCount
+    }
+
+    const powerHoleCost = m.hasPowerHole ? powerHolePrice : 0
+    const slotSubtotal = interiorCost + doorCost + handleCost + powerHoleCost
+
+    return {
+      slotIndex: m.slotIndex,
+      isEmpty: false,
+      layoutId: m.layoutId,
+      layoutName,
+      pricingTier,
+      interiorCost,
+      hasDoor: m.hasDoor,
+      doorVariant,
+      doorCount,
+      doorCost,
+      handleCost,
+      powerHoleCost,
+      slotSubtotal,
+    }
+  })
+
+  let topCabinet: DebugTopCabinetRow | null = null
+  if (hasTopCabinet) {
+    const doorCount = moduleCount
+    const doorCost = doorCount * engine.getDoorPrice('small')
+    const handleCost = doorCount * handlePrice
+    topCabinet = {
+      doorCount,
+      doorVariant: 'small',
+      doorCost,
+      handleCost,
+      subtotal: doorCost + handleCost,
+    }
+  }
+
+  return { slots, topCabinet }
+}
+
+export function useDebugPricing(): DebugPricingResult | null {
   const modules = useClosetStore((s) => s.modules)
   const moduleCount = useClosetStore((s) => s.moduleCount)
   const pricingData = useClosetStore((s) => s.pricingData)
@@ -85,16 +208,31 @@ export function useDebugPricing(): DebugPricingGlobal | null {
   const doorHandleId = useClosetStore((s) => s.doorHandleId)
   const lightStripsEnabled = useClosetStore((s) => s.lightStripsEnabled)
   const needsTopCabinet = useClosetStore((s) => s.needsTopCabinet)
+  const moduleLayouts = useClosetStore((s) => s.moduleLayouts)
 
   if (!pricingData) return null
 
-  return computeDebugGlobal({
+  const hasTopCabinet = needsTopCabinet()
+
+  const global = computeDebugGlobal({
     pricingData,
     modules,
     moduleCount,
     buitenkantMaterialId,
     doorHandleId,
     lightStripsEnabled,
-    hasTopCabinet: needsTopCabinet(),
+    hasTopCabinet,
   })
+
+  const { slots, topCabinet } = computeDebugSlots({
+    pricingData,
+    modules,
+    moduleCount,
+    buitenkantMaterialId,
+    doorHandleId,
+    moduleLayouts,
+    hasTopCabinet,
+  })
+
+  return { slots, topCabinet, global }
 }

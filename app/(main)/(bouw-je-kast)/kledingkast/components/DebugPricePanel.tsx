@@ -4,8 +4,79 @@ import { useState, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useClosetStore } from '../store'
 import { useDebugPricing } from '../hooks/useDebugPricing'
+import type { DebugSlotRow, DebugTopCabinetRow } from '../hooks/useDebugPricing'
 
 const fmt = new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 })
+
+function SlotRow({ row }: { row: DebugSlotRow }) {
+  if (row.isEmpty) {
+    return (
+      <div className="py-1 border-b border-border/30">
+        <div className="flex items-center gap-1 text-muted-foreground/50">
+          <span className="font-mono text-[10px] w-4 shrink-0">{row.slotIndex}</span>
+          <span className="italic">Leeg</span>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="py-1 border-b border-border/30">
+      <div className="flex items-center gap-1 font-mono">
+        <span className="text-[10px] w-4 shrink-0 text-muted-foreground">{row.slotIndex}</span>
+        <span className="font-semibold text-foreground truncate">{row.layoutName ?? `#${row.layoutId}`}</span>
+        <span className="ml-auto text-muted-foreground text-[10px]">{row.pricingTier}</span>
+        <span className="font-semibold">{fmt.format(row.slotSubtotal)}</span>
+      </div>
+      <div className="pl-5 flex flex-col gap-px text-muted-foreground text-[10px] font-mono">
+        <div className="flex justify-between">
+          <span>interieur</span>
+          <span>{fmt.format(row.interiorCost)}</span>
+        </div>
+        {row.hasDoor && (
+          <div className="flex justify-between">
+            <span>deuren ({row.doorCount}× {row.doorVariant})</span>
+            <span>{fmt.format(row.doorCost)}</span>
+          </div>
+        )}
+        {row.hasDoor && (
+          <div className="flex justify-between">
+            <span>greep/mech. ({row.doorCount}×)</span>
+            <span>{fmt.format(row.handleCost)}</span>
+          </div>
+        )}
+        {row.powerHoleCost > 0 && (
+          <div className="flex justify-between">
+            <span>stekkerhole</span>
+            <span>{fmt.format(row.powerHoleCost)}</span>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function TopCabinetRow({ row }: { row: DebugTopCabinetRow }) {
+  return (
+    <div className="py-1 border-b border-border/30">
+      <div className="flex items-center gap-1 font-mono">
+        <span className="text-[10px] w-4 shrink-0 text-muted-foreground">↑</span>
+        <span className="font-semibold text-foreground">Bovenkast</span>
+        <span className="ml-auto font-semibold">{fmt.format(row.subtotal)}</span>
+      </div>
+      <div className="pl-5 flex flex-col gap-px text-muted-foreground text-[10px] font-mono">
+        <div className="flex justify-between">
+          <span>deuren ({row.doorCount}× {row.doorVariant})</span>
+          <span>{fmt.format(row.doorCost)}</span>
+        </div>
+        <div className="flex justify-between">
+          <span>greep/mech. ({row.doorCount}×)</span>
+          <span>{fmt.format(row.handleCost)}</span>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function DebugPricePanel() {
   const searchParams = useSearchParams()
@@ -54,34 +125,42 @@ export default function DebugPricePanel() {
         </span>
       </div>
       <div className="overflow-y-auto flex-1 px-3 py-2 text-muted-foreground">
-        {/* body populated by later issues */}
-        <span className="text-[10px]">Per-module breakdown coming soon.</span>
+        {pricing ? (
+          <>
+            {pricing.slots.map((row) => (
+              <SlotRow key={row.slotIndex} row={row} />
+            ))}
+            {pricing.topCabinet && <TopCabinetRow row={pricing.topCabinet} />}
+          </>
+        ) : (
+          <span className="text-[10px]">Prijsdata laden…</span>
+        )}
       </div>
       {pricing && (
         <div className="border-t border-border px-3 py-2 bg-muted/40 flex flex-col gap-0.5 font-mono">
           <div className="flex justify-between text-muted-foreground">
             <span>
-              {pricing.ledCost > 0
-                ? `LED strips (${pricing.ledModuleCount} mod.)`
+              {pricing.global.ledCost > 0
+                ? `LED strips (${pricing.global.ledModuleCount} mod.)`
                 : 'LED strips'}
             </span>
-            <span>{fmt.format(pricing.ledCost)}</span>
+            <span>{fmt.format(pricing.global.ledCost)}</span>
           </div>
           <div className="flex justify-between text-muted-foreground">
             <span>Bezorging</span>
-            <span>{fmt.format(pricing.deliveryCost)}</span>
+            <span>{fmt.format(pricing.global.deliveryCost)}</span>
           </div>
           <div className="flex justify-between text-muted-foreground">
-            <span>Montage{pricing.installationTierName ? ` (${pricing.installationTierName})` : ''}</span>
-            <span>{fmt.format(pricing.installationCost)}</span>
+            <span>Montage{pricing.global.installationTierName ? ` (${pricing.global.installationTierName})` : ''}</span>
+            <span>{fmt.format(pricing.global.installationCost)}</span>
           </div>
           <div className="flex justify-between text-muted-foreground border-t border-border/50 mt-0.5 pt-0.5">
             <span>Subtotaal</span>
-            <span>{fmt.format(pricing.subtotal)}</span>
+            <span>{fmt.format(pricing.global.subtotal)}</span>
           </div>
           <div className="flex justify-between font-semibold text-foreground">
             <span>Totaal</span>
-            <span>{fmt.format(pricing.grandTotal)}</span>
+            <span>{fmt.format(pricing.global.grandTotal)}</span>
           </div>
         </div>
       )}
