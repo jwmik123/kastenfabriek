@@ -8,10 +8,10 @@ import { ClosetMaterialProvider } from '../../_shared/materials/ClosetMaterial'
 import { getDiagHeightAt, getBackDiagHeightAtZ } from './diagonalUtils'
 import type { DiagParams } from './diagonalUtils'
 import { trapNaN, trapGeo } from '@/utils/debugGeometry'
-import ClosetCorpus from './ClosetCorpus'
+import ClosetCorpus from '../../_shared/three/ClosetCorpus'
 import TopCabinet from './TopCabinet'
 import OnderstelPlinth from './OnderstelPlinth'
-import Module from './Module'
+import Module from '../../_shared/three/Module'
 import StructuralKinkShelf from './StructuralKinkShelf'
 import StructuralSideKinkShelf from './StructuralSideKinkShelf'
 import InstancedLightStrips from './InstancedLightStrips'
@@ -211,7 +211,7 @@ export default function ClosetScene() {
 
   return (
     <ClosetMaterialProvider>
-      <ClosetCorpus />
+      <ClosetCorpus diagParams={diagParams} />
       {lightStripsEnabled && doorsOpen && <InstancedLightStrips diagParams={diagParams} />}
       <TopCabinet />
       <OnderstelPlinth />
