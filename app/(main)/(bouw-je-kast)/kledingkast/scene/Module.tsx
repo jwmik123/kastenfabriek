@@ -122,9 +122,10 @@ export default function Module({ index, layoutId, hasDoor, span, diagParams: p }
   const depth        = useClosetStore((s) => s.depth) / 100
   const moduleCount  = useClosetStore((s) => s.moduleCount)
   const width        = useClosetStore((s) => s.width) / 100
-  const doorsOpen    = useClosetStore((s) => s.doorsOpen)
-  const hoveredSlot  = useClosetStore((s) => s.hoveredSlot)
-  const doorHandleId = useClosetStore((s) => s.doorHandleId)
+  const doorsOpen           = useClosetStore((s) => s.doorsOpen)
+  const hoveredSlot         = useClosetStore((s) => s.hoveredSlot)
+  const doorHandleId        = useClosetStore((s) => s.doorHandleId)
+  const doorsExtendToFloor  = useClosetStore((s) => s.doorsExtendToFloor)
   const moduleSlot   = useClosetStore((s) => s.modules.find((m) => m.slotIndex === index))
   const needsTop     = useClosetStore((s) => s.needsTopCabinet())
 
@@ -483,6 +484,7 @@ export default function Module({ index, layoutId, hasDoor, span, diagParams: p }
           doorsOpen={doorsOpen}
           doorHandleId={doorHandleId}
           mirror={mirrorDoor}
+          extendToFloor={doorsExtendToFloor}
           topProfile={isBackDiag ? bdDoorProfile : doorProfile}
         />
       )}
@@ -495,6 +497,7 @@ export default function Module({ index, layoutId, hasDoor, span, diagParams: p }
             moduleDepth={moduleDepth}
             doorsOpen={doorsOpen}
             doorHandleId={doorHandleId}
+            extendToFloor={doorsExtendToFloor}
             topProfile={isBackDiag ? bdDoorProfile : leftDoorProfile}
           />
           <group position={[slotW, 0, 0]}>
@@ -506,6 +509,7 @@ export default function Module({ index, layoutId, hasDoor, span, diagParams: p }
               doorsOpen={doorsOpen}
               doorHandleId={doorHandleId}
               mirror
+              extendToFloor={doorsExtendToFloor}
               topProfile={isBackDiag ? bdDoorProfile : rightDoorProfile}
             />
           </group>

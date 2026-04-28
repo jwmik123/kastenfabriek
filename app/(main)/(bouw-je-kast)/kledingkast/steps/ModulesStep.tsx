@@ -33,8 +33,10 @@ export default function ModulesStep() {
   const minModules     = useClosetStore((s) => s.minModules())
   const maxModules     = useClosetStore((s) => s.maxModules())
   const moduleWidthCm  = useClosetStore((s) => s.moduleWidthCm())
-  const selectedSlot   = useClosetStore((s) => s.selectedSlot)
-  const setSelectedSlot = useClosetStore((s) => s.setSelectedSlot)
+  const selectedSlot        = useClosetStore((s) => s.selectedSlot)
+  const setSelectedSlot     = useClosetStore((s) => s.setSelectedSlot)
+  const doorsExtendToFloor  = useClosetStore((s) => s.doorsExtendToFloor)
+  const setDoorsExtendToFloor = useClosetStore((s) => s.setDoorsExtendToFloor)
 
   const diagonalSide          = useClosetStore((s) => s.diagonalSide)
   const leftDiagStartHeight   = useClosetStore((s) => s.leftDiagStartHeight)
@@ -231,7 +233,7 @@ export default function ModulesStep() {
                             'w-full flex items-center justify-center rounded-md transition-all py-2',
                             isActive
                               ? 'bg-primary text-primary-foreground border-2 border-primary'
-                              : 'bg-background text-foreground border border-border/50 hover:border-border',
+                              : 'bg-background text-foreground border border-border/50 hover:border-primary',
                           )}
                         >
                           {LayoutSvg && <LayoutSvg className="w-1/4 h-auto" />}
@@ -244,6 +246,20 @@ export default function ModulesStep() {
             )}
           </div>
         )}
+      </section>
+
+      {/* ── Section 3: Deuren tot de vloer ── */}
+      <section className="space-y-5">
+        <SectionHeading>Deuren tot de vloer</SectionHeading>
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-muted-foreground">
+            Deuren reiken tot 2 cm boven de vloer
+          </span>
+          <Toggle
+            checked={doorsExtendToFloor}
+            onCheckedChange={setDoorsExtendToFloor}
+          />
+        </div>
       </section>
 
     </div>

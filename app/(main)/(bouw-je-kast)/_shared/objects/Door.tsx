@@ -13,6 +13,8 @@ const MODULE_WALL = 0.018
 const HINGE_EDGE_OFFSET = 0.20
 const HINGE_PAIR_SPACING = 0.45
 const SPACE = 0.001
+// MODULE_FLOOR_Y = ONDERSTEL_HEIGHT (0.108) + ONDERSTEL_GAP (0.010)
+const MODULE_FLOOR_Y = 0.118
 
 interface DoorProps {
   moduleHeight: number  // min(leftH, rightH) — used for handle positioning
@@ -21,6 +23,7 @@ interface DoorProps {
   doorsOpen: boolean
   doorHandleId: string
   mirror?: boolean
+  extendToFloor?: boolean
   /**
    * Ceiling profile in door-local coordinates: x runs 0..slotW, y is the
    * ceiling height at that x. Must include both endpoints; may include kink
@@ -32,15 +35,15 @@ interface DoorProps {
 
 /**
  * Build the 2D door face shape in the XY plane.
- * Bottom edge is flat; top edge follows topProfile (may have kink points).
+ * Bottom edge is flat at bottomY; top edge follows topProfile (may have kink points).
  */
-function buildDoorShape(slotW: number, topProfile: Array<{ x: number; y: number }>): THREE.Shape {
+function buildDoorShape(slotW: number, topProfile: Array<{ x: number; y: number }>, bottomY: number): THREE.Shape {
   const shape = new THREE.Shape()
   const w = slotW - 2 * SPACE
 
   // Bottom edge: left → right
-  shape.moveTo(SPACE, SPACE)
-  shape.lineTo(SPACE + w, SPACE)
+  shape.moveTo(SPACE, bottomY)
+  shape.lineTo(SPACE + w, bottomY)
 
   // Top edge: right → left through profile points
   for (let i = topProfile.length - 1; i >= 0; i--) {
@@ -59,6 +62,7 @@ export default function Door({
   doorsOpen,
   doorHandleId,
   mirror = false,
+  extendToFloor = false,
   topProfile,
 }: DoorProps) {
   const pivotRef = useRef<any>(null)
@@ -67,8 +71,12 @@ export default function Door({
   const leftH  = topProfile[0].y
   const rightH = topProfile[topProfile.length - 1].y
 
+  // When extendToFloor, bottom edge drops to world y=0.02 (2 cm above floor).
+  // Module group sits at y=MODULE_FLOOR_Y, so door-local bottomY = 0.02 - MODULE_FLOOR_Y.
+  const bottomY = extendToFloor ? 0.02 - MODULE_FLOOR_Y : SPACE
+
   const doorGeometry = useMemo(() => {
-    const shape = buildDoorShape(slotW, topProfile)
+    const shape = buildDoorShape(slotW, topProfile, bottomY)
     const geo = new THREE.ExtrudeGeometry(trapShape(shape, `Door-slotW${slotW.toFixed(3)}`), {
       depth: DOOR_DEPTH,
       bevelEnabled: false,
@@ -77,7 +85,7 @@ export default function Door({
     return trapGeo(geo, `Door-geo-slotW${slotW.toFixed(3)}`)
   // topProfile is a memoized array from Module — reference is stable between renders
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slotW, topProfile])
+  }, [slotW, topProfile, bottomY])
 
   // Hinge Y positions — clamped to the height at the hinge's edge (left hinges → leftH, right → rightH)
   const hingeEdgeH = mirror ? rightH : leftH
