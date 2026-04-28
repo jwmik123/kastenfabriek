@@ -32,7 +32,7 @@ export default function DoorHandlesStep() {
     price: pushToOpenPrice,
   }
 
-  const allItems: HandleItem[] = [...handles, pushToOpenItem]
+  const allItems: HandleItem[] = ([...handles].sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true })) as HandleItem[]).concat(pushToOpenItem)
 
   return (
     <div className="space-y-7">
@@ -50,14 +50,14 @@ export default function DoorHandlesStep() {
           <button
             onClick={() => setDoorHandleId(item.id)}
             className={cn(
-              'flex flex-col items-center gap-2 p-3 rounded-md border-2 transition-all text-center w-full',
+              'flex flex-col w-full aspect-square rounded-md border-2 overflow-hidden transition-all',
               isActive
                 ? 'border-foreground bg-primary text-primary-foreground'
                 : 'border-border bg-background text-foreground hover:border-foreground/40 hover:bg-muted',
             )}
           >
-            {item.imageUrl && (
-              <div className="relative w-full aspect-square rounded overflow-hidden bg-muted">
+            <div className="relative flex-1 min-h-0 w-full bg-muted">
+              {item.imageUrl ? (
                 <Image
                   src={item.imageUrl}
                   alt={item.nameNl ?? item.name}
@@ -65,12 +65,20 @@ export default function DoorHandlesStep() {
                   className="object-contain"
                   sizes="(max-width: 768px) 33vw, 120px"
                 />
-              </div>
-            )}
-            <span className="text-sm font-medium leading-tight">{item.nameNl ?? item.name}</span>
-            <span className={cn('text-xs', isActive ? 'text-primary-foreground/70' : 'text-muted-foreground')}>
-              {formatter.format(item.price)} / deur
-            </span>
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center px-2">
+                  <span className="text-xs font-medium text-center leading-tight">{item.nameNl ?? item.name}</span>
+                </div>
+              )}
+            </div>
+            <div className="px-1.5 py-1 text-center shrink-0">
+              {item.imageUrl && (
+                <p className="text-[10px] font-medium leading-tight truncate">{item.nameNl ?? item.name}</p>
+              )}
+              <p className={cn('text-[10px]', isActive ? 'text-primary-foreground/70' : 'text-muted-foreground')}>
+                {formatter.format(item.price)} / deur
+              </p>
+            </div>
           </button>
         )}
       />

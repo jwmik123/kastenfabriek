@@ -583,6 +583,112 @@ function BackDiagTCSlot({
 }
 
 // ---------------------------------------------------------------------------
+// TC LED strip constants (match InstancedLightStrips.tsx)
+// ---------------------------------------------------------------------------
+const STRIP_DEPTH_FROM_FRONT = 0.10
+const STRIP_WIDTH  = 0.015
+const STRIP_COLOR  = '#ffad5c'
+const WALL_OFFSET  = 0.001
+const STRIP_MARGIN = 0.01
+
+interface TCStripInstance {
+  position: THREE.Vector3
+  rotY: number
+  height: number
+}
+
+interface TCLightStripsProps {
+  moduleCount: number
+  slotW: number
+  moduleDepth: number
+  innerW: number
+  p: DiagParams
+  mainH: number
+  ceilH: number
+  doorCeilH: number
+  tcBack_local: number
+  tcSlotDepth: number
+}
+
+function TCLightStrips({
+  moduleCount, slotW, moduleDepth, innerW, p, mainH, ceilH,
+  doorCeilH, tcBack_local, tcSlotDepth,
+}: TCLightStripsProps) {
+  const lightStripsEnabled = useClosetStore((s) => s.lightStripsEnabled)
+  const doorsOpen          = useClosetStore((s) => s.doorsOpen)
+  const meshRef = useRef<THREE.InstancedMesh>(null!)
+
+  const strips = useMemo<TCStripInstance[]>(() => {
+    if (!lightStripsEnabled || !doorsOpen) return []
+
+    const stripZ = moduleDepth - STRIP_DEPTH_FROM_FRONT
+    const result: TCStripInstance[] = []
+
+    for (let i = 0; i < moduleCount; i++) {
+      const x = -innerW / 2 + i * slotW
+
+      let leftH: number
+      let rightH: number
+      if (p.backDiagonal) {
+        if (tcSlotDepth < STRIP_DEPTH_FROM_FRONT + 0.01) continue
+        leftH = rightH = doorCeilH
+      } else {
+        const lx = CORPUS_WALL + i * slotW
+        const rx = lx + slotW
+        leftH  = tcWallHeightAt(lx, p, mainH, ceilH)
+        rightH = tcWallHeightAt(rx, p, mainH, ceilH)
+      }
+
+      const leftStripH = leftH - STRIP_MARGIN * 2
+      if (leftStripH >= 0.01) {
+        result.push({
+          position: new THREE.Vector3(x + WALL + WALL_OFFSET, STRIP_MARGIN + leftStripH / 2, stripZ),
+          rotY: Math.PI / 2,
+          height: leftStripH,
+        })
+      }
+      const rightStripH = rightH - STRIP_MARGIN * 2
+      if (rightStripH >= 0.01) {
+        result.push({
+          position: new THREE.Vector3(x + slotW - WALL - WALL_OFFSET, STRIP_MARGIN + rightStripH / 2, stripZ),
+          rotY: -Math.PI / 2,
+          height: rightStripH,
+        })
+      }
+    }
+
+    return result
+  }, [lightStripsEnabled, doorsOpen, moduleCount, slotW, moduleDepth, innerW, p, mainH, ceilH, doorCeilH, tcBack_local, tcSlotDepth])
+
+  useEffect(() => {
+    const mesh = meshRef.current
+    if (!mesh) return
+    const q = new THREE.Quaternion()
+    const matrix = new THREE.Matrix4()
+    strips.forEach((s, i) => {
+      q.setFromEuler(new THREE.Euler(0, s.rotY, 0))
+      matrix.compose(s.position, q, new THREE.Vector3(STRIP_WIDTH, s.height, 1))
+      mesh.setMatrixAt(i, matrix)
+    })
+    mesh.instanceMatrix.needsUpdate = true
+  }, [strips])
+
+  if (strips.length === 0) return null
+
+  return (
+    <instancedMesh ref={meshRef} args={[undefined, undefined, strips.length]}>
+      <planeGeometry args={[1, 1]} />
+      <meshStandardMaterial
+        color={STRIP_COLOR}
+        emissive={STRIP_COLOR}
+        emissiveIntensity={8}
+        side={THREE.DoubleSide}
+      />
+    </instancedMesh>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Main component
 // ---------------------------------------------------------------------------
 export default function TopCabinet() {
@@ -878,6 +984,19 @@ export default function TopCabinet() {
           </group>
         )
       })}
+
+      <TCLightStrips
+        moduleCount={moduleCount}
+        slotW={slotW}
+        moduleDepth={moduleDepth}
+        innerW={innerW}
+        p={p}
+        mainH={mainH}
+        ceilH={ceilH}
+        doorCeilH={doorCeilH}
+        tcBack_local={tcBack_local}
+        tcSlotDepth={tcSlotDepth}
+      />
     </group>
   )
 }

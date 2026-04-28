@@ -391,7 +391,7 @@ export default function RoomWalls() {
   // which differs between left/right walls. Cost is negligible for 4 panels.
   const wallMat = useMemo(
     () => new THREE.MeshStandardMaterial({
-      color: '#f5f0e8',
+      color: '#ffffff',
       roughness: 0.9,
       metalness: 0,
       side: THREE.FrontSide,
@@ -399,7 +399,7 @@ export default function RoomWalls() {
     [],
   )
   const floorMat = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: '#efe9d7', roughness: 0.9, metalness: 0 }),
+    () => new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.9, metalness: 0 }),
     [],
   )
 

@@ -6,6 +6,7 @@ import { useRef, useEffect, useState } from 'react'
 import gsap from 'gsap'
 import type { ModuleLayoutConfig } from './moduleLayouts'
 import { useClosetMaterialInstance, useChromeMaterialInstance } from '../../_shared/materials/ClosetMaterial'
+import { useClosetStore } from '../store'
 
 // All nodes in module GLBs carry a -90° Y rotation.
 // After that rotation: local X → world Z (depth), local Z → world X (width).
@@ -47,6 +48,8 @@ function SpecialElementInner({
   const { scene, animations } = useGLTF(layout.specialElement.glbPath!)
   const closetMaterial = useClosetMaterialInstance(hasDoor ? 'binnenkant' : 'buitenkant')
   const chromeMaterial = useChromeMaterialInstance()
+
+  const doorsOpen = useClosetStore((s) => s.doorsOpen)
 
   const proxyRef = useRef({ t: 0 })
   const hoveredRef = useRef(hovered)
@@ -190,14 +193,14 @@ function SpecialElementInner({
     const duration = action.getClip().duration
     gsap.killTweensOf(proxyRef.current)
     gsap.to(proxyRef.current, {
-      t: hovered ? duration : 0,
+      t: hovered && doorsOpen ? duration : 0,
       duration: 0.6,
       ease: 'power2.inOut',
       onUpdate: () => {
         action.time = Math.max(0, Math.min(duration, proxyRef.current.t))
       },
     })
-  }, [hovered, actions])
+  }, [hovered, doorsOpen, actions])
 
   return (
     <group position={[offsetX, positionY, offsetZ]}>

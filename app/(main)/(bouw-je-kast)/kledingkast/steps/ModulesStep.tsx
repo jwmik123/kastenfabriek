@@ -145,9 +145,9 @@ export default function ModulesStep() {
       {/* ── Section 2: Vak instellen ── */}
       <section className="space-y-5">
         <div>
-          <SectionHeading>Vak instellen</SectionHeading>
+          {/* <SectionHeading>Vak instellen</SectionHeading> */}
           <p className="text-xs text-muted-foreground/60 mt-1">
-            Selecteer een vak om de indeling aan te passen
+            Selecteer een module om de indeling aan te passen
           </p>
         </div>
 

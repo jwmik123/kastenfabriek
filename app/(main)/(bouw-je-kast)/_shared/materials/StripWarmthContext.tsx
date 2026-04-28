@@ -59,7 +59,7 @@ export function StripWarmthProvider({ children, slotIndex, span, diagParams: p }
 
     let height: number
     if (p.backDiagonal) {
-      height = Math.max(0, Math.min(getBackDiagHeightAtZ(WALL, p), p.mainHeight) - MODULE_FLOOR_Y - WALL)
+      height = Math.max(0, p.mainHeight - MODULE_FLOOR_Y - WALL)
     } else {
       const leftXOuter  = WALL + slotIndex * slotW
       const rightXOuter = WALL + (slotIndex + span) * slotW

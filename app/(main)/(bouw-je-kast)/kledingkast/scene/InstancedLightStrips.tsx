@@ -16,6 +16,7 @@ const MODULE_FLOOR_Y = ONDERSTEL_HEIGHT + ONDERSTEL_GAP
 const STRIP_DEPTH_FROM_FRONT = 0.10
 const STRIP_WIDTH = 0.015
 const STRIP_COLOR = '#ffad5c'
+const STRIP_MARGIN = 0.01
 
 interface StripInstance {
   position: THREE.Vector3
@@ -56,33 +57,36 @@ export default function InstancedLightStrips({ diagParams: p }: Props) {
       const leftXOuter  = WALL + m.slotIndex * slotW
       const rightXOuter = WALL + (m.slotIndex + m.span) * slotW
 
-      let height: number
+      let leftH: number
+      let rightH: number
       if (p.backDiagonal) {
-        height = Math.max(0, Math.min(getBackDiagHeightAtZ(WALL, p), p.mainHeight) - MODULE_FLOOR_Y - WALL)
+        leftH = rightH = Math.max(0, p.mainHeight - MODULE_FLOOR_Y - WALL)
       } else {
-        const leftH  = Math.max(0, getDiagHeightAt(leftXOuter,  p) - MODULE_FLOOR_Y - WALL)
-        const rightH = Math.max(0, getDiagHeightAt(rightXOuter, p) - MODULE_FLOOR_Y - WALL)
-        height = Math.min(leftH, rightH)
+        leftH  = Math.max(0, getDiagHeightAt(leftXOuter,  p) - MODULE_FLOOR_Y - WALL)
+        rightH = Math.max(0, getDiagHeightAt(rightXOuter, p) - MODULE_FLOOR_Y - WALL)
       }
-      if (height < 0.01) return
-
-      const cy = MODULE_FLOOR_Y + height / 2
 
       // Left strip — inner face of left wall, facing +X into module
-      result.push({
-        position: new THREE.Vector3(x + MODULE_WALL + WALL_OFFSET, cy, stripZ),
-        rotY: Math.PI / 2,
-        width: STRIP_WIDTH,
-        height,
-      })
+      const leftStripH = leftH - STRIP_MARGIN * 2
+      if (leftStripH >= 0.01) {
+        result.push({
+          position: new THREE.Vector3(x + MODULE_WALL + WALL_OFFSET, MODULE_FLOOR_Y + STRIP_MARGIN + leftStripH / 2, stripZ),
+          rotY: Math.PI / 2,
+          width: STRIP_WIDTH,
+          height: leftStripH,
+        })
+      }
 
       // Right strip — inner face of right wall, facing -X into module
-      result.push({
-        position: new THREE.Vector3(x + moduleWidth - MODULE_WALL - WALL_OFFSET, cy, stripZ),
-        rotY: -Math.PI / 2,
-        width: STRIP_WIDTH,
-        height,
-      })
+      const rightStripH = rightH - STRIP_MARGIN * 2
+      if (rightStripH >= 0.01) {
+        result.push({
+          position: new THREE.Vector3(x + moduleWidth - MODULE_WALL - WALL_OFFSET, MODULE_FLOOR_Y + STRIP_MARGIN + rightStripH / 2, stripZ),
+          rotY: -Math.PI / 2,
+          width: STRIP_WIDTH,
+          height: rightStripH,
+        })
+      }
     })
 
     return result
