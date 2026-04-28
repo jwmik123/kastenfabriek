@@ -14,6 +14,7 @@ import SilhouettePlane from './SilhouettePlane'
 import { MeasurementProjectorLayer, MeasurementsOverlayLayer, type ProjectedMap } from '../components/Measurements'
 import CanvasToolbar from '../components/CanvasToolbar'
 import CanvasPricePanel from '../components/CanvasPricePanel'
+import DebugPricePanel from '../components/DebugPricePanel'
 import { MODULE_LAYOUTS } from './moduleLayouts'
 import PostProcessing from '../../_shared/effects/PostProcessing'
 import WebGPURenderGuard from '../../_shared/effects/WebGPURenderGuard'
@@ -218,6 +219,7 @@ export default function KledingkastCanvas() {
       <MeasurementsOverlayLayer projectedRef={projectedRef} />
       <CanvasToolbar />
       <CanvasPricePanel />
+      <DebugPricePanel />
       <ThreeLoader />
     </div>
   )
