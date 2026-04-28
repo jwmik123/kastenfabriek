@@ -115,11 +115,11 @@ describe('setDepth', () => {
 
 // ─── setModuleLayout ─────────────────────────────────────────────────────────
 
-describe('setModuleLayout — minSlotWidth constraint', () => {
+describe('setModuleLayout — fixed-width washer slots', () => {
   beforeEach(resetStore)
 
-  it('is a no-op when slot width is below layout minSlotWidth', () => {
-    // width=120, moduleCount=2 → slotWidth=60cm < 75cm
+  it('always applies washer layout regardless of current slot width', () => {
+    // width=120, moduleCount=2 → uniform slotWidth=60cm < 75cm, but washer always allowed
     useWasmachinekastStore.setState({
       width: 120,
       moduleCount: 2,
@@ -130,13 +130,12 @@ describe('setModuleLayout — minSlotWidth constraint', () => {
       moduleLayouts: basePricingData.modules,
     })
     useWasmachinekastStore.getState().setModuleLayout(0, 99) // minSlotWidth=75
-    expect(useWasmachinekastStore.getState().modules[0].layoutId).toBeNull()
+    expect(useWasmachinekastStore.getState().modules[0].layoutId).toBe(99)
   })
 
-  it('applies layout when slot width meets minSlotWidth', () => {
-    // width=150, moduleCount=2 → slotWidth=75cm >= 75cm
+  it('sets fixedWidth = minSlotWidth when placing washer layout', () => {
     useWasmachinekastStore.setState({
-      width: 150,
+      width: 120,
       moduleCount: 2,
       modules: [
         { slotIndex: 0, layoutId: null, hasDoor: true, span: 1 },
@@ -145,21 +144,22 @@ describe('setModuleLayout — minSlotWidth constraint', () => {
       moduleLayouts: basePricingData.modules,
     })
     useWasmachinekastStore.getState().setModuleLayout(0, 99)
-    expect(useWasmachinekastStore.getState().modules[0].layoutId).toBe(99)
+    expect(useWasmachinekastStore.getState().modules[0].fixedWidth).toBe(75)
   })
 
-  it('applies layout without minSlotWidth regardless of slot width', () => {
+  it('clears fixedWidth when placing layout without minSlotWidth', () => {
     useWasmachinekastStore.setState({
-      width: 60,
+      width: 120,
       moduleCount: 2,
       modules: [
-        { slotIndex: 0, layoutId: null, hasDoor: true, span: 1 },
+        { slotIndex: 0, layoutId: 99, hasDoor: true, span: 1, fixedWidth: 75 },
         { slotIndex: 1, layoutId: null, hasDoor: true, span: 1 },
       ],
       moduleLayouts: basePricingData.modules,
     })
     useWasmachinekastStore.getState().setModuleLayout(0, 1) // no minSlotWidth
     expect(useWasmachinekastStore.getState().modules[0].layoutId).toBe(1)
+    expect(useWasmachinekastStore.getState().modules[0].fixedWidth).toBeUndefined()
   })
 })
 
@@ -328,5 +328,195 @@ describe('no diagonal fields', () => {
   it('store has no placementType field', () => {
     const s = useWasmachinekastStore.getState() as unknown as Record<string, unknown>
     expect(s.placementType).toBeUndefined()
+  })
+})
+
+// ─── setWasherModule / clearWasherModule ──────────────────────────────────────
+
+describe('setWasherModule / clearWasherModule', () => {
+  beforeEach(resetStore)
+
+  it('setWasherModule sets washerSlotIndex and washerLayoutId', () => {
+    useWasmachinekastStore.setState({
+      modules: [
+        { slotIndex: 0, layoutId: null, hasDoor: true, span: 1 },
+        { slotIndex: 1, layoutId: null, hasDoor: true, span: 1 },
+      ],
+      moduleLayouts: basePricingData.modules,
+    })
+    useWasmachinekastStore.getState().setWasherModule(1, 99)
+    const s = useWasmachinekastStore.getState()
+    expect(s.washerSlotIndex).toBe(1)
+    expect(s.washerLayoutId).toBe(99)
+  })
+
+  it('setWasherModule wires layoutId into the modules array', () => {
+    useWasmachinekastStore.setState({
+      modules: [
+        { slotIndex: 0, layoutId: null, hasDoor: true, span: 1 },
+        { slotIndex: 1, layoutId: null, hasDoor: true, span: 1 },
+      ],
+      moduleLayouts: basePricingData.modules,
+    })
+    useWasmachinekastStore.getState().setWasherModule(0, 99)
+    expect(useWasmachinekastStore.getState().modules[0].layoutId).toBe(99)
+  })
+
+  it('clearWasherModule resets both fields to null', () => {
+    useWasmachinekastStore.setState({ washerSlotIndex: 1, washerLayoutId: 99 })
+    useWasmachinekastStore.getState().clearWasherModule()
+    const s = useWasmachinekastStore.getState()
+    expect(s.washerSlotIndex).toBeNull()
+    expect(s.washerLayoutId).toBeNull()
+  })
+})
+
+// ─── randomFill — washer slot preserved ──────────────────────────────────────
+
+describe('randomFill — washer slot preserved', () => {
+  beforeEach(resetStore)
+
+  it('randomFill never changes layoutId of the module at washerSlotIndex', () => {
+    useWasmachinekastStore.setState({
+      moduleCount: 3,
+      washerSlotIndex: 1,
+      washerLayoutId: 99,
+      modules: [
+        { slotIndex: 0, layoutId: null, hasDoor: true, span: 1 },
+        { slotIndex: 1, layoutId: 99, hasDoor: true, span: 1 },
+        { slotIndex: 2, layoutId: null, hasDoor: true, span: 1 },
+      ],
+      moduleLayouts: basePricingData.modules,
+    })
+    for (let i = 0; i < 20; i++) {
+      useWasmachinekastStore.getState().randomFill()
+      expect(useWasmachinekastStore.getState().modules[1].layoutId).toBe(99)
+    }
+  })
+
+  it('randomFill still fills other slots', () => {
+    useWasmachinekastStore.setState({
+      moduleCount: 2,
+      washerSlotIndex: 0,
+      washerLayoutId: 99,
+      modules: [
+        { slotIndex: 0, layoutId: 99, hasDoor: true, span: 1 },
+        { slotIndex: 1, layoutId: null, hasDoor: true, span: 1 },
+      ],
+      moduleLayouts: basePricingData.modules,
+    })
+    useWasmachinekastStore.getState().randomFill()
+    // slot 1 should have been filled (any layout from the layouts array)
+    expect(useWasmachinekastStore.getState().modules[1].layoutId).not.toBeNull()
+  })
+})
+
+// ─── setModuleCount — washer slot reset ──────────────────────────────────────
+
+describe('setModuleCount — washer slot reset', () => {
+  beforeEach(resetStore)
+
+  it('reducing count so washerSlotIndex >= count clears washer and sets step to 2', () => {
+    useWasmachinekastStore.setState({
+      width: 120,
+      moduleCount: 3,
+      washerSlotIndex: 2,
+      washerLayoutId: 99,
+      step: 3,
+      modules: [
+        { slotIndex: 0, layoutId: null, hasDoor: true, span: 1 },
+        { slotIndex: 1, layoutId: null, hasDoor: true, span: 1 },
+        { slotIndex: 2, layoutId: 99, hasDoor: true, span: 1 },
+      ],
+    })
+    useWasmachinekastStore.getState().setModuleCount(2)
+    const s = useWasmachinekastStore.getState()
+    expect(s.washerSlotIndex).toBeNull()
+    expect(s.washerLayoutId).toBeNull()
+    expect(s.step).toBe(2)
+  })
+
+  it('reducing count that keeps washerSlotIndex valid does not clear washer', () => {
+    useWasmachinekastStore.setState({
+      width: 120,
+      moduleCount: 3,
+      washerSlotIndex: 0,
+      washerLayoutId: 99,
+      step: 3,
+      modules: [
+        { slotIndex: 0, layoutId: 99, hasDoor: true, span: 1 },
+        { slotIndex: 1, layoutId: null, hasDoor: true, span: 1 },
+        { slotIndex: 2, layoutId: null, hasDoor: true, span: 1 },
+      ],
+    })
+    useWasmachinekastStore.getState().setModuleCount(2)
+    const s = useWasmachinekastStore.getState()
+    expect(s.washerSlotIndex).toBe(0)
+    expect(s.washerLayoutId).toBe(99)
+  })
+})
+
+// ─── setWidth — washer slot reset ────────────────────────────────────────────
+
+describe('setWidth — washer slot reset', () => {
+  beforeEach(resetStore)
+
+  it('setWidth forcing moduleCount reduction below washerSlotIndex+1 clears washer', () => {
+    // 3 modules at width=120 (40cm each), washer at slot 2
+    // shrink width to 60 → maxModules = floor(60/15)=4 but minModules=ceil(60/65)=1
+    // actual: constraints minWidth=15 → maxModules=floor(60/15)=4, but we force to 2 via setModuleCount
+    // Easier: set width=60, minW=30 → maxModules=floor(60/30)=2, washerSlotIndex=2 → clears
+    useWasmachinekastStore.setState({
+      width: 120,
+      moduleCount: 3,
+      washerSlotIndex: 2,
+      washerLayoutId: 99,
+      step: 3,
+      modules: [
+        { slotIndex: 0, layoutId: null, hasDoor: true, span: 1 },
+        { slotIndex: 1, layoutId: null, hasDoor: true, span: 1 },
+        { slotIndex: 2, layoutId: 99, hasDoor: true, span: 1 },
+      ],
+      constraints: {
+        ...baseConstraints,
+        singleCorpus: { ...baseConstraints.singleCorpus, minWidth: 30, maxWidth: 65 },
+      },
+    })
+    // width=60, maxModules=floor(60/30)=2 → setModuleCount(2) called internally → washerSlotIndex=2 >= 2 → clear
+    useWasmachinekastStore.getState().setWidth(60)
+    const s = useWasmachinekastStore.getState()
+    expect(s.washerSlotIndex).toBeNull()
+    expect(s.washerLayoutId).toBeNull()
+    expect(s.step).toBe(2)
+  })
+})
+
+// ─── restoreConfig — washer fields ───────────────────────────────────────────
+
+describe('restoreConfig — washer fields', () => {
+  beforeEach(resetStore)
+
+  it('restores washerSlotIndex and washerLayoutId from snapshot', () => {
+    const snap = { ...baseSnapshot, washerSlotIndex: 1, washerLayoutId: 99 }
+    useWasmachinekastStore.getState().restoreConfig(snap)
+    const s = useWasmachinekastStore.getState()
+    expect(s.washerSlotIndex).toBe(1)
+    expect(s.washerLayoutId).toBe(99)
+  })
+
+  it('does not restore washerSlotIndex that exceeds moduleCount', () => {
+    // moduleCount=2, washerSlotIndex=5 → invalid, should default to null
+    const snap = { ...baseSnapshot, moduleCount: 2, washerSlotIndex: 5, washerLayoutId: 99 }
+    useWasmachinekastStore.getState().restoreConfig(snap)
+    const s = useWasmachinekastStore.getState()
+    expect(s.washerSlotIndex).toBeNull()
+    expect(s.washerLayoutId).toBeNull()
+  })
+
+  it('defaults washerSlotIndex and washerLayoutId to null for old snapshots', () => {
+    useWasmachinekastStore.getState().restoreConfig(baseSnapshot)
+    const s = useWasmachinekastStore.getState()
+    expect(s.washerSlotIndex).toBeNull()
+    expect(s.washerLayoutId).toBeNull()
   })
 })
