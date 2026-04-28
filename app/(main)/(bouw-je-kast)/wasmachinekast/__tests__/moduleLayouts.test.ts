@@ -64,7 +64,7 @@ describe('isLayoutAvailable', () => {
 })
 
 describe('getWasmModuleLayouts', () => {
-  it('includes sanity layouts', () => {
+  it('includes non-washer sanity layouts', () => {
     const result = getWasmModuleLayouts([baseLayout])
     expect(result.find((l) => l.layoutId === 1)).toBeDefined()
   })
@@ -79,10 +79,38 @@ describe('getWasmModuleLayouts', () => {
     expect(result.find((l) => l.layoutId === WASHER_DOUBLE.layoutId)).toBeDefined()
   })
 
-  it('washer layouts come after sanity layouts', () => {
+  it('washer layouts come after non-washer sanity layouts', () => {
     const result = getWasmModuleLayouts([baseLayout])
     const sanityIdx = result.findIndex((l) => l.layoutId === 1)
     const washerIdx = result.findIndex((l) => l.layoutId === WASHER_SINGLE.layoutId)
     expect(washerIdx).toBeGreaterThan(sanityIdx)
+  })
+
+  it('deduplicates: Sanity layout with same ID as washer is not included twice', () => {
+    const sanityWasher: ModuleLayout = {
+      ...baseLayout,
+      layoutId: WASHER_SINGLE.layoutId,
+      name: 'Sanity washer',
+      priceSingle: 99,
+      priceDouble: 150,
+    }
+    const result = getWasmModuleLayouts([sanityWasher])
+    const matches = result.filter((l) => l.layoutId === WASHER_SINGLE.layoutId)
+    expect(matches).toHaveLength(1)
+  })
+
+  it('merges Sanity pricing into washer layout when IDs match', () => {
+    const sanityWasher: ModuleLayout = {
+      ...baseLayout,
+      layoutId: WASHER_SINGLE.layoutId,
+      name: 'Sanity washer',
+      priceSingle: 99,
+      priceDouble: 150,
+    }
+    const result = getWasmModuleLayouts([sanityWasher])
+    const entry = result.find((l) => l.layoutId === WASHER_SINGLE.layoutId)!
+    expect(entry.priceSingle).toBe(99)
+    expect(entry.minSlotWidth).toBe(75)
+    expect(entry.name).toBe('Wasmachine (enkel)')
   })
 })

@@ -1,10 +1,10 @@
 import type { ModuleLayout } from '@/types/configurator-pricing'
 
 export const WASHER_SINGLE: ModuleLayout = {
-  layoutId: 100,
+  layoutId: 11,
   name: 'Wasmachine (enkel)',
   description: '1 wasmachine — minimaal 75 cm breed',
-  contents: { shelves: 0, rods: 0, drawers: 0, hasWashingMachineShelf: true },
+  contents: { shelves: 2, rods: 0, drawers: 0, hasWashingMachineShelf: true },
   priceDouble: 0,
   priceSingle: 0,
   availableForTopCabinet: false,
@@ -12,7 +12,7 @@ export const WASHER_SINGLE: ModuleLayout = {
 }
 
 export const WASHER_DOUBLE: ModuleLayout = {
-  layoutId: 101,
+  layoutId: 12,
   name: 'Wasmachine (dubbel)',
   description: '2 wasmachines naast elkaar — minimaal 150 cm breed',
   contents: { shelves: 0, rods: 0, drawers: 0, hasWashingMachineShelf: true },
@@ -30,5 +30,14 @@ export function isLayoutAvailable(layout: ModuleLayout, moduleWidthCm: number): 
 }
 
 export function getWasmModuleLayouts(sanityLayouts: ModuleLayout[]): ModuleLayout[] {
-  return [...sanityLayouts, ...WASHER_LAYOUTS]
+  const washerIds = new Set(WASHER_LAYOUTS.map((l) => l.layoutId))
+  // Non-washer Sanity layouts first, then washer entries (merged with Sanity pricing if available)
+  const nonWasher = sanityLayouts.filter((l) => !washerIds.has(l.layoutId))
+  const merged = WASHER_LAYOUTS.map((washer) => {
+    const sanity = sanityLayouts.find((l) => l.layoutId === washer.layoutId)
+    return sanity
+      ? { ...washer, priceSingle: sanity.priceSingle, priceDouble: sanity.priceDouble }
+      : washer
+  })
+  return [...nonWasher, ...merged]
 }
