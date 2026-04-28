@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { computeDebugGlobal, computeDebugSlots } from '../hooks/useDebugPricing'
+import { computeDebugGlobal, computeDebugSlots, moduleDebugDimensions } from '../hooks/useDebugPricing'
 import type { FullPricingData } from '@/types/configurator-pricing'
 import type { ModuleSlot } from '../store'
 
@@ -168,6 +168,9 @@ const baseSlotParams = {
   doorHandleId: 'h1',
   moduleLayouts: [{ layoutId: 1, name: 'Open', description: '', contents: { shelves: 2, rods: 0, drawers: 0 }, priceSingle: 200, priceDouble: 350, availableForTopCabinet: false }],
   hasTopCabinet: false,
+  totalWidthM: 2.0,
+  mainHeightM: 2.25,
+  depthM: 0.6,
 }
 
 describe('computeDebugSlots — empty slot', () => {
@@ -295,5 +298,70 @@ describe('computeDebugSlots — layout name lookup', () => {
       modules: [{ slotIndex: 0, layoutId: 999, hasDoor: false, span: 1 }],
     })
     expect(slots[0].layoutName).toBeNull()
+  })
+})
+
+// Constants used in dimension calculations (must match closetConstants.ts)
+const WALL = 0.018
+const MODULE_WALL = 0.018
+const ONDERSTEL_HEIGHT = 0.108
+const ONDERSTEL_GAP = 0.010
+const MODULE_FLOOR_Y = ONDERSTEL_HEIGHT + ONDERSTEL_GAP
+const CLOSET_INSIDE_INSET = 0.025
+
+describe('moduleDebugDimensions', () => {
+  it('single slot nominal width = totalWidth / moduleCount', () => {
+    const dims = moduleDebugDimensions({ totalWidthM: 2.0, mainHeightM: 2.25, depthM: 0.6, moduleCount: 4, span: 1 })
+    expect(dims.nominal.w).toBeCloseTo(2.0 / 4)
+  })
+
+  it('span-2 nominal width = 2 × single slot nominal width', () => {
+    const dimsSingle = moduleDebugDimensions({ totalWidthM: 2.0, mainHeightM: 2.25, depthM: 0.6, moduleCount: 4, span: 1 })
+    const dimsDouble = moduleDebugDimensions({ totalWidthM: 2.0, mainHeightM: 2.25, depthM: 0.6, moduleCount: 4, span: 2 })
+    expect(dimsDouble.nominal.w).toBeCloseTo(dimsSingle.nominal.w * 2)
+  })
+
+  it('nominal height = mainHeightM', () => {
+    const dims = moduleDebugDimensions({ totalWidthM: 2.0, mainHeightM: 2.25, depthM: 0.6, moduleCount: 4, span: 1 })
+    expect(dims.nominal.h).toBeCloseTo(2.25)
+  })
+
+  it('nominal depth = depthM', () => {
+    const dims = moduleDebugDimensions({ totalWidthM: 2.0, mainHeightM: 2.25, depthM: 0.6, moduleCount: 4, span: 1 })
+    expect(dims.nominal.d).toBeCloseTo(0.6)
+  })
+
+  it('span-1 inner-clear width subtracts two module wall thicknesses', () => {
+    const totalWidthM = 2.0
+    const moduleCount = 4
+    const slotW = (totalWidthM - WALL * 2) / moduleCount
+    const dims = moduleDebugDimensions({ totalWidthM, mainHeightM: 2.25, depthM: 0.6, moduleCount, span: 1 })
+    expect(dims.innerClear.w).toBeCloseTo(slotW - MODULE_WALL * 2)
+  })
+
+  it('span-2 inner-clear width subtracts only outer two walls (no intermediate divider)', () => {
+    const totalWidthM = 2.0
+    const moduleCount = 4
+    const slotW = (totalWidthM - WALL * 2) / moduleCount
+    const dims = moduleDebugDimensions({ totalWidthM, mainHeightM: 2.25, depthM: 0.6, moduleCount, span: 2 })
+    expect(dims.innerClear.w).toBeCloseTo(slotW * 2 - MODULE_WALL * 2)
+  })
+
+  it('span-2 inner-clear is wider than 2× span-1 inner-clear by one MODULE_WALL * 2', () => {
+    const totalWidthM = 2.0
+    const moduleCount = 4
+    const dimsSingle = moduleDebugDimensions({ totalWidthM, mainHeightM: 2.25, depthM: 0.6, moduleCount, span: 1 })
+    const dimsDouble = moduleDebugDimensions({ totalWidthM, mainHeightM: 2.25, depthM: 0.6, moduleCount, span: 2 })
+    expect(dimsDouble.innerClear.w).toBeCloseTo(dimsSingle.innerClear.w * 2 + MODULE_WALL * 2)
+  })
+
+  it('inner-clear height subtracts top panel and leg assembly', () => {
+    const dims = moduleDebugDimensions({ totalWidthM: 2.0, mainHeightM: 2.25, depthM: 0.6, moduleCount: 4, span: 1 })
+    expect(dims.innerClear.h).toBeCloseTo(2.25 - WALL - MODULE_FLOOR_Y)
+  })
+
+  it('inner-clear depth subtracts back wall and front inset', () => {
+    const dims = moduleDebugDimensions({ totalWidthM: 2.0, mainHeightM: 2.25, depthM: 0.6, moduleCount: 4, span: 1 })
+    expect(dims.innerClear.d).toBeCloseTo(0.6 - WALL - CLOSET_INSIDE_INSET)
   })
 })

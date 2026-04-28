@@ -6,12 +6,7 @@ import * as THREE from 'three/webgpu'
 import { useClosetStore } from '../store'
 import { getLayoutById } from '../scene/moduleLayouts'
 
-// Mirror constants from ThreeCanvas
-const WALL = 0.018
-const MODULE_WALL = 0.018
-const ONDERSTEL_HEIGHT = 0.108
-const ONDERSTEL_GAP = 0.010
-const MODULE_FLOOR_Y = ONDERSTEL_HEIGHT + ONDERSTEL_GAP // 0.118m — where module boxes start
+import { WALL, MODULE_WALL, MODULE_FLOOR_Y } from '../scene/closetConstants'
 
 // --- Types ---
 

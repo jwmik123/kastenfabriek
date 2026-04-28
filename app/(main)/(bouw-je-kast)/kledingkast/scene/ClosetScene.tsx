@@ -15,13 +15,8 @@ import Module from './Module'
 import StructuralKinkShelf from './StructuralKinkShelf'
 import StructuralSideKinkShelf from './StructuralSideKinkShelf'
 import InstancedLightStrips from './InstancedLightStrips'
-import { StripWarmthProvider } from '../../_shared/materials/StripWarmthContext'
-
-const WALL = 0.018
-const ONDERSTEL_HEIGHT = 0.108
-const ONDERSTEL_GAP = 0.010
-const CLOSET_INSIDE_INSET = 0.025
-const MODULE_FLOOR_Y = ONDERSTEL_HEIGHT + ONDERSTEL_GAP
+import { WALL, ONDERSTEL_HEIGHT, ONDERSTEL_GAP, CLOSET_INSIDE_INSET, MODULE_FLOOR_Y } from './closetConstants'
+// import { StripWarmthProvider } from '../../_shared/materials/StripWarmthContext'
 const BORDER_M = 0.015 // 15mm border in world space
 
 function slotCeilingProfile(
@@ -222,28 +217,16 @@ export default function ClosetScene() {
       <OnderstelPlinth />
       {modules
         .filter((m) => m.layoutId !== null)
-        .map((m) =>
-          lightStripsEnabled ? (
-            <StripWarmthProvider key={m.slotIndex} slotIndex={m.slotIndex} span={m.span} diagParams={diagParams}>
-              <Module
-                index={m.slotIndex}
-                layoutId={m.layoutId!}
-                hasDoor={m.hasDoor}
-                span={m.span}
-                diagParams={diagParams}
-              />
-            </StripWarmthProvider>
-          ) : (
-            <Module
-              key={m.slotIndex}
-              index={m.slotIndex}
-              layoutId={m.layoutId!}
-              hasDoor={m.hasDoor}
-              span={m.span}
-              diagParams={diagParams}
-            />
-          )
-        )}
+        .map((m) => (
+          <Module
+            key={m.slotIndex}
+            index={m.slotIndex}
+            layoutId={m.layoutId!}
+            hasDoor={m.hasDoor}
+            span={m.span}
+            diagParams={diagParams}
+          />
+        ))}
       {modules.map((m, i) => {
         const isConsumed = i > 0 && modules[i - 1].span === 2
         if (isConsumed) return null

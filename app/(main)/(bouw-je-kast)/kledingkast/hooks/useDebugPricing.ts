@@ -5,6 +5,36 @@ import { MATERIALS } from '../materials'
 import { PricingEngine } from '@/lib/configurator/pricing-engine'
 import type { FullPricingData, ModuleLayout } from '@/types/configurator-pricing'
 import type { ModuleSlot } from '../store'
+import { WALL, MODULE_WALL, MODULE_FLOOR_Y, CLOSET_INSIDE_INSET } from '../scene/closetConstants'
+
+export interface DebugDimensions {
+  nominal: { w: number; h: number; d: number }
+  innerClear: { w: number; h: number; d: number }
+}
+
+export function moduleDebugDimensions(params: {
+  totalWidthM: number
+  mainHeightM: number
+  depthM: number
+  moduleCount: number
+  span: number
+}): DebugDimensions {
+  const { totalWidthM, mainHeightM, depthM, moduleCount, span } = params
+  const slotW = (totalWidthM - WALL * 2) / moduleCount
+
+  return {
+    nominal: {
+      w: (totalWidthM / moduleCount) * span,
+      h: mainHeightM,
+      d: depthM,
+    },
+    innerClear: {
+      w: slotW * span - MODULE_WALL * 2,
+      h: mainHeightM - WALL - MODULE_FLOOR_Y,
+      d: depthM - WALL - CLOSET_INSIDE_INSET,
+    },
+  }
+}
 
 export interface DebugPricingGlobal {
   ledCost: number
@@ -30,6 +60,7 @@ export interface DebugSlotRow {
   handleCost: number
   powerHoleCost: number
   slotSubtotal: number
+  dimensions: DebugDimensions
 }
 
 export interface DebugTopCabinetRow {
@@ -115,13 +146,18 @@ export function computeDebugSlots(params: {
   doorHandleId: string
   moduleLayouts: ModuleLayout[]
   hasTopCabinet: boolean
+  totalWidthM: number
+  mainHeightM: number
+  depthM: number
 }): { slots: DebugSlotRow[]; topCabinet: DebugTopCabinetRow | null } {
-  const { pricingData, modules, moduleCount, buitenkantMaterialId, doorHandleId, moduleLayouts, hasTopCabinet } = params
+  const { pricingData, modules, moduleCount, buitenkantMaterialId, doorHandleId, moduleLayouts, hasTopCabinet, totalWidthM, mainHeightM, depthM } = params
   const engine = new PricingEngine(pricingData)
   const handlePrice = engine.getHandlePrice(doorHandleId)
   const powerHolePrice = engine.getAccessoryPrice('power-cable-holes')
 
   const slots: DebugSlotRow[] = modules.map((m) => {
+    const dimensions = moduleDebugDimensions({ totalWidthM, mainHeightM, depthM, moduleCount, span: m.span ?? 1 })
+
     if (m.layoutId === null) {
       return {
         slotIndex: m.slotIndex,
@@ -137,6 +173,7 @@ export function computeDebugSlots(params: {
         handleCost: 0,
         powerHoleCost: 0,
         slotSubtotal: 0,
+        dimensions,
       }
     }
 
@@ -180,6 +217,7 @@ export function computeDebugSlots(params: {
       handleCost,
       powerHoleCost,
       slotSubtotal,
+      dimensions,
     }
   })
 
@@ -209,6 +247,9 @@ export function useDebugPricing(): DebugPricingResult | null {
   const lightStripsEnabled = useClosetStore((s) => s.lightStripsEnabled)
   const needsTopCabinet = useClosetStore((s) => s.needsTopCabinet)
   const moduleLayouts = useClosetStore((s) => s.moduleLayouts)
+  const totalWidthM = useClosetStore((s) => s.width) / 100
+  const mainHeightM = useClosetStore((s) => s.mainHeight()) / 100
+  const depthM = useClosetStore((s) => s.depth) / 100
 
   if (!pricingData) return null
 
@@ -232,6 +273,9 @@ export function useDebugPricing(): DebugPricingResult | null {
     doorHandleId,
     moduleLayouts,
     hasTopCabinet,
+    totalWidthM,
+    mainHeightM,
+    depthM,
   })
 
   return { slots, topCabinet, global }
