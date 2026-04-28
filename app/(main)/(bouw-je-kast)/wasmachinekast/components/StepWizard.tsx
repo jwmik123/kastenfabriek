@@ -2,6 +2,7 @@
 
 import { useWasmachinekastStore } from '../store'
 import DimensionsStep from '../steps/DimensionsStep'
+import WasherStep from '../steps/WasherStep'
 import ModulesStep from '../steps/ModulesStep'
 import MaterialStep from '../steps/MaterialStep'
 import DoorHandlesStep from '../steps/DoorHandlesStep'
@@ -14,22 +15,30 @@ import { Check } from 'lucide-react'
 
 const STEPS = [
   { label: 'Afmetingen', number: 1 },
-  { label: 'Modules', number: 2 },
-  { label: 'Materiaal', number: 3 },
-  { label: 'Handgrepen', number: 4 },
-  { label: 'Accessoires', number: 5 },
+  { label: 'Wasmachine', number: 2 },
+  { label: 'Modules', number: 3 },
+  { label: 'Materiaal', number: 4 },
+  { label: 'Handgrepen', number: 5 },
+  { label: 'Accessoires', number: 6 },
 ]
 
 function StepIndicator() {
   const step = useWasmachinekastStore((s) => s.step)
   const setStep = useWasmachinekastStore((s) => s.setStep)
+  const clearWasherModule = useWasmachinekastStore((s) => s.clearWasherModule)
+
+  function handleStepClick(targetStep: number) {
+    if (targetStep >= step) return
+    if (targetStep === 2) clearWasherModule()
+    setStep(targetStep)
+  }
 
   return (
     <div className="flex items-center">
       {STEPS.map((s, i) => (
         <div key={s.number} className="flex items-center flex-1 last:flex-none">
           <button
-            onClick={() => s.number < step && setStep(s.number)}
+            onClick={() => handleStepClick(s.number)}
             className={cn(
               'flex flex-col items-center gap-1.5',
               s.number < step ? 'cursor-pointer' : 'cursor-default',
@@ -72,10 +81,11 @@ function CurrentStep() {
 
   switch (step) {
     case 1: return <DimensionsStep />
-    case 2: return <ModulesStep />
-    case 3: return <MaterialStep />
-    case 4: return <DoorHandlesStep />
-    case 5: return <AccessoiresStep />
+    case 2: return <WasherStep />
+    case 3: return <ModulesStep />
+    case 4: return <MaterialStep />
+    case 5: return <DoorHandlesStep />
+    case 6: return <AccessoiresStep />
     default: return null
   }
 }
@@ -85,9 +95,15 @@ export default function StepWizard() {
   const nextStep = useWasmachinekastStore((s) => s.nextStep)
   const prevStep = useWasmachinekastStore((s) => s.prevStep)
   const selectedSlot = useWasmachinekastStore((s) => s.selectedSlot)
-  const isPanelOpen = step === 3 && selectedSlot !== null
+  const clearWasherModule = useWasmachinekastStore((s) => s.clearWasherModule)
+  const isPanelOpen = step === 4 && selectedSlot !== null
 
   const blurClass = 'transition-[filter] duration-200 blur-sm pointer-events-none select-none'
+
+  function handlePrev() {
+    if (step === 3) clearWasherModule()
+    prevStep()
+  }
 
   return (
     <div className="flex flex-col h-full p-6 gap-5">
@@ -103,7 +119,7 @@ export default function StepWizard() {
       </div>
       <Separator className={cn('transition-opacity duration-200', isPanelOpen && 'opacity-20')} />
       <div className={cn('flex justify-between gap-3', isPanelOpen && blurClass)}>
-        <Button variant="outline" onClick={prevStep} disabled={step === 1}>
+        <Button variant="outline" onClick={handlePrev} disabled={step === 1}>
           Vorige
         </Button>
         <Button onClick={nextStep} disabled={step === STEPS.length}>

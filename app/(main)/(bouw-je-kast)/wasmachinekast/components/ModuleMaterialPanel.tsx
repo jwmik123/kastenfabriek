@@ -17,7 +17,7 @@ export default function ModuleMaterialPanel() {
 
   const [activeTab, setActiveTab] = useState<'buitenkant' | 'binnenkant'>('buitenkant')
 
-  if (step !== 3 || selectedSlot === null) return null
+  if (step !== 4 || selectedSlot === null) return null
 
   const moduleSlot = modules.find((m) => m.slotIndex === selectedSlot)
   if (!moduleSlot) return null
