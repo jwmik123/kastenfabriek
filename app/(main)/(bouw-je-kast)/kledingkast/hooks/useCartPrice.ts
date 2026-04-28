@@ -43,7 +43,8 @@ export function useCartPrice() {
   const backDiagonal = useClosetStore((s) => s.backDiagonal)
   const backDiagKinkHeight = useClosetStore((s) => s.backDiagKinkHeight)
   const backDiagFlatSectionDepth = useClosetStore((s) => s.backDiagFlatSectionDepth)
-  const powerCableHolesEnabled = useClosetStore((s) => s.powerCableHolesEnabled)
+  const doorHandleMaterial = useClosetStore((s) => s.doorHandleMaterial)
+  const doorsExtendToFloor = useClosetStore((s) => s.doorsExtendToFloor)
   const needsTopCabinet = useClosetStore((s) => s.needsTopCabinet)
   const topCabinetHeight = useClosetStore((s) => s.topCabinetHeight)
   const moduleLayouts = useClosetStore((s) => s.moduleLayouts)
@@ -91,13 +92,17 @@ export function useCartPrice() {
   // --- LED lighting ---
   const ledCost = lightStripsEnabled && engine ? engine.calculateLedPrice(moduleCount) : 0
 
+  // --- Power holes (per module) ---
+  const powerHoleCount = modules.filter((m) => m.hasPowerHole).length
+  const powerHoleCost = powerHoleCount > 0 && engine ? powerHoleCount * engine.getAccessoryPrice('power-cable-holes') : 0
+
   // --- Delivery & Installation ---
   const deliveryCost = engine?.deliveryPrice ?? 95
-  const subtotal = moduleCost + doorCost + mechanismCost + ledCost + deliveryCost
+  const subtotal = moduleCost + doorCost + mechanismCost + ledCost + powerHoleCost + deliveryCost
   const installationTier = engine?.getInstallationTier(subtotal) ?? null
   const installationCost = installationTier?.price ?? 0
 
-  const totalPrice = moduleCost + doorCost + mechanismCost + ledCost
+  const totalPrice = moduleCost + doorCost + mechanismCost + ledCost + powerHoleCost
   const grandTotal = subtotal + installationCost
 
   const handleAddToCart = async () => {
@@ -124,6 +129,7 @@ export function useCartPrice() {
         span: m.span,
         buitenkantMaterialId: m.buitenkantMaterialId,
         binnenkantMaterialId: m.binnenkantMaterialId,
+        hasPowerHole: m.hasPowerHole ?? false,
       })),
       buitenkantMaterialId,
       binnenkantMaterialId,
@@ -140,8 +146,9 @@ export function useCartPrice() {
       backDiagonal,
       backDiagKinkHeight,
       backDiagFlatSectionDepth,
+      doorHandleMaterial,
+      doorsExtendToFloor,
       lightStripsEnabled,
-      powerCableHolesEnabled,
       hasTopCabinet,
       topCabinetHeightCm,
     }

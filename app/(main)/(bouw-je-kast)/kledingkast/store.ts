@@ -13,6 +13,7 @@ export interface ModuleSlot {
   span: 1 | 2 // 1 = single width, 2 = double (occupies this slot + the next)
   buitenkantMaterialId?: string // overrides global buitenkant for this module
   binnenkantMaterialId?: string // overrides global binnenkant for this module
+  hasPowerHole?: boolean
 }
 
 export type PlacementType = 'vrijstaand' | 'ingebouwd'
@@ -49,6 +50,8 @@ interface ClosetState {
   buitenkantMaterialId: string
   binnenkantMaterialId: string
   doorHandleId: string
+  doorHandleMaterial: 'chrome' | 'black' | 'gold'
+  doorsExtendToFloor: boolean
   lightStripsEnabled: boolean
 
   // View options
@@ -97,9 +100,9 @@ interface ClosetState {
   setBinnenkantMaterialId: (id: string) => void
   setModuleMaterial: (slotIndex: number, variant: 'buitenkant' | 'binnenkant', id: string) => void
   setDoorHandleId: (id: string) => void
+  setDoorHandleMaterial: (material: 'chrome' | 'black' | 'gold') => void
+  setDoorsExtendToFloor: (v: boolean) => void
   setLightStripsEnabled: (v: boolean) => void
-  powerCableHolesEnabled: boolean
-  setPowerCableHolesEnabled: (v: boolean) => void
   toggleDoors: () => void
   toggleMeasurements: () => void
   zoomIn: () => void
@@ -166,8 +169,9 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
   buitenkantMaterialId: 'premium-wit',
   binnenkantMaterialId: 'premium-wit',
   doorHandleId: '23',
+  doorHandleMaterial: 'chrome' as const,
+  doorsExtendToFloor: false,
   lightStripsEnabled: false,
-  powerCableHolesEnabled: false,
   doorsOpen: true,
   showMeasurements: false,
   userZoom: 0.5,
@@ -507,11 +511,13 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
       if (Object.keys(updates).length > 0) set(updates)
     }
     const modules: ModuleSlot[] = Array.from({ length: clamped }, (_, i) =>
-      existing[i] ?? { slotIndex: i, layoutId: null, hasDoor: true, span: 1 }
-    ).map((m) =>
+      existing[i] ?? { slotIndex: i, layoutId: null, hasDoor: true, span: 1, hasPowerHole: false }
+    ).map((m) => ({
+      ...m,
+      hasPowerHole: m.hasPowerHole ?? false,
       // clear a double that would overflow beyond the new count
-      m.span === 2 && m.slotIndex + 1 >= clamped ? { ...m, span: 1 as const } : m
-    )
+      span: (m.span === 2 && m.slotIndex + 1 >= clamped ? 1 : m.span) as 1 | 2,
+    }))
     set({ moduleCount: clamped, modules })
   },
 
@@ -561,8 +567,9 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
       ),
     })),
   setDoorHandleId: (doorHandleId) => set({ doorHandleId }),
+  setDoorHandleMaterial: (doorHandleMaterial) => set({ doorHandleMaterial }),
+  setDoorsExtendToFloor: (doorsExtendToFloor) => set({ doorsExtendToFloor }),
   setLightStripsEnabled: (lightStripsEnabled) => set({ lightStripsEnabled }),
-  setPowerCableHolesEnabled: (powerCableHolesEnabled) => set({ powerCableHolesEnabled }),
   toggleDoors: () => set((s) => ({ doorsOpen: !s.doorsOpen })),
   toggleMeasurements: () => set((s) => ({ showMeasurements: !s.showMeasurements })),
   zoomIn: () => set((s) => ({ userZoom: Math.max(0, s.userZoom - 0.1) })),
@@ -584,6 +591,7 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
         span: m.span,
         buitenkantMaterialId: m.buitenkantMaterialId,
         binnenkantMaterialId: m.binnenkantMaterialId,
+        hasPowerHole: m.hasPowerHole ?? false,
       })),
       buitenkantMaterialId: config.buitenkantMaterialId,
       binnenkantMaterialId: config.binnenkantMaterialId,
@@ -597,8 +605,9 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
       backDiagKinkHeight: (config as any).backDiagKinkHeight ?? 180,
       backDiagFlatSectionDepth: (config as any).backDiagFlatSectionDepth ?? 0,
       placementType: (config as any).placementType ?? 'ingebouwd',
+      doorHandleMaterial: config.doorHandleMaterial ?? 'chrome',
+      doorsExtendToFloor: config.doorsExtendToFloor ?? false,
       lightStripsEnabled: config.lightStripsEnabled ?? false,
-      powerCableHolesEnabled: config.powerCableHolesEnabled ?? false,
       step: 1,
       selectedSlot: null,
     })

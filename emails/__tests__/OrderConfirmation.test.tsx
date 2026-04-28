@@ -36,7 +36,6 @@ const baseConfig = {
   rightDiagTopWidth: 0,
   placementType: "vrijstaand" as const,
   lightStripsEnabled: false,
-  powerCableHolesEnabled: false,
   hasTopCabinet: false,
   topCabinetHeightCm: 0,
 };

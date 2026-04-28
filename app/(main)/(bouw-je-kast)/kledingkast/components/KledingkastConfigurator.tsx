@@ -63,6 +63,7 @@ export default function KledingkastConfigurator({ pricingData, editConfig, editI
             span: m.span,
             buitenkantMaterialId: m.buitenkantMaterialId,
             binnenkantMaterialId: m.binnenkantMaterialId,
+            hasPowerHole: m.hasPowerHole ?? false,
           })),
           buitenkantMaterialId: state.buitenkantMaterialId,
           binnenkantMaterialId: state.binnenkantMaterialId,
@@ -81,8 +82,9 @@ export default function KledingkastConfigurator({ pricingData, editConfig, editI
           backDiagonal: state.backDiagonal,
           backDiagKinkHeight: state.backDiagKinkHeight,
           backDiagFlatSectionDepth: state.backDiagFlatSectionDepth,
+          doorHandleMaterial: state.doorHandleMaterial,
+          doorsExtendToFloor: state.doorsExtendToFloor,
           lightStripsEnabled: state.lightStripsEnabled,
-          powerCableHolesEnabled: state.powerCableHolesEnabled,
           hasTopCabinet: state.needsTopCabinet(),
           topCabinetHeightCm: state.topCabinetHeight(),
         }

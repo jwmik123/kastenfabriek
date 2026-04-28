@@ -137,7 +137,8 @@ export default function OrderConfirmation({
             const { configuration: c, priceSnapshot: p } = item;
             const outerMaterial = getMaterialName(c.buitenkantMaterialId);
             const innerMaterial = getMaterialName(c.binnenkantMaterialId);
-            const hasExtras = c.lightStripsEnabled || c.powerCableHolesEnabled || c.hasTopCabinet || c.diagonalSide !== "none" || c.backDiagonal;
+            const powerHoleCount = c.modules.filter((m) => m.hasPowerHole).length
+            const hasExtras = c.lightStripsEnabled || powerHoleCount > 0 || c.hasTopCabinet || c.diagonalSide !== "none" || c.backDiagonal;
 
             return (
               <Section key={i} style={itemSection}>
@@ -210,7 +211,7 @@ export default function OrderConfirmation({
                       <td style={detailLabel}><Text style={label}>Extra&apos;s</Text></td>
                       <td>
                         {c.lightStripsEnabled && <Text style={value}>LED-strips</Text>}
-                        {c.powerCableHolesEnabled && <Text style={featureText}>Kabeldoorvoer</Text>}
+                        {powerHoleCount > 0 && <Text style={featureText}>Kabeldoorvoer ({powerHoleCount}×)</Text>}
                         {c.hasTopCabinet && <Text style={featureText}>Bovenkast ({c.topCabinetHeightCm} cm)</Text>}
                         {c.diagonalSide !== "none" && <Text style={featureText}>Schuine wand {c.diagonalSide === "left" ? "links" : c.diagonalSide === "right" ? "rechts" : c.diagonalSide}</Text>}
                         {c.backDiagonal && <Text style={featureText}>Schuine achterwand</Text>}

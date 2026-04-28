@@ -9,6 +9,7 @@ export interface ModuleSlotSnapshot {
   span: 1 | 2;
   buitenkantMaterialId?: string;
   binnenkantMaterialId?: string;
+  hasPowerHole?: boolean;
 }
 
 // Serialized closet configuration — mirrors relevant Zustand store state
@@ -48,9 +49,12 @@ export interface ClosetConfigSnapshot {
   backDiagKinkHeight?: number;    // cm
   backDiagFlatSectionDepth?: number;  // cm
 
+  // Appearance extras
+  doorHandleMaterial?: 'chrome' | 'black' | 'gold';
+  doorsExtendToFloor?: boolean;
+
   // Lighting & extras
   lightStripsEnabled: boolean;
-  powerCableHolesEnabled: boolean;
 
   // Derived (snapshotted for display)
   hasTopCabinet: boolean;

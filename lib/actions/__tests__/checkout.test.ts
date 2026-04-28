@@ -95,7 +95,6 @@ const mockCartRow = {
     leftDiagTopWidth: 0,
     rightDiagTopWidth: 0,
     lightStripsEnabled: false,
-    powerCableHolesEnabled: false,
     hasTopCabinet: false,
     topCabinetHeightCm: 0,
   },
