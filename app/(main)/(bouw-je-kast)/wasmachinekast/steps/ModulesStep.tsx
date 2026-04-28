@@ -1,12 +1,12 @@
 'use client'
 
 import { useWasmachinekastStore } from '../store'
-import { isLayoutAvailable } from '../moduleLayouts'
+import { WASHER_LAYOUTS, isLayoutAvailable } from '../moduleLayouts'
 import { LAYOUT_SVGS } from '../../kledingkast/components/LayoutSvgs'
 import Carousel from '../../kledingkast/components/Carousel'
 import { Toggle } from '@/components/ui/Toggle'
 import { cn } from '@/lib/utils'
-import { Minus, Plus, WashingMachine } from 'lucide-react'
+import { Lock, Minus, Plus, WashingMachine } from 'lucide-react'
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
@@ -31,6 +31,9 @@ export default function ModulesStep() {
   const doorsExtendToFloor = useWasmachinekastStore((s) => s.doorsExtendToFloor)
   const setDoorsExtendToFloor = useWasmachinekastStore((s) => s.setDoorsExtendToFloor)
   const moduleLayouts = useWasmachinekastStore((s) => s.moduleLayouts)
+  const washerSlotIndex = useWasmachinekastStore((s) => s.washerSlotIndex)
+
+  const washerIds = new Set(WASHER_LAYOUTS.map((l) => l.layoutId))
 
   const isCoveredSlot =
     selectedSlot !== null &&
@@ -47,9 +50,6 @@ export default function ModulesStep() {
       <section className="space-y-5">
         <div className="flex items-center justify-between">
           <SectionHeading>Aantal modules</SectionHeading>
-          <span className="text-xs text-muted-foreground/60">
-            {moduleWidthCm.toFixed(0)} cm per module
-          </span>
         </div>
 
         <div className="flex items-center gap-2">
@@ -94,21 +94,27 @@ export default function ModulesStep() {
         <div className="grid grid-cols-8 gap-1">
           {modules.map((m) => {
             const isSelected = selectedSlot === m.slotIndex
+            const isWasherSlot = washerSlotIndex === m.slotIndex
             const isPartOfDouble = m.span === 2 || (m.slotIndex > 0 && modules[m.slotIndex - 1]?.span === 2)
             return (
               <button
                 key={m.slotIndex}
-                onClick={() => setSelectedSlot(m.slotIndex === selectedSlot ? null : m.slotIndex)}
+                onClick={() => {
+                  if (isWasherSlot) return
+                  setSelectedSlot(m.slotIndex === selectedSlot ? null : m.slotIndex)
+                }}
                 className={cn(
                   'aspect-square flex items-center justify-center rounded-md text-sm font-medium transition-colors',
-                  isSelected
-                    ? 'bg-primary text-primary-foreground border-0'
-                    : isPartOfDouble
-                      ? 'border border-border/50 bg-transparent text-foreground hover:border-border hover:bg-muted/40'
-                      : 'border border-border/50 bg-transparent text-foreground hover:border-border hover:bg-muted/40',
+                  isWasherSlot
+                    ? 'border border-border/50 bg-muted/20 text-muted-foreground opacity-60 cursor-not-allowed'
+                    : isSelected
+                      ? 'bg-primary text-primary-foreground border-0'
+                      : isPartOfDouble
+                        ? 'border border-border/50 bg-transparent text-foreground hover:border-border hover:bg-muted/40'
+                        : 'border border-border/50 bg-transparent text-foreground hover:border-border hover:bg-muted/40',
                 )}
               >
-                {m.slotIndex + 1}
+                {isWasherSlot ? <Lock className="w-3 h-3" /> : m.slotIndex + 1}
               </button>
             )
           })}
@@ -137,7 +143,7 @@ export default function ModulesStep() {
                       onCheckedChange={() => toggleModuleDoor(selectedSlot)}
                     />
                   </div>
-                  {canBeDouble && (
+                  {canBeDouble && selectedSlot !== washerSlotIndex && (
                     <div className="flex items-center justify-between flex-1">
                       <span className="text-sm">Dubbele module</span>
                       <Toggle
@@ -148,51 +154,46 @@ export default function ModulesStep() {
                   )}
                 </div>
 
-                <div className="space-y-2.5">
-                  <Carousel
-                    items={moduleLayouts.map((l) => ({ ...l, id: String(l.layoutId) }))}
-                    activeId={modules[selectedSlot]?.layoutId != null ? String(modules[selectedSlot].layoutId) : null}
-                    renderItem={(layout, isActive) => {
-                      const lid = Number(layout.id)
-                      const available = isLayoutAvailable(
-                        moduleLayouts.find((l) => l.layoutId === lid) ?? { layoutId: lid, name: '', description: '', contents: { shelves: 0, rods: 0, drawers: 0 }, priceDouble: 0, priceSingle: 0, availableForTopCabinet: false },
-                        moduleWidthCm,
-                      )
-                      const LayoutSvg = LAYOUT_SVGS[lid]
-                      const isWasher = layout.layoutId ? layout.layoutId >= 100 : false
+                {selectedSlot !== washerSlotIndex && (
+                  <div className="space-y-2.5">
+                    <Carousel
+                      items={moduleLayouts.map((l) => ({ ...l, id: String(l.layoutId) }))}
+                      activeId={modules[selectedSlot]?.layoutId != null ? String(modules[selectedSlot].layoutId) : null}
+                      renderItem={(layout, isActive) => {
+                        const lid = Number(layout.id)
+                        const isWasher = washerIds.has(lid)
+                        const layoutObj = moduleLayouts.find((l) => l.layoutId === lid) ?? { layoutId: lid, name: '', description: '', contents: { shelves: 0, rods: 0, drawers: 0 }, priceDouble: 0, priceSingle: 0, availableForTopCabinet: false }
+                        const available = isWasher || isLayoutAvailable(layoutObj, moduleWidthCm)
+                        const LayoutSvg = LAYOUT_SVGS[lid]
 
-                      return (
-                        <button
-                          onClick={() => available && setModuleLayout(selectedSlot!, lid)}
-                          disabled={!available}
-                          title={!available && layout.minSlotWidth ? `Minimaal ${layout.minSlotWidth} cm breed` : undefined}
-                          style={{ aspectRatio: '1' }}
-                          className={cn(
-                            'w-full flex flex-col items-center justify-center rounded-md transition-all py-2 gap-1',
-                            isActive
-                              ? 'bg-primary text-primary-foreground border-2 border-primary'
-                              : available
-                                ? 'bg-background text-foreground border border-border/50 hover:border-primary'
-                                : 'bg-background text-muted-foreground border border-border/30 opacity-40 cursor-not-allowed',
-                          )}
-                        >
-                          {isWasher ? (
-                            <WashingMachine className="w-1/3 h-auto" />
-                          ) : LayoutSvg ? (
-                            <LayoutSvg className="w-1/4 h-auto" />
-                          ) : (
-                            <span className="text-[10px] text-center px-1 leading-tight">{layout.name}</span>
-                          )}
-                        </button>
-                      )
-                    }}
-                  />
-                  {moduleLayouts.some((l) => l.minSlotWidth && moduleWidthCm < l.minSlotWidth) && (
-                    <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
-                      Vergroot de breedte of verklein het aantal modules voor wasmachine-indelingen.
-                    </p>
-                  )}
-                </div>
+                        return (
+                          <button
+                            onClick={() => setModuleLayout(selectedSlot!, lid)}
+                            disabled={!available}
+                            title={undefined}
+                            style={{ aspectRatio: '1' }}
+                            className={cn(
+                              'w-full flex flex-col items-center justify-center rounded-md transition-all py-2 gap-1',
+                              isActive
+                                ? 'bg-primary text-primary-foreground border-2 border-primary'
+                                : available
+                                  ? 'bg-background text-foreground border border-border/50 hover:border-primary'
+                                  : 'bg-background text-muted-foreground border border-border/30 opacity-40 cursor-not-allowed',
+                            )}
+                          >
+                            {isWasher ? (
+                              <WashingMachine className="w-1/3 h-auto" />
+                            ) : LayoutSvg ? (
+                              <LayoutSvg className="w-1/4 h-auto" />
+                            ) : (
+                              <span className="text-[10px] text-center px-1 leading-tight">{layout.name}</span>
+                            )}
+                          </button>
+                        )
+                      }}
+                    />
+                  </div>
+                )}
               </>
             )}
           </div>
