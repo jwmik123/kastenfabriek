@@ -21,6 +21,10 @@ export type ModuleLayoutConfig = {
     glbPath: string | null // null = no GLB (e.g. full-shelves layout)
     height: number         // height in meters — used for fill zone placement; should match GLB
     anchor: Anchor
+    placeholderDimensions?: { w: number; h: number; d: number } // shown when glbPath is null but height > 0
+    centered?: boolean     // center GLB in slot interior (X and Z); default: left/back-aligned
+    stacked?: boolean      // render two GLB instances stacked vertically; height/2 per unit
+    double?: boolean       // render two GLB instances side by side; each centered in half the slot
   }
 
   fillZone: {

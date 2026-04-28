@@ -1,0 +1,128 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { useWasmachinekastStore } from '../store'
+import { Slider } from '@/components/ui/slider'
+import { Info } from 'lucide-react'
+
+function clamp(v: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, v))
+}
+
+function DimensionInput({
+  label,
+  value,
+  min,
+  max,
+  unit,
+  onChange,
+  hint,
+}: {
+  label: string
+  value: number
+  min: number
+  max: number
+  unit: string
+  onChange: (v: number) => void
+  hint?: string
+}) {
+  const [draft, setDraft] = useState(String(value))
+
+  useEffect(() => {
+    setDraft(String(value))
+  }, [value])
+
+  const commit = () => {
+    const parsed = Number(draft)
+    const clamped = clamp(isNaN(parsed) ? value : parsed, min, max)
+    setDraft(String(clamped))
+    onChange(clamped)
+  }
+
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center gap-3">
+        <span className="w-16 shrink-0 text-sm font-medium">{label}</span>
+        <Slider
+          min={min}
+          max={max}
+          step={1}
+          value={[value]}
+          onValueChange={([v]) => onChange(v)}
+          className="flex-1"
+        />
+        <div className="flex items-center gap-1 shrink-0">
+          <input
+            type="number"
+            min={min}
+            max={max}
+            step={1}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={commit}
+            onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur() }}
+            className="w-18 rounded border border-input px-2 py-1 text-sm tabular-nums text-right bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+          />
+          <span className="text-xs text-muted-foreground">{unit}</span>
+        </div>
+      </div>
+      {hint && <p className="text-[11px] text-muted-foreground pl-[4.75rem]">{hint}</p>}
+    </div>
+  )
+}
+
+export default function DimensionsStep() {
+  const width = useWasmachinekastStore((s) => s.width)
+  const height = useWasmachinekastStore((s) => s.height)
+  const depth = useWasmachinekastStore((s) => s.depth)
+  const setWidth = useWasmachinekastStore((s) => s.setWidth)
+  const setHeight = useWasmachinekastStore((s) => s.setHeight)
+  const setDepth = useWasmachinekastStore((s) => s.setDepth)
+  const constraints = useWasmachinekastStore((s) => s.constraints)
+  const minModules = useWasmachinekastStore((s) => s.minModules())
+  const maxModules = useWasmachinekastStore((s) => s.maxModules())
+
+  const sc = constraints?.singleCorpus
+  const topMax = constraints?.topCabinet.maxHeight ?? 110
+  const minW = sc?.minWidth ?? 15
+  const maxW = (sc?.maxWidth ?? 65) * 8
+  const minDepth = Math.max(65, sc?.minDepth ?? 65)
+
+  return (
+    <div className="space-y-10">
+      <section className="space-y-5">
+        <DimensionInput
+          label="Breedte"
+          value={width}
+          min={minW}
+          max={maxW}
+          unit="cm"
+          onChange={setWidth}
+          hint={`${minModules}–${maxModules} modules`}
+        />
+        <DimensionInput
+          label="Hoogte"
+          value={height}
+          min={sc?.minHeight ?? 200}
+          max={(sc?.maxHeight ?? 275) + topMax}
+          unit="cm"
+          onChange={setHeight}
+        />
+        <DimensionInput
+          label="Diepte"
+          value={depth}
+          min={minDepth}
+          max={sc?.maxDepth ?? 90}
+          unit="cm"
+          onChange={setDepth}
+          hint="Minimaal 65 cm voor wasmachine"
+        />
+
+        <div className="flex items-start gap-2 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 px-3 py-2.5 rounded-md">
+          <Info className="size-4 shrink-0 mt-0.5" />
+          <span className="text-xs">Bovenkast wordt automatisch toegevoegd bij hoogte &gt; 275 cm</span>
+        </div>
+      </section>
+    </div>
+  )
+}

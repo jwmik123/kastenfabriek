@@ -4,14 +4,15 @@ import { useEffect, useRef } from 'react'
 import dynamic from 'next/dynamic'
 import type { FullPricingData } from '@/types/configurator-pricing'
 import type { ClosetConfigSnapshot } from '@/lib/cart/types'
-import { useClosetStore } from '../store'
+import { useWasmachinekastStore } from '../store'
 import { ConfiguratorStoreContext } from '../../_shared/store/context'
+import { getWasmModuleLayouts } from '../moduleLayouts'
 import StepWizard from './StepWizard'
 import MobileSheet from './MobileSheet'
 import { getDraftConfig, saveDraftConfig } from '@/lib/cart/draft-config'
 import { getCart } from '@/lib/cart/cart-store'
 
-const ThreeCanvas = dynamic(() => import('../scene/KledingkastCanvas'), { ssr: false })
+const ThreeCanvas = dynamic(() => import('../scene/WasmachinekastCanvas'), { ssr: false })
 
 interface Props {
   pricingData: FullPricingData
@@ -19,34 +20,33 @@ interface Props {
   editItemId: string | null
 }
 
-export default function KledingkastConfigurator({ pricingData, editConfig, editItemId }: Props) {
-  const hydrate = useClosetStore((s) => s.hydrate)
-  const restoreConfig = useClosetStore((s) => s.restoreConfig)
+export default function WasmachinekastConfigurator({ pricingData, editConfig, editItemId }: Props) {
+  const hydrate = useWasmachinekastStore((s) => s.hydrate)
+  const restoreConfig = useWasmachinekastStore((s) => s.restoreConfig)
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // 1. Hydrate pricing data, then restore config (priority: URL cart item > localStorage draft)
   useEffect(() => {
     hydrate(pricingData)
 
+    // Merge washer layouts into store after hydration
+    const wasmergedLayouts = getWasmModuleLayouts(pricingData.modules)
+    useWasmachinekastStore.setState({ moduleLayouts: wasmergedLayouts })
+
     if (editConfig) {
-      // Server-fetched config (authenticated user editing a DB cart item)
       restoreConfig(editConfig)
     } else if (editItemId) {
-      // Unauthenticated: find in localStorage cart
       const item = getCart().items.find((i) => i.id === editItemId)
       if (item) restoreConfig(item.configuration)
     } else {
-      // Restore autosaved draft if available
-      const draft = getDraftConfig('kledingkast')
+      const draft = getDraftConfig('wasmachinekast')
       if (draft) restoreConfig(draft)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []) // intentionally run once on mount
+  }, [])
 
-  // 2. Autosave: subscribe to store changes, debounce-write to localStorage draft
   useEffect(() => {
-    const unsub = useClosetStore.subscribe((state) => {
-      if (!state.pricingData) return // don't overwrite draft with unhydrated defaults
+    const unsub = useWasmachinekastStore.subscribe((state) => {
+      if (!state.pricingData) return
       if (autosaveTimer.current) clearTimeout(autosaveTimer.current)
       autosaveTimer.current = setTimeout(() => {
         const config: ClosetConfigSnapshot = {
@@ -74,22 +74,22 @@ export default function KledingkastConfigurator({ pricingData, editConfig, editI
             : (state.pricingData?.handles.find((h) => h.id === state.doorHandleId)?.nameNl
               ?? state.pricingData?.handles.find((h) => h.id === state.doorHandleId)?.name
               ?? null),
-          diagonalSide: state.diagonalSide,
-          leftDiagStartHeight: state.leftDiagStartHeight,
-          rightDiagStartHeight: state.rightDiagStartHeight,
-          leftDiagTopWidth:  state.leftDiagTopWidth,
-          rightDiagTopWidth: state.rightDiagTopWidth,
-          placementType: state.placementType,
-          backDiagonal: state.backDiagonal,
-          backDiagKinkHeight: state.backDiagKinkHeight,
-          backDiagFlatSectionDepth: state.backDiagFlatSectionDepth,
+          diagonalSide: 'none',
+          leftDiagStartHeight: 0,
+          rightDiagStartHeight: 0,
+          leftDiagTopWidth: 0,
+          rightDiagTopWidth: 0,
+          placementType: 'ingebouwd',
+          backDiagonal: false,
+          backDiagKinkHeight: 0,
+          backDiagFlatSectionDepth: 0,
           doorHandleMaterial: state.doorHandleMaterial,
           doorsExtendToFloor: state.doorsExtendToFloor,
           lightStripsEnabled: state.lightStripsEnabled,
           hasTopCabinet: state.needsTopCabinet(),
           topCabinetHeightCm: state.topCabinetHeight(),
         }
-        saveDraftConfig(config, 'kledingkast')
+        saveDraftConfig(config, 'wasmachinekast')
       }, 500)
     })
 
@@ -100,18 +100,15 @@ export default function KledingkastConfigurator({ pricingData, editConfig, editI
   }, [])
 
   return (
-    <ConfiguratorStoreContext.Provider value={useClosetStore}>
+    <ConfiguratorStoreContext.Provider value={useWasmachinekastStore}>
       <div className="w-full h-[100dvh] md:h-[92vh] flex flex-col lg:flex-row">
-        {/* Canvas — full viewport on mobile, 50vh on tablet, full-height on desktop */}
         <div className="w-full h-full md:h-[50vh] lg:h-full lg:w-2/3">
           <ThreeCanvas />
         </div>
-        {/* Wizard — desktop/tablet only, hidden on mobile (sheet handles it) */}
         <div className="hidden md:block relative w-full lg:w-1/3 h-full bg-white overflow-y-auto pt-24">
           <StepWizard />
         </div>
       </div>
-      {/* Mobile bottom sheet — vaul, only visible below md */}
       <MobileSheet />
     </ConfiguratorStoreContext.Provider>
   )

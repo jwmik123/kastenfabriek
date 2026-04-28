@@ -4,9 +4,9 @@ import { useGLTF, useAnimations } from '@react-three/drei'
 import * as THREE from 'three/webgpu'
 import { useRef, useEffect, useState } from 'react'
 import gsap from 'gsap'
-import type { ModuleLayoutConfig } from './moduleLayouts'
-import { useClosetMaterialInstance, useChromeMaterialInstance } from '../../_shared/materials/ClosetMaterial'
-import { useClosetStore } from '../store'
+import type { ModuleLayoutConfig } from '../../kledingkast/scene/moduleLayouts'
+import { useClosetMaterialInstance, useChromeMaterialInstance } from '../materials/ClosetMaterial'
+import { useConfiguratorStore } from '../store/context'
 
 // All nodes in module GLBs carry a -90° Y rotation.
 // After that rotation: local X → world Z (depth), local Z → world X (width).
@@ -49,13 +49,17 @@ function SpecialElementInner({
   const closetMaterial = useClosetMaterialInstance(hasDoor ? 'binnenkant' : 'buitenkant')
   const chromeMaterial = useChromeMaterialInstance()
 
-  const doorsOpen = useClosetStore((s) => s.doorsOpen)
+  const doorsOpen = useConfiguratorStore((s) => s.doorsOpen)
 
   const proxyRef = useRef({ t: 0 })
   const hoveredRef = useRef(hovered)
   useEffect(() => { hoveredRef.current = hovered }, [hovered])
 
-  const [{ clone, originals, box, clonedClips }] = useState(() => {
+  const isStacked  = !!layout.specialElement.stacked
+  const isDouble   = !!layout.specialElement.double
+  const isCentered = !!layout.specialElement.centered
+
+  const [{ clone, clone2, originals, box, clonedClips }] = useState(() => {
     const c = scene.clone(true)
     const b = new THREE.Box3().setFromObject(c)
     const origs = new Map<string, MeshOriginal>()
@@ -76,23 +80,36 @@ function SpecialElementInner({
       return cl
     })
 
-    return { clone: c, originals: origs, box: b, clonedClips: clips }
+    const c2 = (isStacked || isDouble) ? scene.clone(true) : null
+
+    return { clone: c, clone2: c2, originals: origs, box: b, clonedClips: clips }
   })
 
-  const offsetX = -box.min.x + MODULE_WALL
-  const offsetZ = -box.min.z
+  // For double: washer 1 flush with left wall, washer 2 directly adjacent (0 gap)
+  const offsetX = isDouble
+    ? -box.min.x + MODULE_WALL
+    : isCentered
+      ? MODULE_WALL + targetWidth / 2 - (box.min.x + box.max.x) / 2
+      : -box.min.x + MODULE_WALL
+  const offsetZ = (isCentered || isDouble)
+    ? targetDepth / 2 - (box.min.z + box.max.z) / 2
+    : -box.min.z
 
   const { actions } = useAnimations(clonedClips, clone)
 
   useEffect(() => {
-    clone.traverse((child: THREE.Object3D) => {
-      if (!(child as THREE.Mesh).isMesh) return
-      const mesh = child as THREE.Mesh
-      mesh.material = mesh.name.includes('Metal') ? chromeMaterial : closetMaterial
-      mesh.castShadow = true
-      mesh.receiveShadow = true
-    })
-  }, [clone, closetMaterial, chromeMaterial])
+    const applyMaterial = (obj: THREE.Object3D) => {
+      obj.traverse((child: THREE.Object3D) => {
+        if (!(child as THREE.Mesh).isMesh) return
+        const mesh = child as THREE.Mesh
+        mesh.material = mesh.name.includes('Metal') ? chromeMaterial : closetMaterial
+        mesh.castShadow = true
+        mesh.receiveShadow = true
+      })
+    }
+    applyMaterial(clone)
+    if (clone2) applyMaterial(clone2)
+  }, [clone, clone2, closetMaterial, chromeMaterial])
 
   useEffect(() => {
     const action = Object.values(actions)[0]
@@ -202,14 +219,44 @@ function SpecialElementInner({
     })
   }, [hovered, doorsOpen, actions])
 
+  // clone2 doesn't get the traverse treatment (mesh positions shifted by depthGrowth),
+  // so compensate with an explicit Z offset. Use actual GLB dimensions from box.
+  const washerHeight = box.max.y - box.min.y
+  const depthGrowth  = targetDepth - (box.max.z - box.min.z)
+
   return (
-    <group position={[offsetX, positionY, offsetZ]}>
-      <primitive object={clone} />
-    </group>
+    <>
+      <group position={[offsetX, positionY, offsetZ]}>
+        <primitive object={clone} />
+      </group>
+      {isStacked && clone2 && (
+        <group position={[offsetX, positionY + washerHeight, offsetZ + depthGrowth]}>
+          <primitive object={clone2} />
+        </group>
+      )}
+      {isDouble && clone2 && (
+        <group position={[offsetX + (box.max.x - box.min.x), positionY, offsetZ + depthGrowth]}>
+          <primitive object={clone2} />
+        </group>
+      )}
+    </>
+  )
+}
+
+function WasherPlaceholder({ layout, positionY }: Pick<SpecialElementProps, 'layout' | 'positionY'>) {
+  const dims = layout.specialElement.placeholderDimensions
+  if (!dims) return null
+  return (
+    <mesh position={[dims.w / 2, positionY + dims.h / 2, dims.d / 2]} castShadow receiveShadow>
+      <boxGeometry args={[dims.w, dims.h, dims.d]} />
+      <meshStandardMaterial color="#aaaaaa" roughness={0.6} metalness={0.1} />
+    </mesh>
   )
 }
 
 export default function SpecialElement(props: SpecialElementProps) {
-  if (!props.layout.specialElement.glbPath) return null
+  if (!props.layout.specialElement.glbPath) {
+    return <WasherPlaceholder layout={props.layout} positionY={props.positionY} />
+  }
   return <SpecialElementInner key={props.layout.specialElement.glbPath} {...props} />
 }

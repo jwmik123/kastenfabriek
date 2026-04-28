@@ -2,10 +2,10 @@
 
 import { useMemo } from 'react'
 import * as THREE from 'three/webgpu'
-import { useClosetStore } from '../store'
-import ClosetMaterial from '../../_shared/materials/ClosetMaterial'
-import { getDiagHeightAt, getBackDiagHeightAtZ, CORPUS_WALL } from './diagonalUtils'
-import type { DiagParams } from './diagonalUtils'
+import { useConfiguratorStore } from '../store/context'
+import ClosetMaterial from '../materials/ClosetMaterial'
+import { getDiagHeightAt, getBackDiagHeightAtZ, CORPUS_WALL } from '../../kledingkast/scene/diagonalUtils'
+import type { DiagParams } from '../../kledingkast/scene/diagonalUtils'
 import { trapShape, trapGeo, trapNaN } from '@/utils/debugGeometry'
 
 const WALL = 0.018
@@ -234,54 +234,28 @@ function TopFillerWedge({
 // ---------------------------------------------------------------------------
 // Main corpus
 // ---------------------------------------------------------------------------
-export default function ClosetCorpus() {
-  const width    = useClosetStore((s) => s.width)  / 100
-  const height   = useClosetStore((s) => s.height) / 100
-  const depth    = useClosetStore((s) => s.depth)  / 100
-  const mainHCm  = useClosetStore((s) => s.mainHeight())
-  const mainH    = mainHCm / 100
-  const needsTop = useClosetStore((s) => s.needsTopCabinet())
+export default function ClosetCorpus({ diagParams: p }: { diagParams: DiagParams }) {
+  const needsTop = useConfiguratorStore((s) => s.needsTopCabinet())
 
-  const diagonalSide         = useClosetStore((s) => s.diagonalSide)
-  const leftDiagStartHeight  = useClosetStore((s) => s.leftDiagStartHeight)
-  const rightDiagStartHeight = useClosetStore((s) => s.rightDiagStartHeight)
-  const leftDiagTopWidthCm   = useClosetStore((s) => s.leftDiagTopWidth)
-  const rightDiagTopWidthCm  = useClosetStore((s) => s.rightDiagTopWidth)
-  const widthCm              = useClosetStore((s) => s.width)
-  const backDiagonal         = useClosetStore((s) => s.backDiagonal)
-  const backDiagKinkHeightCm = useClosetStore((s) => s.backDiagKinkHeight)
-  const backDiagFlatSectionDepthCm = useClosetStore((s) => s.backDiagFlatSectionDepth)
-
-  const p = useMemo(() => ({
-    diagonalSide,
-    leftDiagStartHeight:  Math.min(leftDiagStartHeight,  mainHCm - 20) / 100,
-    rightDiagStartHeight: Math.min(rightDiagStartHeight, mainHCm - 20) / 100,
-    leftDiagTopWidth:  leftDiagTopWidthCm  / 100,
-    rightDiagTopWidth: rightDiagTopWidthCm / 100,
-    outerWidth:        widthCm             / 100,
-    mainHeight:        mainH,
-    closetHeight:      height,
-    backDiagonal,
-    backDiagKinkHeight:        backDiagKinkHeightCm        / 100,
-    backDiagFlatSectionDepth:  backDiagFlatSectionDepthCm  / 100,
-    outerDepth:                depth,
-  }), [diagonalSide, leftDiagStartHeight, rightDiagStartHeight, leftDiagTopWidthCm, rightDiagTopWidthCm, widthCm, mainHCm, mainH, height, backDiagonal, backDiagKinkHeightCm, backDiagFlatSectionDepthCm, depth])
+  // Dimensions are sourced from diagParams (already in metres, pre-clamped by scene compositor)
+  const width  = p.outerWidth
+  const height = p.closetHeight
+  const depth  = p.outerDepth
+  const mainH  = p.mainHeight
 
   const hasLeft  = p.diagonalSide === 'left'  || p.diagonalSide === 'both'
   const hasRight = p.diagonalSide === 'right' || p.diagonalSide === 'both'
 
   // ---- Back diagonal top panels ----
-  // The full slope is defined by closetHeight (the actual outer closet height), NOT mainH.
-  // Corpus portion: clipped at Y=mainH. crossingWorldZ is where the full slope crosses mainH.
-  const kinkHm   = backDiagKinkHeightCm        / 100
-  const flatSecM = backDiagFlatSectionDepthCm  / 100
+  const kinkHm    = p.backDiagKinkHeight
+  const flatSecM  = p.backDiagFlatSectionDepth
   const depthRunM = depth - flatSecM
   const heightDropFull = height - kinkHm
-  const crossingWorldZ = (backDiagonal && heightDropFull > 0.001)
+  const crossingWorldZ = (p.backDiagonal && heightDropFull > 0.001)
     ? depthRunM * (mainH - kinkHm) / heightDropFull
     : 0
 
-  // ---- Side diagonal top panel trimming (existing logic) ----
+  // ---- Side diagonal top panel trimming ----
   const topPanelY = needsTop
     ? (height - SIDE_WALL_EXTRA) - WALL / 2
     : mainH - WALL / 2
@@ -326,7 +300,7 @@ export default function ClosetCorpus() {
       />
 
       {/* Top panels */}
-      {backDiagonal ? (
+      {p.backDiagonal ? (
         <>
           {/* Flat top panel: covers from crossingWorldZ to depth at Y=mainH.
               For non-TC closets this is approximately the flat section only.

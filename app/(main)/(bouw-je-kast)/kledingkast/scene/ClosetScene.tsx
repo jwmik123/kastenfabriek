@@ -8,13 +8,14 @@ import { ClosetMaterialProvider } from '../../_shared/materials/ClosetMaterial'
 import { getDiagHeightAt, getBackDiagHeightAtZ } from './diagonalUtils'
 import type { DiagParams } from './diagonalUtils'
 import { trapNaN, trapGeo } from '@/utils/debugGeometry'
-import ClosetCorpus from './ClosetCorpus'
+import ClosetCorpus from '../../_shared/three/ClosetCorpus'
 import TopCabinet from './TopCabinet'
 import OnderstelPlinth from './OnderstelPlinth'
-import Module from './Module'
+import Module from '../../_shared/three/Module'
 import StructuralKinkShelf from './StructuralKinkShelf'
 import StructuralSideKinkShelf from './StructuralSideKinkShelf'
 import InstancedLightStrips from './InstancedLightStrips'
+import { getLayoutById } from './moduleLayouts'
 import { WALL, ONDERSTEL_HEIGHT, ONDERSTEL_GAP, CLOSET_INSIDE_INSET, MODULE_FLOOR_Y } from './closetConstants'
 // import { StripWarmthProvider } from '../../_shared/materials/StripWarmthContext'
 const BORDER_M = 0.015 // 15mm border in world space
@@ -211,22 +212,26 @@ export default function ClosetScene() {
 
   return (
     <ClosetMaterialProvider>
-      <ClosetCorpus />
+      <ClosetCorpus diagParams={diagParams} />
       {lightStripsEnabled && doorsOpen && <InstancedLightStrips diagParams={diagParams} />}
       <TopCabinet />
       <OnderstelPlinth />
       {modules
         .filter((m) => m.layoutId !== null)
-        .map((m) => (
-          <Module
-            key={m.slotIndex}
-            index={m.slotIndex}
-            layoutId={m.layoutId!}
-            hasDoor={m.hasDoor}
-            span={m.span}
-            diagParams={diagParams}
-          />
-        ))}
+        .map((m) => {
+          const layout = getLayoutById(m.layoutId!)
+          if (!layout) return null
+          return (
+            <Module
+              key={m.slotIndex}
+              index={m.slotIndex}
+              layout={layout}
+              hasDoor={m.hasDoor}
+              span={m.span}
+              diagParams={diagParams}
+            />
+          )
+        })}
       {modules.map((m, i) => {
         const isConsumed = i > 0 && modules[i - 1].span === 2
         if (isConsumed) return null
