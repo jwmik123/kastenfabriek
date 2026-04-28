@@ -8,6 +8,7 @@ import { getDiagHeightAt, getBackDiagHeightAtZ } from '../scene/diagonalUtils'
 import { Toggle } from '@/components/ui/Toggle'
 import { cn } from '@/lib/utils'
 import { Minus, Plus } from 'lucide-react'
+import Carousel from '../components/Carousel'
 
 const WALL = 0.018
 const ONDERSTEL_HEIGHT = 0.108
@@ -210,34 +211,34 @@ export default function ModulesStep() {
                   )}
                 </div>
 
-                {/* Indeling grid */}
+                {/* Indeling carousel */}
                 <div className="space-y-2.5">
                   {isUnderDiagonal && (
                     <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
                       Schuin vak — hoogte beperkt tot {Math.round(selectedSlotEffectiveHeightM * 100)} cm. Niet alle indelingen passen.
                     </p>
                   )}
-                  <div className="grid grid-cols-4 gap-2">
-                    {availableLayouts.map((layout) => {
-                      const LayoutSvg = LAYOUT_SVGS[layout.id]
-                      const isActive = modules[selectedSlot]?.layoutId === layout.id
+                  <Carousel
+                    items={availableLayouts.map((l) => ({ ...l, id: String(l.id) }))}
+                    activeId={modules[selectedSlot]?.layoutId != null ? String(modules[selectedSlot].layoutId) : null}
+                    renderItem={(layout, isActive) => {
+                      const LayoutSvg = LAYOUT_SVGS[Number(layout.id)]
                       return (
                         <button
-                          key={layout.id}
-                          onClick={() => setModuleLayout(selectedSlot, layout.id)}
-                          style={{ aspectRatio: '0.55' }}
+                          onClick={() => setModuleLayout(selectedSlot!, Number(layout.id))}
+                          style={{ aspectRatio: '1' }}
                           className={cn(
-                            'flex items-center justify-center rounded-md transition-all px-[6px] py-[10px]',
+                            'w-full flex items-center justify-center rounded-md transition-all py-2',
                             isActive
                               ? 'bg-primary text-primary-foreground border-2 border-primary'
                               : 'bg-background text-foreground border border-border/50 hover:border-border',
                           )}
                         >
-                          {LayoutSvg && <LayoutSvg className="w-1/3 h-auto" />}
+                          {LayoutSvg && <LayoutSvg className="w-1/4 h-auto" />}
                         </button>
                       )
-                    })}
-                  </div>
+                    }}
+                  />
                 </div>
               </>
             )}
