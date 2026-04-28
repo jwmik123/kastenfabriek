@@ -12,6 +12,8 @@ import { WALL, ONDERSTEL_HEIGHT, ONDERSTEL_GAP, CLOSET_INSIDE_INSET, MODULE_FLOO
 import { useGLTF } from '@react-three/drei'
 import { useClosetMaterialInstance } from '../../_shared/materials/ClosetMaterial'
 import { trapNaN, trapGeo } from '@/utils/debugGeometry'
+import { computeSlotWidthsM } from '../../_shared/store/slotWidths'
+import { getWasmLayoutConfig } from '../moduleLayoutConfigs'
 
 const BORDER_M = 0.015
 
@@ -26,7 +28,7 @@ function WasmModuleSlotInteraction({
   diagParams: DiagParams
 }) {
   const depth = useWasmachinekastStore((s) => s.depth) / 100
-  const moduleCount = useWasmachinekastStore((s) => s.moduleCount)
+  const allModules = useWasmachinekastStore((s) => s.modules)
   const width = useWasmachinekastStore((s) => s.width) / 100
   const mainHeightCm = useWasmachinekastStore((s) => s.mainHeight())
   const selectedSlot = useWasmachinekastStore((s) => s.selectedSlot)
@@ -36,12 +38,14 @@ function WasmModuleSlotInteraction({
   const [hovered, setHovered] = useState(false)
 
   const innerW = width - WALL * 2
-  const slotW = innerW / moduleCount
   const moduleDepth = depth - WALL - CLOSET_INSIDE_INSET
   const mainHeightM = mainHeightCm / 100
 
+  const slotWidthsM = useMemo(() => computeSlotWidthsM(allModules, innerW), [allModules, innerW])
+  const slotOffset = slotWidthsM.slice(0, slotIndex).reduce((a, b) => a + b, 0)
+  const totalW = slotWidthsM.slice(slotIndex, slotIndex + span).reduce((a, b) => a + b, 0)
+
   const isSelected = selectedSlot === slotIndex
-  const totalW = span * slotW
 
   const shapeGeo = useMemo(() => {
     trapNaN(totalW, `WasmSlotInteraction${slotIndex}-totalW`)
@@ -90,7 +94,7 @@ function WasmModuleSlotInteraction({
   }, [])
 
   return (
-    <group position={[(-innerW / 2) + slotIndex * slotW, MODULE_FLOOR_Y, WALL]}>
+    <group position={[(-innerW / 2) + slotOffset, MODULE_FLOOR_Y, WALL]}>
       <mesh
         position={[0, 0, moduleDepth + 0.002]}
         geometry={shapeGeo}
@@ -178,16 +182,20 @@ export default function WasmachinekastScene() {
       <WasmOnderstelPlinth />
       {modules
         .filter((m) => m.layoutId !== null)
-        .map((m) => (
-          <Module
-            key={m.slotIndex}
-            index={m.slotIndex}
-            layoutId={m.layoutId!}
-            hasDoor={m.hasDoor}
-            span={m.span}
-            diagParams={diagParams}
-          />
-        ))}
+        .map((m) => {
+          const layout = getWasmLayoutConfig(m.layoutId!)
+          if (!layout) return null
+          return (
+            <Module
+              key={m.slotIndex}
+              index={m.slotIndex}
+              layout={layout}
+              hasDoor={m.hasDoor}
+              span={m.span}
+              diagParams={diagParams}
+            />
+          )
+        })}
       {modules.map((m, i) => {
         const isConsumed = i > 0 && modules[i - 1].span === 2
         if (isConsumed) return null

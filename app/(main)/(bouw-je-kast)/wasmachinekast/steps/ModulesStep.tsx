@@ -6,7 +6,7 @@ import { LAYOUT_SVGS } from '../../kledingkast/components/LayoutSvgs'
 import Carousel from '../../kledingkast/components/Carousel'
 import { Toggle } from '@/components/ui/Toggle'
 import { cn } from '@/lib/utils'
-import { Lock, Minus, Plus, WashingMachine } from 'lucide-react'
+import { Lock, Minus, Plus } from 'lucide-react'
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
@@ -157,13 +157,12 @@ export default function ModulesStep() {
                 {selectedSlot !== washerSlotIndex && (
                   <div className="space-y-2.5">
                     <Carousel
-                      items={moduleLayouts.map((l) => ({ ...l, id: String(l.layoutId) }))}
+                      items={moduleLayouts.filter((l) => !washerIds.has(l.layoutId)).map((l) => ({ ...l, id: String(l.layoutId) }))}
                       activeId={modules[selectedSlot]?.layoutId != null ? String(modules[selectedSlot].layoutId) : null}
                       renderItem={(layout, isActive) => {
                         const lid = Number(layout.id)
-                        const isWasher = washerIds.has(lid)
                         const layoutObj = moduleLayouts.find((l) => l.layoutId === lid) ?? { layoutId: lid, name: '', description: '', contents: { shelves: 0, rods: 0, drawers: 0 }, priceDouble: 0, priceSingle: 0, availableForTopCabinet: false }
-                        const available = isWasher || isLayoutAvailable(layoutObj, moduleWidthCm)
+                        const available = isLayoutAvailable(layoutObj, moduleWidthCm)
                         const LayoutSvg = LAYOUT_SVGS[lid]
 
                         return (
@@ -181,9 +180,7 @@ export default function ModulesStep() {
                                   : 'bg-background text-muted-foreground border border-border/30 opacity-40 cursor-not-allowed',
                             )}
                           >
-                            {isWasher ? (
-                              <WashingMachine className="w-1/3 h-auto" />
-                            ) : LayoutSvg ? (
+                            {LayoutSvg ? (
                               <LayoutSvg className="w-1/4 h-auto" />
                             ) : (
                               <span className="text-[10px] text-center px-1 leading-tight">{layout.name}</span>

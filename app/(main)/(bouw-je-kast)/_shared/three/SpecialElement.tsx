@@ -56,6 +56,7 @@ function SpecialElementInner({
   useEffect(() => { hoveredRef.current = hovered }, [hovered])
 
   const isStacked  = !!layout.specialElement.stacked
+  const isDouble   = !!layout.specialElement.double
   const isCentered = !!layout.specialElement.centered
 
   const [{ clone, clone2, originals, box, clonedClips }] = useState(() => {
@@ -79,15 +80,18 @@ function SpecialElementInner({
       return cl
     })
 
-    const c2 = isStacked ? scene.clone(true) : null
+    const c2 = (isStacked || isDouble) ? scene.clone(true) : null
 
     return { clone: c, clone2: c2, originals: origs, box: b, clonedClips: clips }
   })
 
-  const offsetX = isCentered
-    ? MODULE_WALL + targetWidth / 2 - (box.min.x + box.max.x) / 2
-    : -box.min.x + MODULE_WALL
-  const offsetZ = isCentered
+  // For double: washer 1 flush with left wall, washer 2 directly adjacent (0 gap)
+  const offsetX = isDouble
+    ? -box.min.x + MODULE_WALL
+    : isCentered
+      ? MODULE_WALL + targetWidth / 2 - (box.min.x + box.max.x) / 2
+      : -box.min.x + MODULE_WALL
+  const offsetZ = (isCentered || isDouble)
     ? targetDepth / 2 - (box.min.z + box.max.z) / 2
     : -box.min.z
 
@@ -215,7 +219,10 @@ function SpecialElementInner({
     })
   }, [hovered, doorsOpen, actions])
 
-  const unitHeight = isStacked ? layout.specialElement.height / 2 : 0
+  // clone2 doesn't get the traverse treatment (mesh positions shifted by depthGrowth),
+  // so compensate with an explicit Z offset. Use actual GLB dimensions from box.
+  const washerHeight = box.max.y - box.min.y
+  const depthGrowth  = targetDepth - (box.max.z - box.min.z)
 
   return (
     <>
@@ -223,7 +230,12 @@ function SpecialElementInner({
         <primitive object={clone} />
       </group>
       {isStacked && clone2 && (
-        <group position={[offsetX, positionY + unitHeight, offsetZ]}>
+        <group position={[offsetX, positionY + washerHeight, offsetZ + depthGrowth]}>
+          <primitive object={clone2} />
+        </group>
+      )}
+      {isDouble && clone2 && (
+        <group position={[offsetX + (box.max.x - box.min.x), positionY, offsetZ + depthGrowth]}>
           <primitive object={clone2} />
         </group>
       )}

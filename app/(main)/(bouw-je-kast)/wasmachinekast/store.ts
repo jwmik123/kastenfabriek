@@ -80,6 +80,14 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
   },
 
   setWasherModule: (slotIndex, layoutId) => {
+    const { washerSlotIndex } = get()
+    if (washerSlotIndex !== null && washerSlotIndex !== slotIndex) {
+      set((s) => ({
+        modules: s.modules.map((m) =>
+          m.slotIndex === washerSlotIndex ? { ...m, layoutId: null, fixedWidth: undefined } : m
+        ),
+      }))
+    }
     set({ washerSlotIndex: slotIndex, washerLayoutId: layoutId })
     get().setModuleLayout(slotIndex, layoutId)
   },

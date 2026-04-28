@@ -24,6 +24,7 @@ export type ModuleLayoutConfig = {
     placeholderDimensions?: { w: number; h: number; d: number } // shown when glbPath is null but height > 0
     centered?: boolean     // center GLB in slot interior (X and Z); default: left/back-aligned
     stacked?: boolean      // render two GLB instances stacked vertically; height/2 per unit
+    double?: boolean       // render two GLB instances side by side; each centered in half the slot
   }
 
   fillZone: {

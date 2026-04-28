@@ -5,6 +5,7 @@ import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three/webgpu'
 import { useWasmachinekastStore } from '../store'
 import { WALL, MODULE_WALL, MODULE_FLOOR_Y } from '../../kledingkast/scene/closetConstants'
+import { computeSlotWidthsM } from '../../_shared/store/slotWidths'
 
 interface MeasurementSpec {
   id: string
@@ -29,13 +30,13 @@ function useWasmMeasurementSpecs(): MeasurementSpec[] {
   const widthM = useWasmachinekastStore((s) => s.width) / 100
   const heightM = useWasmachinekastStore((s) => s.height) / 100
   const depthM = useWasmachinekastStore((s) => s.depth) / 100
-  const moduleCount = useWasmachinekastStore((s) => s.moduleCount)
+  const allModules = useWasmachinekastStore((s) => s.modules)
   const widthCm = useWasmachinekastStore((s) => s.width)
   const heightCm = useWasmachinekastStore((s) => s.height)
 
   return useMemo(() => {
     const innerW = widthM - WALL * 2
-    const slotW = innerW / moduleCount
+    const slotWidthsM = computeSlotWidthsM(allModules, innerW)
     const frontZ = depthM + 0.02
     const specs: MeasurementSpec[] = []
 
@@ -57,9 +58,11 @@ function useWasmMeasurementSpecs(): MeasurementSpec[] {
       labelCm: heightCm,
     })
 
-    for (let i = 0; i < moduleCount; i++) {
-      const x1 = -innerW / 2 + i * slotW + MODULE_WALL
-      const x2 = -innerW / 2 + (i + 1) * slotW - MODULE_WALL
+    let xOffset = 0
+    for (let i = 0; i < allModules.length; i++) {
+      const slotW = slotWidthsM[i]
+      const x1 = -innerW / 2 + xOffset + MODULE_WALL
+      const x2 = -innerW / 2 + xOffset + slotW - MODULE_WALL
       specs.push({
         id: `module-width-${i}`,
         p1: new THREE.Vector3(x1, MODULE_FLOOR_Y, frontZ),
@@ -68,10 +71,11 @@ function useWasmMeasurementSpecs(): MeasurementSpec[] {
         offsetDist: 0.06,
         labelCm: ((x2 - x1) * 100).toFixed(1),
       })
+      xOffset += slotW
     }
 
     return specs
-  }, [widthM, heightM, depthM, moduleCount, widthCm, heightCm])
+  }, [widthM, heightM, depthM, allModules, widthCm, heightCm])
 }
 
 function WasmMeasurementProjector({

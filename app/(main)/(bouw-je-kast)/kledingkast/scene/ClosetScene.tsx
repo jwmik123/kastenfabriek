@@ -15,6 +15,7 @@ import Module from '../../_shared/three/Module'
 import StructuralKinkShelf from './StructuralKinkShelf'
 import StructuralSideKinkShelf from './StructuralSideKinkShelf'
 import InstancedLightStrips from './InstancedLightStrips'
+import { getLayoutById } from './moduleLayouts'
 import { WALL, ONDERSTEL_HEIGHT, ONDERSTEL_GAP, CLOSET_INSIDE_INSET, MODULE_FLOOR_Y } from './closetConstants'
 // import { StripWarmthProvider } from '../../_shared/materials/StripWarmthContext'
 const BORDER_M = 0.015 // 15mm border in world space
@@ -217,16 +218,20 @@ export default function ClosetScene() {
       <OnderstelPlinth />
       {modules
         .filter((m) => m.layoutId !== null)
-        .map((m) => (
-          <Module
-            key={m.slotIndex}
-            index={m.slotIndex}
-            layoutId={m.layoutId!}
-            hasDoor={m.hasDoor}
-            span={m.span}
-            diagParams={diagParams}
-          />
-        ))}
+        .map((m) => {
+          const layout = getLayoutById(m.layoutId!)
+          if (!layout) return null
+          return (
+            <Module
+              key={m.slotIndex}
+              index={m.slotIndex}
+              layout={layout}
+              hasDoor={m.hasDoor}
+              span={m.span}
+              diagParams={diagParams}
+            />
+          )
+        })}
       {modules.map((m, i) => {
         const isConsumed = i > 0 && modules[i - 1].span === 2
         if (isConsumed) return null

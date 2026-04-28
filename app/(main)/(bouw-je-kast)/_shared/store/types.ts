@@ -9,6 +9,7 @@ export interface BaseModuleSlot {
   buitenkantMaterialId?: string
   binnenkantMaterialId?: string
   hasPowerHole?: boolean
+  fixedWidth?: number  // cm; when set, slot has fixed width (e.g. washer modules)
 }
 
 // Defined here so _shared/store does not depend on kledingkast internals.

@@ -29,6 +29,7 @@ const WASHER_DOUBLE_CONFIG: ModuleLayoutConfig = {
     height: WASHER_HEIGHT,
     anchor: { type: 'fixed', fromBottom: 0 },
     centered: true,
+    double: true,
   },
   fillZone: {
     above: { type: 'shelves', spacing: SHELF_SPACING },
