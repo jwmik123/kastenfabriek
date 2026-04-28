@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest'
 import {
   WASHER_SINGLE,
   WASHER_DOUBLE,
+  WASHER_STACKED,
+  WASHER_LAYOUTS,
   isLayoutAvailable,
   getWasmModuleLayouts,
 } from '../moduleLayouts'
@@ -18,8 +20,12 @@ const baseLayout: ModuleLayout = {
 }
 
 describe('WASHER_SINGLE', () => {
-  it('has minSlotWidth of 75', () => {
-    expect(WASHER_SINGLE.minSlotWidth).toBe(75)
+  it('has minSlotWidth of 65', () => {
+    expect(WASHER_SINGLE.minSlotWidth).toBe(65)
+  })
+
+  it('has layoutId 11', () => {
+    expect(WASHER_SINGLE.layoutId).toBe(11)
   })
 
   it('is not available for top cabinet', () => {
@@ -28,12 +34,39 @@ describe('WASHER_SINGLE', () => {
 })
 
 describe('WASHER_DOUBLE', () => {
-  it('has minSlotWidth of 150', () => {
-    expect(WASHER_DOUBLE.minSlotWidth).toBe(150)
+  it('has minSlotWidth of 130', () => {
+    expect(WASHER_DOUBLE.minSlotWidth).toBe(130)
+  })
+
+  it('has layoutId 12', () => {
+    expect(WASHER_DOUBLE.layoutId).toBe(12)
   })
 
   it('is not available for top cabinet', () => {
     expect(WASHER_DOUBLE.availableForTopCabinet).toBe(false)
+  })
+})
+
+describe('WASHER_STACKED', () => {
+  it('has layoutId 13', () => {
+    expect(WASHER_STACKED.layoutId).toBe(13)
+  })
+
+  it('has minSlotWidth of 65', () => {
+    expect(WASHER_STACKED.minSlotWidth).toBe(65)
+  })
+
+  it('is not available for top cabinet', () => {
+    expect(WASHER_STACKED.availableForTopCabinet).toBe(false)
+  })
+})
+
+describe('WASHER_LAYOUTS', () => {
+  it('contains all three washer variants', () => {
+    const ids = WASHER_LAYOUTS.map((l) => l.layoutId)
+    expect(ids).toContain(11)
+    expect(ids).toContain(12)
+    expect(ids).toContain(13)
   })
 })
 
@@ -47,7 +80,7 @@ describe('isLayoutAvailable', () => {
   })
 
   it('returns true for washer single when slot exactly meets minimum', () => {
-    expect(isLayoutAvailable(WASHER_SINGLE, 75)).toBe(true)
+    expect(isLayoutAvailable(WASHER_SINGLE, 65)).toBe(true)
   })
 
   it('returns true for washer single when slot is wider', () => {
@@ -59,7 +92,15 @@ describe('isLayoutAvailable', () => {
   })
 
   it('returns true for washer double when slot meets minimum', () => {
-    expect(isLayoutAvailable(WASHER_DOUBLE, 150)).toBe(true)
+    expect(isLayoutAvailable(WASHER_DOUBLE, 130)).toBe(true)
+  })
+
+  it('returns false for washer stacked when slot too narrow', () => {
+    expect(isLayoutAvailable(WASHER_STACKED, 60)).toBe(false)
+  })
+
+  it('returns true for washer stacked when slot exactly meets minimum', () => {
+    expect(isLayoutAvailable(WASHER_STACKED, 65)).toBe(true)
   })
 })
 
@@ -71,18 +112,23 @@ describe('getWasmModuleLayouts', () => {
 
   it('includes WASHER_SINGLE', () => {
     const result = getWasmModuleLayouts([])
-    expect(result.find((l) => l.layoutId === WASHER_SINGLE.layoutId)).toBeDefined()
+    expect(result.find((l) => l.layoutId === 11)).toBeDefined()
   })
 
   it('includes WASHER_DOUBLE', () => {
     const result = getWasmModuleLayouts([])
-    expect(result.find((l) => l.layoutId === WASHER_DOUBLE.layoutId)).toBeDefined()
+    expect(result.find((l) => l.layoutId === 12)).toBeDefined()
+  })
+
+  it('includes WASHER_STACKED', () => {
+    const result = getWasmModuleLayouts([])
+    expect(result.find((l) => l.layoutId === 13)).toBeDefined()
   })
 
   it('washer layouts come after non-washer sanity layouts', () => {
     const result = getWasmModuleLayouts([baseLayout])
     const sanityIdx = result.findIndex((l) => l.layoutId === 1)
-    const washerIdx = result.findIndex((l) => l.layoutId === WASHER_SINGLE.layoutId)
+    const washerIdx = result.findIndex((l) => l.layoutId === 11)
     expect(washerIdx).toBeGreaterThan(sanityIdx)
   })
 
@@ -110,7 +156,7 @@ describe('getWasmModuleLayouts', () => {
     const result = getWasmModuleLayouts([sanityWasher])
     const entry = result.find((l) => l.layoutId === WASHER_SINGLE.layoutId)!
     expect(entry.priceSingle).toBe(99)
-    expect(entry.minSlotWidth).toBe(75)
+    expect(entry.minSlotWidth).toBe(65)
     expect(entry.name).toBe('Wasmachine (enkel)')
   })
 })
