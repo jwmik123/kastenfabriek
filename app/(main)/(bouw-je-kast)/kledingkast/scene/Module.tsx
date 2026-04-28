@@ -426,6 +426,14 @@ export default function Module({ index, layoutId, hasDoor, span, diagParams: p }
         </mesh>
       )}
 
+      {/* Plug hole circle mesh */}
+      {moduleSlot?.hasPowerHole && (
+        <mesh position={[centerX, 0.1, MODULE_WALL + 0.001]}>
+          <circleGeometry args={[0.04, 32]} />
+          <meshStandardMaterial color="#888" roughness={0.8} metalness={0} />
+        </mesh>
+      )}
+
       {/* Left wall */}
       {isBackDiag ? (
         bdSideWallGeo && (

@@ -133,3 +133,30 @@ describe('setDoorsExtendToFloor', () => {
     expect(useClosetStore.getState().doorsExtendToFloor).toBe(false)
   })
 })
+
+describe('setHasPowerHole', () => {
+  beforeEach(resetStore)
+
+  it('sets hasPowerHole true on the given slot', () => {
+    useClosetStore.getState().setHasPowerHole(0, true)
+    expect(useClosetStore.getState().modules[0].hasPowerHole).toBe(true)
+  })
+
+  it('sets hasPowerHole false on the given slot', () => {
+    useClosetStore.getState().setHasPowerHole(0, true)
+    useClosetStore.getState().setHasPowerHole(0, false)
+    expect(useClosetStore.getState().modules[0].hasPowerHole).toBe(false)
+  })
+
+  it('does not affect other slots', () => {
+    useClosetStore.setState({ moduleCount: 3, modules: [
+      { slotIndex: 0, layoutId: null, hasDoor: true, span: 1, hasPowerHole: false },
+      { slotIndex: 1, layoutId: null, hasDoor: true, span: 1, hasPowerHole: false },
+      { slotIndex: 2, layoutId: null, hasDoor: true, span: 1, hasPowerHole: false },
+    ]})
+    useClosetStore.getState().setHasPowerHole(1, true)
+    expect(useClosetStore.getState().modules[0].hasPowerHole).toBe(false)
+    expect(useClosetStore.getState().modules[1].hasPowerHole).toBe(true)
+    expect(useClosetStore.getState().modules[2].hasPowerHole).toBe(false)
+  })
+})

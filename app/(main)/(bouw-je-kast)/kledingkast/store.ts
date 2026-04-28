@@ -96,6 +96,7 @@ interface ClosetState {
   setModuleLayout: (slotIndex: number, layoutId: number) => void
   setModuleSpan: (slotIndex: number, span: 1 | 2) => void
   toggleModuleDoor: (slotIndex: number) => void
+  setHasPowerHole: (slotIndex: number, value: boolean) => void
   setBuitenkantMaterialId: (id: string) => void
   setBinnenkantMaterialId: (id: string) => void
   setModuleMaterial: (slotIndex: number, variant: 'buitenkant' | 'binnenkant', id: string) => void
@@ -546,6 +547,11 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
   toggleModuleDoor: (slotIndex) =>
     set((s) => ({
       modules: s.modules.map((m) => (m.slotIndex === slotIndex ? { ...m, hasDoor: !m.hasDoor } : m)),
+    })),
+
+  setHasPowerHole: (slotIndex, value) =>
+    set((s) => ({
+      modules: s.modules.map((m) => (m.slotIndex === slotIndex ? { ...m, hasPowerHole: value } : m)),
     })),
 
   setBuitenkantMaterialId: (buitenkantMaterialId) =>
