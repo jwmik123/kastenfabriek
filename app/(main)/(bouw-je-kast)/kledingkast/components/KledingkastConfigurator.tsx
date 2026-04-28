@@ -37,7 +37,7 @@ export default function KledingkastConfigurator({ pricingData, editConfig, editI
       if (item) restoreConfig(item.configuration)
     } else {
       // Restore autosaved draft if available
-      const draft = getDraftConfig()
+      const draft = getDraftConfig('kledingkast')
       if (draft) restoreConfig(draft)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -89,7 +89,7 @@ export default function KledingkastConfigurator({ pricingData, editConfig, editI
           hasTopCabinet: state.needsTopCabinet(),
           topCabinetHeightCm: state.topCabinetHeight(),
         }
-        saveDraftConfig(config)
+        saveDraftConfig(config, 'kledingkast')
       }, 500)
     })
 

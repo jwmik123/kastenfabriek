@@ -38,7 +38,7 @@ export default function WasmachinekastConfigurator({ pricingData, editConfig, ed
       const item = getCart().items.find((i) => i.id === editItemId)
       if (item) restoreConfig(item.configuration)
     } else {
-      const draft = getDraftConfig()
+      const draft = getDraftConfig('wasmachinekast')
       if (draft) restoreConfig(draft)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -89,7 +89,7 @@ export default function WasmachinekastConfigurator({ pricingData, editConfig, ed
           hasTopCabinet: state.needsTopCabinet(),
           topCabinetHeightCm: state.topCabinetHeight(),
         }
-        saveDraftConfig(config)
+        saveDraftConfig(config, 'wasmachinekast')
       }, 500)
     })
 
