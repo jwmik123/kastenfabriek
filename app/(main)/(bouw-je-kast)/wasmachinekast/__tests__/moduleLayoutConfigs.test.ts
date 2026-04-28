@@ -8,6 +8,16 @@ describe('getWasmLayoutConfig — washer variants', () => {
       expect(cfg.specialElement.glbPath).toBe('/objects/washer.glb')
     })
 
+    it('has centered: true', () => {
+      const cfg = getWasmLayoutConfig(11)!
+      expect(cfg.specialElement.centered).toBe(true)
+    })
+
+    it('does not have stacked flag', () => {
+      const cfg = getWasmLayoutConfig(11)!
+      expect(cfg.specialElement.stacked).toBeFalsy()
+    })
+
     it('uses fixed fromBottom: 0 anchor', () => {
       const cfg = getWasmLayoutConfig(11)!
       expect(cfg.specialElement.anchor).toEqual({ type: 'fixed', fromBottom: 0 })
@@ -33,6 +43,16 @@ describe('getWasmLayoutConfig — washer variants', () => {
     it('uses fixed fromBottom: 0 anchor', () => {
       const cfg = getWasmLayoutConfig(12)!
       expect(cfg.specialElement.anchor).toEqual({ type: 'fixed', fromBottom: 0 })
+    })
+
+    it('has centered: true', () => {
+      const cfg = getWasmLayoutConfig(12)!
+      expect(cfg.specialElement.centered).toBe(true)
+    })
+
+    it('does not have stacked flag', () => {
+      const cfg = getWasmLayoutConfig(12)!
+      expect(cfg.specialElement.stacked).toBeFalsy()
     })
 
     it('fill above is shelves', () => {
@@ -64,6 +84,16 @@ describe('getWasmLayoutConfig — washer variants', () => {
     it('has washer zone height of 1.80m (2 × 0.90m)', () => {
       const cfg = getWasmLayoutConfig(13)!
       expect(cfg.specialElement.height).toBeCloseTo(1.80)
+    })
+
+    it('has centered: true', () => {
+      const cfg = getWasmLayoutConfig(13)!
+      expect(cfg.specialElement.centered).toBe(true)
+    })
+
+    it('has stacked: true', () => {
+      const cfg = getWasmLayoutConfig(13)!
+      expect(cfg.specialElement.stacked).toBe(true)
     })
 
     it('fill above is shelves', () => {

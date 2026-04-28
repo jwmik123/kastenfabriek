@@ -12,6 +12,7 @@ const WASHER_SINGLE_CONFIG: ModuleLayoutConfig = {
     glbPath: '/objects/washer.glb',
     height: WASHER_HEIGHT,
     anchor: { type: 'fixed', fromBottom: 0 },
+    centered: true,
   },
   fillZone: {
     above: { type: 'shelves', spacing: SHELF_SPACING },
@@ -27,6 +28,7 @@ const WASHER_DOUBLE_CONFIG: ModuleLayoutConfig = {
     glbPath: '/objects/washer.glb',
     height: WASHER_HEIGHT,
     anchor: { type: 'fixed', fromBottom: 0 },
+    centered: true,
   },
   fillZone: {
     above: { type: 'shelves', spacing: SHELF_SPACING },
@@ -42,6 +44,8 @@ const WASHER_STACKED_CONFIG: ModuleLayoutConfig = {
     glbPath: '/objects/washer.glb',
     height: WASHER_STACKED_HEIGHT,
     anchor: { type: 'fixed', fromBottom: 0 },
+    centered: true,
+    stacked: true,
   },
   fillZone: {
     above: { type: 'shelves', spacing: SHELF_SPACING },
