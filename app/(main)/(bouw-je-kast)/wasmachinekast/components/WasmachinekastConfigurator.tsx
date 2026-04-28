@@ -1,0 +1,115 @@
+'use client'
+
+import { useEffect, useRef } from 'react'
+import dynamic from 'next/dynamic'
+import type { FullPricingData } from '@/types/configurator-pricing'
+import type { ClosetConfigSnapshot } from '@/lib/cart/types'
+import { useWasmachinekastStore } from '../store'
+import { ConfiguratorStoreContext } from '../../_shared/store/context'
+import { getWasmModuleLayouts } from '../moduleLayouts'
+import StepWizard from './StepWizard'
+import MobileSheet from './MobileSheet'
+import { getDraftConfig, saveDraftConfig } from '@/lib/cart/draft-config'
+import { getCart } from '@/lib/cart/cart-store'
+
+const ThreeCanvas = dynamic(() => import('../scene/WasmachinekastCanvas'), { ssr: false })
+
+interface Props {
+  pricingData: FullPricingData
+  editConfig: ClosetConfigSnapshot | null
+  editItemId: string | null
+}
+
+export default function WasmachinekastConfigurator({ pricingData, editConfig, editItemId }: Props) {
+  const hydrate = useWasmachinekastStore((s) => s.hydrate)
+  const restoreConfig = useWasmachinekastStore((s) => s.restoreConfig)
+  const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    hydrate(pricingData)
+
+    // Merge washer layouts into store after hydration
+    const wasmergedLayouts = getWasmModuleLayouts(pricingData.modules)
+    useWasmachinekastStore.setState({ moduleLayouts: wasmergedLayouts })
+
+    if (editConfig) {
+      restoreConfig(editConfig)
+    } else if (editItemId) {
+      const item = getCart().items.find((i) => i.id === editItemId)
+      if (item) restoreConfig(item.configuration)
+    } else {
+      const draft = getDraftConfig()
+      if (draft) restoreConfig(draft)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  useEffect(() => {
+    const unsub = useWasmachinekastStore.subscribe((state) => {
+      if (!state.pricingData) return
+      if (autosaveTimer.current) clearTimeout(autosaveTimer.current)
+      autosaveTimer.current = setTimeout(() => {
+        const config: ClosetConfigSnapshot = {
+          id: crypto.randomUUID(),
+          capturedAt: new Date().toISOString(),
+          widthCm: state.width,
+          heightCm: state.height,
+          depthCm: state.depth,
+          moduleCount: state.moduleCount,
+          modules: state.modules.map((m) => ({
+            slotIndex: m.slotIndex,
+            layoutId: m.layoutId,
+            layoutName: state.moduleLayouts.find((l) => l.layoutId === m.layoutId)?.name ?? null,
+            hasDoor: m.hasDoor,
+            span: m.span,
+            buitenkantMaterialId: m.buitenkantMaterialId,
+            binnenkantMaterialId: m.binnenkantMaterialId,
+            hasPowerHole: m.hasPowerHole ?? false,
+          })),
+          buitenkantMaterialId: state.buitenkantMaterialId,
+          binnenkantMaterialId: state.binnenkantMaterialId,
+          doorHandleId: state.doorHandleId,
+          doorHandleName: state.doorHandleId === 'none'
+            ? 'Greeploos (push-to-open)'
+            : (state.pricingData?.handles.find((h) => h.id === state.doorHandleId)?.nameNl
+              ?? state.pricingData?.handles.find((h) => h.id === state.doorHandleId)?.name
+              ?? null),
+          diagonalSide: 'none',
+          leftDiagStartHeight: 0,
+          rightDiagStartHeight: 0,
+          leftDiagTopWidth: 0,
+          rightDiagTopWidth: 0,
+          placementType: 'ingebouwd',
+          backDiagonal: false,
+          backDiagKinkHeight: 0,
+          backDiagFlatSectionDepth: 0,
+          doorHandleMaterial: state.doorHandleMaterial,
+          doorsExtendToFloor: state.doorsExtendToFloor,
+          lightStripsEnabled: state.lightStripsEnabled,
+          hasTopCabinet: state.needsTopCabinet(),
+          topCabinetHeightCm: state.topCabinetHeight(),
+        }
+        saveDraftConfig(config)
+      }, 500)
+    })
+
+    return () => {
+      unsub()
+      if (autosaveTimer.current) clearTimeout(autosaveTimer.current)
+    }
+  }, [])
+
+  return (
+    <ConfiguratorStoreContext.Provider value={useWasmachinekastStore}>
+      <div className="w-full h-[100dvh] md:h-[92vh] flex flex-col lg:flex-row">
+        <div className="w-full h-full md:h-[50vh] lg:h-full lg:w-2/3">
+          <ThreeCanvas />
+        </div>
+        <div className="hidden md:block relative w-full lg:w-1/3 h-full bg-white overflow-y-auto pt-24">
+          <StepWizard />
+        </div>
+      </div>
+      <MobileSheet />
+    </ConfiguratorStoreContext.Provider>
+  )
+}
