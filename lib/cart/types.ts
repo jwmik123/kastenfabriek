@@ -80,6 +80,9 @@ export interface PriceSnapshot {
   installationTierName: string | null; // e.g. "Groot project"
   installationCost: number; // €720 | €1440 | €2160
 
+  freeMontageApplied?: boolean;
+  freeMontageDiscount?: number;
+
   total: number; // subtotal + installationCost
 
   discountCode?: string;

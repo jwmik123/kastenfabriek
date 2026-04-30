@@ -12,6 +12,7 @@ export const formatter = new Intl.NumberFormat('nl-NL', {
 
 interface CanvasPricePanelProps {
   totalPrice: number
+  originalPrice?: number
   pricingData: unknown | null
   editItemId: string | null
   handleAddToCart: () => void
@@ -20,6 +21,7 @@ interface CanvasPricePanelProps {
 
 export default function CanvasPricePanel({
   totalPrice,
+  originalPrice,
   pricingData,
   editItemId,
   handleAddToCart,
@@ -31,6 +33,9 @@ export default function CanvasPricePanel({
     <div className="hidden md:flex absolute bottom-5 right-5 items-center gap-1.5 bg-background/90 backdrop-blur-sm border border-border rounded-xl p-1.5 shadow-lg">
       <div className="px-3 py-1.5 min-w-[100px]">
         <p className="text-xs text-muted-foreground leading-none mb-0.5">Totaalprijs</p>
+        {originalPrice !== undefined && (
+          <p className="text-xs text-muted-foreground line-through leading-none">{formatter.format(originalPrice)}</p>
+        )}
         <p className="text-lg font-semibold leading-tight">{formatter.format(totalPrice)}</p>
       </div>
 
