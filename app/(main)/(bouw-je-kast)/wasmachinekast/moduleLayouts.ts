@@ -22,18 +22,7 @@ export const WASHER_DOUBLE: ModuleLayout = {
   minSlotWidth: 65,
 }
 
-export const WASHER_STACKED: ModuleLayout = {
-  layoutId: 13,
-  name: 'Wasmachine (gestapeld)',
-  description: '2 wasmachines op elkaar — minimaal 65 cm breed',
-  contents: { shelves: 0, rods: 0, drawers: 0, hasWashingMachineShelf: true },
-  priceDouble: 0,
-  priceSingle: 0,
-  availableForTopCabinet: false,
-  minSlotWidth: 65,
-}
-
-export const WASHER_LAYOUTS: ModuleLayout[] = [WASHER_SINGLE, WASHER_DOUBLE, WASHER_STACKED]
+export const WASHER_LAYOUTS: ModuleLayout[] = [WASHER_SINGLE, WASHER_DOUBLE]
 
 export function isLayoutAvailable(layout: ModuleLayout, moduleWidthCm: number): boolean {
   if (!layout.minSlotWidth) return true

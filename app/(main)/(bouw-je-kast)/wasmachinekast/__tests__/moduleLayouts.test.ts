@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest'
 import {
   WASHER_SINGLE,
   WASHER_DOUBLE,
-  WASHER_STACKED,
   WASHER_LAYOUTS,
   isLayoutAvailable,
   getWasmModuleLayouts,
@@ -34,8 +33,8 @@ describe('WASHER_SINGLE', () => {
 })
 
 describe('WASHER_DOUBLE', () => {
-  it('has minSlotWidth of 130', () => {
-    expect(WASHER_DOUBLE.minSlotWidth).toBe(130)
+  it('has minSlotWidth of 65 (checked per slot, double occupies two slots)', () => {
+    expect(WASHER_DOUBLE.minSlotWidth).toBe(65)
   })
 
   it('has layoutId 12', () => {
@@ -47,26 +46,16 @@ describe('WASHER_DOUBLE', () => {
   })
 })
 
-describe('WASHER_STACKED', () => {
-  it('has layoutId 13', () => {
-    expect(WASHER_STACKED.layoutId).toBe(13)
-  })
-
-  it('has minSlotWidth of 65', () => {
-    expect(WASHER_STACKED.minSlotWidth).toBe(65)
-  })
-
-  it('is not available for top cabinet', () => {
-    expect(WASHER_STACKED.availableForTopCabinet).toBe(false)
-  })
-})
-
 describe('WASHER_LAYOUTS', () => {
-  it('contains all three washer variants', () => {
+  it('contains single and double washer variants', () => {
     const ids = WASHER_LAYOUTS.map((l) => l.layoutId)
     expect(ids).toContain(11)
     expect(ids).toContain(12)
-    expect(ids).toContain(13)
+  })
+
+  it('does not contain removed stacked variant', () => {
+    const ids = WASHER_LAYOUTS.map((l) => l.layoutId)
+    expect(ids).not.toContain(13)
   })
 })
 
@@ -88,20 +77,14 @@ describe('isLayoutAvailable', () => {
   })
 
   it('returns false for washer double when slot too narrow', () => {
-    expect(isLayoutAvailable(WASHER_DOUBLE, 120)).toBe(false)
+    expect(isLayoutAvailable(WASHER_DOUBLE, 60)).toBe(false)
   })
 
   it('returns true for washer double when slot meets minimum', () => {
-    expect(isLayoutAvailable(WASHER_DOUBLE, 130)).toBe(true)
+    expect(isLayoutAvailable(WASHER_DOUBLE, 65)).toBe(true)
   })
 
-  it('returns false for washer stacked when slot too narrow', () => {
-    expect(isLayoutAvailable(WASHER_STACKED, 60)).toBe(false)
-  })
 
-  it('returns true for washer stacked when slot exactly meets minimum', () => {
-    expect(isLayoutAvailable(WASHER_STACKED, 65)).toBe(true)
-  })
 })
 
 describe('getWasmModuleLayouts', () => {
@@ -120,9 +103,9 @@ describe('getWasmModuleLayouts', () => {
     expect(result.find((l) => l.layoutId === 12)).toBeDefined()
   })
 
-  it('includes WASHER_STACKED', () => {
+  it('does not include removed stacked variant', () => {
     const result = getWasmModuleLayouts([])
-    expect(result.find((l) => l.layoutId === 13)).toBeDefined()
+    expect(result.find((l) => l.layoutId === 13)).toBeUndefined()
   })
 
   it('washer layouts come after non-washer sanity layouts', () => {
