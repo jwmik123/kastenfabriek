@@ -28,6 +28,7 @@ interface ModuleProps {
   hasDoor: boolean
   span: 1 | 2
   diagParams: DiagParams
+  mirror?: boolean
 }
 
 function wallHeightAt(xOuter: number, p: DiagParams): number {
@@ -120,7 +121,7 @@ function computeRoofProfile(
     .map(({ x, y }) => ({ x: x - leftXOuter, y }))
 }
 
-export default function Module({ index, layout, hasDoor, span, diagParams: p }: ModuleProps) {
+export default function Module({ index, layout, hasDoor, span, diagParams: p, mirror: mirrorProp }: ModuleProps) {
   const depth        = useConfiguratorStore((s) => s.depth) / 100
   const moduleCount  = useConfiguratorStore((s) => s.moduleCount)
   const width        = useConfiguratorStore((s) => s.width) / 100
@@ -356,9 +357,9 @@ export default function Module({ index, layout, hasDoor, span, diagParams: p }: 
       p.outerWidth - CORPUS_WALL - p.rightDiagTopWidth > leftWallXOuter &&
       p.outerWidth - CORPUS_WALL - p.rightDiagTopWidth < rightWallXOuter)
   const fillToTop = moduleHasDiag && !hasKinkInRange
-  const mirrorDoor = isBackDiag
+  const mirrorDoor = mirrorProp ?? (isBackDiag
     ? (index % 2 === 1 || isLastModule)
-    : (moduleHasDiag ? leftWallH < rightWallH : (index % 2 === 1 || isLastModule))
+    : (moduleHasDiag ? leftWallH < rightWallH : (index % 2 === 1 || isLastModule)))
 
   // Door profile for back diagonal.
   // When TC active (needsTop): cap at p.mainHeight so main corpus door ends where TC begins.
