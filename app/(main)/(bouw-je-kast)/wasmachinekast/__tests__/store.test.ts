@@ -369,6 +369,51 @@ describe('setWasherModule / clearWasherModule', () => {
     expect(s.washerSlotIndex).toBeNull()
     expect(s.washerLayoutId).toBeNull()
   })
+
+  it('clearWasherModule nulls layoutId and fixedWidth on the old slot', () => {
+    useWasmachinekastStore.setState({
+      modules: [
+        { slotIndex: 0, layoutId: null, hasDoor: true, span: 1 },
+        { slotIndex: 1, layoutId: null, hasDoor: true, span: 1 },
+      ],
+      moduleLayouts: basePricingData.modules,
+    })
+    useWasmachinekastStore.getState().setWasherModule(0, 99)
+    useWasmachinekastStore.getState().clearWasherModule()
+    const m = useWasmachinekastStore.getState().modules[0]
+    expect(m.layoutId).toBeNull()
+    expect(m.fixedWidth).toBeUndefined()
+  })
+
+  it('clearWasherModule then setWasherModule on new slot produces exactly one washer', () => {
+    useWasmachinekastStore.setState({
+      modules: [
+        { slotIndex: 0, layoutId: null, hasDoor: true, span: 1 },
+        { slotIndex: 1, layoutId: null, hasDoor: true, span: 1 },
+      ],
+      moduleLayouts: basePricingData.modules,
+    })
+    useWasmachinekastStore.getState().setWasherModule(0, 99)
+    useWasmachinekastStore.getState().clearWasherModule()
+    useWasmachinekastStore.getState().setWasherModule(1, 99)
+    const modules = useWasmachinekastStore.getState().modules
+    expect(modules[0].layoutId).toBeNull()
+    expect(modules[1].layoutId).toBe(99)
+  })
+
+  it('clearWasherModule with washerSlotIndex null does not throw and leaves modules unchanged', () => {
+    useWasmachinekastStore.setState({
+      washerSlotIndex: null,
+      washerLayoutId: null,
+      modules: [
+        { slotIndex: 0, layoutId: 1, hasDoor: true, span: 1 },
+        { slotIndex: 1, layoutId: null, hasDoor: true, span: 1 },
+      ],
+    })
+    expect(() => useWasmachinekastStore.getState().clearWasherModule()).not.toThrow()
+    const modules = useWasmachinekastStore.getState().modules
+    expect(modules[0].layoutId).toBe(1)
+  })
 })
 
 // ─── randomFill — washer slot preserved ──────────────────────────────────────
