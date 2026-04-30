@@ -78,6 +78,7 @@ export interface PricingConfig {
   led: LedPricing;
   deliveryPrice: number;
   constraints: PricingConstraints;
+  freeMontage?: boolean;
 }
 
 export interface HandleType {

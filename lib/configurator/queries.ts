@@ -6,7 +6,8 @@ export const pricingDataQuery = groq`{
     lastUpdated,
     led,
     deliveryPrice,
-    constraints
+    constraints,
+    freeMontage
   },
   "modules": *[_type == "moduleLayout"] | order(layoutId asc) {
     layoutId,
@@ -102,6 +103,7 @@ export const pricingConfigQuery = groq`
     lastUpdated,
     led,
     deliveryPrice,
-    constraints
+    constraints,
+    freeMontage
   }
 `;
