@@ -241,6 +241,9 @@ export default function OrderConfirmation({
                       label: `Montage${p.installationTierName ? ` (${p.installationTierName})` : ""}`,
                       amount: p.installationCost,
                     },
+                    p.freeMontageApplied && p.freeMontageDiscount && p.freeMontageDiscount > 0
+                      ? { label: "Gratis montage", amount: -(p.freeMontageDiscount) }
+                      : false,
                   ]
                     .filter(Boolean)
                     .map((row, ri) => (

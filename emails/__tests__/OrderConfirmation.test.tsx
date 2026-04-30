@@ -105,6 +105,50 @@ describe("OrderConfirmation", () => {
     expect(html).not.toContain("Korting");
   });
 
+  it("shows Gratis montage row when freeMontageApplied and freeMontageDiscount > 0", async () => {
+    const props: OrderConfirmationProps = {
+      ...baseProps,
+      items: [
+        {
+          ...baseProps.items[0],
+          priceSnapshot: {
+            ...basePrice,
+            installationCost: 0,
+            freeMontageApplied: true,
+            freeMontageDiscount: 720,
+          },
+        },
+      ],
+    };
+    const html = await render(<OrderConfirmation {...props} />);
+    expect(html).toContain("Gratis montage");
+    expect(html).toContain("720");
+    expect(html).toContain("-");
+  });
+
+  it("omits Gratis montage row when freeMontageApplied is false", async () => {
+    const html = await render(<OrderConfirmation {...baseProps} />);
+    expect(html).not.toContain("Gratis montage");
+  });
+
+  it("omits Gratis montage row when freeMontageDiscount is 0", async () => {
+    const props: OrderConfirmationProps = {
+      ...baseProps,
+      items: [
+        {
+          ...baseProps.items[0],
+          priceSnapshot: {
+            ...basePrice,
+            freeMontageApplied: true,
+            freeMontageDiscount: 0,
+          },
+        },
+      ],
+    };
+    const html = await render(<OrderConfirmation {...props} />);
+    expect(html).not.toContain("Gratis montage");
+  });
+
   it("total reflects discounted amount", async () => {
     const props: OrderConfirmationProps = {
       ...baseProps,
