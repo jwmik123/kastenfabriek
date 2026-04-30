@@ -6,6 +6,7 @@ import ProductOptionsSection from "@/components/ProductOptionsSection";
 import TestimonialSection from "@/components/TestimonialSection";
 import WerkwijzeSection from "@/components/WerkwijzeSection";
 import MaterialsSection from "@/components/MaterialsSection";
+import ModulesScrollSection from "@/components/ModulesScrollSection";
 
 export default function Home() {
   return (
@@ -132,6 +133,10 @@ export default function Home() {
       ]}
     />
 
+
+      
+
+    <ModulesScrollSection />
 
     <MaterialsSection />
 

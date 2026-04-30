@@ -92,9 +92,7 @@ function SpecialElementInner({
     : isCentered
       ? MODULE_WALL + targetWidth / 2 - (box.min.x + box.max.x) / 2
       : -box.min.x + MODULE_WALL
-  const offsetZ = (isCentered || isDouble)
-    ? targetDepth / 2 - (box.min.z + box.max.z) / 2
-    : -box.min.z
+  const offsetZ = -box.min.z + (!hasDoor ? (layout.specialElement.noDoorDepthOffset ?? 0) : 0)
 
   const { actions } = useAnimations(clonedClips, clone)
 
@@ -158,6 +156,17 @@ function SpecialElementInner({
         return false
       })()
 
+      const isWMSingle = (() => {
+        let cur: THREE.Object3D | null = mesh
+        while (cur) {
+          if (cur.name.includes('WMDoubleMachine')) return true
+          if (cur.name.includes('WMPlankMachine')) return true
+          if (cur.name.includes('WMSingleMachine')) return true
+          cur = cur.parent
+        }
+        return false
+      })()
+
       if (hasDS && hasWS) {
         mesh.scale.set(depthScale, 1, widthScale)
       } else if (hasDS) {
@@ -173,7 +182,11 @@ function SpecialElementInner({
       }
 
       if (!hasDS && !isBack) {
-        mesh.position.z += depthGrowth
+        if (isWMSingle) {
+          mesh.position.x += depthGrowth
+        } else {
+          mesh.position.z += depthGrowth
+        }
       }
     })
 

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { getWasmLayoutConfig } from '../moduleLayoutConfigs'
+import { MODULE_FLOOR_Y } from '../../kledingkast/scene/closetConstants'
 
 describe('getWasmLayoutConfig — washer variants', () => {
   describe('WASHER_SINGLE (id 11)', () => {
@@ -20,7 +21,7 @@ describe('getWasmLayoutConfig — washer variants', () => {
 
     it('uses fixed fromBottom: 0 anchor', () => {
       const cfg = getWasmLayoutConfig(11)!
-      expect(cfg.specialElement.anchor).toEqual({ type: 'fixed', fromBottom: 0 })
+      expect(cfg.specialElement.anchor).toEqual({ type: 'fixed', fromBottom: -MODULE_FLOOR_Y })
     })
 
     it('fill above is open', () => {
@@ -34,50 +35,65 @@ describe('getWasmLayoutConfig — washer variants', () => {
     })
   })
 
-  describe('WASHER_DOUBLE (id 12)', () => {
+  describe('WASHER_DOUBLE_GLB (id 13)', () => {
     it('returns a config', () => {
-      expect(getWasmLayoutConfig(12)).toBeDefined()
+      expect(getWasmLayoutConfig(13)).toBeDefined()
     })
 
-    it('uses real washer GLB path', () => {
-      const cfg = getWasmLayoutConfig(12)!
-      expect(cfg.specialElement.glbPath).toBe('/objects/washermodules/ModuleWasherSingle.glb')
-    })
-
-    it('uses fixed fromBottom: 0 anchor', () => {
-      const cfg = getWasmLayoutConfig(12)!
-      expect(cfg.specialElement.anchor).toEqual({ type: 'fixed', fromBottom: 0 })
+    it('uses double GLB path', () => {
+      const cfg = getWasmLayoutConfig(13)!
+      expect(cfg.specialElement.glbPath).toBe('/objects/washermodules/ModuleWasherDouble.glb')
     })
 
     it('has centered: true', () => {
-      const cfg = getWasmLayoutConfig(12)!
+      const cfg = getWasmLayoutConfig(13)!
       expect(cfg.specialElement.centered).toBe(true)
     })
 
-    it('has double: true', () => {
-      const cfg = getWasmLayoutConfig(12)!
-      expect(cfg.specialElement.double).toBe(true)
-    })
-
-    it('does not have stacked flag', () => {
-      const cfg = getWasmLayoutConfig(12)!
-      expect(cfg.specialElement.stacked).toBeFalsy()
+    it('uses fixed fromBottom: 0 anchor', () => {
+      const cfg = getWasmLayoutConfig(13)!
+      expect(cfg.specialElement.anchor).toEqual({ type: 'fixed', fromBottom: -MODULE_FLOOR_Y })
     })
 
     it('fill above is open', () => {
-      const cfg = getWasmLayoutConfig(12)!
+      const cfg = getWasmLayoutConfig(13)!
       expect(cfg.fillZone.above.type).toBe('open')
     })
 
     it('fill below is open', () => {
-      const cfg = getWasmLayoutConfig(12)!
+      const cfg = getWasmLayoutConfig(13)!
       expect(cfg.fillZone.below.type).toBe('open')
     })
   })
 
-  describe('stacked washer (id 13) — removed', () => {
-    it('returns undefined for removed stacked variant', () => {
-      expect(getWasmLayoutConfig(13)).toBeUndefined()
+  describe('WASHER_PLANK (id 14)', () => {
+    it('returns a config', () => {
+      expect(getWasmLayoutConfig(14)).toBeDefined()
+    })
+
+    it('uses plank GLB path', () => {
+      const cfg = getWasmLayoutConfig(14)!
+      expect(cfg.specialElement.glbPath).toBe('/objects/washermodules/ModuleWasherPlank.glb')
+    })
+
+    it('has centered: true', () => {
+      const cfg = getWasmLayoutConfig(14)!
+      expect(cfg.specialElement.centered).toBe(true)
+    })
+
+    it('uses fixed fromBottom: 0 anchor', () => {
+      const cfg = getWasmLayoutConfig(14)!
+      expect(cfg.specialElement.anchor).toEqual({ type: 'fixed', fromBottom: -MODULE_FLOOR_Y })
+    })
+
+    it('fill above is open', () => {
+      const cfg = getWasmLayoutConfig(14)!
+      expect(cfg.fillZone.above.type).toBe('open')
+    })
+
+    it('fill below is open', () => {
+      const cfg = getWasmLayoutConfig(14)!
+      expect(cfg.fillZone.below.type).toBe('open')
     })
   })
 })

@@ -53,9 +53,8 @@ export interface ClosetConfigSnapshot {
   doorHandleMaterial?: 'chrome' | 'black' | 'gold';
   doorsExtendToFloor?: boolean;
 
-  // Washer slot locking
-  washerSlotIndex?: number | null;
-  washerLayoutId?: number | null;
+  // Washer modules
+  washerModules?: { slotIndex: number; layoutId: number }[];
 
   // Lighting & extras
   lightStripsEnabled: boolean;

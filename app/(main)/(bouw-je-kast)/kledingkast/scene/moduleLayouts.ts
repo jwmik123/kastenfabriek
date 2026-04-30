@@ -28,6 +28,7 @@ export type ModuleLayoutConfig = {
     glbMaterialMeshes?: string[]    // mesh names that keep their baked GLB material (not overridden by closet material)
     chromeMaterialMeshes?: string[] // mesh names that get chrome material regardless of naming convention
     glassMaterialMeshes?: string[]  // mesh names that get opaque glass material (reflective, not transparent)
+    noDoorDepthOffset?: number      // extra Z offset applied when hasDoor is false (washer modules need this)
   }
 
   fillZone: {

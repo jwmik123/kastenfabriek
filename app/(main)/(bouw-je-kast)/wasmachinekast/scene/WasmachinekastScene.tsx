@@ -17,7 +17,7 @@ import { getWasmLayoutConfig } from '../moduleLayoutConfigs'
 
 const BORDER_M = 0.015
 const WASHER_REAR_CLEARANCE = 0.10
-const WASHER_LAYOUT_IDS = new Set([11, 12])
+const WASHER_LAYOUT_IDS = new Set([11, 13, 14])
 
 // Simplified slot interaction — no diagonal ceiling shape needed
 function WasmModuleSlotInteraction({
@@ -158,8 +158,6 @@ function WasmOnderstelPlinth() {
 
 export default function WasmachinekastScene() {
   const modules = useWasmachinekastStore((s) => s.modules)
-  const washerSlotIndex = useWasmachinekastStore((s) => s.washerSlotIndex)
-  const washerLayoutId = useWasmachinekastStore((s) => s.washerLayoutId)
   const outerWidth = useWasmachinekastStore((s) => s.width)
   const closetHeightCm = useWasmachinekastStore((s) => s.height)
   const mainHeightCm = useWasmachinekastStore((s) => s.mainHeight())
@@ -196,11 +194,6 @@ export default function WasmachinekastScene() {
           const layout = getWasmLayoutConfig(m.layoutId!)
           if (!layout) return null
           const isWasher = WASHER_LAYOUT_IDS.has(m.layoutId!)
-          let mirrorOverride: boolean | undefined
-          if (washerLayoutId === 12 && washerSlotIndex !== null) {
-            if (m.slotIndex === washerSlotIndex) mirrorOverride = false
-            else if (m.slotIndex === washerSlotIndex + 1) mirrorOverride = true
-          }
           return (
             <Module
               key={m.slotIndex}
@@ -209,7 +202,6 @@ export default function WasmachinekastScene() {
               hasDoor={isWasher ? false : m.hasDoor}
               span={m.span}
               diagParams={diagParams}
-              mirror={mirrorOverride}
               depthOverride={isWasher ? outerDepthCm / 100 - WASHER_REAR_CLEARANCE : undefined}
             />
           )

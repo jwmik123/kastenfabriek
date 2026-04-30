@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useWasmachinekastStore } from '../store'
 import { WASHER_LAYOUTS } from '../moduleLayouts'
-import { WashingMachine } from 'lucide-react'
+import { WashingMachine, Trash2, Plus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
@@ -14,99 +14,153 @@ function SectionHeading({ children }: { children: React.ReactNode }) {
   )
 }
 
-const WASHER_DOUBLE_ID = 12
-
 export default function WasherStep() {
   const modules = useWasmachinekastStore((s) => s.modules)
-  const moduleCount = useWasmachinekastStore((s) => s.moduleCount)
-  const setWasherModule = useWasmachinekastStore((s) => s.setWasherModule)
+  const washerModules = useWasmachinekastStore((s) => s.washerModules)
+  const addWasherModule = useWasmachinekastStore((s) => s.addWasherModule)
+  const removeWasherModule = useWasmachinekastStore((s) => s.removeWasherModule)
   const setHoveredSlot = useWasmachinekastStore((s) => s.setHoveredSlot)
-  const nextStep = useWasmachinekastStore((s) => s.nextStep)
 
   useEffect(() => () => { setHoveredSlot(null) }, [setHoveredSlot])
 
+  const [adding, setAdding] = useState(false)
   const [selectedLayoutId, setSelectedLayoutId] = useState<number | null>(null)
-  const isDouble = selectedLayoutId === WASHER_DOUBLE_ID
+
+  const washerSlots = new Set(washerModules.map((w) => w.slotIndex))
 
   function handleSelectSlot(slotIndex: number) {
     if (selectedLayoutId === null) return
-    setWasherModule(slotIndex, selectedLayoutId)
-    nextStep()
+    addWasherModule(slotIndex, selectedLayoutId)
+    setAdding(false)
+    setSelectedLayoutId(null)
+    setHoveredSlot(null)
   }
 
-  function isSlotAvailable(slotIndex: number): boolean {
-    if (isDouble && slotIndex >= modules.length - 1) return false
-    return true
+  function handleCancel() {
+    setAdding(false)
+    setSelectedLayoutId(null)
+    setHoveredSlot(null)
   }
+
+  const availableSlots = modules.filter((m) => !washerSlots.has(m.slotIndex))
 
   return (
-    <div className="space-y-10">
-      <section className="space-y-5">
-        <SectionHeading>Wasmachine type</SectionHeading>
-        <div className="flex flex-col gap-3">
-          {WASHER_LAYOUTS.map((layout) => {
-            const available = layout.layoutId === WASHER_DOUBLE_ID
-              ? moduleCount >= 2
-              : true
-            const isSelected = selectedLayoutId === layout.layoutId
-            return (
-              <button
-                key={layout.layoutId}
-                disabled={!available}
-                onClick={() => setSelectedLayoutId(layout.layoutId)}
-                className={cn(
-                  'flex items-center gap-3 p-4 rounded-lg border-2 transition-all text-left',
-                  isSelected
-                    ? 'border-primary bg-primary/5'
-                    : available
-                      ? 'border-border hover:border-primary/50'
-                      : 'border-border/30 opacity-40 cursor-not-allowed',
-                )}
-              >
-                <WashingMachine className="w-8 h-8 shrink-0 text-muted-foreground" />
-                <div>
-                  <div className="text-sm font-medium">{layout.name}</div>
-                  <div className="text-xs text-muted-foreground mt-0.5">{layout.description}</div>
-                </div>
-              </button>
-            )
-          })}
-        </div>
-      </section>
+    <div className="space-y-8">
 
-      {selectedLayoutId !== null && (
-        <section className="space-y-5">
-          <div>
-            <SectionHeading>Selecteer een vak</SectionHeading>
-            <p className="text-xs text-muted-foreground/60 mt-1">
-              {isDouble
-                ? 'Kies het eerste vak — het volgende vak wordt automatisch ook geselecteerd'
-                : 'Kies het vak voor je wasmachine'}
-            </p>
-          </div>
-          <div className="grid grid-cols-8 gap-1">
-            {modules.map((m) => {
-              const available = isSlotAvailable(m.slotIndex)
+      {/* Placed washers list */}
+      {washerModules.length > 0 && (
+        <section className="space-y-3">
+          <SectionHeading>Geplaatste wasmachine modules</SectionHeading>
+          <div className="flex flex-col gap-2">
+            {washerModules.map((w) => {
+              const layout = WASHER_LAYOUTS.find((l) => l.layoutId === w.layoutId)
               return (
-                <button
-                  key={m.slotIndex}
-                  disabled={!available}
-                  onClick={() => handleSelectSlot(m.slotIndex)}
-                  onMouseEnter={() => available && setHoveredSlot(m.slotIndex)}
-                  onMouseLeave={() => setHoveredSlot(null)}
-                  className={cn(
-                    'aspect-square flex items-center justify-center rounded-md text-sm font-medium transition-colors',
-                    available
-                      ? 'border border-border/50 bg-transparent text-foreground hover:border-primary hover:bg-primary/5'
-                      : 'border border-border/30 bg-transparent text-muted-foreground opacity-40 cursor-not-allowed',
-                  )}
+                <div
+                  key={w.slotIndex}
+                  className="flex items-center justify-between gap-3 p-3 rounded-lg border border-border/50 bg-muted/20"
                 >
-                  {isDouble ? `${m.slotIndex + 1}+${m.slotIndex + 2}` : m.slotIndex + 1}
-                </button>
+                  <div className="flex items-center gap-3">
+                    <WashingMachine className="w-5 h-5 shrink-0 text-muted-foreground" />
+                    <div>
+                      <div className="text-sm font-medium">{layout?.name ?? `Layout ${w.layoutId}`}</div>
+                      <div className="text-xs text-muted-foreground">Vak {w.slotIndex + 1}</div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => removeWasherModule(w.slotIndex)}
+                    className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               )
             })}
           </div>
         </section>
+      )}
+
+      {/* Add flow */}
+      {adding ? (
+        <section className="space-y-6">
+
+          {/* Type picker */}
+          <div className="space-y-3">
+            <SectionHeading>Kies een type</SectionHeading>
+            <div className="flex flex-col gap-3">
+              {WASHER_LAYOUTS.map((layout) => {
+                const isSelected = selectedLayoutId === layout.layoutId
+                return (
+                  <button
+                    key={layout.layoutId}
+                    onClick={() => setSelectedLayoutId(layout.layoutId)}
+                    className={cn(
+                      'flex items-center gap-3 p-4 rounded-lg border-2 transition-all text-left',
+                      isSelected
+                        ? 'border-primary bg-primary/5'
+                        : 'border-border hover:border-primary/50',
+                    )}
+                  >
+                    <WashingMachine className="w-8 h-8 shrink-0 text-muted-foreground" />
+                    <div>
+                      <div className="text-sm font-medium">{layout.name}</div>
+                      <div className="text-xs text-muted-foreground mt-0.5">{layout.description}</div>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Slot picker */}
+          {selectedLayoutId !== null && (
+            <div className="space-y-3">
+              <SectionHeading>Kies een vak</SectionHeading>
+              <div className="grid grid-cols-8 gap-1">
+                {modules.map((m) => {
+                  const taken = washerSlots.has(m.slotIndex)
+                  return (
+                    <button
+                      key={m.slotIndex}
+                      disabled={taken}
+                      onClick={() => handleSelectSlot(m.slotIndex)}
+                      onMouseEnter={() => !taken && setHoveredSlot(m.slotIndex)}
+                      onMouseLeave={() => setHoveredSlot(null)}
+                      className={cn(
+                        'aspect-square flex items-center justify-center rounded-md text-sm font-medium transition-colors',
+                        taken
+                          ? 'border border-border/30 bg-muted/20 text-muted-foreground opacity-40 cursor-not-allowed'
+                          : 'border border-border/50 bg-transparent text-foreground hover:border-primary hover:bg-primary/5',
+                      )}
+                    >
+                      {m.slotIndex + 1}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          <button
+            onClick={handleCancel}
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2"
+          >
+            Annuleren
+          </button>
+        </section>
+      ) : (
+        <button
+          disabled={availableSlots.length === 0}
+          onClick={() => setAdding(true)}
+          className={cn(
+            'flex items-center gap-2 w-full p-4 rounded-lg border-2 border-dashed transition-all text-sm font-medium',
+            availableSlots.length > 0
+              ? 'border-border hover:border-primary/50 hover:bg-primary/5 text-foreground'
+              : 'border-border/30 text-muted-foreground opacity-40 cursor-not-allowed',
+          )}
+        >
+          <Plus className="w-4 h-4" />
+          Voeg nog een machine module toe
+        </button>
       )}
     </div>
   )

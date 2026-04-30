@@ -1,30 +1,30 @@
 import { create } from 'zustand'
-import type { FullPricingData, ModuleLayout, PricingConstraints } from '@/types/configurator-pricing'
+import type { FullPricingData } from '@/types/configurator-pricing'
 import type { BaseConfiguratorState, BaseModuleSlot } from '../_shared/store/types'
 import type { ClosetConfigSnapshot } from '@/lib/cart/types'
 
 export type { BaseModuleSlot as ModuleSlot }
 
-const MIN_DEPTH = 65
+export type PlacementType = 'vrijstaand' | 'ingebouwd'
 
-const WASHER_SINGLE_ID = 11
-const WASHER_DOUBLE_ID = 12
-
-function washerSlotCount(layoutId: number | null): number {
-  return layoutId === WASHER_DOUBLE_ID ? 2 : 1
+export interface WasherModule {
+  slotIndex: number
+  layoutId: number
 }
 
+const MIN_DEPTH = 65
 const FALLBACK_MODULE_MIN_WIDTH = 15
 const FALLBACK_MODULE_MAX_WIDTH = 65
-
 const TOP_CABINET_THRESHOLD = 275
 const SIDE_WALL_EXTRA_CM = 1.5
 
 interface WasmState extends BaseConfiguratorState {
-  washerSlotIndex: number | null
-  washerLayoutId: number | null
-  setWasherModule: (slotIndex: number, layoutId: number) => void
-  clearWasherModule: () => void
+  placementType: PlacementType
+  setPlacementType: (type: PlacementType) => void
+  washerModules: WasherModule[]
+  addWasherModule: (slotIndex: number, layoutId: number) => void
+  removeWasherModule: (slotIndex: number) => void
+  clearWasherModules: () => void
 }
 
 export const useWasmachinekastStore = create<WasmState>((set, get) => ({
@@ -34,8 +34,10 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
 
   step: 1,
 
-  washerSlotIndex: null,
-  washerLayoutId: null,
+  placementType: 'ingebouwd' as PlacementType,
+  setPlacementType: (type) => set({ placementType: type }),
+
+  washerModules: [],
 
   width: 120,
   height: 240,
@@ -86,37 +88,34 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
     })
   },
 
-  setWasherModule: (slotIndex, layoutId) => {
-    const { washerSlotIndex, washerLayoutId: prevLayoutId } = get()
-    if (washerSlotIndex !== null) {
-      const prevCount = washerSlotCount(prevLayoutId)
-      set((s) => ({
-        modules: s.modules.map((m) => {
-          const inPrev = m.slotIndex >= washerSlotIndex && m.slotIndex < washerSlotIndex + prevCount
-          return inPrev ? { ...m, layoutId: null, fixedWidth: undefined } : m
-        }),
-      }))
-    }
-    set({ washerSlotIndex: slotIndex, washerLayoutId: layoutId })
-    const slotLayoutId = layoutId === WASHER_DOUBLE_ID ? WASHER_SINGLE_ID : layoutId
-    const count = washerSlotCount(layoutId)
-    for (let i = slotIndex; i < slotIndex + count; i++) {
-      get().setModuleLayout(i, slotLayoutId)
-    }
+  addWasherModule: (slotIndex, layoutId) => {
+    set((s) => ({
+      washerModules: [
+        ...s.washerModules.filter((w) => w.slotIndex !== slotIndex),
+        { slotIndex, layoutId },
+      ],
+    }))
+    get().setModuleLayout(slotIndex, layoutId)
   },
 
-  clearWasherModule: () => {
-    const { washerSlotIndex, washerLayoutId } = get()
-    if (washerSlotIndex !== null) {
-      const count = washerSlotCount(washerLayoutId)
-      set((s) => ({
-        modules: s.modules.map((m) => {
-          const inRange = m.slotIndex >= washerSlotIndex && m.slotIndex < washerSlotIndex + count
-          return inRange ? { ...m, layoutId: null, fixedWidth: undefined } : m
-        }),
-      }))
-    }
-    set({ washerSlotIndex: null, washerLayoutId: null })
+  removeWasherModule: (slotIndex) => {
+    set((s) => ({
+      washerModules: s.washerModules.filter((w) => w.slotIndex !== slotIndex),
+      modules: s.modules.map((m) =>
+        m.slotIndex === slotIndex ? { ...m, layoutId: null, fixedWidth: undefined } : m
+      ),
+    }))
+  },
+
+  clearWasherModules: () => {
+    const { washerModules } = get()
+    const washerSlots = new Set(washerModules.map((w) => w.slotIndex))
+    set((s) => ({
+      washerModules: [],
+      modules: s.modules.map((m) =>
+        washerSlots.has(m.slotIndex) ? { ...m, layoutId: null, fixedWidth: undefined } : m
+      ),
+    }))
   },
 
   setStep: (step) => set({ step, selectedSlot: null }),
@@ -167,16 +166,16 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
     }))
     set({ moduleCount: clamped, modules })
 
-    const { washerSlotIndex, washerLayoutId: currentWasherLayoutId } = get()
-    if (washerSlotIndex !== null && washerSlotIndex + washerSlotCount(currentWasherLayoutId) > clamped) {
-      get().clearWasherModule()
-      set({ step: 2 })
+    const outOfBounds = get().washerModules.filter((w) => w.slotIndex >= clamped)
+    if (outOfBounds.length > 0) {
+      outOfBounds.forEach((w) => get().removeWasherModule(w.slotIndex))
+      if (get().washerModules.length === 0) set({ step: 2 })
     }
   },
 
   setModuleLayout: (slotIndex: number, layoutId: number) => {
     const layout = get().moduleLayouts.find((l) => l.layoutId === layoutId)
-    const fixedWidth = layout?.minSlotWidth  // set for washer layouts, undefined otherwise
+    const fixedWidth = layout?.minSlotWidth
     set((s) => ({
       modules: s.modules.map((m) => {
         if (m.slotIndex === slotIndex) return { ...m, layoutId, fixedWidth }
@@ -239,10 +238,10 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
   setHoveredSlot: (slot) => set({ hoveredSlot: slot }),
 
   randomFill: () => {
-    const { moduleCount, modules, moduleLayouts, washerSlotIndex, washerLayoutId } = get()
-    const washerCount = washerSlotCount(washerLayoutId)
+    const { modules, moduleLayouts, washerModules } = get()
+    const washerSlots = new Set(washerModules.map((w) => w.slotIndex))
     const newModules: BaseModuleSlot[] = modules.map((m, i) => {
-      if (washerSlotIndex !== null && i >= washerSlotIndex && i < washerSlotIndex + washerCount) return m
+      if (washerSlots.has(i)) return m
       const layoutId = moduleLayouts[Math.floor(Math.random() * moduleLayouts.length)]?.layoutId ?? null
       return { ...m, slotIndex: i, layoutId }
     })
@@ -251,6 +250,9 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
 
   restoreConfig: (config: ClosetConfigSnapshot) => {
     const { moduleLayouts } = get()
+    const washerModules: WasherModule[] = (config.washerModules ?? []).filter(
+      (w) => w.slotIndex < config.moduleCount
+    )
     set({
       width: config.widthCm,
       height: config.heightCm,
@@ -275,16 +277,7 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
       doorHandleMaterial: config.doorHandleMaterial ?? 'chrome',
       doorsExtendToFloor: config.doorsExtendToFloor ?? false,
       lightStripsEnabled: config.lightStripsEnabled,
-      washerSlotIndex:
-        config.washerSlotIndex != null &&
-        config.washerSlotIndex + washerSlotCount(config.washerLayoutId ?? null) <= config.moduleCount
-          ? config.washerSlotIndex
-          : null,
-      washerLayoutId:
-        config.washerSlotIndex != null &&
-        config.washerSlotIndex + washerSlotCount(config.washerLayoutId ?? null) <= config.moduleCount
-          ? (config.washerLayoutId ?? null)
-          : null,
+      washerModules,
       step: 1,
       selectedSlot: null,
     })
