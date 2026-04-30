@@ -107,6 +107,7 @@ export default function ModulesScrollSection() {
               opacity: 0,
               filter: "blur(12px)",
               ease: "none",
+              immediateRender: false,
               scrollTrigger: {
                 trigger: outer,
                 start: `${overlay.scrollPeakEnd}% top`,
