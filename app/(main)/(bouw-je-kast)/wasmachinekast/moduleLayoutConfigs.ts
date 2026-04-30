@@ -12,6 +12,9 @@ const WASHER_SINGLE_CONFIG: ModuleLayoutConfig = {
     height: WASHER_HEIGHT,
     anchor: { type: 'fixed', fromBottom: 0 },
     centered: true,
+    glbMaterialMeshes: ['Plane051_1'],
+    chromeMaterialMeshes: ['Plane051_2'],
+    glassMaterialMeshes: ['Plane051_5'],
   },
   fillZone: {
     above: { type: 'open' },
@@ -29,6 +32,9 @@ const WASHER_DOUBLE_CONFIG: ModuleLayoutConfig = {
     anchor: { type: 'fixed', fromBottom: 0 },
     centered: true,
     double: true,
+    glbMaterialMeshes: ['Plane051_1'],
+    chromeMaterialMeshes: ['Plane051_2'],
+    glassMaterialMeshes: ['Plane051_5'],
   },
   fillZone: {
     above: { type: 'open' },

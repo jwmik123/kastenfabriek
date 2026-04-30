@@ -3,12 +3,12 @@ import type { ModuleLayout } from '@/types/configurator-pricing'
 export const WASHER_SINGLE: ModuleLayout = {
   layoutId: 11,
   name: 'Wasmachine (enkel)',
-  description: '1 wasmachine — minimaal 65 cm breed',
+  description: '1 wasmachine — minimaal 68.6 cm breed',
   contents: { shelves: 2, rods: 0, drawers: 0, hasWashingMachineShelf: true },
   priceDouble: 0,
   priceSingle: 0,
   availableForTopCabinet: false,
-  minSlotWidth: 65,
+  minSlotWidth: 68.6,
 }
 
 export const WASHER_DOUBLE: ModuleLayout = {
@@ -19,7 +19,7 @@ export const WASHER_DOUBLE: ModuleLayout = {
   priceDouble: 0,
   priceSingle: 0,
   availableForTopCabinet: false,
-  minSlotWidth: 65,
+  minSlotWidth: 68.6,
 }
 
 export const WASHER_LAYOUTS: ModuleLayout[] = [WASHER_SINGLE, WASHER_DOUBLE]

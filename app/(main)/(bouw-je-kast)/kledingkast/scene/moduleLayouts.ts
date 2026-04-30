@@ -22,9 +22,12 @@ export type ModuleLayoutConfig = {
     height: number         // height in meters — used for fill zone placement; should match GLB
     anchor: Anchor
     placeholderDimensions?: { w: number; h: number; d: number } // shown when glbPath is null but height > 0
-    centered?: boolean     // center GLB in slot interior (X and Z); default: left/back-aligned
-    stacked?: boolean      // render two GLB instances stacked vertically; height/2 per unit
-    double?: boolean       // render two GLB instances side by side; each centered in half the slot
+    centered?: boolean          // center GLB in slot interior (X and Z); default: left/back-aligned
+    stacked?: boolean           // render two GLB instances stacked vertically; height/2 per unit
+    double?: boolean            // render two GLB instances side by side; each centered in half the slot
+    glbMaterialMeshes?: string[]    // mesh names that keep their baked GLB material (not overridden by closet material)
+    chromeMaterialMeshes?: string[] // mesh names that get chrome material regardless of naming convention
+    glassMaterialMeshes?: string[]  // mesh names that get opaque glass material (reflective, not transparent)
   }
 
   fillZone: {
