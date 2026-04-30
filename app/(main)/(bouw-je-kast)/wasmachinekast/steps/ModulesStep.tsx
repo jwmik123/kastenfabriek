@@ -31,9 +31,8 @@ export default function ModulesStep() {
   const doorsExtendToFloor = useWasmachinekastStore((s) => s.doorsExtendToFloor)
   const setDoorsExtendToFloor = useWasmachinekastStore((s) => s.setDoorsExtendToFloor)
   const moduleLayouts = useWasmachinekastStore((s) => s.moduleLayouts)
-  const washerSlotIndex = useWasmachinekastStore((s) => s.washerSlotIndex)
-  const washerLayoutId = useWasmachinekastStore((s) => s.washerLayoutId)
-  const washerSlotCount = washerLayoutId === 12 ? 2 : 1
+  const washerModules = useWasmachinekastStore((s) => s.washerModules)
+  const washerSlots = new Set(washerModules.map((w) => w.slotIndex))
 
   const washerIds = new Set(WASHER_LAYOUTS.map((l) => l.layoutId))
 
@@ -96,10 +95,7 @@ export default function ModulesStep() {
         <div className="grid grid-cols-8 gap-1">
           {modules.map((m) => {
             const isSelected = selectedSlot === m.slotIndex
-            const isWasherSlot =
-              washerSlotIndex !== null &&
-              m.slotIndex >= washerSlotIndex &&
-              m.slotIndex < washerSlotIndex + washerSlotCount
+            const isWasherSlot = washerSlots.has(m.slotIndex)
             const isPartOfDouble = m.span === 2 || (m.slotIndex > 0 && modules[m.slotIndex - 1]?.span === 2)
             return (
               <button
@@ -148,7 +144,7 @@ export default function ModulesStep() {
                       onCheckedChange={() => toggleModuleDoor(selectedSlot)}
                     />
                   </div>
-                  {canBeDouble && !(washerSlotIndex !== null && selectedSlot !== null && selectedSlot >= washerSlotIndex && selectedSlot < washerSlotIndex + washerSlotCount) && (
+                  {canBeDouble && !(selectedSlot !== null && washerSlots.has(selectedSlot)) && (
                     <div className="flex items-center justify-between flex-1">
                       <span className="text-sm">Dubbele module</span>
                       <Toggle
@@ -159,7 +155,7 @@ export default function ModulesStep() {
                   )}
                 </div>
 
-                {!(washerSlotIndex !== null && selectedSlot !== null && selectedSlot >= washerSlotIndex && selectedSlot < washerSlotIndex + washerSlotCount) && (
+                {!(selectedSlot !== null && washerSlots.has(selectedSlot)) && (
                   <div className="space-y-2.5">
                     <Carousel
                       items={moduleLayouts.filter((l) => !washerIds.has(l.layoutId)).map((l) => ({ ...l, id: String(l.layoutId) }))}

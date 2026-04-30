@@ -1,9 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useWasmachinekastStore } from '../store'
+import { useWasmachinekastStore, type PlacementType } from '../store'
 import { Slider } from '@/components/ui/slider'
 import { Info } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 function clamp(v: number, min: number, max: number) {
   return Math.max(min, Math.min(max, v))
@@ -71,7 +72,14 @@ function DimensionInput({
   )
 }
 
+const PLACEMENT_OPTIONS: { value: PlacementType; label: string; hint: string }[] = [
+  { value: 'ingebouwd', label: 'Ingebouwd', hint: 'Kast staat tussen twee muren' },
+  { value: 'vrijstaand', label: 'Vrijstaand', hint: 'Kast staat los in de ruimte' },
+]
+
 export default function DimensionsStep() {
+  const placementType = useWasmachinekastStore((s) => s.placementType)
+  const setPlacementType = useWasmachinekastStore((s) => s.setPlacementType)
   const width = useWasmachinekastStore((s) => s.width)
   const height = useWasmachinekastStore((s) => s.height)
   const depth = useWasmachinekastStore((s) => s.depth)
@@ -90,6 +98,28 @@ export default function DimensionsStep() {
 
   return (
     <div className="space-y-10">
+      <section className="space-y-5">
+        <div className="grid grid-cols-2 gap-2">
+          {PLACEMENT_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => setPlacementType(opt.value)}
+              className={cn(
+                'flex flex-col items-start gap-0.5 rounded-md border px-3 py-2.5 text-left transition-colors',
+                placementType === opt.value
+                  ? 'border-foreground bg-primary text-primary-foreground'
+                  : 'border-border bg-background text-foreground hover:bg-muted',
+              )}
+            >
+              <span className="text-sm font-medium">{opt.label}</span>
+              <span className={cn('text-[11px]', placementType === opt.value ? 'text-primary-foreground/70' : 'text-muted-foreground')}>
+                {opt.hint}
+              </span>
+            </button>
+          ))}
+        </div>
+      </section>
+
       <section className="space-y-5">
         <DimensionInput
           label="Breedte"

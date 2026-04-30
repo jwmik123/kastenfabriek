@@ -25,11 +25,11 @@ const STEPS = [
 function StepIndicator() {
   const step = useWasmachinekastStore((s) => s.step)
   const setStep = useWasmachinekastStore((s) => s.setStep)
-  const clearWasherModule = useWasmachinekastStore((s) => s.clearWasherModule)
+  const clearWasherModules = useWasmachinekastStore((s) => s.clearWasherModules)
 
   function handleStepClick(targetStep: number) {
     if (targetStep >= step) return
-    if (targetStep === 2) clearWasherModule()
+    if (targetStep === 2) clearWasherModules()
     setStep(targetStep)
   }
 
@@ -95,13 +95,14 @@ export default function StepWizard() {
   const nextStep = useWasmachinekastStore((s) => s.nextStep)
   const prevStep = useWasmachinekastStore((s) => s.prevStep)
   const selectedSlot = useWasmachinekastStore((s) => s.selectedSlot)
-  const clearWasherModule = useWasmachinekastStore((s) => s.clearWasherModule)
+  const washerModules = useWasmachinekastStore((s) => s.washerModules)
+  const clearWasherModules = useWasmachinekastStore((s) => s.clearWasherModules)
   const isPanelOpen = step === 4 && selectedSlot !== null
 
   const blurClass = 'transition-[filter] duration-200 blur-sm pointer-events-none select-none'
 
   function handlePrev() {
-    if (step === 3) clearWasherModule()
+    if (step === 3) clearWasherModules()
     prevStep()
   }
 
@@ -122,7 +123,7 @@ export default function StepWizard() {
         <Button variant="outline" onClick={handlePrev} disabled={step === 1}>
           Vorige
         </Button>
-        <Button onClick={nextStep} disabled={step === STEPS.length}>
+        <Button onClick={nextStep} disabled={step === STEPS.length || (step === 2 && washerModules.length === 0)}>
           {step === STEPS.length ? 'Voltooien' : 'Volgende'}
         </Button>
       </div>

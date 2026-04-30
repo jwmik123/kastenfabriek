@@ -30,6 +30,7 @@ interface MaterialState {
   lightStripsEnabled: boolean
   textureMaps: Record<string, THREE.Texture>
   chromeMaterial: THREE.MeshPhysicalMaterial
+  glassMaterial: THREE.MeshPhysicalMaterial
 }
 
 const MaterialContext = createContext<MaterialState | null>(null)
@@ -59,6 +60,10 @@ export function ModuleMaterialOverrideProvider({
 
 export function useChromeMaterialInstance(): THREE.MeshPhysicalMaterial {
   return useContext(MaterialContext)!.chromeMaterial
+}
+
+export function useGlassMaterialInstance(): THREE.MeshPhysicalMaterial {
+  return useContext(MaterialContext)!.glassMaterial
 }
 
 export function ClosetMaterialProvider({
@@ -99,9 +104,20 @@ export function ClosetMaterialProvider({
     clearcoatRoughness: 0,
   }), [])
 
+  const glassMaterial = useMemo(() => new THREE.MeshPhysicalMaterial({
+    color: 0x111111,
+    roughness: 0,
+    metalness: 0,
+    reflectivity: 1,
+    ior: 1.5,
+    clearcoat: 1,
+    clearcoatRoughness: 0,
+    envMapIntensity: 2,
+  }), [])
+
   const state = useMemo<MaterialState>(
-    () => ({ buitenkantMaterialId, binnenkantMaterialId, lightStripsEnabled, textureMaps, chromeMaterial }),
-    [buitenkantMaterialId, binnenkantMaterialId, lightStripsEnabled, textureMaps, chromeMaterial],
+    () => ({ buitenkantMaterialId, binnenkantMaterialId, lightStripsEnabled, textureMaps, chromeMaterial, glassMaterial }),
+    [buitenkantMaterialId, binnenkantMaterialId, lightStripsEnabled, textureMaps, chromeMaterial, glassMaterial],
   )
 
   return (

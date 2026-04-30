@@ -5,7 +5,7 @@ import * as THREE from 'three/webgpu'
 import { useRef, useEffect, useState } from 'react'
 import gsap from 'gsap'
 import type { ModuleLayoutConfig } from '../../kledingkast/scene/moduleLayouts'
-import { useClosetMaterialInstance, useChromeMaterialInstance } from '../materials/ClosetMaterial'
+import { useClosetMaterialInstance, useChromeMaterialInstance, useGlassMaterialInstance } from '../materials/ClosetMaterial'
 import { useConfiguratorStore } from '../store/context'
 
 // All nodes in module GLBs carry a -90° Y rotation.
@@ -48,6 +48,7 @@ function SpecialElementInner({
   const { scene, animations } = useGLTF(layout.specialElement.glbPath!)
   const closetMaterial = useClosetMaterialInstance(hasDoor ? 'binnenkant' : 'buitenkant')
   const chromeMaterial = useChromeMaterialInstance()
+  const glassMaterial  = useGlassMaterialInstance()
 
   const doorsOpen = useConfiguratorStore((s) => s.doorsOpen)
 
@@ -91,25 +92,29 @@ function SpecialElementInner({
     : isCentered
       ? MODULE_WALL + targetWidth / 2 - (box.min.x + box.max.x) / 2
       : -box.min.x + MODULE_WALL
-  const offsetZ = (isCentered || isDouble)
-    ? targetDepth / 2 - (box.min.z + box.max.z) / 2
-    : -box.min.z
+  const offsetZ = -box.min.z + (!hasDoor ? (layout.specialElement.noDoorDepthOffset ?? 0) : 0)
 
   const { actions } = useAnimations(clonedClips, clone)
 
   useEffect(() => {
+    const glbMeshes    = new Set(layout.specialElement.glbMaterialMeshes ?? [])
+    const chromeMeshes = new Set(layout.specialElement.chromeMaterialMeshes ?? [])
+    const glassMeshes  = new Set(layout.specialElement.glassMaterialMeshes ?? [])
     const applyMaterial = (obj: THREE.Object3D) => {
       obj.traverse((child: THREE.Object3D) => {
         if (!(child as THREE.Mesh).isMesh) return
         const mesh = child as THREE.Mesh
-        mesh.material = mesh.name.includes('Metal') ? chromeMaterial : closetMaterial
+        if (glbMeshes.has(mesh.name)) return
+        if (glassMeshes.has(mesh.name)) { mesh.material = glassMaterial; return }
+        const isChrome = chromeMeshes.has(mesh.name) || mesh.name.includes('Metal')
+        mesh.material = isChrome ? chromeMaterial : closetMaterial
         mesh.castShadow = true
         mesh.receiveShadow = true
       })
     }
     applyMaterial(clone)
     if (clone2) applyMaterial(clone2)
-  }, [clone, clone2, closetMaterial, chromeMaterial])
+  }, [clone, clone2, closetMaterial, chromeMaterial, glassMaterial, layout.specialElement.glbMaterialMeshes, layout.specialElement.chromeMaterialMeshes, layout.specialElement.glassMaterialMeshes])
 
   useEffect(() => {
     const action = Object.values(actions)[0]
@@ -142,7 +147,25 @@ function SpecialElementInner({
       const hasWS    = mesh.name.includes('_ws')
       const isRight  = mesh.name.includes('Right')
       const isMiddle = mesh.name.includes('Middle')
-      const isBack   = mesh.name.includes('Back')
+      const isBack   = (() => {
+        let cur: THREE.Object3D | null = mesh
+        while (cur) {
+          if (cur.name.includes('Back')) return true
+          cur = cur.parent
+        }
+        return false
+      })()
+
+      const isWMSingle = (() => {
+        let cur: THREE.Object3D | null = mesh
+        while (cur) {
+          if (cur.name.includes('WMDoubleMachine')) return true
+          if (cur.name.includes('WMPlankMachine')) return true
+          if (cur.name.includes('WMSingleMachine')) return true
+          cur = cur.parent
+        }
+        return false
+      })()
 
       if (hasDS && hasWS) {
         mesh.scale.set(depthScale, 1, widthScale)
@@ -159,7 +182,11 @@ function SpecialElementInner({
       }
 
       if (!hasDS && !isBack) {
-        mesh.position.z += depthGrowth
+        if (isWMSingle) {
+          mesh.position.x += depthGrowth
+        } else {
+          mesh.position.z += depthGrowth
+        }
       }
     })
 

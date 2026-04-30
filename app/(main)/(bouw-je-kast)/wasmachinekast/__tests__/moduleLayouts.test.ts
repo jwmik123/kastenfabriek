@@ -1,8 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
   WASHER_SINGLE,
-  WASHER_DOUBLE,
-  WASHER_STACKED,
   WASHER_LAYOUTS,
   isLayoutAvailable,
   getWasmModuleLayouts,
@@ -21,7 +19,7 @@ const baseLayout: ModuleLayout = {
 
 describe('WASHER_SINGLE', () => {
   it('has minSlotWidth of 65', () => {
-    expect(WASHER_SINGLE.minSlotWidth).toBe(65)
+    expect(WASHER_SINGLE.minSlotWidth).toBe(68.6)
   })
 
   it('has layoutId 11', () => {
@@ -33,40 +31,21 @@ describe('WASHER_SINGLE', () => {
   })
 })
 
-describe('WASHER_DOUBLE', () => {
-  it('has minSlotWidth of 130', () => {
-    expect(WASHER_DOUBLE.minSlotWidth).toBe(130)
-  })
-
-  it('has layoutId 12', () => {
-    expect(WASHER_DOUBLE.layoutId).toBe(12)
-  })
-
-  it('is not available for top cabinet', () => {
-    expect(WASHER_DOUBLE.availableForTopCabinet).toBe(false)
-  })
-})
-
-describe('WASHER_STACKED', () => {
-  it('has layoutId 13', () => {
-    expect(WASHER_STACKED.layoutId).toBe(13)
-  })
-
-  it('has minSlotWidth of 65', () => {
-    expect(WASHER_STACKED.minSlotWidth).toBe(65)
-  })
-
-  it('is not available for top cabinet', () => {
-    expect(WASHER_STACKED.availableForTopCabinet).toBe(false)
-  })
-})
-
 describe('WASHER_LAYOUTS', () => {
-  it('contains all three washer variants', () => {
+  it('contains enkel, dubbel model, and met plank variants', () => {
     const ids = WASHER_LAYOUTS.map((l) => l.layoutId)
     expect(ids).toContain(11)
-    expect(ids).toContain(12)
     expect(ids).toContain(13)
+    expect(ids).toContain(14)
+  })
+
+  it('does not contain removed dubbel naast elkaar variant (id 12)', () => {
+    const ids = WASHER_LAYOUTS.map((l) => l.layoutId)
+    expect(ids).not.toContain(12)
+  })
+
+  it('has exactly 3 entries', () => {
+    expect(WASHER_LAYOUTS).toHaveLength(3)
   })
 })
 
@@ -80,27 +59,11 @@ describe('isLayoutAvailable', () => {
   })
 
   it('returns true for washer single when slot exactly meets minimum', () => {
-    expect(isLayoutAvailable(WASHER_SINGLE, 65)).toBe(true)
+    expect(isLayoutAvailable(WASHER_SINGLE, 68.6)).toBe(true)
   })
 
   it('returns true for washer single when slot is wider', () => {
     expect(isLayoutAvailable(WASHER_SINGLE, 100)).toBe(true)
-  })
-
-  it('returns false for washer double when slot too narrow', () => {
-    expect(isLayoutAvailable(WASHER_DOUBLE, 120)).toBe(false)
-  })
-
-  it('returns true for washer double when slot meets minimum', () => {
-    expect(isLayoutAvailable(WASHER_DOUBLE, 130)).toBe(true)
-  })
-
-  it('returns false for washer stacked when slot too narrow', () => {
-    expect(isLayoutAvailable(WASHER_STACKED, 60)).toBe(false)
-  })
-
-  it('returns true for washer stacked when slot exactly meets minimum', () => {
-    expect(isLayoutAvailable(WASHER_STACKED, 65)).toBe(true)
   })
 })
 
@@ -110,19 +73,24 @@ describe('getWasmModuleLayouts', () => {
     expect(result.find((l) => l.layoutId === 1)).toBeDefined()
   })
 
-  it('includes WASHER_SINGLE', () => {
+  it('includes WASHER_SINGLE (id 11)', () => {
     const result = getWasmModuleLayouts([])
     expect(result.find((l) => l.layoutId === 11)).toBeDefined()
   })
 
-  it('includes WASHER_DOUBLE', () => {
-    const result = getWasmModuleLayouts([])
-    expect(result.find((l) => l.layoutId === 12)).toBeDefined()
-  })
-
-  it('includes WASHER_STACKED', () => {
+  it('includes WASHER_DOUBLE_GLB (id 13)', () => {
     const result = getWasmModuleLayouts([])
     expect(result.find((l) => l.layoutId === 13)).toBeDefined()
+  })
+
+  it('includes WASHER_PLANK (id 14)', () => {
+    const result = getWasmModuleLayouts([])
+    expect(result.find((l) => l.layoutId === 14)).toBeDefined()
+  })
+
+  it('does not include removed dubbel naast elkaar variant (id 12)', () => {
+    const result = getWasmModuleLayouts([])
+    expect(result.find((l) => l.layoutId === 12)).toBeUndefined()
   })
 
   it('washer layouts come after non-washer sanity layouts', () => {
@@ -156,7 +124,7 @@ describe('getWasmModuleLayouts', () => {
     const result = getWasmModuleLayouts([sanityWasher])
     const entry = result.find((l) => l.layoutId === WASHER_SINGLE.layoutId)!
     expect(entry.priceSingle).toBe(99)
-    expect(entry.minSlotWidth).toBe(65)
+    expect(entry.minSlotWidth).toBe(68.6)
     expect(entry.name).toBe('Wasmachine (enkel)')
   })
 })
