@@ -14,6 +14,7 @@ export interface ModuleLayout {
   priceDouble: number;
   priceSingle: number;
   availableForTopCabinet: boolean;
+  minSlotWidth?: number; // cm — if set, setModuleLayout rejects slots narrower than this
 }
 
 export type AccessoryCategory = "interior" | "mechanism" | "electrical" | "upgrade";
@@ -77,6 +78,7 @@ export interface PricingConfig {
   led: LedPricing;
   deliveryPrice: number;
   constraints: PricingConstraints;
+  freeMontage?: boolean;
 }
 
 export interface HandleType {

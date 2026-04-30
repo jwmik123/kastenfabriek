@@ -20,6 +20,7 @@ const ICON_LINKS = [
 
 const Navigation = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [activeNavHref, setActiveNavHref] = useState<string | null>(null)
   const mobileMenuRef = useRef<HTMLDivElement>(null)
   const menuContentRef = useRef<HTMLDivElement>(null)
   const navRef = useRef<HTMLElement>(null)
@@ -29,6 +30,7 @@ const Navigation = () => {
     const highlight = highlightRef.current
     if (!highlight) return
     const link = e.currentTarget
+    setActiveNavHref(link.getAttribute('href'))
     gsap.to(highlight, {
       x: link.offsetLeft,
       y: link.offsetTop,
@@ -41,6 +43,7 @@ const Navigation = () => {
   }
 
   const handleNavLeave = () => {
+    setActiveNavHref(null)
     gsap.to(highlightRef.current, { opacity: 0, duration: 0.2, ease: 'power2.out' })
   }
 
@@ -77,7 +80,7 @@ const Navigation = () => {
 
   return (
     <div className="fixed top-0 left-0 right-0 z-30 font-poppins pointer-events-none">
-      <div className="w-full bg-primary text-white py-2.5 px-6 flex items-center justify-center gap-2 text-sm font-medium pointer-events-auto">
+      <div className="w-full bg-primary text-amber-300 py-2.5 px-6 flex items-center justify-center gap-2 text-sm font-medium pointer-events-auto">
         <Hammer size={14} className="flex-shrink-0" />
         <span>Alle kasten nu met <strong>gratis montage</strong> bij oplevering!</span>
       </div>
@@ -102,20 +105,20 @@ const Navigation = () => {
         {/* Desktop Center Nav — frosted glass pill */}
         <nav
           ref={navRef}
-          className="hidden lg:flex pointer-events-auto relative items-center gap-1 bg-white/80 backdrop-blur-md rounded-full px-2 py-2 shadow-sm border border-white/50"
+          className="hidden lg:flex pointer-events-auto relative items-center gap-1 bg-white/80 backdrop-blur-md rounded-md px-2 py-2 shadow-sm border border-white/50"
           onMouseLeave={handleNavLeave}
         >
           {/* Sliding highlight */}
           <div
             ref={highlightRef}
-            className="absolute top-0 left-0 rounded-full bg-primary-500 pointer-events-none opacity-0"
+            className="absolute top-0 left-0 rounded-md bg-primary-500 pointer-events-none opacity-0"
           />
           {NAV_LINKS.map(({ href, label }) => (
             <Link
               key={href}
               href={href}
               onMouseEnter={handleNavLinkHover}
-              className="relative z-10 px-5 py-2 text-sm font-medium text-gray-700 rounded-full hover:text-white transition-colors duration-150"
+              className={`relative z-10 px-5 py-2 text-sm font-medium rounded-md transition-colors duration-150 ${activeNavHref === href ? 'text-white' : 'text-gray-700'}`}
             >
               {label}
             </Link>
@@ -123,7 +126,7 @@ const Navigation = () => {
           <div className="w-px h-5 bg-gray-300/70 mx-1" />
           <Link
             href="/kledingkast"
-            className="relative z-10 px-5 py-2 text-sm font-semibold text-white bg-[var(--color-secondary)] rounded-full hover:opacity-80 transition-opacity duration-150 shadow-sm"
+            className="relative z-10 px-5 py-2 text-sm font-semibold text-white bg-amber-500 rounded-md hover:opacity-80 transition-opacity duration-150 shadow-sm"
           >
             Ontwerp je kast
           </Link>
@@ -136,7 +139,7 @@ const Navigation = () => {
               key={href}
               href={href}
               aria-label={label}
-              className="flex items-center justify-center w-10 h-10 rounded-full bg-white/80 backdrop-blur-md shadow-sm border border-white/50 text-gray-600 hover:text-primary hover:scale-110 transition-all duration-200"
+              className="flex items-center justify-center w-10 h-10 rounded-md bg-white/80 backdrop-blur-md shadow-sm border border-white/50 text-gray-600 hover:text-primary hover:scale-110 transition-all duration-200"
             >
               <Icon size={17} />
             </Link>
@@ -145,7 +148,7 @@ const Navigation = () => {
 
         {/* Mobile Right Section */}
         <div className="flex lg:hidden items-center gap-3 pointer-events-auto">
-          <Link href="/kledingkast" className="text-white bg-primary px-4 py-2 text-sm rounded-full">
+          <Link href="/kledingkast" className="text-white bg-primary px-4 py-2 text-sm rounded-md">
             Ontwerp je kast
           </Link>
 
@@ -186,7 +189,7 @@ const Navigation = () => {
           <Link
             href="/kledingkast"
             onClick={() => setIsMenuOpen(false)}
-            className="text-primary bg-white px-8 py-4 rounded-full font-medium"
+            className="text-primary bg-white px-8 py-4 rounded-md font-medium"
           >
             Ontwerp je maatkast
           </Link>

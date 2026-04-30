@@ -53,6 +53,10 @@ export interface ClosetConfigSnapshot {
   doorHandleMaterial?: 'chrome' | 'black' | 'gold';
   doorsExtendToFloor?: boolean;
 
+  // Washer slot locking
+  washerSlotIndex?: number | null;
+  washerLayoutId?: number | null;
+
   // Lighting & extras
   lightStripsEnabled: boolean;
 
@@ -75,6 +79,9 @@ export interface PriceSnapshot {
 
   installationTierName: string | null; // e.g. "Groot project"
   installationCost: number; // €720 | €1440 | €2160
+
+  freeMontageApplied?: boolean;
+  freeMontageDiscount?: number;
 
   total: number; // subtotal + installationCost
 

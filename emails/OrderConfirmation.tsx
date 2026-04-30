@@ -14,6 +14,7 @@ import {
 } from "@react-email/components";
 import { MATERIALS } from "@/app/(main)/(bouw-je-kast)/kledingkast/materials";
 import type { ClosetConfigSnapshot, PriceSnapshot } from "@/lib/cart/types";
+import { getDeliveryWindow } from "@/lib/delivery-window";
 
 interface AddressSnapshot {
   firstName: string;
@@ -126,6 +127,10 @@ export default function OrderConfirmation({
                   <Text style={label}>Status</Text>
                   <Text style={{ ...metaValue, color: BRAND_GREEN, fontWeight: "600" }}>Betaald</Text>
                 </td>
+                <td style={metaCell}>
+                  <Text style={label}>Geschatte aankomst</Text>
+                  <Text style={metaValue}>{getDeliveryWindow(orderDate)}</Text>
+                </td>
               </tr>
             </table>
           </Section>
@@ -236,6 +241,9 @@ export default function OrderConfirmation({
                       label: `Montage${p.installationTierName ? ` (${p.installationTierName})` : ""}`,
                       amount: p.installationCost,
                     },
+                    p.freeMontageApplied && p.freeMontageDiscount && p.freeMontageDiscount > 0
+                      ? { label: "Gratis montage", amount: -(p.freeMontageDiscount) }
+                      : false,
                   ]
                     .filter(Boolean)
                     .map((row, ri) => (

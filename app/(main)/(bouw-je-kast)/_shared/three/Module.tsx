@@ -2,15 +2,17 @@
 
 import { useMemo } from 'react'
 import * as THREE from 'three/webgpu'
-import { useClosetStore } from '../store'
-import { getLayoutById, computeModulePositions } from './moduleLayouts'
-import { getDiagHeightAt, getBackDiagHeightAtZ, isFullHeight, CORPUS_WALL } from './diagonalUtils'
-import type { DiagParams } from './diagonalUtils'
+import { useConfiguratorStore } from '../store/context'
+import { computeModulePositions } from '../../kledingkast/scene/moduleLayouts'
+import type { ModuleLayoutConfig } from '../../kledingkast/scene/moduleLayouts'
+import { getDiagHeightAt, getBackDiagHeightAtZ, isFullHeight, CORPUS_WALL } from '../../kledingkast/scene/diagonalUtils'
+import type { DiagParams } from '../../kledingkast/scene/diagonalUtils'
 import FillZone from './FillZone'
 import SpecialElement from './SpecialElement'
-import Door from '../../_shared/objects/Door'
-import ClosetMaterial, { ModuleMaterialOverrideProvider } from '../../_shared/materials/ClosetMaterial'
+import Door from '../objects/Door'
+import ClosetMaterial, { ModuleMaterialOverrideProvider } from '../materials/ClosetMaterial'
 import { trapShape, trapGeo, trapNaN } from '@/utils/debugGeometry'
+import { computeSlotWidthsM } from '../store/slotWidths'
 
 const WALL = 0.018
 const MODULE_WALL = 0.018
@@ -22,10 +24,11 @@ const MODULE_FLOOR_Y = ONDERSTEL_HEIGHT + ONDERSTEL_GAP
 
 interface ModuleProps {
   index: number
-  layoutId: number
+  layout: ModuleLayoutConfig
   hasDoor: boolean
   span: 1 | 2
   diagParams: DiagParams
+  mirror?: boolean
 }
 
 function wallHeightAt(xOuter: number, p: DiagParams): number {
@@ -118,31 +121,33 @@ function computeRoofProfile(
     .map(({ x, y }) => ({ x: x - leftXOuter, y }))
 }
 
-export default function Module({ index, layoutId, hasDoor, span, diagParams: p }: ModuleProps) {
-  const depth        = useClosetStore((s) => s.depth) / 100
-  const moduleCount  = useClosetStore((s) => s.moduleCount)
-  const width        = useClosetStore((s) => s.width) / 100
-  const doorsOpen           = useClosetStore((s) => s.doorsOpen)
-  const hoveredSlot         = useClosetStore((s) => s.hoveredSlot)
-  const doorHandleId        = useClosetStore((s) => s.doorHandleId)
-  const doorHandleMaterial  = useClosetStore((s) => s.doorHandleMaterial)
-  const doorsExtendToFloor  = useClosetStore((s) => s.doorsExtendToFloor)
-  const moduleSlot   = useClosetStore((s) => s.modules.find((m) => m.slotIndex === index))
-  const needsTop     = useClosetStore((s) => s.needsTopCabinet())
-
-  const layout = getLayoutById(layoutId)
-  if (!layout) return null
+export default function Module({ index, layout, hasDoor, span, diagParams: p, mirror: mirrorProp }: ModuleProps) {
+  const depth        = useConfiguratorStore((s) => s.depth) / 100
+  const moduleCount  = useConfiguratorStore((s) => s.moduleCount)
+  const width        = useConfiguratorStore((s) => s.width) / 100
+  const doorsOpen           = useConfiguratorStore((s) => s.doorsOpen)
+  const hoveredSlot         = useConfiguratorStore((s) => s.hoveredSlot)
+  const doorHandleId        = useConfiguratorStore((s) => s.doorHandleId)
+  const doorHandleMaterial  = useConfiguratorStore((s) => s.doorHandleMaterial)
+  const doorsExtendToFloor  = useConfiguratorStore((s) => s.doorsExtendToFloor)
+  const allModules   = useConfiguratorStore((s) => s.modules)
+  const moduleSlot   = allModules.find((m) => m.slotIndex === index)
+  const needsTop     = useConfiguratorStore((s) => s.needsTopCabinet())
 
   const innerW       = width - WALL * 2
-  const slotW        = innerW / moduleCount
-  const moduleWidth  = span * slotW
   const moduleDepth  = depth - WALL - CLOSET_INSIDE_INSET
   const contentDepth = moduleDepth - MODULE_INSIDE_INSET
   const centerZ      = contentDepth / 2
+
+  const slotWidthsM = useMemo(() => computeSlotWidthsM(allModules, innerW), [allModules, innerW])
+  const slotOffset   = slotWidthsM.slice(0, index).reduce((a, b) => a + b, 0)
+  const moduleWidth  = slotWidthsM.slice(index, index + span).reduce((a, b) => a + b, 0)
+  const thisSlotW    = slotWidthsM[index] ?? moduleWidth
+  const nextSlotW    = slotWidthsM[index + 1] ?? thisSlotW
   const centerX      = moduleWidth / 2
 
-  const leftWallXOuter  = WALL + index * slotW
-  const rightWallXOuter = WALL + (index + span) * slotW
+  const leftWallXOuter  = WALL + slotOffset
+  const rightWallXOuter = WALL + slotOffset + moduleWidth
 
   const isLastModule = index + span === moduleCount
 
@@ -257,7 +262,7 @@ export default function Module({ index, layoutId, hasDoor, span, diagParams: p }
     return profile
   }, [isBackDiag, leftWallXOuter, rightWallXOuter, p, leftWallH, rightWallH])
 
-  const midXOuter        = leftWallXOuter + slotW
+  const midXOuter        = leftWallXOuter + thisSlotW
   const midH             = wallHeightAt(midXOuter, p)
   const doorProfile      = useMemo(
     () => computeDoorProfile(leftWallXOuter, rightWallXOuter, p, leftWallH, rightWallH),
@@ -352,9 +357,9 @@ export default function Module({ index, layoutId, hasDoor, span, diagParams: p }
       p.outerWidth - CORPUS_WALL - p.rightDiagTopWidth > leftWallXOuter &&
       p.outerWidth - CORPUS_WALL - p.rightDiagTopWidth < rightWallXOuter)
   const fillToTop = moduleHasDiag && !hasKinkInRange
-  const mirrorDoor = isBackDiag
+  const mirrorDoor = mirrorProp ?? (isBackDiag
     ? (index % 2 === 1 || isLastModule)
-    : (moduleHasDiag ? leftWallH < rightWallH : (index % 2 === 1 || isLastModule))
+    : (moduleHasDiag ? leftWallH < rightWallH : (index % 2 === 1 || isLastModule)))
 
   // Door profile for back diagonal.
   // When TC active (needsTop): cap at p.mainHeight so main corpus door ends where TC begins.
@@ -365,11 +370,11 @@ export default function Module({ index, layoutId, hasDoor, span, diagParams: p }
     if (!isBackDiag) return []
     const rawH = trapNaN(getBackDiagHeightAtZ(WALL + moduleDepth, p), `Module${index}-bdDoor-raw`)
     const h = Math.max(0, (needsTop ? Math.min(rawH, p.mainHeight) : rawH) - MODULE_FLOOR_Y - WALL)
-    return [{ x: 0, y: h }, { x: slotW, y: h }]
-  }, [isBackDiag, moduleDepth, needsTop, p, slotW])
+    return [{ x: 0, y: h }, { x: thisSlotW, y: h }]
+  }, [isBackDiag, moduleDepth, needsTop, p, thisSlotW])
 
   const startX = -innerW / 2
-  const x      = startX + index * slotW
+  const x      = startX + slotOffset
 
   return (
     <ModuleMaterialOverrideProvider
@@ -488,7 +493,7 @@ export default function Module({ index, layoutId, hasDoor, span, diagParams: p }
         <Door
           key={isBackDiag ? 'door-bd' : 'door-sd'}
           moduleHeight={isBackDiag ? hFront : roofY}
-          slotW={slotW}
+          slotW={thisSlotW}
           moduleDepth={moduleDepth}
           doorsOpen={doorsOpen}
           doorHandleId={doorHandleId}
@@ -503,7 +508,7 @@ export default function Module({ index, layoutId, hasDoor, span, diagParams: p }
           <Door
             key="door-L"
             moduleHeight={isBackDiag ? hFront : Math.min(leftDoorProfile[0].y, leftDoorProfile[leftDoorProfile.length - 1].y)}
-            slotW={slotW}
+            slotW={thisSlotW}
             moduleDepth={moduleDepth}
             doorsOpen={doorsOpen}
             doorHandleId={doorHandleId}
@@ -511,11 +516,11 @@ export default function Module({ index, layoutId, hasDoor, span, diagParams: p }
             extendToFloor={doorsExtendToFloor}
             topProfile={isBackDiag ? bdDoorProfile : leftDoorProfile}
           />
-          <group position={[slotW, 0, 0]}>
+          <group position={[thisSlotW, 0, 0]}>
             <Door
               key="door-R"
               moduleHeight={isBackDiag ? hFront : Math.min(rightDoorProfile[0].y, rightDoorProfile[rightDoorProfile.length - 1].y)}
-              slotW={slotW}
+              slotW={nextSlotW}
               moduleDepth={moduleDepth}
               doorsOpen={doorsOpen}
               doorHandleId={doorHandleId}

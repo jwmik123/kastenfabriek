@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic'
 import type { FullPricingData } from '@/types/configurator-pricing'
 import type { ClosetConfigSnapshot } from '@/lib/cart/types'
 import { useClosetStore } from '../store'
+import { ConfiguratorStoreContext } from '../../_shared/store/context'
 import StepWizard from './StepWizard'
 import MobileSheet from './MobileSheet'
 import { getDraftConfig, saveDraftConfig } from '@/lib/cart/draft-config'
@@ -36,7 +37,7 @@ export default function KledingkastConfigurator({ pricingData, editConfig, editI
       if (item) restoreConfig(item.configuration)
     } else {
       // Restore autosaved draft if available
-      const draft = getDraftConfig()
+      const draft = getDraftConfig('kledingkast')
       if (draft) restoreConfig(draft)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -88,7 +89,7 @@ export default function KledingkastConfigurator({ pricingData, editConfig, editI
           hasTopCabinet: state.needsTopCabinet(),
           topCabinetHeightCm: state.topCabinetHeight(),
         }
-        saveDraftConfig(config)
+        saveDraftConfig(config, 'kledingkast')
       }, 500)
     })
 
@@ -99,7 +100,7 @@ export default function KledingkastConfigurator({ pricingData, editConfig, editI
   }, [])
 
   return (
-    <>
+    <ConfiguratorStoreContext.Provider value={useClosetStore}>
       <div className="w-full h-[100dvh] md:h-[92vh] flex flex-col lg:flex-row">
         {/* Canvas — full viewport on mobile, 50vh on tablet, full-height on desktop */}
         <div className="w-full h-full md:h-[50vh] lg:h-full lg:w-2/3">
@@ -112,6 +113,6 @@ export default function KledingkastConfigurator({ pricingData, editConfig, editI
       </div>
       {/* Mobile bottom sheet — vaul, only visible below md */}
       <MobileSheet />
-    </>
+    </ConfiguratorStoreContext.Provider>
   )
 }

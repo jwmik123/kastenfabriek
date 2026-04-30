@@ -8,6 +8,7 @@ import { MATERIALS } from '../materials'
 import { addItem } from '@/lib/cart/cart-store'
 import { requestCapture, resetToFrontView } from '@/lib/canvas-capture'
 import { PricingEngine } from '@/lib/configurator/pricing-engine'
+import { computeFreeMontage } from '@/lib/configurator/free-montage'
 import type { CartItem, ClosetConfigSnapshot, PriceSnapshot } from '@/lib/cart/types'
 
 export const formatter = new Intl.NumberFormat('nl-NL', {
@@ -100,10 +101,12 @@ export function useCartPrice() {
   const deliveryCost = engine?.deliveryPrice ?? 95
   const subtotal = moduleCost + doorCost + mechanismCost + ledCost + powerHoleCost + deliveryCost
   const installationTier = engine?.getInstallationTier(subtotal) ?? null
-  const installationCost = installationTier?.price ?? 0
+  const freeMontage = pricingData?.config.freeMontage ?? false
+  const { effectiveInstallationCost, freeMontageDiscount, freeMontageApplied, originalPrice, grandTotal } =
+    computeFreeMontage({ subtotal, installationTier, freeMontage })
+  const installationCost = effectiveInstallationCost
 
   const totalPrice = moduleCost + doorCost + mechanismCost + ledCost + powerHoleCost
-  const grandTotal = subtotal + installationCost
 
   const handleAddToCart = async () => {
     if (!pricingData || isCapturing) return
@@ -164,6 +167,8 @@ export function useCartPrice() {
       subtotal,
       installationTierName: installationTier?.name ?? null,
       installationCost,
+      freeMontageApplied,
+      freeMontageDiscount,
       total: grandTotal,
     }
 
@@ -200,6 +205,7 @@ export function useCartPrice() {
   return {
     totalPrice,
     grandTotal,
+    originalPrice,
     pricingData,
     editItemId,
     handleAddToCart,

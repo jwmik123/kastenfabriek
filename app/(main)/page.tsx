@@ -1,8 +1,8 @@
 import Image from "next/image";
 import { Hammer } from "lucide-react";
 import ProductOptionsSection from "@/components/ProductOptionsSection";
-import SloganSection from "@/components/SloganSection";
-import ModuleHighlight from "@/components/ModuleHighlight";
+// import SloganSection from "@/components/SloganSection";
+// import ModuleHighlight from "@/components/ModuleHighlight";
 import TestimonialSection from "@/components/TestimonialSection";
 import WerkwijzeSection from "@/components/WerkwijzeSection";
 import MaterialsSection from "@/components/MaterialsSection";

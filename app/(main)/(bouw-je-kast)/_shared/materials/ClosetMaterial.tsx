@@ -4,7 +4,6 @@ import * as THREE from 'three/webgpu'
 import { color as tslColor, texture as tslTexture } from 'three/tsl'
 import { useLoader } from '@react-three/fiber'
 import { createContext, useContext, useEffect, useMemo, type ReactNode } from 'react'
-import { useClosetStore } from '../../kledingkast/store'
 import { MATERIAL_COLORS } from '../../kledingkast/materials'
 import { useStripWarmth } from './StripWarmthContext'
 import { createStripWarmthUniforms, buildWarmthNode } from '../shaders/stripWarmth'
@@ -28,6 +27,7 @@ const TEXTURE_PATHS: Record<string, string> = {
 interface MaterialState {
   buitenkantMaterialId: string
   binnenkantMaterialId: string
+  lightStripsEnabled: boolean
   textureMaps: Record<string, THREE.Texture>
   chromeMaterial: THREE.MeshPhysicalMaterial
 }
@@ -61,9 +61,17 @@ export function useChromeMaterialInstance(): THREE.MeshPhysicalMaterial {
   return useContext(MaterialContext)!.chromeMaterial
 }
 
-export function ClosetMaterialProvider({ children }: { children: ReactNode }) {
-  const buitenkantMaterialId = useClosetStore((s) => s.buitenkantMaterialId)
-  const binnenkantMaterialId = useClosetStore((s) => s.binnenkantMaterialId)
+export function ClosetMaterialProvider({
+  buitenkantMaterialId,
+  binnenkantMaterialId,
+  lightStripsEnabled = false,
+  children,
+}: {
+  buitenkantMaterialId: string
+  binnenkantMaterialId: string
+  lightStripsEnabled?: boolean
+  children: ReactNode
+}) {
 
   const loadedTextures = useLoader(THREE.TextureLoader, Object.values(TEXTURE_PATHS))
 
@@ -92,8 +100,8 @@ export function ClosetMaterialProvider({ children }: { children: ReactNode }) {
   }), [])
 
   const state = useMemo<MaterialState>(
-    () => ({ buitenkantMaterialId, binnenkantMaterialId, textureMaps, chromeMaterial }),
-    [buitenkantMaterialId, binnenkantMaterialId, textureMaps, chromeMaterial],
+    () => ({ buitenkantMaterialId, binnenkantMaterialId, lightStripsEnabled, textureMaps, chromeMaterial }),
+    [buitenkantMaterialId, binnenkantMaterialId, lightStripsEnabled, textureMaps, chromeMaterial],
   )
 
   return (
@@ -167,7 +175,7 @@ export default function ClosetMaterial({
 }) {
   const ctx               = useContext(MaterialContext)
   const override          = useContext(ModuleMaterialOverrideContext)
-  const lightStripsEnabled = useClosetStore((s) => s.lightStripsEnabled)
+  const lightStripsEnabled = ctx?.lightStripsEnabled ?? false
   const warmthCtx          = useStripWarmth()
 
   const materialId = resolveMaterialId(variant, ctx, override)
@@ -218,7 +226,7 @@ export function useClosetMaterialInstance(
 ): THREE.MeshStandardMaterial | THREE.MeshStandardNodeMaterial {
   const ctx               = useContext(MaterialContext)
   const override          = useContext(ModuleMaterialOverrideContext)
-  const lightStripsEnabled = useClosetStore((s) => s.lightStripsEnabled)
+  const lightStripsEnabled = ctx?.lightStripsEnabled ?? false
   const warmthCtx          = useStripWarmth()
 
   const materialId = resolveMaterialId(variant, ctx, override)

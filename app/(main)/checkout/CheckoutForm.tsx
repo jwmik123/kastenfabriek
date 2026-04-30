@@ -8,6 +8,7 @@ import { validateCoupon } from '@/lib/actions/coupon'
 import type { ValidateCouponResult } from '@/lib/actions/coupon'
 import { calculateDiscount } from '@/lib/cart/discount'
 import type { CartItem } from '@/lib/cart/types'
+import { getDeliveryWindow } from '@/lib/delivery-window'
 
 type Address = {
   id: string
@@ -68,6 +69,11 @@ export default function CheckoutForm({ addresses, cartItems }: CheckoutFormProps
       total: acc.total + item.priceSnapshot.total * item.quantity,
     }),
     { subtotal: 0, installation: 0, total: 0 }
+  )
+
+  const freeMontageTotal = cartItems.reduce(
+    (sum, item) => sum + (item.priceSnapshot.freeMontageDiscount ?? 0) * item.quantity,
+    0
   )
 
   const discountAmountEur = appliedCoupon
@@ -319,17 +325,29 @@ export default function CheckoutForm({ addresses, cartItems }: CheckoutFormProps
 
             <div className="pt-4 space-y-1.5 text-sm text-gray-600">
               <div className="flex justify-between"><span>Subtotaal</span><span>{fmt.format(totals.subtotal)}</span></div>
+              {(totals.installation > 0 || freeMontageTotal > 0) && (
+                <div className="flex justify-between">
+                  <span>Installatie</span>
+                  <span>{fmt.format(totals.installation > 0 ? totals.installation : freeMontageTotal)}</span>
+                </div>
+              )}
+              {freeMontageTotal > 0 && (
+                <div className="flex justify-between text-green-700">
+                  <span>Gratis montage</span>
+                  <span>-{fmt.format(freeMontageTotal)}</span>
+                </div>
+              )}
               {discountAmountEur > 0 && appliedCoupon && (
                 <div className="flex justify-between text-green-700">
                   <span>Korting ({appliedCoupon.code})</span>
                   <span>-{fmt.format(discountAmountEur)}</span>
                 </div>
               )}
-              {totals.installation > 0 && (
-                <div className="flex justify-between"><span>Installatie</span><span>{fmt.format(totals.installation)}</span></div>
-              )}
               <div className="flex justify-between font-semibold text-gray-900 text-base pt-2 border-t border-gray-100">
                 <span>Totaal (incl. BTW)</span><span>{fmt.format(discountedTotal)}</span>
+              </div>
+              <div className="flex justify-between pt-1">
+                <span>Geschatte aankomst</span><span className="text-gray-700">{getDeliveryWindow(new Date())}</span>
               </div>
             </div>
           </div>
@@ -402,6 +420,12 @@ export default function CheckoutForm({ addresses, cartItems }: CheckoutFormProps
           </div>
 
           <div className="bg-gray-50 rounded-xl p-4 text-left space-y-1.5 text-sm text-gray-600">
+            {freeMontageTotal > 0 && (
+              <div className="flex justify-between text-green-700">
+                <span>Gratis montage</span>
+                <span>-{fmt.format(freeMontageTotal)}</span>
+              </div>
+            )}
             {discountAmountEur > 0 && appliedCoupon && (
               <div className="flex justify-between text-green-700">
                 <span>Korting ({appliedCoupon.code})</span>

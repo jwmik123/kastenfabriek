@@ -6,6 +6,14 @@ export const pricingConfig = defineType({
   type: "document",
   fields: [
     defineField({
+      name: "freeMontage",
+      title: "Gratis Montage",
+      type: "boolean",
+      description:
+        "Wanneer actief, wordt montage gratis aangeboden aan de klant.",
+      initialValue: false,
+    }),
+    defineField({
       name: "title",
       title: "Title",
       type: "string",

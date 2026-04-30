@@ -63,6 +63,24 @@ const baseProps: OrderConfirmationProps = {
 };
 
 describe("OrderConfirmation", () => {
+  it("shows Geschatte aankomst cell anchored to orderDate", async () => {
+    // orderDate 2026-01-01 → +56d = 2026-02-26, +84d = 2026-03-26 (same year, no year suffix)
+    const html = await render(<OrderConfirmation {...baseProps} />);
+    expect(html).toContain("Geschatte aankomst");
+    expect(html).toContain("26. feb");
+    expect(html).toContain("26. mrt");
+  });
+
+  it("shows year in delivery window when it crosses into a different calendar year", async () => {
+    // orderDate 2026-11-15 → +56d = 2027-01-10, +84d = 2027-02-07
+    const props: OrderConfirmationProps = {
+      ...baseProps,
+      orderDate: new Date("2026-11-15"),
+    };
+    const html = await render(<OrderConfirmation {...props} />);
+    expect(html).toContain("2027");
+  });
+
   it("renders discount row when discountAmount > 0", async () => {
     const props: OrderConfirmationProps = {
       ...baseProps,
@@ -85,6 +103,50 @@ describe("OrderConfirmation", () => {
   it("omits discount row when no discountAmount", async () => {
     const html = await render(<OrderConfirmation {...baseProps} />);
     expect(html).not.toContain("Korting");
+  });
+
+  it("shows Gratis montage row when freeMontageApplied and freeMontageDiscount > 0", async () => {
+    const props: OrderConfirmationProps = {
+      ...baseProps,
+      items: [
+        {
+          ...baseProps.items[0],
+          priceSnapshot: {
+            ...basePrice,
+            installationCost: 0,
+            freeMontageApplied: true,
+            freeMontageDiscount: 720,
+          },
+        },
+      ],
+    };
+    const html = await render(<OrderConfirmation {...props} />);
+    expect(html).toContain("Gratis montage");
+    expect(html).toContain("720");
+    expect(html).toContain("-");
+  });
+
+  it("omits Gratis montage row when freeMontageApplied is false", async () => {
+    const html = await render(<OrderConfirmation {...baseProps} />);
+    expect(html).not.toContain("Gratis montage");
+  });
+
+  it("omits Gratis montage row when freeMontageDiscount is 0", async () => {
+    const props: OrderConfirmationProps = {
+      ...baseProps,
+      items: [
+        {
+          ...baseProps.items[0],
+          priceSnapshot: {
+            ...basePrice,
+            freeMontageApplied: true,
+            freeMontageDiscount: 0,
+          },
+        },
+      ],
+    };
+    const html = await render(<OrderConfirmation {...props} />);
+    expect(html).not.toContain("Gratis montage");
   });
 
   it("total reflects discounted amount", async () => {

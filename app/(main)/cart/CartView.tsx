@@ -7,6 +7,7 @@ import { Trash2, ShoppingBag, ArrowRight, Pencil } from 'lucide-react'
 import type { CartItem } from '@/lib/cart/types'
 import { getCart, removeItem, clearCart } from '@/lib/cart/cart-store'
 import { syncCartItems, removeDbCartItem } from '@/lib/actions/cart'
+import { getDeliveryWindow } from '@/lib/delivery-window'
 
 const fmt = new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 })
 
@@ -132,6 +133,10 @@ export default function CartView({ isAuthenticated, initialDbItems }: CartViewPr
           <div className="flex justify-between font-semibold text-gray-900 pt-2 border-t border-gray-100 text-base">
             <span>Totaal</span>
             <span>{fmt.format(totals.total)}</span>
+          </div>
+          <div className="flex justify-between pt-1">
+            <span className="text-gray-500">Geschatte aankomst</span>
+            <span className="text-gray-700">{getDeliveryWindow(new Date())}</span>
           </div>
         </div>
 

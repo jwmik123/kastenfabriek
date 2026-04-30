@@ -1,9 +1,9 @@
 'use client'
 
 import { useMemo } from 'react'
-import type { FillZoneConfig } from './moduleLayouts'
-import { SHELF_THICKNESS } from './moduleLayouts'
-import ClosetMaterial from '../../_shared/materials/ClosetMaterial'
+import type { FillZoneConfig } from '../../kledingkast/scene/moduleLayouts'
+import { SHELF_THICKNESS } from '../../kledingkast/scene/moduleLayouts'
+import ClosetMaterial from '../materials/ClosetMaterial'
 
 interface FillZoneProps {
   config: FillZoneConfig
