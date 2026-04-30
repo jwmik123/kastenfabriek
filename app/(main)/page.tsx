@@ -16,9 +16,16 @@ export default function Home() {
     <div className="relative w-full h-screen -mt-6 font-poppins" data-nav-theme="dark">
       {/* <Image src="/homeplaceholder.png" alt="Home" fill className="object-cover" /> */}
        
-      <video autoPlay muted loop className="absolute inset-0 w-full h-full object-cover">
-      <source className="" src="https://www.maatkastenonline.be/themes/maatkastenonline/assets/images/maatkastenonline-home-mobile.webm" type="video/webm"></source>
-      </video>
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <iframe
+          src="https://player.vimeo.com/video/1188234751?badge=0&autopause=0&player_id=0&app_id=58479&autoplay=1&loop=1&background=1&quality=1080p"
+
+          allow="autoplay; fullscreen; picture-in-picture"
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+          style={{ width: "177.78vh", height: "56.25vw", minWidth: "100%", minHeight: "100%" }}
+          title="Animation_v1"
+        />
+      </div>
       <div className="absolute inset-0 bg-black/10 z-10" />
 
       <div className="relative z-10 flex flex-col justify-end pb-24 h-full text-white px-4 max-w-7xl mx-auto">
