@@ -158,6 +158,9 @@ export default function WasmachinekastScene() {
   const mainHeightCm = useWasmachinekastStore((s) => s.mainHeight())
   const outerDepthCm = useWasmachinekastStore((s) => s.depth)
 
+  const buitenkantMaterialId = useWasmachinekastStore((s) => s.buitenkantMaterialId)
+  const binnenkantMaterialId = useWasmachinekastStore((s) => s.binnenkantMaterialId)
+
   const diagParams = useMemo<DiagParams>(
     () => ({
       diagonalSide: 'none',
@@ -177,7 +180,7 @@ export default function WasmachinekastScene() {
   )
 
   return (
-    <ClosetMaterialProvider>
+    <ClosetMaterialProvider buitenkantMaterialId={buitenkantMaterialId} binnenkantMaterialId={binnenkantMaterialId}>
       <ClosetCorpus diagParams={diagParams} />
       <WasmOnderstelPlinth />
       {modules

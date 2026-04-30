@@ -162,6 +162,8 @@ export default function ClosetScene() {
   const backDiagFlatSectionDepth = useClosetStore((s) => s.backDiagFlatSectionDepth)
   const outerDepthCm           = useClosetStore((s) => s.depth)
   const needsTop               = useClosetStore((s) => s.needsTopCabinet())
+  const buitenkantMaterialId   = useClosetStore((s) => s.buitenkantMaterialId)
+  const binnenkantMaterialId   = useClosetStore((s) => s.binnenkantMaterialId)
   const lightStripsEnabled     = useClosetStore((s) => s.lightStripsEnabled)
   const doorsOpen              = useClosetStore((s) => s.doorsOpen)
 
@@ -211,7 +213,7 @@ export default function ClosetScene() {
   }, [diagonalSide, leftDiagStartHeight, rightDiagStartHeight, leftDiagTopWidth, rightDiagTopWidth, outerWidth, mainHeightCm, closetHeightCm, backDiagonal, backDiagKinkHeight, backDiagFlatSectionDepth, outerDepthCm, needsTop])
 
   return (
-    <ClosetMaterialProvider>
+    <ClosetMaterialProvider buitenkantMaterialId={buitenkantMaterialId} binnenkantMaterialId={binnenkantMaterialId} lightStripsEnabled={lightStripsEnabled}>
       <ClosetCorpus diagParams={diagParams} />
       {lightStripsEnabled && doorsOpen && <InstancedLightStrips diagParams={diagParams} />}
       <TopCabinet />
