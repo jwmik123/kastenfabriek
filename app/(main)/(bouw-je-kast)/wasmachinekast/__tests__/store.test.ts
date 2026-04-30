@@ -46,6 +46,16 @@ const basePricingData: FullPricingData = {
       availableForTopCabinet: true,
     },
     {
+      layoutId: 11,
+      name: 'Wasmachine (enkel)',
+      description: 'Single washer',
+      contents: { shelves: 0, rods: 0, drawers: 0, hasWashingMachineShelf: true },
+      priceDouble: 0,
+      priceSingle: 0,
+      availableForTopCabinet: false,
+      minSlotWidth: 65,
+    },
+    {
       layoutId: 99,
       name: 'Wasmachine (enkel)',
       description: 'Single washer slot',
@@ -414,6 +424,51 @@ describe('setWasherModule / clearWasherModule', () => {
     const modules = useWasmachinekastStore.getState().modules
     expect(modules[0].layoutId).toBe(1)
   })
+
+  it('setWasherModule with double (id 12) assigns layoutId 11 to both starting and adjacent slot', () => {
+    useWasmachinekastStore.setState({
+      modules: [
+        { slotIndex: 0, layoutId: null, hasDoor: true, span: 1 },
+        { slotIndex: 1, layoutId: null, hasDoor: true, span: 1 },
+        { slotIndex: 2, layoutId: null, hasDoor: true, span: 1 },
+      ],
+      moduleLayouts: basePricingData.modules,
+    })
+    useWasmachinekastStore.getState().setWasherModule(1, 12)
+    const modules = useWasmachinekastStore.getState().modules
+    expect(modules[1].layoutId).toBe(11)
+    expect(modules[2].layoutId).toBe(11)
+    expect(modules[0].layoutId).toBeNull()
+  })
+
+  it('setWasherModule with double sets fixedWidth 65 on both slots', () => {
+    useWasmachinekastStore.setState({
+      modules: [
+        { slotIndex: 0, layoutId: null, hasDoor: true, span: 1 },
+        { slotIndex: 1, layoutId: null, hasDoor: true, span: 1 },
+      ],
+      moduleLayouts: basePricingData.modules,
+    })
+    useWasmachinekastStore.getState().setWasherModule(0, 12)
+    const modules = useWasmachinekastStore.getState().modules
+    expect(modules[0].fixedWidth).toBe(65)
+    expect(modules[1].fixedWidth).toBe(65)
+  })
+
+  it('clearWasherModule after double clears both slots', () => {
+    useWasmachinekastStore.setState({
+      modules: [
+        { slotIndex: 0, layoutId: null, hasDoor: true, span: 1 },
+        { slotIndex: 1, layoutId: null, hasDoor: true, span: 1 },
+      ],
+      moduleLayouts: basePricingData.modules,
+    })
+    useWasmachinekastStore.getState().setWasherModule(0, 12)
+    useWasmachinekastStore.getState().clearWasherModule()
+    const modules = useWasmachinekastStore.getState().modules
+    expect(modules[0].layoutId).toBeNull()
+    expect(modules[1].layoutId).toBeNull()
+  })
 })
 
 // ─── randomFill — washer slot preserved ──────────────────────────────────────
@@ -453,6 +508,27 @@ describe('randomFill — washer slot preserved', () => {
     useWasmachinekastStore.getState().randomFill()
     // slot 1 should have been filled (any layout from the layouts array)
     expect(useWasmachinekastStore.getState().modules[1].layoutId).not.toBeNull()
+  })
+
+  it('randomFill skips both slots when double washer (layoutId 12)', () => {
+    useWasmachinekastStore.setState({
+      moduleCount: 4,
+      washerSlotIndex: 1,
+      washerLayoutId: 12,
+      modules: [
+        { slotIndex: 0, layoutId: null, hasDoor: true, span: 1 },
+        { slotIndex: 1, layoutId: 11, hasDoor: true, span: 1 },
+        { slotIndex: 2, layoutId: 11, hasDoor: true, span: 1 },
+        { slotIndex: 3, layoutId: null, hasDoor: true, span: 1 },
+      ],
+      moduleLayouts: basePricingData.modules,
+    })
+    for (let i = 0; i < 20; i++) {
+      useWasmachinekastStore.getState().randomFill()
+      const modules = useWasmachinekastStore.getState().modules
+      expect(modules[1].layoutId).toBe(11)
+      expect(modules[2].layoutId).toBe(11)
+    }
   })
 })
 
@@ -498,6 +574,47 @@ describe('setModuleCount — washer slot reset', () => {
     const s = useWasmachinekastStore.getState()
     expect(s.washerSlotIndex).toBe(0)
     expect(s.washerLayoutId).toBe(99)
+  })
+
+  it('reducing count removes second slot of double washer — clears and resets to step 2', () => {
+    // double at slot 1 occupies slots 1+2; reducing to 2 modules makes slot 2 invalid
+    useWasmachinekastStore.setState({
+      width: 120,
+      moduleCount: 3,
+      washerSlotIndex: 1,
+      washerLayoutId: 12,
+      step: 3,
+      modules: [
+        { slotIndex: 0, layoutId: null, hasDoor: true, span: 1 },
+        { slotIndex: 1, layoutId: 11, hasDoor: true, span: 1 },
+        { slotIndex: 2, layoutId: 11, hasDoor: true, span: 1 },
+      ],
+    })
+    useWasmachinekastStore.getState().setModuleCount(2)
+    const s = useWasmachinekastStore.getState()
+    expect(s.washerSlotIndex).toBeNull()
+    expect(s.washerLayoutId).toBeNull()
+    expect(s.step).toBe(2)
+    expect(s.modules[1].layoutId).toBeNull()
+  })
+
+  it('double washer at slot 0 survives reduction to exactly 2 modules', () => {
+    useWasmachinekastStore.setState({
+      width: 120,
+      moduleCount: 3,
+      washerSlotIndex: 0,
+      washerLayoutId: 12,
+      step: 3,
+      modules: [
+        { slotIndex: 0, layoutId: 11, hasDoor: true, span: 1 },
+        { slotIndex: 1, layoutId: 11, hasDoor: true, span: 1 },
+        { slotIndex: 2, layoutId: null, hasDoor: true, span: 1 },
+      ],
+    })
+    useWasmachinekastStore.getState().setModuleCount(2)
+    const s = useWasmachinekastStore.getState()
+    expect(s.washerSlotIndex).toBe(0)
+    expect(s.washerLayoutId).toBe(12)
   })
 })
 

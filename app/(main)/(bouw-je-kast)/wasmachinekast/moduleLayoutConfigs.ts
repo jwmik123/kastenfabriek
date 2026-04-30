@@ -20,23 +20,6 @@ const WASHER_SINGLE_CONFIG: ModuleLayoutConfig = {
   },
 }
 
-const WASHER_DOUBLE_CONFIG: ModuleLayoutConfig = {
-  id: 12,
-  label: 'Wasmachine (dubbel naast elkaar)',
-  description: '2 wasmachines naast elkaar — minimaal 130 cm breed',
-  specialElement: {
-    glbPath: '/objects/washer.glb',
-    height: WASHER_HEIGHT,
-    anchor: { type: 'fixed', fromBottom: 0 },
-    centered: true,
-    double: true,
-  },
-  fillZone: {
-    above: { type: 'shelves', spacing: SHELF_SPACING },
-    below: { type: 'open' },
-  },
-}
-
 const WASHER_STACKED_CONFIG: ModuleLayoutConfig = {
   id: 13,
   label: 'Wasmachine (gestapeld)',
@@ -56,7 +39,6 @@ const WASHER_STACKED_CONFIG: ModuleLayoutConfig = {
 
 const WASHER_CONFIGS: Record<number, ModuleLayoutConfig> = {
   11: WASHER_SINGLE_CONFIG,
-  12: WASHER_DOUBLE_CONFIG,
   13: WASHER_STACKED_CONFIG,
 }
 

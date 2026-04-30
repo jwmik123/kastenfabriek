@@ -32,6 +32,8 @@ export default function ModulesStep() {
   const setDoorsExtendToFloor = useWasmachinekastStore((s) => s.setDoorsExtendToFloor)
   const moduleLayouts = useWasmachinekastStore((s) => s.moduleLayouts)
   const washerSlotIndex = useWasmachinekastStore((s) => s.washerSlotIndex)
+  const washerLayoutId = useWasmachinekastStore((s) => s.washerLayoutId)
+  const washerSlotCount = washerLayoutId === 12 ? 2 : 1
 
   const washerIds = new Set(WASHER_LAYOUTS.map((l) => l.layoutId))
 
@@ -94,7 +96,10 @@ export default function ModulesStep() {
         <div className="grid grid-cols-8 gap-1">
           {modules.map((m) => {
             const isSelected = selectedSlot === m.slotIndex
-            const isWasherSlot = washerSlotIndex === m.slotIndex
+            const isWasherSlot =
+              washerSlotIndex !== null &&
+              m.slotIndex >= washerSlotIndex &&
+              m.slotIndex < washerSlotIndex + washerSlotCount
             const isPartOfDouble = m.span === 2 || (m.slotIndex > 0 && modules[m.slotIndex - 1]?.span === 2)
             return (
               <button
@@ -143,7 +148,7 @@ export default function ModulesStep() {
                       onCheckedChange={() => toggleModuleDoor(selectedSlot)}
                     />
                   </div>
-                  {canBeDouble && selectedSlot !== washerSlotIndex && (
+                  {canBeDouble && !(washerSlotIndex !== null && selectedSlot !== null && selectedSlot >= washerSlotIndex && selectedSlot < washerSlotIndex + washerSlotCount) && (
                     <div className="flex items-center justify-between flex-1">
                       <span className="text-sm">Dubbele module</span>
                       <Toggle
@@ -154,7 +159,7 @@ export default function ModulesStep() {
                   )}
                 </div>
 
-                {selectedSlot !== washerSlotIndex && (
+                {!(washerSlotIndex !== null && selectedSlot !== null && selectedSlot >= washerSlotIndex && selectedSlot < washerSlotIndex + washerSlotCount) && (
                   <div className="space-y-2.5">
                     <Carousel
                       items={moduleLayouts.filter((l) => !washerIds.has(l.layoutId)).map((l) => ({ ...l, id: String(l.layoutId) }))}

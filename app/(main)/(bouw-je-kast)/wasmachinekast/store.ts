@@ -7,6 +7,13 @@ export type { BaseModuleSlot as ModuleSlot }
 
 const MIN_DEPTH = 65
 
+const WASHER_SINGLE_ID = 11
+const WASHER_DOUBLE_ID = 12
+
+function washerSlotCount(layoutId: number | null): number {
+  return layoutId === WASHER_DOUBLE_ID ? 2 : 1
+}
+
 const FALLBACK_MODULE_MIN_WIDTH = 15
 const FALLBACK_MODULE_MAX_WIDTH = 65
 
@@ -80,25 +87,33 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
   },
 
   setWasherModule: (slotIndex, layoutId) => {
-    const { washerSlotIndex } = get()
-    if (washerSlotIndex !== null && washerSlotIndex !== slotIndex) {
+    const { washerSlotIndex, washerLayoutId: prevLayoutId } = get()
+    if (washerSlotIndex !== null) {
+      const prevCount = washerSlotCount(prevLayoutId)
       set((s) => ({
-        modules: s.modules.map((m) =>
-          m.slotIndex === washerSlotIndex ? { ...m, layoutId: null, fixedWidth: undefined } : m
-        ),
+        modules: s.modules.map((m) => {
+          const inPrev = m.slotIndex >= washerSlotIndex && m.slotIndex < washerSlotIndex + prevCount
+          return inPrev ? { ...m, layoutId: null, fixedWidth: undefined } : m
+        }),
       }))
     }
     set({ washerSlotIndex: slotIndex, washerLayoutId: layoutId })
-    get().setModuleLayout(slotIndex, layoutId)
+    const slotLayoutId = layoutId === WASHER_DOUBLE_ID ? WASHER_SINGLE_ID : layoutId
+    const count = washerSlotCount(layoutId)
+    for (let i = slotIndex; i < slotIndex + count; i++) {
+      get().setModuleLayout(i, slotLayoutId)
+    }
   },
 
   clearWasherModule: () => {
-    const { washerSlotIndex } = get()
+    const { washerSlotIndex, washerLayoutId } = get()
     if (washerSlotIndex !== null) {
+      const count = washerSlotCount(washerLayoutId)
       set((s) => ({
-        modules: s.modules.map((m) =>
-          m.slotIndex === washerSlotIndex ? { ...m, layoutId: null, fixedWidth: undefined } : m
-        ),
+        modules: s.modules.map((m) => {
+          const inRange = m.slotIndex >= washerSlotIndex && m.slotIndex < washerSlotIndex + count
+          return inRange ? { ...m, layoutId: null, fixedWidth: undefined } : m
+        }),
       }))
     }
     set({ washerSlotIndex: null, washerLayoutId: null })
@@ -152,9 +167,10 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
     }))
     set({ moduleCount: clamped, modules })
 
-    const { washerSlotIndex } = get()
-    if (washerSlotIndex !== null && washerSlotIndex >= clamped) {
-      set({ washerSlotIndex: null, washerLayoutId: null, step: 2 })
+    const { washerSlotIndex, washerLayoutId: currentWasherLayoutId } = get()
+    if (washerSlotIndex !== null && washerSlotIndex + washerSlotCount(currentWasherLayoutId) > clamped) {
+      get().clearWasherModule()
+      set({ step: 2 })
     }
   },
 
@@ -223,9 +239,10 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
   setHoveredSlot: (slot) => set({ hoveredSlot: slot }),
 
   randomFill: () => {
-    const { moduleCount, modules, moduleLayouts, washerSlotIndex } = get()
+    const { moduleCount, modules, moduleLayouts, washerSlotIndex, washerLayoutId } = get()
+    const washerCount = washerSlotCount(washerLayoutId)
     const newModules: BaseModuleSlot[] = modules.map((m, i) => {
-      if (washerSlotIndex !== null && i === washerSlotIndex) return m
+      if (washerSlotIndex !== null && i >= washerSlotIndex && i < washerSlotIndex + washerCount) return m
       const layoutId = moduleLayouts[Math.floor(Math.random() * moduleLayouts.length)]?.layoutId ?? null
       return { ...m, slotIndex: i, layoutId }
     })
@@ -259,11 +276,13 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
       doorsExtendToFloor: config.doorsExtendToFloor ?? false,
       lightStripsEnabled: config.lightStripsEnabled,
       washerSlotIndex:
-        config.washerSlotIndex != null && config.washerSlotIndex < config.moduleCount
+        config.washerSlotIndex != null &&
+        config.washerSlotIndex + washerSlotCount(config.washerLayoutId ?? null) <= config.moduleCount
           ? config.washerSlotIndex
           : null,
       washerLayoutId:
-        config.washerSlotIndex != null && config.washerSlotIndex < config.moduleCount
+        config.washerSlotIndex != null &&
+        config.washerSlotIndex + washerSlotCount(config.washerLayoutId ?? null) <= config.moduleCount
           ? (config.washerLayoutId ?? null)
           : null,
       step: 1,

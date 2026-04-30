@@ -14,12 +14,12 @@ export const WASHER_SINGLE: ModuleLayout = {
 export const WASHER_DOUBLE: ModuleLayout = {
   layoutId: 12,
   name: 'Wasmachine (dubbel naast elkaar)',
-  description: '2 wasmachines naast elkaar — minimaal 130 cm breed',
+  description: '2 aparte wasmachine-vakken naast elkaar',
   contents: { shelves: 0, rods: 0, drawers: 0, hasWashingMachineShelf: true },
   priceDouble: 0,
   priceSingle: 0,
   availableForTopCabinet: false,
-  minSlotWidth: 130,
+  minSlotWidth: 65,
 }
 
 export const WASHER_STACKED: ModuleLayout = {
