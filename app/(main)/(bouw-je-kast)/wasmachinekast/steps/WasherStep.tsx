@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useWasmachinekastStore } from '../store'
 import { WASHER_LAYOUTS } from '../moduleLayouts'
 import { WashingMachine } from 'lucide-react'
@@ -20,7 +20,10 @@ export default function WasherStep() {
   const modules = useWasmachinekastStore((s) => s.modules)
   const moduleCount = useWasmachinekastStore((s) => s.moduleCount)
   const setWasherModule = useWasmachinekastStore((s) => s.setWasherModule)
+  const setHoveredSlot = useWasmachinekastStore((s) => s.setHoveredSlot)
   const nextStep = useWasmachinekastStore((s) => s.nextStep)
+
+  useEffect(() => () => { setHoveredSlot(null) }, [setHoveredSlot])
 
   const [selectedLayoutId, setSelectedLayoutId] = useState<number | null>(null)
   const isDouble = selectedLayoutId === WASHER_DOUBLE_ID
@@ -89,6 +92,8 @@ export default function WasherStep() {
                   key={m.slotIndex}
                   disabled={!available}
                   onClick={() => handleSelectSlot(m.slotIndex)}
+                  onMouseEnter={() => available && setHoveredSlot(m.slotIndex)}
+                  onMouseLeave={() => setHoveredSlot(null)}
                   className={cn(
                     'aspect-square flex items-center justify-center rounded-md text-sm font-medium transition-colors',
                     available

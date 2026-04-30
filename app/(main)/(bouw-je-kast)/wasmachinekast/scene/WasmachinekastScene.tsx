@@ -32,10 +32,11 @@ function WasmModuleSlotInteraction({
   const width = useWasmachinekastStore((s) => s.width) / 100
   const mainHeightCm = useWasmachinekastStore((s) => s.mainHeight())
   const selectedSlot = useWasmachinekastStore((s) => s.selectedSlot)
+  const hoveredSlot = useWasmachinekastStore((s) => s.hoveredSlot)
   const setSelectedSlot = useWasmachinekastStore((s) => s.setSelectedSlot)
   const setHoveredSlot = useWasmachinekastStore((s) => s.setHoveredSlot)
 
-  const [hovered, setHovered] = useState(false)
+  const [localHovered, setLocalHovered] = useState(false)
 
   const innerW = width - WALL * 2
   const moduleDepth = depth - WALL - CLOSET_INSIDE_INSET
@@ -55,10 +56,12 @@ function WasmModuleSlotInteraction({
     return trapGeo(geo, `WasmSlotInteraction${slotIndex}-shapeGeo`)
   }, [totalW, mainHeightM])
 
+  const hovered = localHovered || hoveredSlot === slotIndex
+
   useEffect(() => {
-    document.body.style.cursor = hovered ? 'pointer' : 'auto'
+    document.body.style.cursor = localHovered ? 'pointer' : 'auto'
     return () => { document.body.style.cursor = 'auto' }
-  }, [hovered])
+  }, [localHovered])
 
   const bxU = useRef(uniform(BORDER_M / totalW))
   const byU = useRef(uniform(BORDER_M / mainHeightM))
@@ -99,8 +102,8 @@ function WasmModuleSlotInteraction({
         position={[0, 0, moduleDepth + 0.002]}
         geometry={shapeGeo}
         material={material}
-        onPointerOver={(e) => { e.stopPropagation(); setHovered(true); setHoveredSlot(slotIndex) }}
-        onPointerOut={() => { setHovered(false); setHoveredSlot(null) }}
+        onPointerOver={(e) => { e.stopPropagation(); setLocalHovered(true); setHoveredSlot(slotIndex) }}
+        onPointerOut={() => { setLocalHovered(false); setHoveredSlot(null) }}
         onClick={(e) => { e.stopPropagation(); setSelectedSlot(isSelected ? null : slotIndex) }}
       />
     </group>
@@ -153,6 +156,8 @@ function WasmOnderstelPlinth() {
 
 export default function WasmachinekastScene() {
   const modules = useWasmachinekastStore((s) => s.modules)
+  const washerSlotIndex = useWasmachinekastStore((s) => s.washerSlotIndex)
+  const washerLayoutId = useWasmachinekastStore((s) => s.washerLayoutId)
   const outerWidth = useWasmachinekastStore((s) => s.width)
   const closetHeightCm = useWasmachinekastStore((s) => s.height)
   const mainHeightCm = useWasmachinekastStore((s) => s.mainHeight())
@@ -188,6 +193,11 @@ export default function WasmachinekastScene() {
         .map((m) => {
           const layout = getWasmLayoutConfig(m.layoutId!)
           if (!layout) return null
+          let mirrorOverride: boolean | undefined
+          if (washerLayoutId === 12 && washerSlotIndex !== null) {
+            if (m.slotIndex === washerSlotIndex) mirrorOverride = false
+            else if (m.slotIndex === washerSlotIndex + 1) mirrorOverride = true
+          }
           return (
             <Module
               key={m.slotIndex}
@@ -196,6 +206,7 @@ export default function WasmachinekastScene() {
               hasDoor={m.hasDoor}
               span={m.span}
               diagParams={diagParams}
+              mirror={mirrorOverride}
             />
           )
         })}
