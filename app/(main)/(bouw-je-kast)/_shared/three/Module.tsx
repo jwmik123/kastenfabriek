@@ -29,6 +29,7 @@ interface ModuleProps {
   span: 1 | 2
   diagParams: DiagParams
   mirror?: boolean
+  depthOverride?: number
 }
 
 function wallHeightAt(xOuter: number, p: DiagParams): number {
@@ -121,7 +122,7 @@ function computeRoofProfile(
     .map(({ x, y }) => ({ x: x - leftXOuter, y }))
 }
 
-export default function Module({ index, layout, hasDoor, span, diagParams: p, mirror: mirrorProp }: ModuleProps) {
+export default function Module({ index, layout, hasDoor, span, diagParams: p, mirror: mirrorProp, depthOverride }: ModuleProps) {
   const depth        = useConfiguratorStore((s) => s.depth) / 100
   const moduleCount  = useConfiguratorStore((s) => s.moduleCount)
   const width        = useConfiguratorStore((s) => s.width) / 100
@@ -135,7 +136,8 @@ export default function Module({ index, layout, hasDoor, span, diagParams: p, mi
   const needsTop     = useConfiguratorStore((s) => s.needsTopCabinet())
 
   const innerW       = width - WALL * 2
-  const moduleDepth  = depth - WALL - CLOSET_INSIDE_INSET
+  const moduleDepth  = depthOverride ?? (depth - WALL - CLOSET_INSIDE_INSET)
+  const groupZ       = depthOverride != null ? (depth - CLOSET_INSIDE_INSET - depthOverride) : WALL
   const contentDepth = moduleDepth - MODULE_INSIDE_INSET
   const centerZ      = contentDepth / 2
 
@@ -381,7 +383,7 @@ export default function Module({ index, layout, hasDoor, span, diagParams: p, mi
       buitenkantMaterialId={moduleSlot?.buitenkantMaterialId}
       binnenkantMaterialId={moduleSlot?.binnenkantMaterialId}
     >
-    <group position={[x, MODULE_FLOOR_Y, WALL]}>
+    <group position={[x, MODULE_FLOOR_Y, groupZ]}>
       <SpecialElement
         layout={layout}
         targetWidth={moduleWidth - MODULE_WALL * 2}
