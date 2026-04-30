@@ -14,6 +14,7 @@ import {
 } from "@react-email/components";
 import { MATERIALS } from "@/app/(main)/(bouw-je-kast)/kledingkast/materials";
 import type { ClosetConfigSnapshot, PriceSnapshot } from "@/lib/cart/types";
+import { getDeliveryWindow } from "@/lib/delivery-window";
 
 interface AddressSnapshot {
   firstName: string;
@@ -125,6 +126,10 @@ export default function OrderConfirmation({
                 <td style={metaCell}>
                   <Text style={label}>Status</Text>
                   <Text style={{ ...metaValue, color: BRAND_GREEN, fontWeight: "600" }}>Betaald</Text>
+                </td>
+                <td style={metaCell}>
+                  <Text style={label}>Geschatte aankomst</Text>
+                  <Text style={metaValue}>{getDeliveryWindow(orderDate)}</Text>
                 </td>
               </tr>
             </table>

@@ -8,6 +8,7 @@ import { validateCoupon } from '@/lib/actions/coupon'
 import type { ValidateCouponResult } from '@/lib/actions/coupon'
 import { calculateDiscount } from '@/lib/cart/discount'
 import type { CartItem } from '@/lib/cart/types'
+import { getDeliveryWindow } from '@/lib/delivery-window'
 
 type Address = {
   id: string
@@ -330,6 +331,9 @@ export default function CheckoutForm({ addresses, cartItems }: CheckoutFormProps
               )}
               <div className="flex justify-between font-semibold text-gray-900 text-base pt-2 border-t border-gray-100">
                 <span>Totaal (incl. BTW)</span><span>{fmt.format(discountedTotal)}</span>
+              </div>
+              <div className="flex justify-between pt-1">
+                <span>Geschatte aankomst</span><span className="text-gray-700">{getDeliveryWindow(new Date())}</span>
               </div>
             </div>
           </div>
