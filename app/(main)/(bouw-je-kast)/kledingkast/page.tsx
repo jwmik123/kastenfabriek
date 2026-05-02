@@ -3,6 +3,7 @@ import { pricingDataQuery } from '@/lib/configurator/queries'
 import type { FullPricingData } from '@/types/configurator-pricing'
 import KledingkastConfigurator from './components/KledingkastConfigurator'
 import ClosetSummarySection from './components/ClosetSummarySection'
+import ColorwayPreview from './components/ColorwayPreview'
 import { getServerSession } from '@/lib/actions/auth'
 import { getDbCartItemById } from '@/lib/actions/cart'
 import type { ClosetConfigSnapshot } from '@/lib/cart/types'
@@ -34,6 +35,7 @@ export default async function KledingkastPage({
         editItemId={edit ?? null}
       />
       <div className="hidden md:block">
+        <ColorwayPreview />
         <ClosetSummarySection />
       </div>
     </>
