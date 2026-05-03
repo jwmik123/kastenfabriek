@@ -1,9 +1,6 @@
 'use client'
 
 import { useWasmachinekastStore } from '../store'
-import { WASHER_LAYOUTS, isLayoutAvailable } from '../moduleLayouts'
-import { LAYOUT_SVGS } from '../../kledingkast/components/LayoutSvgs'
-import Carousel from '../../kledingkast/components/Carousel'
 import { Toggle } from '@/components/ui/Toggle'
 import { cn } from '@/lib/utils'
 import { Lock, Minus, Plus } from 'lucide-react'
@@ -20,29 +17,14 @@ export default function ModulesStep() {
   const moduleCount = useWasmachinekastStore((s) => s.moduleCount)
   const modules = useWasmachinekastStore((s) => s.modules)
   const setModuleCount = useWasmachinekastStore((s) => s.setModuleCount)
-  const setModuleLayout = useWasmachinekastStore((s) => s.setModuleLayout)
-  const setModuleSpan = useWasmachinekastStore((s) => s.setModuleSpan)
-  const toggleModuleDoor = useWasmachinekastStore((s) => s.toggleModuleDoor)
   const minModules = useWasmachinekastStore((s) => s.minModules())
   const maxModules = useWasmachinekastStore((s) => s.maxModules())
-  const moduleWidthCm = useWasmachinekastStore((s) => s.moduleWidthCm())
   const selectedSlot = useWasmachinekastStore((s) => s.selectedSlot)
   const setSelectedSlot = useWasmachinekastStore((s) => s.setSelectedSlot)
   const doorsExtendToFloor = useWasmachinekastStore((s) => s.doorsExtendToFloor)
   const setDoorsExtendToFloor = useWasmachinekastStore((s) => s.setDoorsExtendToFloor)
-  const moduleLayouts = useWasmachinekastStore((s) => s.moduleLayouts)
   const washerModules = useWasmachinekastStore((s) => s.washerModules)
   const washerSlots = new Set(washerModules.map((w) => w.slotIndex))
-
-  const washerIds = new Set(WASHER_LAYOUTS.map((l) => l.layoutId))
-
-  const isCoveredSlot =
-    selectedSlot !== null &&
-    selectedSlot > 0 &&
-    modules[selectedSlot - 1]?.span === 2
-
-  const isDouble = selectedSlot !== null && modules[selectedSlot]?.span === 2
-  const canBeDouble = selectedSlot !== null && selectedSlot < modules.length - 1
 
   return (
     <div className="space-y-10">
@@ -120,82 +102,6 @@ export default function ModulesStep() {
             )
           })}
         </div>
-
-        {selectedSlot !== null && (
-          <div className="bg-muted/40 rounded-lg p-4 space-y-4">
-            <div className="flex items-center gap-2 pb-3 border-b border-border/30">
-              <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-semibold shrink-0">
-                {selectedSlot + 1}
-              </div>
-              <span className="text-sm font-medium">Vak {selectedSlot + 1} instellen</span>
-            </div>
-
-            {isCoveredSlot ? (
-              <p className="text-xs text-muted-foreground">
-                Dit vak maakt deel uit van een dubbel module.
-              </p>
-            ) : (
-              <>
-                <div className="flex gap-5">
-                  <div className="flex items-center justify-between flex-1">
-                    <span className="text-sm">Deur</span>
-                    <Toggle
-                      checked={modules[selectedSlot]?.hasDoor ?? false}
-                      onCheckedChange={() => toggleModuleDoor(selectedSlot)}
-                    />
-                  </div>
-                  {canBeDouble && !(selectedSlot !== null && washerSlots.has(selectedSlot)) && (
-                    <div className="flex items-center justify-between flex-1">
-                      <span className="text-sm">Dubbele module</span>
-                      <Toggle
-                        checked={isDouble}
-                        onCheckedChange={(v) => setModuleSpan(selectedSlot, v ? 2 : 1)}
-                      />
-                    </div>
-                  )}
-                </div>
-
-                {!(selectedSlot !== null && washerSlots.has(selectedSlot)) && (
-                  <div className="space-y-2.5">
-                    <Carousel
-                      items={moduleLayouts.filter((l) => !washerIds.has(l.layoutId)).map((l) => ({ ...l, id: String(l.layoutId) }))}
-                      activeId={modules[selectedSlot]?.layoutId != null ? String(modules[selectedSlot].layoutId) : null}
-                      renderItem={(layout, isActive) => {
-                        const lid = Number(layout.id)
-                        const layoutObj = moduleLayouts.find((l) => l.layoutId === lid) ?? { layoutId: lid, name: '', description: '', contents: { shelves: 0, rods: 0, drawers: 0 }, priceDouble: 0, priceSingle: 0, availableForTopCabinet: false }
-                        const available = isLayoutAvailable(layoutObj, moduleWidthCm)
-                        const LayoutSvg = LAYOUT_SVGS[lid]
-
-                        return (
-                          <button
-                            onClick={() => setModuleLayout(selectedSlot!, lid)}
-                            disabled={!available}
-                            title={undefined}
-                            style={{ aspectRatio: '1' }}
-                            className={cn(
-                              'w-full flex flex-col items-center justify-center rounded-md transition-all py-2 gap-1',
-                              isActive
-                                ? 'bg-primary text-primary-foreground border-2 border-primary'
-                                : available
-                                  ? 'bg-background text-foreground border border-border/50 hover:border-primary'
-                                  : 'bg-background text-muted-foreground border border-border/30 opacity-40 cursor-not-allowed',
-                            )}
-                          >
-                            {LayoutSvg ? (
-                              <LayoutSvg className="w-1/4 h-auto" />
-                            ) : (
-                              <span className="text-[10px] text-center px-1 leading-tight">{layout.name}</span>
-                            )}
-                          </button>
-                        )
-                      }}
-                    />
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        )}
       </section>
 
       {/* ── Deuren tot de vloer ── */}

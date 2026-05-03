@@ -2,13 +2,10 @@
 
 import { useMemo } from 'react'
 import { useClosetStore } from '../store'
-import { MODULE_LAYOUTS } from '../scene/moduleLayouts'
-import { LAYOUT_SVGS } from '../components/LayoutSvgs'
 import { getDiagHeightAt, getBackDiagHeightAtZ } from '../scene/diagonalUtils'
 import { Toggle } from '@/components/ui/Toggle'
 import { cn } from '@/lib/utils'
 import { Minus, Plus } from 'lucide-react'
-import Carousel from '../components/Carousel'
 
 const WALL = 0.018
 const ONDERSTEL_HEIGHT = 0.108
@@ -27,9 +24,6 @@ export default function ModulesStep() {
   const moduleCount    = useClosetStore((s) => s.moduleCount)
   const modules        = useClosetStore((s) => s.modules)
   const setModuleCount = useClosetStore((s) => s.setModuleCount)
-  const setModuleLayout = useClosetStore((s) => s.setModuleLayout)
-  const setModuleSpan  = useClosetStore((s) => s.setModuleSpan)
-  const toggleModuleDoor = useClosetStore((s) => s.toggleModuleDoor)
   const minModules     = useClosetStore((s) => s.minModules())
   const maxModules     = useClosetStore((s) => s.maxModules())
   const moduleWidthCm  = useClosetStore((s) => s.moduleWidthCm())
@@ -68,13 +62,8 @@ export default function ModulesStep() {
     outerDepth:               depthCm                  / 100,
   }), [diagonalSide, leftDiagStartHeight, rightDiagStartHeight, leftDiagTopWidth, rightDiagTopWidth, widthCm, mainHeightCm, mainHeightM, closetHeightCm, backDiagonal, backDiagKinkHeight, backDiagFlatSectionDepth, depthCm])
 
-  const isCoveredSlot =
-    selectedSlot !== null &&
-    selectedSlot > 0 &&
-    modules[selectedSlot - 1]?.span === 2
-
-  const isDouble = selectedSlot !== null && modules[selectedSlot]?.span === 2
-
+  // Retained for ModulePopover parity; not consumed in this panel after the
+  // config card was lifted into the canvas popover (issue 031).
   const selectedSlotEffectiveHeightM = (() => {
     if (selectedSlot === null) return mainHeightM
     if (diagParams.backDiagonal) {
@@ -94,10 +83,6 @@ export default function ModulesStep() {
   const isUnderDiagonal = selectedSlotEffectiveHeightM < mainHeightM - 0.01
   const canBeDouble = selectedSlot !== null && selectedSlot < modules.length - 1 &&
     (diagParams.backDiagonal || !isUnderDiagonal)
-
-  const availableLayouts = MODULE_LAYOUTS.filter(
-    (l) => l.specialElement.height <= selectedSlotEffectiveHeightM
-  )
 
   return (
     <div className="space-y-10">
@@ -145,7 +130,6 @@ export default function ModulesStep() {
       {/* ── Section 2: Vak instellen ── */}
       <section className="space-y-5">
         <div>
-          {/* <SectionHeading>Vak instellen</SectionHeading> */}
           <p className="text-xs text-muted-foreground/60 mt-1">
             Selecteer een module om de indeling aan te passen
           </p>
@@ -174,78 +158,6 @@ export default function ModulesStep() {
             )
           })}
         </div>
-
-        {/* Config card for selected bay */}
-        {selectedSlot !== null && (
-          <div className="bg-muted/40 rounded-lg p-4 space-y-4">
-
-            {/* Context chip row */}
-            <div className="flex items-center gap-2 pb-3 border-b border-border/30">
-              <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-semibold shrink-0">
-                {selectedSlot + 1}
-              </div>
-              <span className="text-sm font-medium">Vak {selectedSlot + 1} instellen</span>
-            </div>
-
-            {isCoveredSlot ? (
-              <p className="text-xs text-muted-foreground">
-                Dit vak maakt deel uit van een dubbel module.
-              </p>
-            ) : (
-              <>
-                {/* Toggles row */}
-                <div className="flex gap-5">
-                  <div className="flex items-center justify-between flex-1">
-                    <span className="text-sm">Deur</span>
-                    <Toggle
-                      checked={modules[selectedSlot]?.hasDoor ?? false}
-                      onCheckedChange={() => toggleModuleDoor(selectedSlot)}
-                    />
-                  </div>
-                  {canBeDouble && (
-                    <div className="flex items-center justify-between flex-1">
-                      <span className="text-sm">Dubbele module</span>
-                      <Toggle
-                        checked={isDouble}
-                        onCheckedChange={(v) => setModuleSpan(selectedSlot, v ? 2 : 1)}
-                      />
-                    </div>
-                  )}
-                </div>
-
-                {/* Indeling carousel */}
-                <div className="space-y-2.5">
-                  {isUnderDiagonal && (
-                    <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
-                      Schuin vak — hoogte beperkt tot {Math.round(selectedSlotEffectiveHeightM * 100)} cm. Niet alle indelingen passen.
-                    </p>
-                  )}
-                  <Carousel
-                    items={availableLayouts.map((l) => ({ ...l, id: String(l.id) }))}
-                    activeId={modules[selectedSlot]?.layoutId != null ? String(modules[selectedSlot].layoutId) : null}
-                    renderItem={(layout, isActive) => {
-                      const LayoutSvg = LAYOUT_SVGS[Number(layout.id)]
-                      return (
-                        <button
-                          onClick={() => setModuleLayout(selectedSlot!, Number(layout.id))}
-                          style={{ aspectRatio: '1' }}
-                          className={cn(
-                            'w-full flex items-center justify-center rounded-md transition-all py-2',
-                            isActive
-                              ? 'bg-primary text-primary-foreground border-2 border-primary'
-                              : 'bg-background text-foreground border border-border/50 hover:border-primary',
-                          )}
-                        >
-                          {LayoutSvg && <LayoutSvg className="w-1/4 h-auto" />}
-                        </button>
-                      )
-                    }}
-                  />
-                </div>
-              </>
-            )}
-          </div>
-        )}
       </section>
 
       {/* ── Section 3: Deuren tot de vloer ── */}
