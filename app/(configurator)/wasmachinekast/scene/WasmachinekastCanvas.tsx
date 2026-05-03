@@ -14,6 +14,7 @@ import WasmachinekastScene from './WasmachinekastScene'
 import WasmRoomWalls from './WasmRoomWalls'
 import CanvasToolbar from '../../_shared/components/CanvasToolbar'
 import CanvasPricePanel from '../components/CanvasPricePanel'
+import ModulePopover from '../components/ModulePopover'
 import {
   WasmMeasurementProjectorLayer,
   WasmMeasurementsOverlayLayer,
@@ -145,6 +146,7 @@ export default function WasmachinekastCanvas() {
 
       <WasmMeasurementsOverlayLayer projectedRef={projectedRef} />
       <CanvasToolbar />
+      <ModulePopover />
       <CanvasPricePanel />
       <ThreeLoader />
     </div>
