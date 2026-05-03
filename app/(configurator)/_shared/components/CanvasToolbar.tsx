@@ -1,10 +1,10 @@
 'use client'
 
-import { useClosetStore } from '../store'
+import { useConfiguratorStore } from '../store/context'
 import { Separator } from '@/components/ui/separator'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
-import { ZoomIn, ZoomOut, Ruler, DoorOpen, DoorClosed, Lightbulb, Dices } from 'lucide-react'
+import { ZoomIn, ZoomOut, Ruler, DoorOpen, DoorClosed, Dices } from 'lucide-react'
 
 function ToolBtn({
   onClick,
@@ -35,7 +35,7 @@ function ToolBtn({
           {children}
         </button>
       </TooltipTrigger>
-      <TooltipContent side="top" sideOffset={8}>
+      <TooltipContent side="right" sideOffset={8}>
         {tooltip}
       </TooltipContent>
     </Tooltip>
@@ -43,17 +43,17 @@ function ToolBtn({
 }
 
 export default function CanvasToolbar() {
-  const doorsOpen = useClosetStore((s) => s.doorsOpen)
-  const toggleDoors = useClosetStore((s) => s.toggleDoors)
-  const showMeasurements = useClosetStore((s) => s.showMeasurements)
-  const toggleMeasurements = useClosetStore((s) => s.toggleMeasurements)
-  const userZoom = useClosetStore((s) => s.userZoom)
-  const zoomIn = useClosetStore((s) => s.zoomIn)
-  const zoomOut = useClosetStore((s) => s.zoomOut)
-  const randomFill = useClosetStore((s) => s.randomFill)
+  const doorsOpen = useConfiguratorStore((s) => s.doorsOpen)
+  const toggleDoors = useConfiguratorStore((s) => s.toggleDoors)
+  const showMeasurements = useConfiguratorStore((s) => s.showMeasurements)
+  const toggleMeasurements = useConfiguratorStore((s) => s.toggleMeasurements)
+  const userZoom = useConfiguratorStore((s) => s.userZoom)
+  const zoomIn = useConfiguratorStore((s) => s.zoomIn)
+  const zoomOut = useConfiguratorStore((s) => s.zoomOut)
+  const randomFill = useConfiguratorStore((s) => s.randomFill)
 
   return (
-    <div className="absolute bottom-5 left-5 flex items-center gap-0.5 bg-background/90 backdrop-blur-sm border border-border rounded-xl p-1.5 shadow-lg">
+    <div className="absolute left-4 top-1/3 flex flex-col items-center gap-0.5 bg-background/90 backdrop-blur-sm border border-border rounded-xl p-1.5 shadow-lg">
       <ToolBtn onClick={zoomIn} disabled={userZoom <= 0} tooltip="Inzoomen">
         <ZoomIn className="size-5" />
       </ToolBtn>
@@ -61,13 +61,13 @@ export default function CanvasToolbar() {
         <ZoomOut className="size-5" />
       </ToolBtn>
 
-      <Separator orientation="vertical" className="h-6 mx-1" />
+      <Separator orientation="horizontal" className="w-6 my-1" />
 
       <ToolBtn onClick={toggleMeasurements} active={showMeasurements} tooltip="Afmetingen tonen">
         <Ruler className="size-5" />
       </ToolBtn>
 
-      <Separator orientation="vertical" className="h-6 mx-1" />
+      <Separator orientation="horizontal" className="w-6 my-1" />
 
       <ToolBtn
         onClick={toggleDoors}
@@ -77,7 +77,7 @@ export default function CanvasToolbar() {
         {doorsOpen ? <DoorOpen className="size-5" /> : <DoorClosed className="size-5" />}
       </ToolBtn>
 
-      <Separator orientation="vertical" className="h-6 mx-1" />
+      <Separator orientation="horizontal" className="w-6 my-1" />
 
       <ToolBtn onClick={randomFill} tooltip="Willekeurige indeling">
         <Dices className="size-5" />

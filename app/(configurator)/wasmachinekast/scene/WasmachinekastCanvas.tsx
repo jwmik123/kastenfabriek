@@ -12,7 +12,7 @@ import PostProcessing from '../../_shared/effects/PostProcessing'
 import WebGPURenderGuard from '../../_shared/effects/WebGPURenderGuard'
 import WasmachinekastScene from './WasmachinekastScene'
 import WasmRoomWalls from './WasmRoomWalls'
-import CanvasToolbar from '../components/CanvasToolbar'
+import CanvasToolbar from '../../_shared/components/CanvasToolbar'
 import CanvasPricePanel from '../components/CanvasPricePanel'
 import {
   WasmMeasurementProjectorLayer,

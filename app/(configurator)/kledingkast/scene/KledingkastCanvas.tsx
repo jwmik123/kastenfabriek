@@ -12,7 +12,7 @@ import ClosetScene from './ClosetScene'
 import RoomWalls from './RoomWalls'
 import SilhouettePlane from './SilhouettePlane'
 import { MeasurementProjectorLayer, MeasurementsOverlayLayer, type ProjectedMap } from '../components/Measurements'
-import CanvasToolbar from '../components/CanvasToolbar'
+import CanvasToolbar from '../../_shared/components/CanvasToolbar'
 import CanvasPricePanel from '../components/CanvasPricePanel'
 import DebugPricePanel from '../components/DebugPricePanel'
 import { MODULE_LAYOUTS } from './moduleLayouts'
@@ -24,73 +24,6 @@ function RaycasterSetup() {
   useEffect(() => {
     raycaster.layers.enable(1)
   }, [raycaster])
-  return null
-}
-
-function BrightnessAudit() {
-  const { gl, scene } = useThree()
-  useEffect(() => {
-    const r = gl as any
-    const s = scene
-
-    console.log('BRIGHTNESS AUDIT', {
-      toneMapping: r.toneMapping,
-      toneMappingExposure: r.toneMappingExposure,
-      outputColorSpace: r.outputColorSpace,
-      environmentIntensity: (s as any).environmentIntensity,
-      environmentRotation: s.environmentRotation,
-      backgroundIntensity: (s as any).backgroundIntensity,
-      hasEnvironment: !!s.environment,
-      hasBackground: !!s.background,
-      ambientLights: s.children.filter((c: any) => c.isAmbientLight).length,
-      hemisphereLights: s.children.filter((c: any) => c.isHemisphereLight).length,
-      directionalLights: s.children.filter((c: any) => c.isDirectionalLight).length,
-      pointLights: s.children.filter((c: any) => c.isPointLight).length,
-      ambientLightIntensities: s.children
-        .filter((c: any) => c.isAmbientLight)
-        .map((c: any) => c.intensity),
-      hemisphereLightIntensities: s.children
-        .filter((c: any) => c.isHemisphereLight)
-        .map((c: any) => ({ intensity: c.intensity, sky: c.color.getHexString(), ground: c.groundColor.getHexString() })),
-      directionalLightIntensities: s.children
-        .filter((c: any) => c.isDirectionalLight)
-        .map((c: any) => c.intensity),
-    })
-
-    // Walk scene to find first mesh with a standard material (closet panel)
-    let closetSample: any = null
-    let wallSample: any = null
-    s.traverse((obj: any) => {
-      if (!obj.isMesh || !obj.material) return
-      const m = obj.material
-      if (!closetSample && (m.isMeshStandardMaterial || m.isMeshStandardNodeMaterial) && m.roughness === 0.7) {
-        closetSample = obj
-      }
-      if (!wallSample && m.isMeshStandardMaterial && m.roughness === 0.9) {
-        wallSample = obj
-      }
-    })
-
-    for (const [label, mesh] of [['SAMPLE CLOSET PANEL', closetSample], ['SAMPLE WALL', wallSample]] as const) {
-      if (!mesh) { console.log(label, 'not found'); continue }
-      const m = mesh.material
-      console.log(label, {
-        meshName: mesh.name,
-        type: m.constructor.name,
-        envMapIntensity: m.envMapIntensity,
-        emissive: m.emissive?.getHexString(),
-        emissiveIntensity: m.emissiveIntensity,
-        color: m.color?.getHexString(),
-        hasMap: !!m.map,
-        mapColorSpace: m.map?.colorSpace,
-      })
-    }
-    // Re-check after 3s to confirm environment loaded
-    const timer = setTimeout(() => {
-      console.log('BRIGHTNESS AUDIT (3s)', { hasEnvironment: !!scene.environment, environmentIntensity: (scene as any).environmentIntensity })
-    }, 3000)
-    return () => clearTimeout(timer)
-  }, [])
   return null
 }
 
@@ -204,7 +137,6 @@ export default function KledingkastCanvas() {
         <RoomWalls />
         <CameraSystem />
         <RaycasterSetup />
-        <BrightnessAudit />
         <ScreenshotCapture />
         <PostProcessing />
         <WebGPURenderGuard />
