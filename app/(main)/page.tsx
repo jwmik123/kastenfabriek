@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { Hammer } from "lucide-react";
 import ProductOptionsSection from "@/components/ProductOptionsSection";
+import HeroBackgroundVideo from "@/components/HeroBackgroundVideo";
 // import SloganSection from "@/components/SloganSection";
 // import ModuleHighlight from "@/components/ModuleHighlight";
 import TestimonialSection from "@/components/TestimonialSection";
@@ -17,13 +18,9 @@ export default function Home() {
       {/* <Image src="/homeplaceholder.png" alt="Home" fill className="object-cover" /> */}
        
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <iframe
-          src="https://player.vimeo.com/video/1188234751?badge=0&autopause=0&player_id=0&app_id=58479&autoplay=1&loop=1&background=1&quality=1080p"
-
-          allow="autoplay; fullscreen; picture-in-picture"
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
-          style={{ width: "177.78vh", height: "56.25vw", minWidth: "100%", minHeight: "100%" }}
-          title="Animation_v1"
+        <HeroBackgroundVideo
+          playbackId={process.env.NEXT_PUBLIC_MUX_HERO_PLAYBACK_ID!}
+          poster="https://image.mux.com/5FtXJkK4ufR75kELD1Zag02RaUnzneng013O00TkzJwlO4/thumbnail.png?width=214&height=121&time=11"
         />
       </div>
       <div className="absolute inset-0 bg-black/10 z-10" />
