@@ -15,6 +15,7 @@ import { MeasurementProjectorLayer, MeasurementsOverlayLayer, type ProjectedMap 
 import CanvasToolbar from '../../_shared/components/CanvasToolbar'
 import CanvasPricePanel from '../components/CanvasPricePanel'
 import DebugPricePanel from '../components/DebugPricePanel'
+import ModulePopover from '../components/ModulePopover'
 import { MODULE_LAYOUTS } from './moduleLayouts'
 import PostProcessing from '../../_shared/effects/PostProcessing'
 import WebGPURenderGuard from '../../_shared/effects/WebGPURenderGuard'
@@ -150,6 +151,7 @@ export default function KledingkastCanvas() {
 
       <MeasurementsOverlayLayer projectedRef={projectedRef} />
       <CanvasToolbar />
+      <ModulePopover />
       <CanvasPricePanel />
       <DebugPricePanel />
       <ThreeLoader />
