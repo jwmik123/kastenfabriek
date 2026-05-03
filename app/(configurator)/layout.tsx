@@ -1,4 +1,4 @@
-export default function BouwJeKastLayout({
+export default function ConfiguratorLayout({
   children,
 }: {
   children: React.ReactNode

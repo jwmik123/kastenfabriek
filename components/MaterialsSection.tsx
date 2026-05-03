@@ -1,5 +1,5 @@
 import Image from 'next/image'
-import { MATERIALS, ColorMaterial, TextureMaterial } from '@/app/(main)/(bouw-je-kast)/kledingkast/materials'
+import { MATERIALS, ColorMaterial, TextureMaterial } from '@/app/(configurator)/kledingkast/materials'
 
 const colors = MATERIALS.filter((m): m is ColorMaterial => m.type === 'color')
 const textures = MATERIALS.filter((m): m is TextureMaterial => m.type === 'texture')
