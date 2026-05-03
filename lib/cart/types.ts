@@ -1,4 +1,4 @@
-import type { DiagonalSide } from "@/app/(main)/(bouw-je-kast)/kledingkast/scene/diagonalUtils";
+import type { DiagonalSide } from "@/app/(configurator)/kledingkast/scene/diagonalUtils";
 
 // Snapshot of a single module slot at cart time
 export interface ModuleSlotSnapshot {

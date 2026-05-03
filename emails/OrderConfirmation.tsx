@@ -12,7 +12,7 @@ import {
   Section,
   Text,
 } from "@react-email/components";
-import { MATERIALS } from "@/app/(main)/(bouw-je-kast)/kledingkast/materials";
+import { MATERIALS } from "@/app/(configurator)/kledingkast/materials";
 import type { ClosetConfigSnapshot, PriceSnapshot } from "@/lib/cart/types";
 import { getDeliveryWindow } from "@/lib/delivery-window";
 
