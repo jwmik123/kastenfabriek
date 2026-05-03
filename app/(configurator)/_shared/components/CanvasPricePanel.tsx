@@ -36,13 +36,13 @@ export default function CanvasPricePanel({
       <div className="flex flex-col">
         <p className="text-xs text-muted-foreground leading-none mb-1">Totaalprijs</p>
         {originalPrice !== undefined && (
-          <p className="text-xs text-muted-foreground line-through leading-none mb-0.5">
+          <p className="text-xs text-red-600 line-through leading-none mb-0.5">
             {formatter.format(originalPrice)}
           </p>
         )}
         <p
           data-testid="price-total"
-          className="font-serif text-3xl leading-tight"
+          className="text-3xl font-semibold leading-tight text-green-700"
         >
           {formatter.format(totalPrice)}
         </p>

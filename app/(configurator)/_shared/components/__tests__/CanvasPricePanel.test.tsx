@@ -64,10 +64,9 @@ describe('CanvasPricePanel', () => {
     expect(html).toMatch(/backdrop-blur-sm/)
   })
 
-  it('total price uses serif font at large size', () => {
+  it('total price renders at large size', () => {
     const html = renderToStaticMarkup(<CanvasPricePanel {...baseProps} />)
     const match = html.match(/<[^>]*data-testid="price-total"[^>]*>/)!
-    expect(match[0]).toMatch(/font-serif/)
     expect(match[0]).toMatch(/text-(2xl|3xl|4xl)/)
   })
 })
