@@ -6,8 +6,17 @@ import type { FullPricingData } from '@/types/configurator-pricing'
 import type { ClosetConfigSnapshot } from '@/lib/cart/types'
 import { useClosetStore } from '../store'
 import { ConfiguratorStoreContext } from '../../_shared/store/context'
+import ConfiguratorTopBar from '../../_shared/components/ConfiguratorTopBar'
 import StepWizard from './StepWizard'
 import MobileSheet from './MobileSheet'
+
+const TOP_BAR_STEPS = [
+  { label: 'Afmetingen', number: 1 },
+  { label: 'Modules', number: 2 },
+  { label: 'Materiaal', number: 3 },
+  { label: 'Handgrepen', number: 4 },
+  { label: 'Accessoires', number: 5 },
+]
 import { getDraftConfig, saveDraftConfig } from '@/lib/cart/draft-config'
 import { getCart } from '@/lib/cart/cart-store'
 
@@ -22,6 +31,8 @@ interface Props {
 export default function KledingkastConfigurator({ pricingData, editConfig, editItemId }: Props) {
   const hydrate = useClosetStore((s) => s.hydrate)
   const restoreConfig = useClosetStore((s) => s.restoreConfig)
+  const step = useClosetStore((s) => s.step)
+  const setStep = useClosetStore((s) => s.setStep)
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // 1. Hydrate pricing data, then restore config (priority: URL cart item > localStorage draft)
@@ -101,17 +112,22 @@ export default function KledingkastConfigurator({ pricingData, editConfig, editI
 
   return (
     <ConfiguratorStoreContext.Provider value={useClosetStore}>
-      <div className="w-full h-[100dvh] md:h-[92vh] flex flex-col lg:flex-row">
-        {/* Canvas — full viewport on mobile, 50vh on tablet, full-height on desktop */}
-        <div className="w-full h-full md:h-[50vh] lg:h-full lg:w-2/3">
-          <ThreeCanvas />
-        </div>
-        {/* Wizard — desktop/tablet only, hidden on mobile (sheet handles it) */}
-        <div className="hidden md:block relative w-full lg:w-1/3 h-full bg-white overflow-y-auto pt-24">
-          <StepWizard />
+      <div className="w-full h-[100dvh] flex flex-col">
+        <ConfiguratorTopBar
+          steps={TOP_BAR_STEPS}
+          currentStep={step}
+          onStep={setStep}
+          productName="Kledingkast"
+        />
+        <div className="flex flex-1 min-h-0 flex-col lg:flex-row">
+          <div className="w-full h-full md:h-[50vh] lg:h-full flex-1 min-w-0">
+            <ThreeCanvas />
+          </div>
+          <div className="hidden md:block relative w-full lg:w-[420px] lg:max-w-[420px] shrink-0 h-full bg-white overflow-y-auto">
+            <StepWizard />
+          </div>
         </div>
       </div>
-      {/* Mobile bottom sheet — vaul, only visible below md */}
       <MobileSheet />
     </ConfiguratorStoreContext.Provider>
   )
