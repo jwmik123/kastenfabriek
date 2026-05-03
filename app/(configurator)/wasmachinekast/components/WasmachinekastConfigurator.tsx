@@ -119,7 +119,7 @@ export default function WasmachinekastConfigurator({ pricingData, editConfig, ed
 
   return (
     <ConfiguratorStoreContext.Provider value={useWasmachinekastStore}>
-      <div className="w-full h-[100dvh] flex flex-col">
+      <div className="w-full h-[90vh] flex flex-col">
         <ConfiguratorTopBar
           steps={TOP_BAR_STEPS}
           currentStep={step}
