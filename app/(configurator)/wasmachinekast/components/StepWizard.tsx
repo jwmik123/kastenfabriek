@@ -8,6 +8,7 @@ import MaterialStep from '../steps/MaterialStep'
 import DoorHandlesStep from '../steps/DoorHandlesStep'
 import AccessoiresStep from '../steps/AccessoiresStep'
 import ModuleMaterialPanel from './ModuleMaterialPanel'
+import StepHeader from '../../_shared/components/StepHeader'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
@@ -21,6 +22,39 @@ const STEPS = [
   { label: 'Handgrepen', number: 5 },
   { label: 'Accessoires', number: 6 },
 ]
+
+const STEP_META: Record<number, { eyebrow: string; title: string; subtitle: string }> = {
+  1: {
+    eyebrow: 'Stap 1 van 6',
+    title: 'Afmetingen',
+    subtitle: 'Bepaal de breedte, hoogte en diepte van je kast.',
+  },
+  2: {
+    eyebrow: 'Stap 2 van 6',
+    title: 'Wasmachine',
+    subtitle: 'Kies het type wasmachine en de plek in de kast.',
+  },
+  3: {
+    eyebrow: 'Stap 3 van 6',
+    title: 'Modules',
+    subtitle: 'Kies per vak een indeling en of er een deur op komt.',
+  },
+  4: {
+    eyebrow: 'Stap 4 van 6',
+    title: 'Materiaal',
+    subtitle: 'Kies een materiaal voor de buiten- en binnenkant.',
+  },
+  5: {
+    eyebrow: 'Stap 5 van 6',
+    title: 'Handgrepen',
+    subtitle: 'Selecteer een handgreep en afwerking.',
+  },
+  6: {
+    eyebrow: 'Stap 6 van 6',
+    title: 'Accessoires',
+    subtitle: 'Verlichting, stekkerdoos­gaten en extra opties.',
+  },
+}
 
 function StepIndicator() {
   const step = useWasmachinekastStore((s) => s.step)
@@ -98,6 +132,7 @@ export default function StepWizard() {
   const washerModules = useWasmachinekastStore((s) => s.washerModules)
   const clearWasherModules = useWasmachinekastStore((s) => s.clearWasherModules)
   const isPanelOpen = step === 4 && selectedSlot !== null
+  const meta = STEP_META[step]
 
   const blurClass = 'transition-[filter] duration-200 blur-sm pointer-events-none select-none'
 
@@ -112,6 +147,11 @@ export default function StepWizard() {
         <StepIndicator />
       </div>
       <Separator className={cn('transition-opacity duration-200', isPanelOpen && 'opacity-20')} />
+      {meta && (
+        <div className={cn(isPanelOpen && blurClass)}>
+          <StepHeader eyebrow={meta.eyebrow} title={meta.title} subtitle={meta.subtitle} />
+        </div>
+      )}
       <div className="relative flex-1 overflow-y-auto min-h-0 px-5 scrollbar-primary">
         <div className={cn(isPanelOpen && blurClass)}>
           <CurrentStep />
