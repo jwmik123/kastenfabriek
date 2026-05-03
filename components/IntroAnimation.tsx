@@ -10,26 +10,37 @@ const SESSION_KEY = "intro-animation-shown";
 export default function IntroAnimation() {
   const container = useRef<HTMLDivElement>(null);
   const introWrapper = useRef<HTMLDivElement>(null);
-  const [hasSeenIntro, setHasSeenIntro] = useState<boolean | null>(null);
+  const [hidden, setHidden] = useState(false);
 
   useEffect(() => {
-    const seen = sessionStorage.getItem(SESSION_KEY);
-    setHasSeenIntro(!!seen);
-    if (!seen) {
-      sessionStorage.setItem(SESSION_KEY, "true");
+    if (sessionStorage.getItem(SESSION_KEY)) {
+      setHidden(true);
+      return;
     }
+    sessionStorage.setItem(SESSION_KEY, "true");
+
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
   }, []);
 
   useGSAP(
     () => {
-      if (hasSeenIntro !== false) return;
+      if (hidden) return;
 
       gsap.set(".fill-rect", {
         scaleX: 0,
         transformOrigin: "left center",
       });
 
-      const tl = gsap.timeline();
+      const tl = gsap.timeline({
+        onComplete: () => {
+          document.body.style.overflow = "";
+          setHidden(true);
+        },
+      });
 
       tl.to(".fill-rect", {
         scaleX: 1,
@@ -41,15 +52,16 @@ export default function IntroAnimation() {
         ease: "power4.inOut",
       });
     },
-    { scope: container, dependencies: [hasSeenIntro] }
+    { scope: container, dependencies: [hidden] }
   );
 
-  // Don't render anything while checking sessionStorage (avoids flash)
-  // or if user has already seen the intro this session
-  if (hasSeenIntro !== false) return null;
+  if (hidden) return null;
 
   return (
-    <div ref={introWrapper} className="fixed inset-0 z-50 flex items-center justify-center bg-primary">
+    <div
+      ref={introWrapper}
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-primary"
+    >
       <div ref={container} className="w-[91.5px] h-[55.5px]">
         <svg
           className="w-full h-full"
