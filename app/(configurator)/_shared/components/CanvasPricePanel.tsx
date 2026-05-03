@@ -10,13 +10,14 @@ export const formatter = new Intl.NumberFormat('nl-NL', {
   maximumFractionDigits: 0,
 })
 
-interface CanvasPricePanelProps {
+export interface CanvasPricePanelProps {
   totalPrice: number
   originalPrice?: number
   pricingData: unknown | null
   editItemId: string | null
   handleAddToCart: () => void
   isCapturing: boolean
+  stepSummary?: { label: string; value: string }
 }
 
 export default function CanvasPricePanel({
@@ -26,23 +27,53 @@ export default function CanvasPricePanel({
   editItemId,
   handleAddToCart,
   isCapturing,
+  stepSummary,
 }: CanvasPricePanelProps) {
   const deliveryWindow = getDeliveryWindow(new Date())
 
   return (
-    <div className="hidden md:flex absolute bottom-5 right-5 items-center gap-1.5 bg-background/90 backdrop-blur-sm border border-border rounded-xl p-1.5 shadow-lg">
-      <div className="px-3 py-1.5 min-w-[100px]">
-        <p className="text-xs text-muted-foreground leading-none mb-0.5">Totaalprijs</p>
+    <div className="hidden md:flex absolute bottom-0 left-0 right-0 items-center gap-4 bg-background/90 backdrop-blur-sm border-t border-border px-6 py-4">
+      <div className="flex flex-col">
+        <p className="text-xs text-muted-foreground leading-none mb-1">Totaalprijs</p>
         {originalPrice !== undefined && (
-          <p className="text-xs text-muted-foreground line-through leading-none">{formatter.format(originalPrice)}</p>
+          <p className="text-xs text-muted-foreground line-through leading-none mb-0.5">
+            {formatter.format(originalPrice)}
+          </p>
         )}
-        <p className="text-lg font-semibold leading-tight">{formatter.format(totalPrice)}</p>
+        <p
+          data-testid="price-total"
+          className="font-serif text-3xl leading-tight"
+        >
+          {formatter.format(totalPrice)}
+        </p>
       </div>
 
-      <div className="px-3 py-1.5 min-w-[120px]">
-        <p className="text-xs text-muted-foreground leading-none mb-0.5">Geschatte aankomst</p>
+      <div className="h-10 w-px bg-border shrink-0" />
+
+      <div className="flex flex-col">
+        <p className="text-xs text-muted-foreground leading-none mb-1">Geschatte aankomst</p>
         <p className="text-sm font-medium leading-tight">{deliveryWindow}</p>
       </div>
+
+      {stepSummary && (
+        <>
+          <div className="h-10 w-px bg-border shrink-0" />
+          <div data-testid="price-step-summary" className="flex flex-col">
+            <p className="text-xs text-muted-foreground leading-none mb-1">{stepSummary.label}</p>
+            <p className="text-sm font-medium leading-tight">{stepSummary.value}</p>
+          </div>
+        </>
+      )}
+
+      <div className="flex-1" />
+
+      <button
+        type="button"
+        className="flex items-center gap-2 px-4 h-11 rounded-lg text-sm font-medium border border-border bg-transparent hover:bg-accent transition-colors cursor-pointer whitespace-nowrap"
+      >
+        <Heart className="size-4 shrink-0" />
+        Bewaar
+      </button>
 
       <button
         onClick={handleAddToCart}
@@ -51,10 +82,6 @@ export default function CanvasPricePanel({
       >
         <ShoppingCart className="size-4 shrink-0" />
         {isCapturing ? 'Bezig...' : editItemId ? 'Wijzigingen opslaan' : 'Voeg toe aan winkelwagen'}
-      </button>
-
-      <button className="flex items-center justify-center w-11 h-11 rounded-lg hover:bg-primary hover:text-background transition-colors cursor-pointer">
-        <Heart className="size-5" />
       </button>
     </div>
   )
