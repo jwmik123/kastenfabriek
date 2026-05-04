@@ -306,7 +306,7 @@ export default function ClosetCorpus({ diagParams: p }: { diagParams: DiagParams
               For non-TC closets this is approximately the flat section only.
               For TC closets this also covers the zone where the slope is above mainH.
               Skip when filler is active (flatSec=0): filler panel is the only top element. */}
-          {!needsTop && flatSecM >= 0.001 && (() => {
+          {!needsTop && flatSecM >= FILLER_FLAT_SEC_THRESHOLD && (() => {
             const panelDepth = depth - crossingWorldZ
             if (panelDepth < 0.001) return null
             // Center in group-local Z: (crossingWorldZ + depth)/2 - depth/2 = crossingWorldZ/2
