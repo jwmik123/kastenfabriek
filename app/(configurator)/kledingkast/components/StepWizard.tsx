@@ -83,7 +83,12 @@ export default function StepWizard() {
         <Button variant="outline" onClick={prevStep} disabled={step === 1}>
           Vorige
         </Button>
-        <Button onClick={nextStep} disabled={step === STEP_COUNT}>
+        <Button
+          id="kf-tour-next-desktop"
+          data-tour="next-button"
+          onClick={nextStep}
+          disabled={step === STEP_COUNT}
+        >
           {step === STEP_COUNT ? 'Voltooien' : 'Volgende'}
         </Button>
       </div>

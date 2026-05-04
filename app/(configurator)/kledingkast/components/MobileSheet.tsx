@@ -162,6 +162,8 @@ export default function MobileSheet() {
               Vorige
             </button>
             <button
+              id="kf-tour-next-mobile"
+              data-tour="next-button"
               onClick={nextStep}
               disabled={step === STEPS.length}
               className="flex-1 min-w-[140px] h-11 rounded-md bg-primary text-background text-sm font-medium transition-colors hover:bg-primary/90 disabled:opacity-40 disabled:pointer-events-none cursor-pointer"

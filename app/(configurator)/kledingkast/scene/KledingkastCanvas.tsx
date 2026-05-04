@@ -133,7 +133,7 @@ export default function KledingkastCanvas() {
   const projectedRef = useRef<ProjectedMap>({})
 
   return (
-    <div className="relative w-full h-full">
+    <div className="relative w-full h-full" data-tour="canvas-area">
       <ThreeCanvas onPointerMissed={() => setSelectedSlot(null)}>
         <RoomWalls />
         <CameraSystem />
