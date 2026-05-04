@@ -27,10 +27,13 @@ const TEXTURE_PATHS: Record<string, string> = {
 }
 
 // Slice 1 globals — slice 2 replaces these with per-veneer registry values.
+// ANISOTROPY and BUMP_SCALE held at 0: anisotropy needs anisotropyNode wired
+// against grain-V tangents (slice 2), and the dFdx/dFdy luminance bump blows
+// up at triplanar projection seams. Both ship at 0 for slice 1 stability.
 const TILE_U = 0.6
 const TILE_V = 1.8
-const BUMP_SCALE = 0.02
-const ANISOTROPY = 0.5
+const BUMP_SCALE = 0
+const ANISOTROPY = 0
 const CLEARCOAT = 0.3
 const CLEARCOAT_ROUGHNESS = 0.5
 const SHEEN = 0.1
@@ -166,18 +169,19 @@ function applyPhysicalProps(
 
   if (materialId && ctx?.textureMaps[materialId]) {
     const tex = ctx.textureMaps[materialId]
-    const { colorNode, normalNode } = buildTriplanarNodes({
+    const { colorNode } = buildTriplanarNodes({
       texture: tex,
       wardrobeInverse,
       tileU: TILE_U,
       tileV: TILE_V,
       bumpScale: BUMP_SCALE,
     })
-    mat.colorNode  = colorNode as any
-    mat.normalNode = normalNode as any
+    mat.colorNode = colorNode as any
+    // normalNode left at default (normalLocal). Luminance-bump wiring
+    // returns in slice 2 once per-veneer bumpScale + seam-safe sampling
+    // are in place.
   } else {
-    mat.colorNode  = tslColor(MATERIAL_COLORS[materialId ?? 'premium-wit'] ?? '#ffffff') as any
-    mat.normalNode = null as any
+    mat.colorNode = tslColor(MATERIAL_COLORS[materialId ?? 'premium-wit'] ?? '#ffffff') as any
   }
 }
 
