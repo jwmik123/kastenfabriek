@@ -16,6 +16,7 @@ import CanvasToolbar from '../../_shared/components/CanvasToolbar'
 import CanvasPricePanel from '../components/CanvasPricePanel'
 import DebugPricePanel from '../components/DebugPricePanel'
 import ModulePopover from '../components/ModulePopover'
+import ModuleSpotlightTracker, { TOUR_MODULE_TARGET_ID } from '../../_shared/tour/MeshScreenTracker'
 import { MODULE_LAYOUTS } from './moduleLayouts'
 import PostProcessing from '../../_shared/effects/PostProcessing'
 import WebGPURenderGuard from '../../_shared/effects/WebGPURenderGuard'
@@ -147,7 +148,15 @@ export default function KledingkastCanvas() {
           <ClosetScene />
           <SilhouettePlane />
         </Suspense>
+        <ModuleSpotlightTracker />
       </ThreeCanvas>
+
+      <div
+        id={TOUR_MODULE_TARGET_ID}
+        aria-hidden
+        className="pointer-events-none absolute"
+        style={{ top: 0, left: 0, width: 0, height: 0 }}
+      />
 
       <MeasurementsOverlayLayer projectedRef={projectedRef} />
       <CanvasToolbar />

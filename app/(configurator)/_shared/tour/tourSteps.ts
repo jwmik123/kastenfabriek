@@ -1,6 +1,7 @@
 import type { StepType } from '@reactour/tour'
 import { createElement } from 'react'
 import { Hand } from 'lucide-react'
+import { TOUR_MODULE_TARGET_ID } from './MeshScreenTracker'
 
 type TourCopy = { title: string; body: string; icon?: 'hand' }
 
@@ -42,6 +43,14 @@ export const kledingkastTourSteps: StepType[] = [
       icon: 'hand',
     }),
     position: 'center',
+  },
+  {
+    selector: `#${TOUR_MODULE_TARGET_ID}`,
+    content: stepContent({
+      title: 'Pas modules aan',
+      body: 'Klik op een module om hem te wijzigen of te vervangen.',
+    }),
+    position: 'right',
   },
   {
     selector: '[data-tour-active="next"]',
