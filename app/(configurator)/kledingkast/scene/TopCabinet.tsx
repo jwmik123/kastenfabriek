@@ -6,7 +6,7 @@ import gsap from 'gsap'
 import { useClosetStore } from '../store'
 import ClosetMaterial from '../../_shared/materials/ClosetMaterial'
 import { Model as HingeModel } from '../../_shared/objects/Hinge'
-import { CORPUS_WALL, getBackDiagHeightAtZ } from './diagonalUtils'
+import { CORPUS_WALL, FILLER_FLAT_SEC_THRESHOLD, getBackDiagHeightAtZ } from './diagonalUtils'
 import type { DiagParams } from './diagonalUtils'
 import { trapShape, trapGeo, trapNaN } from '@/utils/debugGeometry'
 
@@ -742,7 +742,7 @@ export default function TopCabinet() {
   // Effective ceiling height for the TC (outer face Y in world space).
   // When filler active (backDiag + flatSec=0), TC modules top at fillerBottomY
   // so the filler panel closes off the wedge above them.
-  const fillerActive = backDiagonal && flatSec < 0.001
+  const fillerActive = backDiagonal && flatSec < FILLER_FLAT_SEC_THRESHOLD
   const ceilH = fillerActive
     ? getBackDiagHeightAtZ(depth - 0.15, p)
     : height - SIDE_WALL_EXTRA
@@ -784,13 +784,15 @@ export default function TopCabinet() {
     shape.moveTo(-xBack,  0)
     shape.lineTo(-xFront, 0)
     shape.lineTo(-xFront, doorCeilH)
-    if (flatSec > 0) {
+    if (fillerActive) {
+      if (tcFillerCrossingLZ > xBack + 0.001 && tcFillerCrossingLZ < xFront - 0.001) {
+        shape.lineTo(-tcFillerCrossingLZ, innerCeilH)
+      }
+    } else if (flatSec > 0) {
       const xFlatStart = depth - flatSec - WALL
       if (xFlatStart > xBack && xFlatStart < xFront) {
         shape.lineTo(-xFlatStart, innerCeilH)
       }
-    } else if (tcFillerCrossingLZ > xBack + 0.001 && tcFillerCrossingLZ < xFront - 0.001) {
-      shape.lineTo(-tcFillerCrossingLZ, innerCeilH)
     }
     shape.closePath()
     const geo = new THREE.ExtrudeGeometry(trapShape(shape, 'TC-tcDivider'), { depth: WALL, bevelEnabled: false })
@@ -804,14 +806,16 @@ export default function TopCabinet() {
   const tcBdOuterProfile = useMemo((): Array<{ x: number; y: number }> => {
     if (!backDiagonal || tcSlotDepth <= WALL * 2 || doorCeilH <= 0) return []
     const pts: Array<{ x: number; y: number }> = [{ x: tcBack_local, y: 0 }]
-    if (flatSec > 0) {
+    if (fillerActive) {
+      if (tcFillerCrossingLZ > tcBack_local + 0.001 && tcFillerCrossingLZ < moduleDepth - 0.001) {
+        // Filler active: kink where shell crosses fillerBottomY; flatten at innerCeilH from there.
+        pts.push({ x: tcFillerCrossingLZ, y: trapNaN(innerCeilH, 'TC-bdCeil-innerCeilH-filler') })
+      }
+    } else if (flatSec > 0) {
       const xFlatStart = depth - flatSec - WALL
       if (xFlatStart > tcBack_local + 0.001 && xFlatStart < moduleDepth - 0.001) {
         pts.push({ x: xFlatStart, y: trapNaN(innerCeilH, 'TC-bdCeil-innerCeilH') })
       }
-    } else if (tcFillerCrossingLZ > tcBack_local + 0.001 && tcFillerCrossingLZ < moduleDepth - 0.001) {
-      // Filler active: kink where shell crosses fillerBottomY; flatten at innerCeilH from there.
-      pts.push({ x: tcFillerCrossingLZ, y: trapNaN(innerCeilH, 'TC-bdCeil-innerCeilH-filler') })
     }
     pts.push({ x: moduleDepth, y: trapNaN(doorCeilH, 'TC-bdCeil-doorCeilH') })
     return pts
@@ -894,7 +898,7 @@ export default function TopCabinet() {
   return (
     <group position={[0, mainH, WALL]}>
       {/* ── Back diagonal ceiling: slope panel lives in ClosetCorpus (full shell). Flat section cap below. ── */}
-      {backDiagonal && flatSec > 0 && tcSlotDepth > WALL * 2 && (
+      {backDiagonal && flatSec >= FILLER_FLAT_SEC_THRESHOLD && tcSlotDepth > WALL * 2 && (
         <mesh
           key="top-flat-bd"
           position={[0, (ceilH - mainH) - WALL / 2, depth - flatSec / 2 - WALL]}
