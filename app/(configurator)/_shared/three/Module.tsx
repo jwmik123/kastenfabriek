@@ -71,6 +71,11 @@ function offsetProfileInward(
   return inner
 }
 
+// Min X-gap from a module edge before we accept a kink there. Prevents a
+// near-duplicate roof-profile point that otherwise produces denom≈0 and NaN
+// downstream in side-wall geo math (leftWall-hRight / rightWall-hLeft).
+const KINK_EDGE_EPS = 1e-4
+
 function computeDoorProfile(
   leftXOuter: number,
   rightXOuter: number,
@@ -83,11 +88,11 @@ function computeDoorProfile(
 
   if ((p.diagonalSide === 'left' || p.diagonalSide === 'both') && p.leftDiagTopWidth > 0) {
     const kx = CORPUS_WALL + p.leftDiagTopWidth
-    if (kx > leftXOuter && kx < rightXOuter) kinks.push({ x: kx, y: flatH })
+    if (kx > leftXOuter + KINK_EDGE_EPS && kx < rightXOuter - KINK_EDGE_EPS) kinks.push({ x: kx, y: flatH })
   }
   if ((p.diagonalSide === 'right' || p.diagonalSide === 'both') && p.rightDiagTopWidth > 0) {
     const kx = p.outerWidth - CORPUS_WALL - p.rightDiagTopWidth
-    if (kx > leftXOuter && kx < rightXOuter) kinks.push({ x: kx, y: flatH })
+    if (kx > leftXOuter + KINK_EDGE_EPS && kx < rightXOuter - KINK_EDGE_EPS) kinks.push({ x: kx, y: flatH })
   }
 
   const edges = [
@@ -110,11 +115,11 @@ function computeRoofProfile(
 
   if ((p.diagonalSide === 'left' || p.diagonalSide === 'both') && p.leftDiagTopWidth > 0) {
     const kx = CORPUS_WALL + p.leftDiagTopWidth
-    if (kx > leftXOuter && kx < rightXOuter) kinks.push({ x: kx, y: flatH })
+    if (kx > leftXOuter + KINK_EDGE_EPS && kx < rightXOuter - KINK_EDGE_EPS) kinks.push({ x: kx, y: flatH })
   }
   if ((p.diagonalSide === 'right' || p.diagonalSide === 'both') && p.rightDiagTopWidth > 0) {
     const kx = p.outerWidth - CORPUS_WALL - p.rightDiagTopWidth
-    if (kx > leftXOuter && kx < rightXOuter) kinks.push({ x: kx, y: flatH })
+    if (kx > leftXOuter + KINK_EDGE_EPS && kx < rightXOuter - KINK_EDGE_EPS) kinks.push({ x: kx, y: flatH })
   }
 
   const edges = [leftXOuter, rightXOuter].map((xOuter) => ({ x: xOuter, y: wallHeightAt(xOuter, p) }))
@@ -331,9 +336,11 @@ export default function Module({ index, layout, hasDoor, span, diagParams: p, mi
     if (isBackDiag) return null  // handled by bdSideWallGeo
     if (innerProfile.length < 2) return null
     const denom = innerProfile[1].x - innerProfile[0].x
-    trapNaN(denom, `Module${index}-leftWall-denom`)
-    const t = (MODULE_WALL - innerProfile[0].x) / denom
-    const hRight = innerProfile[0].y + t * (innerProfile[1].y - innerProfile[0].y)
+    // Degenerate first segment (kink near module edge): fall back to a flat
+    // wall at leftWallH instead of dividing by ~0.
+    const hRight = Math.abs(denom) < 1e-6
+      ? leftWallH
+      : innerProfile[0].y + ((MODULE_WALL - innerProfile[0].x) / denom) * (innerProfile[1].y - innerProfile[0].y)
     trapNaN(hRight, `Module${index}-leftWall-hRight`)
     trapNaN(leftWallH, `Module${index}-leftWallH`)
     const shape = new THREE.Shape()
@@ -350,9 +357,9 @@ export default function Module({ index, layout, hasDoor, span, diagParams: p, mi
     if (innerProfile.length < 2) return null
     const n = innerProfile.length
     const denom = innerProfile[n - 1].x - innerProfile[n - 2].x
-    trapNaN(denom, `Module${index}-rightWall-denom`)
-    const t = (moduleWidth - MODULE_WALL - innerProfile[n - 2].x) / denom
-    const hLeft = innerProfile[n - 2].y + t * (innerProfile[n - 1].y - innerProfile[n - 2].y)
+    const hLeft = Math.abs(denom) < 1e-6
+      ? rightWallH
+      : innerProfile[n - 2].y + ((moduleWidth - MODULE_WALL - innerProfile[n - 2].x) / denom) * (innerProfile[n - 1].y - innerProfile[n - 2].y)
     trapNaN(hLeft, `Module${index}-rightWall-hLeft`)
     trapNaN(rightWallH, `Module${index}-rightWallH`)
     const shape = new THREE.Shape()
