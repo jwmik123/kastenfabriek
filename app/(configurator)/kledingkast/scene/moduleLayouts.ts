@@ -1,5 +1,3 @@
-import { MODULE_FLOOR_Y } from './closetConstants'
-
 // --- Anchor types ---
 type AnchorFromBottom = { type: 'fromBottom'; d: number } // bbox bottom at Y = d (module space)
 type AnchorFromTop    = { type: 'fromTop';    d: number } // bbox top at Y = roofY - d
@@ -47,12 +45,17 @@ export type ElementBbox = { minY: number; maxY: number }
 export const SHELF_SPACING = 0.35
 export const SHELF_THICKNESS = 0.018
 
-// Kledingkast layouts use legacy "GLB origin lands at scene floor" convention.
-// In the new bbox-bottom-anchored model that is fromBottom(-MODULE_FLOOR_Y).
-const LEGACY_BOTTOM = -MODULE_FLOOR_Y
+const DRAWER_GLB = '/objects/mainmodules/DrawerModule.glb'
+const ROD_GLB    = '/objects/mainmodules/RodModule.glb'
+const SPLIT_GLB  = '/objects/mainmodules/SplitModule.glb'
+const DESK_GLB   = '/objects/mainmodules/DeskModule.glb'
 
-const sharedAboveShelvesBelowOpen = {
+const shelvesAbove = {
   above: { type: 'shelves', spacing: SHELF_SPACING } as const,
+  below: { type: 'open' } as const,
+}
+const bothOpen = {
+  above: { type: 'open' } as const,
   below: { type: 'open' } as const,
 }
 
@@ -62,7 +65,7 @@ export const MODULE_LAYOUTS: ModuleLayoutConfig[] = [
     label: 'Full shelves',
     description: 'Alleen planken, gelijkmatig verdeeld',
     elements: [],
-    fillZone: sharedAboveShelvesBelowOpen,
+    fillZone: shelvesAbove,
     minSlotHeight: 0,
   },
   {
@@ -70,90 +73,77 @@ export const MODULE_LAYOUTS: ModuleLayoutConfig[] = [
     label: 'Drawers + shelves',
     description: 'Laden onderin, planken erboven',
     elements: [
-      {
-        glbPath: '/objects/ModuleDrawer.glb',
-        anchor: { type: 'fromBottom', d: LEGACY_BOTTOM },
-      },
+      { glbPath: DRAWER_GLB, anchor: { type: 'fromBottom', d: 0 } },
     ],
-    fillZone: sharedAboveShelvesBelowOpen,
+    fillZone: shelvesAbove,
     minSlotHeight: 0.70,
   },
   {
     id: 3,
-    label: 'Double Rod + shelves',
-    description: 'Laden onderin, planken erboven',
+    label: 'Double Rod',
+    description: 'Twee roeden boven elkaar',
     elements: [
-      {
-        glbPath: '/objects/ModuleDoubleRod.glb',
-        anchor: { type: 'fromBottom', d: LEGACY_BOTTOM },
-      },
+      { glbPath: ROD_GLB, anchor: { type: 'fromTop',   d: 0.35 } },
+      { glbPath: ROD_GLB, anchor: { type: 'midpoint',  refIndex: 0 } },
     ],
-    fillZone: sharedAboveShelvesBelowOpen,
-    minSlotHeight: 1.75,
+    fillZone: bothOpen,
+    minSlotHeight: 1.20,
   },
   {
     id: 4,
-    label: 'Split shelves + rod',
-    description: 'Laden onderin, planken erboven',
+    label: 'Split + shelves',
+    description: 'Split-vak onderin, planken erboven',
     elements: [
-      {
-        glbPath: '/objects/ModuleSplit.glb',
-        anchor: { type: 'fromBottom', d: LEGACY_BOTTOM },
-      },
+      { glbPath: SPLIT_GLB, anchor: { type: 'bboxTopAt', d: 1.40 } },
     ],
-    fillZone: sharedAboveShelvesBelowOpen,
-    minSlotHeight: 1.75,
+    fillZone: shelvesAbove,
+    minSlotHeight: 1.40,
   },
   {
     id: 5,
-    label: 'Single Rod',
-    description: 'Laden onderin, planken erboven',
+    label: 'Single Rod 140',
+    description: 'Roede op 140 cm, planken erboven',
     elements: [
-      {
-        glbPath: '/objects/ModuleSingleRod.glb',
-        anchor: { type: 'fromBottom', d: LEGACY_BOTTOM },
-      },
+      { glbPath: ROD_GLB, anchor: { type: 'bboxTopAt', d: 1.40 } },
     ],
-    fillZone: sharedAboveShelvesBelowOpen,
-    minSlotHeight: 1.05,
+    fillZone: shelvesAbove,
+    minSlotHeight: 1.40,
   },
   {
     id: 6,
-    label: 'Shelf Rod',
-    description: 'Laden onderin, planken erboven',
+    label: 'Rod + plank',
+    description: 'Roede 35 cm onder plafond, plank op 35 cm',
     elements: [
-      {
-        glbPath: '/objects/ModuleShelfRod.glb',
-        anchor: { type: 'fromBottom', d: LEGACY_BOTTOM },
-      },
+      { glbPath: ROD_GLB, anchor: { type: 'fromTop', d: 0.35 } },
     ],
-    fillZone: sharedAboveShelvesBelowOpen,
-    minSlotHeight: 1.75,
+    fillZone: {
+      above: { type: 'open' } as const,
+      below: { type: 'fixedShelves', positions: [0.35] } as const,
+    },
+    minSlotHeight: 0.70,
   },
   {
     id: 7,
-    label: 'Drawer Rod',
-    description: 'Laden onderin, planken erboven',
+    label: 'Drawer + rod',
+    description: 'Laden onderin, roede onder plafond',
     elements: [
-      {
-        glbPath: '/objects/ModuleDrawerRod.glb',
-        anchor: { type: 'fromBottom', d: LEGACY_BOTTOM },
-      },
+      { glbPath: DRAWER_GLB, anchor: { type: 'fromBottom', d: 0 } },
+      { glbPath: ROD_GLB,    anchor: { type: 'fromTop',    d: 0.35 } },
     ],
-    fillZone: sharedAboveShelvesBelowOpen,
-    minSlotHeight: 1.75,
+    fillZone: bothOpen,
+    minSlotHeight: 1.20,
   },
   {
     id: 8,
     label: 'Desk',
-    description: 'Laden onderin, planken erboven',
+    description: 'Bureau onderin, planken vanaf 175 cm',
     elements: [
-      {
-        glbPath: '/objects/ModuleDesk.glb',
-        anchor: { type: 'fromBottom', d: LEGACY_BOTTOM },
-      },
+      { glbPath: DESK_GLB, anchor: { type: 'fromBottom', d: 0 } },
     ],
-    fillZone: sharedAboveShelvesBelowOpen,
+    fillZone: {
+      above: { type: 'shelves', spacing: SHELF_SPACING, startY: 1.75 } as const,
+      below: { type: 'open' } as const,
+    },
     minSlotHeight: 1.75,
   },
 ]

@@ -3,6 +3,8 @@ import {
   resolveElementPositions,
   computeShelfPositions,
   SHELF_THICKNESS,
+  MODULE_LAYOUTS,
+  getLayoutById,
   type ModuleLayoutConfig,
   type ElementBbox,
   type FillZoneConfig,
@@ -187,5 +189,57 @@ describe('computeShelfPositions', () => {
   it('shelves: zone height below 2*SHELF_THICKNESS returns []', () => {
     const cfg: FillZoneConfig = { type: 'shelves', spacing: 0.35 }
     expect(computeShelfPositions(cfg, 0, SHELF_THICKNESS, false)).toEqual([])
+  })
+})
+
+describe('MODULE_LAYOUTS (slice 3)', () => {
+  it('exposes ids 1..8 in order', () => {
+    expect(MODULE_LAYOUTS.map((l) => l.id)).toEqual([1, 2, 3, 4, 5, 6, 7, 8])
+  })
+
+  it('all element glb paths point to mainmodules/', () => {
+    for (const layout of MODULE_LAYOUTS) {
+      for (const el of layout.elements) {
+        expect(el.glbPath.startsWith('/objects/mainmodules/')).toBe(true)
+      }
+    }
+  })
+
+  it('L1 has no elements and shelves above', () => {
+    const l = getLayoutById(1)!
+    expect(l.elements).toEqual([])
+    expect(l.fillZone.above.type).toBe('shelves')
+  })
+
+  it('L3 double-rod: top fromTop(0.35), bottom midpoint(0)', () => {
+    const l = getLayoutById(3)!
+    expect(l.elements).toHaveLength(2)
+    expect(l.elements[0].anchor).toEqual({ type: 'fromTop', d: 0.35 })
+    expect(l.elements[1].anchor).toEqual({ type: 'midpoint', refIndex: 0 })
+    expect(l.fillZone.above.type).toBe('open')
+    expect(l.fillZone.below.type).toBe('open')
+  })
+
+  it('L4 split: bboxTopAt(1.40)', () => {
+    const l = getLayoutById(4)!
+    expect(l.elements[0].anchor).toEqual({ type: 'bboxTopAt', d: 1.40 })
+  })
+
+  it('L6 rod+shelf: fromTop(0.35) and fixedShelves [0.35] below', () => {
+    const l = getLayoutById(6)!
+    expect(l.elements[0].anchor).toEqual({ type: 'fromTop', d: 0.35 })
+    expect(l.fillZone.below).toEqual({ type: 'fixedShelves', positions: [0.35] })
+  })
+
+  it('L7 drawer+rod: two elements with fromBottom(0) and fromTop(0.35)', () => {
+    const l = getLayoutById(7)!
+    expect(l.elements).toHaveLength(2)
+    expect(l.elements[0].anchor).toEqual({ type: 'fromBottom', d: 0 })
+    expect(l.elements[1].anchor).toEqual({ type: 'fromTop', d: 0.35 })
+  })
+
+  it('L8 desk: shelves with explicit startY 1.75 above', () => {
+    const l = getLayoutById(8)!
+    expect(l.fillZone.above).toMatchObject({ type: 'shelves', startY: 1.75 })
   })
 })
