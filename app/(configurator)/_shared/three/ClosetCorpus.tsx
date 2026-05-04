@@ -89,24 +89,15 @@ function SideWallAssembly({ side, width, mainH, height, depth, p, needsTop }: {
   // ---- Back diagonal case ----
   const backDiagGeo = useMemo(() => {
     if (!p.backDiagonal) return null
-    const topH = needsTop ? height + SIDE_WALL_EXTRA : mainH
+    const topH = height + SIDE_WALL_EXTRA
     const kinkH = trapNaN(p.backDiagKinkHeight, `SideWall-${side}-kinkH`)
     const flatSectionDepth = trapNaN(p.backDiagFlatSectionDepth, `SideWall-${side}-flatSec`)
-
-    // When filler is active (no TC, flatSec below threshold), cap the front-top at the
-    // filler's front-top height (= shell height at fillerFrontZ) so side wall and filler
-    // panel stop at the same height at the front face.
-    const fillerActive = !needsTop && p.backDiagFlatSectionDepth < FILLER_FLAT_SEC_THRESHOLD
-    const fillerFrontZ = depth - CLOSET_INSIDE_INSET
-    const frontTopY = fillerActive
-      ? trapNaN(getBackDiagHeightAtZ(fillerFrontZ, p), `SideWall-${side}-frontTopY`)
-      : topH
 
     const shape = new THREE.Shape()
     shape.moveTo(depth / 2, 0)
     shape.lineTo(-depth / 2, 0)
-    shape.lineTo(-depth / 2, trapNaN(frontTopY, `SideWall-${side}-frontTopY-shape`))
-    if (!fillerActive && flatSectionDepth > 0) {
+    shape.lineTo(-depth / 2, topH)
+    if (flatSectionDepth > 0.001) {
       shape.lineTo(flatSectionDepth - depth / 2, topH)
     }
     shape.lineTo(depth / 2, kinkH)

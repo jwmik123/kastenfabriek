@@ -9,14 +9,45 @@ interface Props {
   children: ReactNode
 }
 
-function AutoStart() {
+function AutoStart({ steps }: { steps: StepType[] }) {
   const { setIsOpen, setCurrentStep } = useTour()
 
   useEffect(() => {
     if (hasSeenTour()) return
-    setCurrentStep(0)
-    setIsOpen(true)
-  }, [setIsOpen, setCurrentStep])
+    if (typeof window === 'undefined') return
+
+    const firstSelector = steps[0]?.selector
+    if (typeof firstSelector !== 'string') {
+      setCurrentStep(0)
+      setIsOpen(true)
+      return
+    }
+
+    let cancelled = false
+    let rafId = 0
+    const startedAt = performance.now()
+    const TIMEOUT_MS = 5000
+
+    const tryOpen = () => {
+      if (cancelled) return
+      const target = document.querySelector(firstSelector)
+      const rect = target?.getBoundingClientRect()
+      const ready = !!target && !!rect && rect.width > 0 && rect.height > 0
+      if (ready) {
+        setCurrentStep(0)
+        setIsOpen(true)
+        return
+      }
+      if (performance.now() - startedAt > TIMEOUT_MS) return
+      rafId = requestAnimationFrame(tryOpen)
+    }
+
+    rafId = requestAnimationFrame(tryOpen)
+    return () => {
+      cancelled = true
+      cancelAnimationFrame(rafId)
+    }
+  }, [steps, setIsOpen, setCurrentStep])
 
   return null
 }
@@ -98,7 +129,7 @@ export default function ConfiguratorTourProvider({ steps, children }: Props) {
         maskWrapper: (base) => ({ ...base, color: 'rgba(0,0,0,0.55)' }),
       }}
     >
-      <AutoStart />
+      <AutoStart steps={steps} />
       <TourTargetMarker />
       {children}
     </TourProvider>

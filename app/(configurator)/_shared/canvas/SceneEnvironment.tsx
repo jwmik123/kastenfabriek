@@ -25,6 +25,7 @@ export default function SceneEnvironment() {
       envMap = pmrem.fromEquirectangular(texture).texture
 
       scene.environment = envMap
+      scene.environmentIntensity = 1.2
       scene.environmentRotation = new THREE.Euler(Math.PI / 2, 0, 0)
 
       texture.dispose()

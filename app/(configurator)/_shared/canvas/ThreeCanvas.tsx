@@ -41,15 +41,16 @@ export default function ThreeCanvas({ children, onPointerMissed }: ThreeCanvasPr
       gl={async (props: any) => {
         const renderer = new THREE.WebGPURenderer({ ...props, powerPreference: 'high-performance' })
         await renderer.init()
-        renderer.toneMapping = THREE.NeutralToneMapping
+        renderer.toneMapping = THREE.NoToneMapping
         renderer.toneMappingExposure = 1
         return renderer
       }}
     >
-      <color attach="background" args={['#e8e8e8']} />
+      <color attach="background" args={['#ffffff']} />
       <SceneEnvironment />
-      
+
       {process.env.NODE_ENV === 'development' && <StatsPanel />}
+      <hemisphereLight intensity={0.4} color="#ffffff" groundColor="#ffffff" />
       <directionalLight
         position={[-3, 5, 10]}
         intensity={0.5}
