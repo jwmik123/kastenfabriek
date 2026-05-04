@@ -15,8 +15,8 @@ import { VENEERS } from './veneers'
 // ANISOTROPY and BUMP_SCALE held at 0: anisotropy needs anisotropyNode wired
 // against grain-V tangents (slice 2), and the dFdx/dFdy luminance bump blows
 // up at triplanar projection seams. Both ship at 0 for slice 1 stability.
-const TILE_U = 0.6
-const TILE_V = 1.8
+const TILE_U = 2.4
+const TILE_V = 7.2
 const BUMP_SCALE = 0
 const ANISOTROPY = 0
 const CLEARCOAT = 0.3
