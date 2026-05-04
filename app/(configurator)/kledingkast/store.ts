@@ -246,6 +246,7 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
       backDiagKinkHeight: 1.8,
       backDiagFlatSectionDepth: 0,
       outerDepth: s.width / 100,
+      moduleCapY: mainH / 100,
     }
     set({
       diagonalSide,
@@ -285,6 +286,7 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
       backDiagKinkHeight: 1.8,
       backDiagFlatSectionDepth: 0,
       outerDepth: s.width / 100,
+      moduleCapY: mainH / 100,
     }
     set({ leftDiagStartHeight: clamped, leftDiagTopWidth: newInternal, modules: resetDiagDoubles(s.modules, diagParams, s.moduleCount, s.width / 100) })
   },
@@ -319,6 +321,7 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
       backDiagKinkHeight: 1.8,
       backDiagFlatSectionDepth: 0,
       outerDepth: s.width / 100,
+      moduleCapY: mainH / 100,
     }
     set({ rightDiagStartHeight: clamped, rightDiagTopWidth: newInternal, modules: resetDiagDoubles(s.modules, diagParams, s.moduleCount, s.width / 100) })
   },
@@ -347,6 +350,7 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
       backDiagKinkHeight: 1.8,
       backDiagFlatSectionDepth: 0,
       outerDepth: s.width / 100,
+      moduleCapY: mainH / 100,
     }
     set({ leftDiagTopWidth: clamped, modules: resetDiagDoubles(s.modules, diagParams, s.moduleCount, s.width / 100) })
   },
@@ -375,6 +379,7 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
       backDiagKinkHeight: 1.8,
       backDiagFlatSectionDepth: 0,
       outerDepth: s.width / 100,
+      moduleCapY: mainH / 100,
     }
     set({ rightDiagTopWidth: clamped, modules: resetDiagDoubles(s.modules, diagParams, s.moduleCount, s.width / 100) })
   },
@@ -637,6 +642,7 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
       backDiagKinkHeight: 1.8,
       backDiagFlatSectionDepth: 0,
       outerDepth: widthM,  // dummy, not used when backDiagonal=false
+      moduleCapY: mainHeightM,
     }
 
     const getEffectiveHeight = (slotIndex: number, span: 1 | 2 = 1) => {

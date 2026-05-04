@@ -5,7 +5,7 @@ import * as THREE from 'three/webgpu'
 import { uv, float, fract, time, color, uniform, select, positionWorld } from 'three/tsl'
 import { useClosetStore } from '../store'
 import { ClosetMaterialProvider } from '../../_shared/materials/ClosetMaterial'
-import { getDiagHeightAt, getBackDiagHeightAtZ } from './diagonalUtils'
+import { getDiagHeightAt, computeModuleCapY } from './diagonalUtils'
 import type { DiagParams } from './diagonalUtils'
 import { trapNaN, trapGeo } from '@/utils/debugGeometry'
 import ClosetCorpus from '../../_shared/three/ClosetCorpus'
@@ -174,42 +174,22 @@ export default function ClosetScene() {
     const kinkHM    = backDiagKinkHeight / 100
     const flatSecM  = backDiagFlatSectionDepth / 100
 
-    // When filler is active (backDiag + flatSec=0) and no TC, reduce effective mainH so
-    // Module.tsx caps module tops at fillerBottomY instead of mainH=closetH.
-    let effectiveMainH = mainHM
-    if (backDiagonal && flatSecM < 0.001 && !needsTop) {
-      const fillerBottomY = getBackDiagHeightAtZ(depthM - 0.15, {
-        backDiagonal: true,
-        backDiagKinkHeight: kinkHM,
-        backDiagFlatSectionDepth: flatSecM,
-        outerDepth: depthM,
-        closetHeight: closetHM,
-        // remaining fields unused by getBackDiagHeightAtZ
-        diagonalSide: 'none',
-        leftDiagStartHeight: 0,
-        rightDiagStartHeight: 0,
-        leftDiagTopWidth: 0,
-        rightDiagTopWidth: 0,
-        outerWidth: outerWidth / 100,
-        mainHeight: mainHM,
-      })
-      effectiveMainH = fillerBottomY
-    }
-
-    return {
+    const base: DiagParams = {
       diagonalSide,
       leftDiagStartHeight:  Math.min(leftDiagStartHeight,  mainHeightCm - 20) / 100,
       rightDiagStartHeight: Math.min(rightDiagStartHeight, mainHeightCm - 20) / 100,
       leftDiagTopWidth:  leftDiagTopWidth  / 100,
       rightDiagTopWidth: rightDiagTopWidth / 100,
       outerWidth:        outerWidth        / 100,
-      mainHeight:        effectiveMainH,
+      mainHeight:        mainHM,
       closetHeight:      closetHM,
       backDiagonal,
       backDiagKinkHeight:        kinkHM,
       backDiagFlatSectionDepth:  flatSecM,
       outerDepth:                depthM,
+      moduleCapY:                mainHM,
     }
+    return { ...base, moduleCapY: computeModuleCapY(base, needsTop) }
   }, [diagonalSide, leftDiagStartHeight, rightDiagStartHeight, leftDiagTopWidth, rightDiagTopWidth, outerWidth, mainHeightCm, closetHeightCm, backDiagonal, backDiagKinkHeight, backDiagFlatSectionDepth, outerDepthCm, needsTop])
 
   return (

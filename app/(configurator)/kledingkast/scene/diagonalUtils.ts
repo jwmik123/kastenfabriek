@@ -14,6 +14,29 @@ export interface DiagParams {
   backDiagKinkHeight: number       // meters — height at back wall where slope meets wall
   backDiagFlatSectionDepth: number // meters — flat-top section depth measured from front
   outerDepth: number               // meters — total closet outer depth
+  // Cap height for module geometry (separate from mainHeight, which carries slope-math semantics).
+  // Equals mainHeight in most cases; reduced to fillerBottomY when back-diag is active without TC
+  // and flatSec is below the filler threshold.
+  moduleCapY: number
+}
+
+// Filler depth from front face of closet (matches the corpus filler back-face offset).
+export const FILLER_DEPTH_FROM_FRONT = 0.15
+// Flat-section threshold below which the corpus renders a top-front filler wedge.
+export const FILLER_FLAT_SEC_THRESHOLD = 0.10
+
+/**
+ * Module cap height: the Y at which module geometry (roof, door, sidewall tops) is clamped.
+ * - Back-diagonal off → mainHeight.
+ * - Top cabinet active → mainHeight (corpus/TC separator handles the cap).
+ * - Back-diagonal on, no TC, flatSec >= threshold → mainHeight.
+ * - Back-diagonal on, no TC, flatSec < threshold → shell height at the filler back face.
+ */
+export function computeModuleCapY(p: DiagParams, needsTop: boolean): number {
+  if (!p.backDiagonal) return p.mainHeight
+  if (needsTop) return p.mainHeight
+  if (p.backDiagFlatSectionDepth >= FILLER_FLAT_SEC_THRESHOLD) return p.mainHeight
+  return getBackDiagHeightAtZ(p.outerDepth - FILLER_DEPTH_FROM_FRONT, p)
 }
 
 /**

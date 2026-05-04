@@ -60,6 +60,7 @@ export default function ModulesStep() {
     backDiagKinkHeight:       backDiagKinkHeight       / 100,
     backDiagFlatSectionDepth: backDiagFlatSectionDepth / 100,
     outerDepth:               depthCm                  / 100,
+    moduleCapY:               mainHeightM,
   }), [diagonalSide, leftDiagStartHeight, rightDiagStartHeight, leftDiagTopWidth, rightDiagTopWidth, widthCm, mainHeightCm, mainHeightM, closetHeightCm, backDiagonal, backDiagKinkHeight, backDiagFlatSectionDepth, depthCm])
 
   // Retained for ModulePopover parity; not consumed in this panel after the

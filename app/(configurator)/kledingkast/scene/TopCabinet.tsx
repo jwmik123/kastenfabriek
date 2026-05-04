@@ -724,6 +724,7 @@ export default function TopCabinet() {
     backDiagKinkHeight:        backDiagKinkHeightCm        / 100,
     backDiagFlatSectionDepth:  backDiagFlatSectionDepthCm  / 100,
     outerDepth:                depth,
+    moduleCapY:                mainH,
   }), [diagonalSide, leftDiagStartHeightCm, rightDiagStartHeightCm, leftDiagTopWidthCm, rightDiagTopWidthCm, width, mainHCm, mainH, height, backDiagonal, backDiagKinkHeightCm, backDiagFlatSectionDepthCm, depth])
 
   // ---------------------------------------------------------------------------

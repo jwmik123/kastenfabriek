@@ -4,7 +4,7 @@ import { useMemo } from 'react'
 import * as THREE from 'three/webgpu'
 import { useConfiguratorStore } from '../store/context'
 import ClosetMaterial from '../materials/ClosetMaterial'
-import { getDiagHeightAt, getBackDiagHeightAtZ, CORPUS_WALL } from '../../kledingkast/scene/diagonalUtils'
+import { getDiagHeightAt, getBackDiagHeightAtZ, CORPUS_WALL, FILLER_FLAT_SEC_THRESHOLD } from '../../kledingkast/scene/diagonalUtils'
 import type { DiagParams } from '../../kledingkast/scene/diagonalUtils'
 import { trapShape, trapGeo, trapNaN } from '@/utils/debugGeometry'
 
@@ -319,10 +319,10 @@ export default function ClosetCorpus({ diagParams: p }: { diagParams: DiagParams
             )
           })()}
 
-          {/* Top-front filler panel: closes off open top wedge when flatSectionDepth=0.
-              Wedge profile — top edge follows the shell slope so no corner pokes above diagonal.
-              Front-top at closetHeight, back-top at shell height at filler back face Z. */}
-          {flatSecM < 0.001 && (
+          {/* Top-front filler panel: closes off open top wedge whenever flatSec is below the
+              filler threshold (10cm). For flatSec in (0, 10cm) it coexists with the flat top
+              panel — the wedge degenerates into a slab inside the flat zone. */}
+          {flatSecM < FILLER_FLAT_SEC_THRESHOLD && (
             <TopFillerWedge
               key={needsTop ? "top-filler-wedge-bd-tc" : "top-filler-wedge-bd"}
               width={width}

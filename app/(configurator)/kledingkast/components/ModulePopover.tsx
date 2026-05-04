@@ -76,6 +76,7 @@ export default function ModulePopover() {
     backDiagKinkHeight:       backDiagKinkHeight       / 100,
     backDiagFlatSectionDepth: backDiagFlatSectionDepth / 100,
     outerDepth:               depthCm                  / 100,
+    moduleCapY:               mainHeightM,
   }), [diagonalSide, leftDiagStartHeight, rightDiagStartHeight, leftDiagTopWidth, rightDiagTopWidth, widthM, mainHeightCm, mainHeightM, closetHeightCm, backDiagonal, backDiagKinkHeight, backDiagFlatSectionDepth, depthCm])
 
   if (!isActive || selectedSlot === null) return null

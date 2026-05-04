@@ -228,6 +228,7 @@ export default function RoomWalls() {
     backDiagKinkHeight:        backDiagKinkHeightCm / 100,
     backDiagFlatSectionDepth:  backDiagFlatSecCm    / 100,
     outerDepth:                D,
+    moduleCapY:                mainH,
   }), [
     diagonalSide, leftDiagStartHeightCm, rightDiagStartHeightCm,
     leftDiagTopWidthCm, rightDiagTopWidthCm,

@@ -180,6 +180,7 @@ export default function WasmachinekastScene() {
       backDiagKinkHeight: 0,
       backDiagFlatSectionDepth: 0,
       outerDepth: outerDepthCm / 100,
+      moduleCapY: mainHeightCm / 100,
     }),
     [outerWidth, mainHeightCm, closetHeightCm, outerDepthCm],
   )

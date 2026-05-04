@@ -161,14 +161,14 @@ export default function Module({ index, layout, hasDoor, span, diagParams: p, mi
   // Module group is at worldZ = WALL (inner face of corpus back panel).
   // module-local z=0 → worldZ=WALL (back), z=moduleDepth → worldZ=WALL+moduleDepth (front)
   const hBack = isBackDiag
-    ? Math.max(0, Math.min(trapNaN(getBackDiagHeightAtZ(WALL, p), `Module${index}-hBack-raw`), p.mainHeight) - MODULE_FLOOR_Y - WALL)
+    ? Math.max(0, Math.min(trapNaN(getBackDiagHeightAtZ(WALL, p), `Module${index}-hBack-raw`), p.moduleCapY) - MODULE_FLOOR_Y - WALL)
     : 0
   const hFront = isBackDiag
-    ? Math.max(0, Math.min(trapNaN(getBackDiagHeightAtZ(WALL + moduleDepth, p), `Module${index}-hFront-raw`), p.mainHeight) - MODULE_FLOOR_Y - WALL)
+    ? Math.max(0, Math.min(trapNaN(getBackDiagHeightAtZ(WALL + moduleDepth, p), `Module${index}-hFront-raw`), p.moduleCapY) - MODULE_FLOOR_Y - WALL)
     : 0
   trapNaN(hBack, `Module${index}-hBack`)
   trapNaN(hFront, `Module${index}-hFront`)
-  const flatH = p.mainHeight - MODULE_FLOOR_Y - WALL
+  const flatH = p.moduleCapY - MODULE_FLOOR_Y - WALL
 
   // Back diagonal ceiling profile in Z-Y space (treating z_local as x for offsetProfileInward).
   // Points sorted by z_local (back=0 to front=moduleDepth).
@@ -182,7 +182,7 @@ export default function Module({ index, layout, hasDoor, span, diagParams: p, mi
     const depthRun   = p.outerDepth - p.backDiagFlatSectionDepth
     const heightDrop = p.closetHeight - p.backDiagKinkHeight
     const crossingWZ = heightDrop > 0.001
-      ? depthRun * (p.mainHeight - p.backDiagKinkHeight) / heightDrop
+      ? depthRun * (p.moduleCapY - p.backDiagKinkHeight) / heightDrop
       : depthRun
     const crossingLZ = crossingWZ - WALL
     const pts: Array<{ x: number; y: number }> = [{ x: 0, y: hBack }]
@@ -363,17 +363,14 @@ export default function Module({ index, layout, hasDoor, span, diagParams: p, mi
     ? (index % 2 === 1 || isLastModule)
     : (moduleHasDiag ? leftWallH < rightWallH : (index % 2 === 1 || isLastModule)))
 
-  // Door profile for back diagonal.
-  // When TC active (needsTop): cap at p.mainHeight so main corpus door ends where TC begins.
-  // When no TC + filler active: use raw shell at slot front face (fillerTopHeight - 18mm).
-  // p.mainHeight is artificially reduced to fillerBottomY by ClosetScene in the no-TC+filler
-  // case, so we bypass that cap and use the actual shell height directly.
+  // Door profile for back diagonal: cap at moduleCapY (= mainHeight with TC, = fillerBottomY
+  // when filler is active without TC, = closetHeight otherwise).
   const bdDoorProfile = useMemo((): Array<{ x: number; y: number }> => {
     if (!isBackDiag) return []
     const rawH = trapNaN(getBackDiagHeightAtZ(WALL + moduleDepth, p), `Module${index}-bdDoor-raw`)
-    const h = Math.max(0, (needsTop ? Math.min(rawH, p.mainHeight) : rawH) - MODULE_FLOOR_Y - WALL)
+    const h = Math.max(0, Math.min(rawH, p.moduleCapY) - MODULE_FLOOR_Y - WALL)
     return [{ x: 0, y: h }, { x: thisSlotW, y: h }]
-  }, [isBackDiag, moduleDepth, needsTop, p, thisSlotW])
+  }, [isBackDiag, moduleDepth, p, thisSlotW])
 
   const startX = -innerW / 2
   const x      = startX + slotOffset
