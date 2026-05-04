@@ -179,9 +179,9 @@ export default function KledingkastCanvas() {
 
 // Preload all module GLBs
 MODULE_LAYOUTS.forEach((layout) => {
-  if (layout.specialElement.glbPath) {
-    useGLTF.preload(layout.specialElement.glbPath)
-  }
+  layout.elements.forEach((el) => {
+    useGLTF.preload(el.glbPath)
+  })
 })
 
 useGLTF.preload('/objects/onderstel.glb')

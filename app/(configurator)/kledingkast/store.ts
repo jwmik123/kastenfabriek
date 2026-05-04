@@ -663,7 +663,7 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
       const isDouble = canDouble && Math.random() < 0.3
       const span: 1 | 2 = isDouble ? 2 : 1
 
-      const availableLayouts = MODULE_LAYOUTS.filter((l) => l.specialElement.height <= effectiveHeight)
+      const availableLayouts = MODULE_LAYOUTS.filter((l) => (l.minSlotHeight ?? 0) <= effectiveHeight)
       const layoutId = availableLayouts[Math.floor(Math.random() * availableLayouts.length)]?.id ?? 1
       newModules.push({ ...modules[i], slotIndex: i, layoutId, span })
       if (isDouble) {

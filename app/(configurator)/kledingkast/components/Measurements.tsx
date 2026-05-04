@@ -82,23 +82,23 @@ function useMeasurementSpecs(): MeasurementSpec[] {
       })
     }
 
-    // 4. Special element heights — vertical, just inside the left wall of each module
-    //    From MODULE_FLOOR_Y to MODULE_FLOOR_Y + specialElement.height
+    // 4. Special element heights — vertical marker per module, sized from layout metadata.
+    //    Driven by minSlotHeight for now; runtime bbox-driven measurements land in slice 3.
     for (const mod of modules) {
       if (mod.layoutId === null) continue
       const layout = getLayoutById(mod.layoutId)
-      if (!layout || layout.specialElement.height <= 0) continue
+      const h = layout?.minSlotHeight ?? 0
+      if (!layout || h <= 0) continue
 
-      // Place the line 2cm inside the module's left inner wall
       const x = -innerW / 2 + mod.slotIndex * slotW + MODULE_WALL + 0.02
 
       specs.push({
         id: `special-height-${mod.slotIndex}`,
-        p1: new THREE.Vector3(x, MODULE_FLOOR_Y,                               frontZ),
-        p2: new THREE.Vector3(x, MODULE_FLOOR_Y + layout.specialElement.height, frontZ),
-        offsetDir: new THREE.Vector3(1, 0, 0), // irrelevant — offsetDist is 0
+        p1: new THREE.Vector3(x, MODULE_FLOOR_Y,     frontZ),
+        p2: new THREE.Vector3(x, MODULE_FLOOR_Y + h, frontZ),
+        offsetDir: new THREE.Vector3(1, 0, 0),
         offsetDist: 0,
-        labelCm: Math.round(layout.specialElement.height * 100),
+        labelCm: Math.round(h * 100),
       })
     }
 

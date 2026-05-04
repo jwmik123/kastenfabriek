@@ -105,7 +105,7 @@ export default function ModulePopover() {
     (diagParams.backDiagonal || !isUnderDiagonal)
 
   const availableLayouts = MODULE_LAYOUTS.filter(
-    (l) => l.specialElement.height <= selectedSlotEffectiveHeightM
+    (l) => (l.minSlotHeight ?? 0) <= selectedSlotEffectiveHeightM
   )
 
   // Approximate horizontal position above the bay: percentage along the canvas

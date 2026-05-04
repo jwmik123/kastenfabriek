@@ -2,9 +2,10 @@
 
 import { useMemo } from 'react'
 import * as THREE from 'three/webgpu'
+import { useGLTF } from '@react-three/drei'
 import { useConfiguratorStore } from '../store/context'
-import { computeModulePositions } from '../../kledingkast/scene/moduleLayouts'
-import type { ModuleLayoutConfig } from '../../kledingkast/scene/moduleLayouts'
+import { resolveElementPositions } from '../../kledingkast/scene/moduleLayouts'
+import type { ModuleLayoutConfig, ElementBbox } from '../../kledingkast/scene/moduleLayouts'
 import { getDiagHeightAt, getBackDiagHeightAtZ, isFullHeight, CORPUS_WALL } from '../../kledingkast/scene/diagonalUtils'
 import type { DiagParams } from '../../kledingkast/scene/diagonalUtils'
 import FillZone from './FillZone'
@@ -254,7 +255,23 @@ export default function Module({ index, layout, hasDoor, span, diagParams: p, mi
 
   // roofY: min ceiling height for content placement
   const roofY = isBackDiag ? hBack : Math.min(leftWallH, rightWallH)
-  const { specialElementY, fillAbove, fillBelow } = computeModulePositions(layout, roofY)
+
+  // Load all element GLBs to get their bboxes (drei's useGLTF accepts string[]).
+  // Use a sentinel path for the empty case to keep the hook call shape stable.
+  const elementPaths = useMemo(() => layout.elements.map((e) => e.glbPath), [layout])
+  const SENTINEL = '/objects/onderstel.glb'
+  const pathsForLoad = elementPaths.length > 0 ? elementPaths : [SENTINEL]
+  const loaded = useGLTF(pathsForLoad)
+  const elementBboxes = useMemo<ElementBbox[]>(() => {
+    if (elementPaths.length === 0) return []
+    const arr = Array.isArray(loaded) ? loaded : [loaded]
+    return arr.map((g) => {
+      const b = new THREE.Box3().setFromObject(g.scene.clone(true))
+      return { minY: b.min.y, maxY: b.max.y }
+    })
+  }, [loaded, elementPaths])
+
+  const { elementYs, fillAbove, fillBelow } = resolveElementPositions(layout, roofY, elementBboxes)
 
   const roofProfile = useMemo(() => {
     if (isBackDiag) return []  // not used for back diagonal
@@ -383,14 +400,17 @@ export default function Module({ index, layout, hasDoor, span, diagParams: p, mi
       binnenkantMaterialId={moduleSlot?.binnenkantMaterialId}
     >
     <group position={[x, MODULE_FLOOR_Y, groupZ]}>
-      <SpecialElement
-        layout={layout}
-        targetWidth={moduleWidth - MODULE_WALL * 2}
-        targetDepth={contentDepth}
-        positionY={specialElementY}
-        hovered={hoveredSlot === index}
-        hasDoor={hasDoor}
-      />
+      {layout.elements.map((el, i) => (
+        <SpecialElement
+          key={`${el.glbPath}-${i}`}
+          element={el}
+          targetWidth={moduleWidth - MODULE_WALL * 2}
+          targetDepth={contentDepth}
+          positionY={elementYs[i]}
+          hovered={hoveredSlot === index}
+          hasDoor={hasDoor}
+        />
+      ))}
 
       {fillAbove.end > fillAbove.start && (
         <FillZone

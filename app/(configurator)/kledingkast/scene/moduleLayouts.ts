@@ -1,170 +1,157 @@
-// --- Anchor types ---
-type AnchorBottom = { type: 'bottom' }
-type AnchorTop = { type: 'top' }
-type AnchorFixed = { type: 'fixed'; fromBottom: number } // meters from module floor
+import { MODULE_FLOOR_Y } from './closetConstants'
 
-type Anchor = AnchorBottom | AnchorTop | AnchorFixed
+// --- Anchor types ---
+type AnchorFromBottom = { type: 'fromBottom'; d: number } // bbox bottom at Y = d (module space)
+type AnchorFromTop    = { type: 'fromTop';    d: number } // bbox top at Y = roofY - d
+
+export type Anchor = AnchorFromBottom | AnchorFromTop
 
 // --- Fill zone types ---
-type FillShelves = { type: 'shelves'; spacing: number } // spacing in meters
-type FillOpen = { type: 'open' }
+type FillShelves = { type: 'shelves'; spacing: number }
+type FillOpen    = { type: 'open' }
 
-type FillZoneConfig = FillShelves | FillOpen
+export type FillZoneConfig = FillShelves | FillOpen
 
-// --- Module layout definition ---
+// --- Module element ---
+export type ModuleElement = {
+  glbPath: string
+  anchor: Anchor
+  // Visual / material flags (washer-only today, generic shape).
+  centered?: boolean
+  noDoorDepthOffset?: number
+  placeholderDimensions?: { w: number; h: number; d: number }
+  glbMaterialMeshes?: string[]
+  chromeMaterialMeshes?: string[]
+  glassMaterialMeshes?: string[]
+}
+
+// --- Module layout ---
 export type ModuleLayoutConfig = {
   id: number
   label: string
   description: string
-
-  specialElement: {
-    glbPath: string | null // null = no GLB (e.g. full-shelves layout)
-    height: number         // height in meters — used for fill zone placement; should match GLB
-    anchor: Anchor
-    placeholderDimensions?: { w: number; h: number; d: number } // shown when glbPath is null but height > 0
-    centered?: boolean          // center GLB in slot interior (X and Z); default: left/back-aligned
-    stacked?: boolean           // render two GLB instances stacked vertically; height/2 per unit
-    double?: boolean            // render two GLB instances side by side; each centered in half the slot
-    glbMaterialMeshes?: string[]    // mesh names that keep their baked GLB material (not overridden by closet material)
-    chromeMaterialMeshes?: string[] // mesh names that get chrome material regardless of naming convention
-    glassMaterialMeshes?: string[]  // mesh names that get opaque glass material (reflective, not transparent)
-    noDoorDepthOffset?: number      // extra Z offset applied when hasDoor is false (washer modules need this)
-  }
-
+  elements: ModuleElement[]
   fillZone: {
     above: FillZoneConfig
     below: FillZoneConfig
   }
+  // Optional metadata: minimum slot height required (used for layout filter UX).
+  minSlotHeight?: number
 }
 
-export type { Anchor, FillZoneConfig, FillShelves, FillOpen }
+export type ElementBbox = { minY: number; maxY: number }
 
-// Default shelf spacing and thickness
-// Heights of special elements must be multiples of SHELF_SPACING for clean alignment
-export const SHELF_SPACING = 0.35  // 35cm
-export const SHELF_THICKNESS = 0.018 // 2.5cm
+export const SHELF_SPACING = 0.35
+export const SHELF_THICKNESS = 0.018
 
-//TODO: afwerk 18 36
+// Kledingkast layouts use legacy "GLB origin lands at scene floor" convention.
+// In the new bbox-bottom-anchored model that is fromBottom(-MODULE_FLOOR_Y).
+const LEGACY_BOTTOM = -MODULE_FLOOR_Y
 
-/**
- * Module layout registry.
- *
- * To add a new layout: drop in a GLB and add an entry here.
- * Width and depth are measured automatically at runtime from the GLB bounding box.
- * Only `height` needs to be set manually — it drives fill zone placement.
- */
+const sharedAboveShelvesBelowOpen = {
+  above: { type: 'shelves', spacing: SHELF_SPACING } as const,
+  below: { type: 'open' } as const,
+}
+
 export const MODULE_LAYOUTS: ModuleLayoutConfig[] = [
   {
     id: 1,
     label: 'Full shelves',
     description: 'Alleen planken, gelijkmatig verdeeld',
-    specialElement: {
-      glbPath: null,
-      height: 0,
-      anchor: { type: 'bottom' },
-    },
-    fillZone: {
-      above: { type: 'shelves', spacing: SHELF_SPACING },
-      below: { type: 'open' },
-    },
+    elements: [],
+    fillZone: sharedAboveShelvesBelowOpen,
+    minSlotHeight: 0,
   },
   {
     id: 2,
     label: 'Drawers + shelves',
     description: 'Laden onderin, planken erboven',
-    specialElement: {
-      glbPath: '/objects/ModuleDrawer.glb',
-      height: 0.70,  // 2 × 0.35
-      anchor: { type: 'bottom' },
-    },
-    fillZone: {
-      above: { type: 'shelves', spacing: SHELF_SPACING },
-      below: { type: 'open' },
-    },
+    elements: [
+      {
+        glbPath: '/objects/ModuleDrawer.glb',
+        anchor: { type: 'fromBottom', d: LEGACY_BOTTOM },
+      },
+    ],
+    fillZone: sharedAboveShelvesBelowOpen,
+    minSlotHeight: 0.70,
   },
   {
     id: 3,
     label: 'Double Rod + shelves',
     description: 'Laden onderin, planken erboven',
-    specialElement: {
-      glbPath: '/objects/ModuleDoubleRod.glb',
-      height: 1.75,  // 5 × 0.35
-      anchor: { type: 'bottom' },
-    },
-    fillZone: {
-      above: { type: 'shelves', spacing: SHELF_SPACING },
-      below: { type: 'open' },
-    },
+    elements: [
+      {
+        glbPath: '/objects/ModuleDoubleRod.glb',
+        anchor: { type: 'fromBottom', d: LEGACY_BOTTOM },
+      },
+    ],
+    fillZone: sharedAboveShelvesBelowOpen,
+    minSlotHeight: 1.75,
   },
   {
     id: 4,
     label: 'Split shelves + rod',
     description: 'Laden onderin, planken erboven',
-    specialElement: {
-      glbPath: '/objects/ModuleSplit.glb',
-      height: 1.75,  // 5 × 0.35 — GLB top (~1.742) clears this
-      anchor: { type: 'bottom' },
-    },
-    fillZone: {
-      above: { type: 'shelves', spacing: SHELF_SPACING },
-      below: { type: 'open' },
-    },
+    elements: [
+      {
+        glbPath: '/objects/ModuleSplit.glb',
+        anchor: { type: 'fromBottom', d: LEGACY_BOTTOM },
+      },
+    ],
+    fillZone: sharedAboveShelvesBelowOpen,
+    minSlotHeight: 1.75,
   },
   {
     id: 5,
     label: 'Single Rod',
     description: 'Laden onderin, planken erboven',
-    specialElement: {
-      glbPath: '/objects/ModuleSingleRod.glb',
-      height: 1.05,  // 3 × 0.35
-      anchor: { type: 'bottom' },
-    },
-    fillZone: {
-      above: { type: 'shelves', spacing: SHELF_SPACING },
-      below: { type: 'open' },
-    },
+    elements: [
+      {
+        glbPath: '/objects/ModuleSingleRod.glb',
+        anchor: { type: 'fromBottom', d: LEGACY_BOTTOM },
+      },
+    ],
+    fillZone: sharedAboveShelvesBelowOpen,
+    minSlotHeight: 1.05,
   },
   {
     id: 6,
     label: 'Shelf Rod',
     description: 'Laden onderin, planken erboven',
-    specialElement: {
-      glbPath: '/objects/ModuleShelfRod.glb',
-      height: 1.75,  // 5 × 0.35 — GLB top (~1.742) clears this
-      anchor: { type: 'bottom' },
-    },
-    fillZone: {
-      above: { type: 'shelves', spacing: SHELF_SPACING },
-      below: { type: 'open' },
-    },
+    elements: [
+      {
+        glbPath: '/objects/ModuleShelfRod.glb',
+        anchor: { type: 'fromBottom', d: LEGACY_BOTTOM },
+      },
+    ],
+    fillZone: sharedAboveShelvesBelowOpen,
+    minSlotHeight: 1.75,
   },
   {
     id: 7,
     label: 'Drawer Rod',
     description: 'Laden onderin, planken erboven',
-    specialElement: {
-      glbPath: '/objects/ModuleDrawerRod.glb',
-      height: 1.75,  // 5 × 0.35
-      anchor: { type: 'bottom' },
-    },
-    fillZone: {
-      above: { type: 'shelves', spacing: SHELF_SPACING },
-      below: { type: 'open' },
-    },
+    elements: [
+      {
+        glbPath: '/objects/ModuleDrawerRod.glb',
+        anchor: { type: 'fromBottom', d: LEGACY_BOTTOM },
+      },
+    ],
+    fillZone: sharedAboveShelvesBelowOpen,
+    minSlotHeight: 1.75,
   },
   {
     id: 8,
     label: 'Desk',
     description: 'Laden onderin, planken erboven',
-    specialElement: {
-      glbPath: '/objects/ModuleDesk.glb',
-      height: 1.75,  // 5 × 0.35
-      anchor: { type: 'bottom' },
-    },
-    fillZone: {
-      above: { type: 'shelves', spacing: SHELF_SPACING },
-      below: { type: 'open' },
-    },
+    elements: [
+      {
+        glbPath: '/objects/ModuleDesk.glb',
+        anchor: { type: 'fromBottom', d: LEGACY_BOTTOM },
+      },
+    ],
+    fillZone: sharedAboveShelvesBelowOpen,
+    minSlotHeight: 1.75,
   },
 ]
 
@@ -173,36 +160,60 @@ export function getLayoutById(id: number): ModuleLayoutConfig | undefined {
 }
 
 /**
- * Compute vertical positions for special element and fill zones.
+ * Pure resolver for element positions and fill-zone bounds.
+ *
+ * `elementYs[i]` is the Y in module-group space where element i's bbox bottom sits.
+ * SpecialElement subtracts `box.min.y` so passing this Y as `positionY` puts the
+ * bbox bottom exactly there.
+ *
+ * Default fill bounds (slice 1):
+ *  - With elements: fillAbove = max(bboxTop) → roofY; fillBelow = 0 → min(bboxBottom).
+ *  - No elements:   fillAbove = 0 → roofY;          fillBelow = empty (0 → 0).
  */
-export function computeModulePositions(
+export function resolveElementPositions(
   layout: ModuleLayoutConfig,
-  moduleHeight: number
-) {
-  const { specialElement } = layout
-  const { anchor, height: seHeight } = specialElement
+  roofY: number,
+  bboxes: ElementBbox[],
+): {
+  elementYs: number[]
+  fillAbove: { start: number; end: number }
+  fillBelow: { start: number; end: number }
+} {
+  const elementYs: number[] = layout.elements.map((el, i) => {
+    const bbox = bboxes[i] ?? { minY: 0, maxY: 0 }
+    const height = bbox.maxY - bbox.minY
+    switch (el.anchor.type) {
+      case 'fromBottom':
+        return el.anchor.d
+      case 'fromTop':
+        return roofY - el.anchor.d - height
+    }
+  })
 
-  let specialElementY = 0
-  let fillAbove = { start: 0, end: 0 }
-  let fillBelow = { start: 0, end: 0 }
-
-  switch (anchor.type) {
-    case 'bottom':
-      specialElementY = -0.118
-      fillAbove = { start: seHeight, end: moduleHeight }
-      break
-
-    case 'top':
-      specialElementY = moduleHeight - seHeight
-      fillBelow = { start: 0, end: moduleHeight - seHeight }
-      break
-
-    case 'fixed':
-      specialElementY = anchor.fromBottom
-      fillBelow = { start: 0, end: anchor.fromBottom }
-      fillAbove = { start: anchor.fromBottom + seHeight, end: moduleHeight }
-      break
+  if (layout.elements.length === 0) {
+    return {
+      elementYs,
+      fillAbove: { start: 0, end: roofY },
+      fillBelow: { start: 0, end: 0 },
+    }
   }
 
-  return { specialElementY, fillAbove, fillBelow }
+  let maxBboxTop = -Infinity
+  let minBboxBottom = Infinity
+  layout.elements.forEach((_, i) => {
+    const bbox = bboxes[i] ?? { minY: 0, maxY: 0 }
+    const height = bbox.maxY - bbox.minY
+    const bot = elementYs[i]
+    const top = bot + height
+    if (top > maxBboxTop) maxBboxTop = top
+    if (bot < minBboxBottom) minBboxBottom = bot
+  })
+
+  const fillAbove = { start: maxBboxTop, end: roofY }
+  const fillBelow = {
+    start: 0,
+    end: Math.max(0, minBboxBottom),
+  }
+
+  return { elementYs, fillAbove, fillBelow }
 }

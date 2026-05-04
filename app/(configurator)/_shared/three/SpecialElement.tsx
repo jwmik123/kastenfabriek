@@ -4,7 +4,7 @@ import { useGLTF, useAnimations } from '@react-three/drei'
 import * as THREE from 'three/webgpu'
 import { useRef, useEffect, useState } from 'react'
 import gsap from 'gsap'
-import type { ModuleLayoutConfig } from '../../kledingkast/scene/moduleLayouts'
+import type { ModuleElement } from '../../kledingkast/scene/moduleLayouts'
 import { useClosetMaterialInstance, useChromeMaterialInstance, useGlassMaterialInstance } from '../materials/ClosetMaterial'
 import { useConfiguratorStore } from '../store/context'
 
@@ -25,10 +25,10 @@ import { useConfiguratorStore } from '../store/context'
 const MODULE_WALL = 0.018
 
 interface SpecialElementProps {
-  layout: ModuleLayoutConfig
+  element: ModuleElement
   targetWidth: number  // slot width in meters
   targetDepth: number  // module depth in meters
-  positionY: number    // Y of the element's bottom in module-group space
+  positionY: number    // Y of the element's bbox bottom in module-group space
   hovered: boolean
   hasDoor: boolean
 }
@@ -38,14 +38,14 @@ interface MeshOriginal {
 }
 
 function SpecialElementInner({
-  layout,
+  element,
   targetWidth,
   targetDepth,
   positionY,
   hovered,
   hasDoor,
 }: SpecialElementProps) {
-  const { scene, animations } = useGLTF(layout.specialElement.glbPath!)
+  const { scene, animations } = useGLTF(element.glbPath)
   const closetMaterial = useClosetMaterialInstance(hasDoor ? 'binnenkant' : 'buitenkant')
   const chromeMaterial = useChromeMaterialInstance()
   const glassMaterial  = useGlassMaterialInstance()
@@ -56,11 +56,9 @@ function SpecialElementInner({
   const hoveredRef = useRef(hovered)
   useEffect(() => { hoveredRef.current = hovered }, [hovered])
 
-  const isStacked  = !!layout.specialElement.stacked
-  const isDouble   = !!layout.specialElement.double
-  const isCentered = !!layout.specialElement.centered
+  const isCentered = !!element.centered
 
-  const [{ clone, clone2, originals, box, clonedClips }] = useState(() => {
+  const [{ clone, originals, box, clonedClips }] = useState(() => {
     const c = scene.clone(true)
     const b = new THREE.Box3().setFromObject(c)
     const origs = new Map<string, MeshOriginal>()
@@ -81,25 +79,22 @@ function SpecialElementInner({
       return cl
     })
 
-    const c2 = (isStacked || isDouble) ? scene.clone(true) : null
-
-    return { clone: c, clone2: c2, originals: origs, box: b, clonedClips: clips }
+    return { clone: c, originals: origs, box: b, clonedClips: clips }
   })
 
-  // For double: washer 1 flush with left wall, washer 2 directly adjacent (0 gap)
-  const offsetX = isDouble
-    ? -box.min.x + MODULE_WALL
-    : isCentered
-      ? MODULE_WALL + targetWidth / 2 - (box.min.x + box.max.x) / 2
-      : -box.min.x + MODULE_WALL
-  const offsetZ = -box.min.z + (!hasDoor ? (layout.specialElement.noDoorDepthOffset ?? 0) : 0)
+  const offsetX = isCentered
+    ? MODULE_WALL + targetWidth / 2 - (box.min.x + box.max.x) / 2
+    : -box.min.x + MODULE_WALL
+  const offsetZ = -box.min.z + (!hasDoor ? (element.noDoorDepthOffset ?? 0) : 0)
+  // Subtract bbox.min.y so positionY refers to the bbox bottom, not the GLB origin.
+  const offsetY = positionY - box.min.y
 
   const { actions } = useAnimations(clonedClips, clone)
 
   useEffect(() => {
-    const glbMeshes    = new Set(layout.specialElement.glbMaterialMeshes ?? [])
-    const chromeMeshes = new Set(layout.specialElement.chromeMaterialMeshes ?? [])
-    const glassMeshes  = new Set(layout.specialElement.glassMaterialMeshes ?? [])
+    const glbMeshes    = new Set(element.glbMaterialMeshes ?? [])
+    const chromeMeshes = new Set(element.chromeMaterialMeshes ?? [])
+    const glassMeshes  = new Set(element.glassMaterialMeshes ?? [])
     const applyMaterial = (obj: THREE.Object3D) => {
       obj.traverse((child: THREE.Object3D) => {
         if (!(child as THREE.Mesh).isMesh) return
@@ -113,8 +108,7 @@ function SpecialElementInner({
       })
     }
     applyMaterial(clone)
-    if (clone2) applyMaterial(clone2)
-  }, [clone, clone2, closetMaterial, chromeMaterial, glassMaterial, layout.specialElement.glbMaterialMeshes, layout.specialElement.chromeMaterialMeshes, layout.specialElement.glassMaterialMeshes])
+  }, [clone, closetMaterial, chromeMaterial, glassMaterial, element.glbMaterialMeshes, element.chromeMaterialMeshes, element.glassMaterialMeshes])
 
   useEffect(() => {
     const action = Object.values(actions)[0]
@@ -246,44 +240,13 @@ function SpecialElementInner({
     })
   }, [hovered, doorsOpen, actions])
 
-  // clone2 doesn't get the traverse treatment (mesh positions shifted by depthGrowth),
-  // so compensate with an explicit Z offset. Use actual GLB dimensions from box.
-  const washerHeight = box.max.y - box.min.y
-  const depthGrowth  = targetDepth - (box.max.z - box.min.z)
-
   return (
-    <>
-      <group position={[offsetX, positionY, offsetZ]}>
-        <primitive object={clone} />
-      </group>
-      {isStacked && clone2 && (
-        <group position={[offsetX, positionY + washerHeight, offsetZ + depthGrowth]}>
-          <primitive object={clone2} />
-        </group>
-      )}
-      {isDouble && clone2 && (
-        <group position={[offsetX + (box.max.x - box.min.x), positionY, offsetZ + depthGrowth]}>
-          <primitive object={clone2} />
-        </group>
-      )}
-    </>
-  )
-}
-
-function WasherPlaceholder({ layout, positionY }: Pick<SpecialElementProps, 'layout' | 'positionY'>) {
-  const dims = layout.specialElement.placeholderDimensions
-  if (!dims) return null
-  return (
-    <mesh position={[dims.w / 2, positionY + dims.h / 2, dims.d / 2]} castShadow receiveShadow>
-      <boxGeometry args={[dims.w, dims.h, dims.d]} />
-      <meshStandardMaterial color="#aaaaaa" roughness={0.6} metalness={0.1} />
-    </mesh>
+    <group position={[offsetX, offsetY, offsetZ]}>
+      <primitive object={clone} />
+    </group>
   )
 }
 
 export default function SpecialElement(props: SpecialElementProps) {
-  if (!props.layout.specialElement.glbPath) {
-    return <WasherPlaceholder layout={props.layout} positionY={props.positionY} />
-  }
-  return <SpecialElementInner key={props.layout.specialElement.glbPath} {...props} />
+  return <SpecialElementInner key={props.element.glbPath} {...props} />
 }

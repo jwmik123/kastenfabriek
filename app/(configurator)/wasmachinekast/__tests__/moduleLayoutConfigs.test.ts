@@ -3,96 +3,44 @@ import { getWasmLayoutConfig } from '../moduleLayoutConfigs'
 import { MODULE_FLOOR_Y } from '../../kledingkast/scene/closetConstants'
 
 describe('getWasmLayoutConfig — washer variants', () => {
-  describe('WASHER_SINGLE (id 11)', () => {
-    it('uses real washer GLB path', () => {
-      const cfg = getWasmLayoutConfig(11)!
-      expect(cfg.specialElement.glbPath).toBe('/objects/washermodules/ModuleWasherSingle.glb')
+  describe.each([
+    {
+      id: 11,
+      glb: '/objects/washermodules/ModuleWasherSingle.glb',
+    },
+    {
+      id: 13,
+      glb: '/objects/washermodules/ModuleWasherDouble.glb',
+    },
+    {
+      id: 14,
+      glb: '/objects/washermodules/ModuleWasherPlank.glb',
+    },
+  ])('washer id $id', ({ id, glb }) => {
+    it('exposes a single element with the expected GLB', () => {
+      const cfg = getWasmLayoutConfig(id)!
+      expect(cfg.elements).toHaveLength(1)
+      expect(cfg.elements[0].glbPath).toBe(glb)
     })
 
-    it('has centered: true', () => {
-      const cfg = getWasmLayoutConfig(11)!
-      expect(cfg.specialElement.centered).toBe(true)
+    it('element is centered', () => {
+      const cfg = getWasmLayoutConfig(id)!
+      expect(cfg.elements[0].centered).toBe(true)
     })
 
-    it('does not have stacked flag', () => {
-      const cfg = getWasmLayoutConfig(11)!
-      expect(cfg.specialElement.stacked).toBeFalsy()
+    it('uses fromBottom anchor at -MODULE_FLOOR_Y (world floor)', () => {
+      const cfg = getWasmLayoutConfig(id)!
+      expect(cfg.elements[0].anchor).toEqual({ type: 'fromBottom', d: -MODULE_FLOOR_Y })
     })
 
-    it('uses fixed fromBottom: 0 anchor', () => {
-      const cfg = getWasmLayoutConfig(11)!
-      expect(cfg.specialElement.anchor).toEqual({ type: 'fixed', fromBottom: -MODULE_FLOOR_Y })
+    it('preserves noDoorDepthOffset on the element', () => {
+      const cfg = getWasmLayoutConfig(id)!
+      expect(cfg.elements[0].noDoorDepthOffset).toBe(0.031)
     })
 
-    it('fill above is open', () => {
-      const cfg = getWasmLayoutConfig(11)!
+    it('fill zones are both open', () => {
+      const cfg = getWasmLayoutConfig(id)!
       expect(cfg.fillZone.above.type).toBe('open')
-    })
-
-    it('fill below is open', () => {
-      const cfg = getWasmLayoutConfig(11)!
-      expect(cfg.fillZone.below.type).toBe('open')
-    })
-  })
-
-  describe('WASHER_DOUBLE_GLB (id 13)', () => {
-    it('returns a config', () => {
-      expect(getWasmLayoutConfig(13)).toBeDefined()
-    })
-
-    it('uses double GLB path', () => {
-      const cfg = getWasmLayoutConfig(13)!
-      expect(cfg.specialElement.glbPath).toBe('/objects/washermodules/ModuleWasherDouble.glb')
-    })
-
-    it('has centered: true', () => {
-      const cfg = getWasmLayoutConfig(13)!
-      expect(cfg.specialElement.centered).toBe(true)
-    })
-
-    it('uses fixed fromBottom: 0 anchor', () => {
-      const cfg = getWasmLayoutConfig(13)!
-      expect(cfg.specialElement.anchor).toEqual({ type: 'fixed', fromBottom: -MODULE_FLOOR_Y })
-    })
-
-    it('fill above is open', () => {
-      const cfg = getWasmLayoutConfig(13)!
-      expect(cfg.fillZone.above.type).toBe('open')
-    })
-
-    it('fill below is open', () => {
-      const cfg = getWasmLayoutConfig(13)!
-      expect(cfg.fillZone.below.type).toBe('open')
-    })
-  })
-
-  describe('WASHER_PLANK (id 14)', () => {
-    it('returns a config', () => {
-      expect(getWasmLayoutConfig(14)).toBeDefined()
-    })
-
-    it('uses plank GLB path', () => {
-      const cfg = getWasmLayoutConfig(14)!
-      expect(cfg.specialElement.glbPath).toBe('/objects/washermodules/ModuleWasherPlank.glb')
-    })
-
-    it('has centered: true', () => {
-      const cfg = getWasmLayoutConfig(14)!
-      expect(cfg.specialElement.centered).toBe(true)
-    })
-
-    it('uses fixed fromBottom: 0 anchor', () => {
-      const cfg = getWasmLayoutConfig(14)!
-      expect(cfg.specialElement.anchor).toEqual({ type: 'fixed', fromBottom: -MODULE_FLOOR_Y })
-    })
-
-    it('fill above is open', () => {
-      const cfg = getWasmLayoutConfig(14)!
-      expect(cfg.fillZone.above.type).toBe('open')
-    })
-
-    it('fill below is open', () => {
-      const cfg = getWasmLayoutConfig(14)!
       expect(cfg.fillZone.below.type).toBe('open')
     })
   })
