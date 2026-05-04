@@ -1,8 +1,11 @@
 import { describe, it, expect } from 'vitest'
 import {
   resolveElementPositions,
+  computeShelfPositions,
+  SHELF_THICKNESS,
   type ModuleLayoutConfig,
   type ElementBbox,
+  type FillZoneConfig,
 } from '../scene/moduleLayouts'
 
 const layoutWith = (
@@ -82,6 +85,52 @@ describe('resolveElementPositions', () => {
     expect(r.fillAbove.start).toBeCloseTo(0.6, 5)
   })
 
+  it('bboxTopAt anchor: bbox top sits at d', () => {
+    const layout = layoutWith([
+      { glbPath: '/x.glb', anchor: { type: 'bboxTopAt', d: 1.4 } },
+    ])
+    const bboxes: ElementBbox[] = [{ minY: 0, maxY: 0.5 }]
+    const r = resolveElementPositions(layout, 2.0, bboxes)
+    // bbox top at 1.4 → elementY (bbox bottom) = 1.4 - 0.5 = 0.9
+    expect(r.elementYs[0]).toBeCloseTo(0.9, 5)
+    expect(r.fillAbove.start).toBeCloseTo(1.4, 5)
+    expect(r.fillAbove.end).toBe(2.0)
+    expect(r.fillBelow.start).toBe(0)
+    expect(r.fillBelow.end).toBeCloseTo(0.9, 5)
+  })
+
+  it('midpoint anchor referencing a fromTop sibling', () => {
+    const layout = layoutWith([
+      { glbPath: '/top.glb', anchor: { type: 'fromTop', d: 0.35 } },
+      { glbPath: '/bot.glb', anchor: { type: 'midpoint', refIndex: 0 } },
+    ])
+    const bboxes: ElementBbox[] = [
+      { minY: 0, maxY: 0.05 }, // top rod, height 0.05
+      { minY: 0, maxY: 0.05 }, // bottom rod, height 0.05
+    ]
+    const roofY = 2.0
+    const r = resolveElementPositions(layout, roofY, bboxes)
+    // top rod bbox top = roofY - 0.35 = 1.65; elementY = 1.6
+    expect(r.elementYs[0]).toBeCloseTo(1.6, 5)
+    // midpoint(0, 1.65) = 0.825 → bottom rod bbox top = 0.825; elementY = 0.825 - 0.05 = 0.775
+    expect(r.elementYs[1]).toBeCloseTo(0.775, 5)
+  })
+
+  it('FillShelves explicit startY overrides fillAbove.start', () => {
+    const layout = layoutWith(
+      [{ glbPath: '/desk.glb', anchor: { type: 'fromBottom', d: 0 } }],
+      {
+        above: { type: 'shelves', spacing: 0.35, startY: 1.75 },
+        below: { type: 'open' },
+      },
+    )
+    const bboxes: ElementBbox[] = [{ minY: 0, maxY: 0.7 }]
+    const r = resolveElementPositions(layout, 2.4, bboxes)
+    // Default fillAbove.start would be 0.7 (bbox top); override pushes to 1.75.
+    expect(r.fillAbove.start).toBe(1.75)
+    expect(r.fillAbove.end).toBe(2.4)
+  })
+
   it('two elements (slice 1 not used yet, but resolver supports it)', () => {
     const layout = layoutWith([
       { glbPath: '/a.glb', anchor: { type: 'fromBottom', d: 0 } },
@@ -97,5 +146,46 @@ describe('resolveElementPositions', () => {
     expect(r.fillAbove.start).toBeCloseTo(1.05, 5)
     // fillBelow.end = min(0, 1.0) = 0 → empty
     expect(r.fillBelow.end).toBe(0)
+  })
+})
+
+describe('computeShelfPositions', () => {
+  const open: FillZoneConfig = { type: 'open' }
+
+  it('open returns []', () => {
+    expect(computeShelfPositions(open, 0, 2, false)).toEqual([])
+  })
+
+  it('fixedShelves returns positions verbatim', () => {
+    const cfg: FillZoneConfig = { type: 'fixedShelves', positions: [0.35, 1.05] }
+    expect(computeShelfPositions(cfg, 0, 2, false)).toEqual([0.35, 1.05])
+  })
+
+  it('shelves without explicit startY: floor-aligned past startY', () => {
+    const cfg: FillZoneConfig = { type: 'shelves', spacing: 0.35 }
+    // startY = 0.7 → firstIndex = round(0.7/0.35)+1 = 3 → first shelf at 1.05
+    const out = computeShelfPositions(cfg, 0.7, 2.4, true)
+    expect(out[0]).toBeCloseTo(1.05, 5)
+    expect(out[1]).toBeCloseTo(1.4, 5)
+  })
+
+  it('shelves with explicit startY: first shelf at exactly startY', () => {
+    const cfg: FillZoneConfig = { type: 'shelves', spacing: 0.35, startY: 1.75 }
+    const out = computeShelfPositions(cfg, 1.75, 2.4, true)
+    expect(out[0]).toBe(1.75)
+    expect(out[1]).toBeCloseTo(2.1, 5)
+  })
+
+  it('shelves: !fillToTop drops last when gap to endY < spacing', () => {
+    const cfg: FillZoneConfig = { type: 'shelves', spacing: 0.35 }
+    // endY = 1.5; positions before drop: [0.35, 0.7, 1.05, 1.4]
+    // last 1.4: gap = 1.5 - (1.4 + 0.009) = 0.091 < 0.35 → dropped
+    const out = computeShelfPositions(cfg, 0, 1.5, false)
+    expect(out[out.length - 1]).toBeCloseTo(1.05, 5)
+  })
+
+  it('shelves: zone height below 2*SHELF_THICKNESS returns []', () => {
+    const cfg: FillZoneConfig = { type: 'shelves', spacing: 0.35 }
+    expect(computeShelfPositions(cfg, 0, SHELF_THICKNESS, false)).toEqual([])
   })
 })

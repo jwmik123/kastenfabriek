@@ -2,7 +2,10 @@
 
 import { useMemo } from 'react'
 import type { FillZoneConfig } from '../../kledingkast/scene/moduleLayouts'
-import { SHELF_THICKNESS } from '../../kledingkast/scene/moduleLayouts'
+import {
+  SHELF_THICKNESS,
+  computeShelfPositions,
+} from '../../kledingkast/scene/moduleLayouts'
 import ClosetMaterial from '../materials/ClosetMaterial'
 
 interface FillZoneProps {
@@ -28,32 +31,12 @@ export default function FillZone({
   hasDoor,
   fillToTop = false,
 }: FillZoneProps) {
-  const shelfPositions = useMemo(() => {
-    if (config.type !== 'shelves') return []
+  const shelfPositions = useMemo(
+    () => computeShelfPositions(config, startY, endY, fillToTop),
+    [config, startY, endY, fillToTop],
+  )
 
-    const zoneHeight = endY - startY
-    if (zoneHeight <= SHELF_THICKNESS * 2) return []
-
-    const positions: number[] = []
-    const firstIndex = Math.round(startY / config.spacing) + 1
-    let y = firstIndex * config.spacing
-    while (y + SHELF_THICKNESS < endY) {
-      positions.push(y)
-      y += config.spacing
-    }
-
-    if (!fillToTop && positions.length > 0) {
-      const lastY = positions[positions.length - 1]
-      const gapAbove = endY - (lastY + SHELF_THICKNESS / 2)
-      if (gapAbove < config.spacing) {
-        positions.pop()
-      }
-    }
-
-    return positions
-  }, [config, startY, endY, fillToTop])
-
-  if (config.type === 'open' || shelfPositions.length === 0) return null
+  if (shelfPositions.length === 0) return null
 
   return (
     <>
