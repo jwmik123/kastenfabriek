@@ -93,11 +93,20 @@ function SideWallAssembly({ side, width, mainH, height, depth, p, needsTop }: {
     const kinkH = trapNaN(p.backDiagKinkHeight, `SideWall-${side}-kinkH`)
     const flatSectionDepth = trapNaN(p.backDiagFlatSectionDepth, `SideWall-${side}-flatSec`)
 
+    // When filler is active (no TC, flatSec below threshold), cap the front-top at the
+    // filler's front-top height (= shell height at fillerFrontZ) so side wall and filler
+    // panel stop at the same height at the front face.
+    const fillerActive = !needsTop && p.backDiagFlatSectionDepth < FILLER_FLAT_SEC_THRESHOLD
+    const fillerFrontZ = depth - CLOSET_INSIDE_INSET
+    const frontTopY = fillerActive
+      ? trapNaN(getBackDiagHeightAtZ(fillerFrontZ, p), `SideWall-${side}-frontTopY`)
+      : topH
+
     const shape = new THREE.Shape()
     shape.moveTo(depth / 2, 0)
     shape.lineTo(-depth / 2, 0)
-    shape.lineTo(-depth / 2, trapNaN(topH, `SideWall-${side}-topH`))
-    if (flatSectionDepth > 0) {
+    shape.lineTo(-depth / 2, trapNaN(frontTopY, `SideWall-${side}-frontTopY-shape`))
+    if (!fillerActive && flatSectionDepth > 0) {
       shape.lineTo(flatSectionDepth - depth / 2, topH)
     }
     shape.lineTo(depth / 2, kinkH)
@@ -106,7 +115,7 @@ function SideWallAssembly({ side, width, mainH, height, depth, p, needsTop }: {
     const geo = new THREE.ExtrudeGeometry(trapShape(shape, `SideWall-${side}-backDiag`), { depth: WALL, bevelEnabled: false })
     geo.rotateY(Math.PI / 2)
     return trapGeo(geo, `SideWall-${side}-backDiag-geo`)
-  }, [p.backDiagonal, p.backDiagKinkHeight, p.backDiagFlatSectionDepth, depth, mainH, height, needsTop])
+  }, [p, depth, mainH, height, needsTop, side])
 
   // ---- Side diagonal case (existing logic) ----
   const diagStartH = hasDiag
