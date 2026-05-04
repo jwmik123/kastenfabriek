@@ -2,7 +2,9 @@
 
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
+import type { BaseModuleSlot } from '../store/types'
 import { useClosetStore } from '../../kledingkast/store'
+import { useWasmachinekastStore } from '../../wasmachinekast/store'
 import {
   MODULE_FLOOR_Y,
   WALL,
@@ -74,17 +76,23 @@ export function computeFirstModuleBox(args: {
   )
 }
 
-export default function ModuleSpotlightTracker({
-  targetId = TOUR_MODULE_TARGET_ID,
-}: {
-  targetId?: string
-}) {
-  const widthCm = useClosetStore((s) => s.width)
-  const heightCm = useClosetStore((s) => s.height)
-  const depthCm = useClosetStore((s) => s.depth)
-  const moduleCount = useClosetStore((s) => s.moduleCount)
-  const modules = useClosetStore((s) => s.modules)
+interface SpotlightInputs {
+  widthCm: number
+  heightCm: number
+  depthCm: number
+  moduleCount: number
+  modules: Pick<BaseModuleSlot, 'layoutId'>[]
+  targetId: string
+}
 
+function SpotlightTrackerImpl({
+  widthCm,
+  heightCm,
+  depthCm,
+  moduleCount,
+  modules,
+  targetId,
+}: SpotlightInputs) {
   useFrame(({ camera, size }) => {
     if (typeof document === 'undefined') return
     const target = document.getElementById(targetId) as HTMLElement | null
@@ -109,4 +117,50 @@ export default function ModuleSpotlightTracker({
   })
 
   return null
+}
+
+export default function ModuleSpotlightTracker({
+  targetId = TOUR_MODULE_TARGET_ID,
+}: {
+  targetId?: string
+}) {
+  const widthCm = useClosetStore((s) => s.width)
+  const heightCm = useClosetStore((s) => s.height)
+  const depthCm = useClosetStore((s) => s.depth)
+  const moduleCount = useClosetStore((s) => s.moduleCount)
+  const modules = useClosetStore((s) => s.modules)
+
+  return (
+    <SpotlightTrackerImpl
+      widthCm={widthCm}
+      heightCm={heightCm}
+      depthCm={depthCm}
+      moduleCount={moduleCount}
+      modules={modules}
+      targetId={targetId}
+    />
+  )
+}
+
+export function WasmachinekastModuleSpotlightTracker({
+  targetId = TOUR_MODULE_TARGET_ID,
+}: {
+  targetId?: string
+}) {
+  const widthCm = useWasmachinekastStore((s) => s.width)
+  const heightCm = useWasmachinekastStore((s) => s.height)
+  const depthCm = useWasmachinekastStore((s) => s.depth)
+  const moduleCount = useWasmachinekastStore((s) => s.moduleCount)
+  const modules = useWasmachinekastStore((s) => s.modules)
+
+  return (
+    <SpotlightTrackerImpl
+      widthCm={widthCm}
+      heightCm={heightCm}
+      depthCm={depthCm}
+      moduleCount={moduleCount}
+      modules={modules}
+      targetId={targetId}
+    />
+  )
 }

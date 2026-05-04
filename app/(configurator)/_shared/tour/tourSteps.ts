@@ -26,38 +26,43 @@ function stepContent({ title, body, icon }: TourCopy) {
   return createElement('div', { className: 'flex flex-col gap-2' }, ...children)
 }
 
-export const kledingkastTourSteps: StepType[] = [
-  {
-    selector: '[data-tour="canvas-toolbar"]',
-    content: stepContent({
-      title: 'Bedieningsbalk',
-      body: 'Hier vind je knoppen voor zoomen, afmetingen, deuren en willekeurige indeling.',
-    }),
-    position: 'right',
-  },
-  {
-    selector: '[data-tour="canvas-area"]',
-    content: stepContent({
-      title: 'Bekijk je kast',
-      body: 'Sleep om de kast te draaien en bekijk hem van alle kanten.',
-      icon: 'hand',
-    }),
-    position: 'center',
-  },
-  {
-    selector: `#${TOUR_MODULE_TARGET_ID}`,
-    content: stepContent({
-      title: 'Pas modules aan',
-      body: 'Klik op een module om hem te wijzigen of te vervangen.',
-    }),
-    position: 'right',
-  },
-  {
-    selector: '[data-tour-active="next"]',
-    content: stepContent({
-      title: 'Volgende stap',
-      body: 'Klik op "Volgende" om door te gaan naar de volgende configuratiestap.',
-    }),
-    position: 'left',
-  },
-]
+function buildConfiguratorTourSteps(): StepType[] {
+  return [
+    {
+      selector: '[data-tour="canvas-toolbar"]',
+      content: stepContent({
+        title: 'Bedieningsbalk',
+        body: 'Hier vind je knoppen voor zoomen, afmetingen, deuren en willekeurige indeling.',
+      }),
+      position: 'right',
+    },
+    {
+      selector: '[data-tour="canvas-area"]',
+      content: stepContent({
+        title: 'Bekijk je kast',
+        body: 'Sleep om de kast te draaien en bekijk hem van alle kanten.',
+        icon: 'hand',
+      }),
+      position: 'center',
+    },
+    {
+      selector: `#${TOUR_MODULE_TARGET_ID}`,
+      content: stepContent({
+        title: 'Pas modules aan',
+        body: 'Klik op een module om hem te wijzigen of te vervangen.',
+      }),
+      position: 'right',
+    },
+    {
+      selector: '[data-tour-active="next"]',
+      content: stepContent({
+        title: 'Volgende stap',
+        body: 'Klik op "Volgende" om door te gaan naar de volgende configuratiestap.',
+      }),
+      position: 'left',
+    },
+  ]
+}
+
+export const kledingkastTourSteps: StepType[] = buildConfiguratorTourSteps()
+export const wasmachinekastTourSteps: StepType[] = buildConfiguratorTourSteps()

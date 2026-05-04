@@ -16,6 +16,10 @@ import CanvasToolbar from '../../_shared/components/CanvasToolbar'
 import CanvasPricePanel from '../components/CanvasPricePanel'
 import ModulePopover from '../components/ModulePopover'
 import {
+  WasmachinekastModuleSpotlightTracker,
+  TOUR_MODULE_TARGET_ID,
+} from '../../_shared/tour/MeshScreenTracker'
+import {
   WasmMeasurementProjectorLayer,
   WasmMeasurementsOverlayLayer,
   type ProjectedMap,
@@ -129,7 +133,7 @@ export default function WasmachinekastCanvas() {
   const projectedRef = useRef<ProjectedMap>({})
 
   return (
-    <div className="relative w-full h-full">
+    <div className="relative w-full h-full" data-tour="canvas-area">
       <ThreeCanvas onPointerMissed={() => setSelectedSlot(null)}>
         <WasmRoomWalls />
         <CameraSystem />
@@ -142,7 +146,15 @@ export default function WasmachinekastCanvas() {
         <Suspense>
           <WasmachinekastScene />
         </Suspense>
+        <WasmachinekastModuleSpotlightTracker />
       </ThreeCanvas>
+
+      <div
+        id={TOUR_MODULE_TARGET_ID}
+        aria-hidden
+        className="pointer-events-none absolute"
+        style={{ top: 0, left: 0, width: 0, height: 0 }}
+      />
 
       <WasmMeasurementsOverlayLayer projectedRef={projectedRef} />
       <CanvasToolbar />
