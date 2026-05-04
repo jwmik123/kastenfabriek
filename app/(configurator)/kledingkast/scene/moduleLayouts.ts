@@ -93,8 +93,11 @@ export const MODULE_LAYOUTS: ModuleLayoutConfig[] = [
     id: 4,
     label: 'Split + shelves',
     description: 'Split-vak onderin, planken erboven',
+    // Sit on module floor (was bboxTopAt(1.40) — that pushed bbox bottom into
+    // the plinth when the GLB exceeded 1.40m). The split GLB should be authored
+    // ~1.40m tall so its top still aligns with the L5 rod-at-140.
     elements: [
-      { glbPath: SPLIT_GLB, anchor: { type: 'bboxTopAt', d: 1.40 } },
+      { glbPath: SPLIT_GLB, anchor: { type: 'fromBottom', d: 0 } },
     ],
     fillZone: shelvesAbove,
     minSlotHeight: 1.40,
@@ -256,16 +259,22 @@ function applyOverrides(
 }
 
 /**
- * Pure shelf-position computer. Returns Y values (module-space) where shelves sit.
+ * Pure shelf-position computer. Returns Y values (module-space) where the TOP
+ * surface of each shelf sits. Shelf bottom = Y - SHELF_THICKNESS.
+ *
+ * Top-anchored so a 70 cm drawer's top edge lines up exactly with the second
+ * shelf top in a full-shelves module (both at Y = 0.70).
  *
  * Behavior by config type:
  *  - `open`: returns [].
- *  - `fixedShelves`: returns the authored positions verbatim.
- *  - `shelves` with explicit `startY`: first shelf at startY, step by spacing.
- *  - `shelves` without explicit `startY`: floor-aligned past startY (today's behavior).
+ *  - `fixedShelves`: returns the authored positions verbatim (each entry is
+ *    the shelf top).
+ *  - `shelves` with explicit `startY`: first shelf top at startY, step by spacing.
+ *  - `shelves` without explicit `startY`: shelf tops snap to multiples of
+ *    spacing strictly above startY.
  *
- * `fillToTop` only matters for `shelves`. When false, drops the last shelf if its
- * gap to endY is below `spacing`.
+ * `fillToTop` only matters for `shelves`. When false, drops the last shelf if
+ * its gap to endY is below `spacing`.
  */
 export function computeShelfPositions(
   config: FillZoneConfig,
@@ -286,18 +295,22 @@ export function computeShelfPositions(
   if (explicitStart) {
     y = startY
   } else {
+    // Snap to the nearest grid line, then step one full spacing up. Guarantees
+    // at least ~half a spacing of clearance above startY, so a slightly-undersized
+    // drawer (~0.685m) doesn't get a shelf 1cm above it — first shelf lands at
+    // the next "real" grid slot (e.g. 1.05).
     const firstIndex = Math.round(startY / config.spacing) + 1
     y = firstIndex * config.spacing
   }
 
-  while (y + SHELF_THICKNESS < endY) {
+  while (y < endY) {
     positions.push(y)
     y += config.spacing
   }
 
   if (!fillToTop && positions.length > 0) {
     const lastY = positions[positions.length - 1]
-    const gapAbove = endY - (lastY + SHELF_THICKNESS / 2)
+    const gapAbove = endY - lastY
     if (gapAbove < config.spacing) {
       positions.pop()
     }

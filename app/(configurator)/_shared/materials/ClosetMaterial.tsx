@@ -17,11 +17,11 @@ const TEXTURE_IDS = [
 ] as const
 
 const TEXTURE_PATHS: Record<string, string> = {
-  'h1199-thermo-eik': '/materials/H1199 ST12 Thermo eik zwartbruin.webp',
+  'h1199-thermo-eik': '/materials/H1199 ST12 Thermo eik zwartbruin.jpg',
   'h1714-lincoln-notelaar': '/materials/H1714 ST19 Lincoln notelaar.jpg',
-  'h3158-vicenza-eik-grijs': '/materials/H3158 ST19 Vicenza eik grijs.webp',
-  'h3165-vicenza-eik-licht': '/materials/H3165 ST12 Vicenza eik licht.webp',
-  'h3190-fineline-antraciet': '/materials/H3190 ST19 Fineline metallic antraciet.webp',
+  'h3158-vicenza-eik-grijs': '/materials/H3158 ST19 Vicenza eik grijs.jpg',
+  'h3165-vicenza-eik-licht': '/materials/H3165 ST12 Vicenza eik licht.jpg',
+  'h3190-fineline-antraciet': '/materials/H3190 ST19 Fineline metallic antraciet.jpg',
 }
 
 interface MaterialState {

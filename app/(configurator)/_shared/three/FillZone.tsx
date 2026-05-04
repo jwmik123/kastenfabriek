@@ -41,7 +41,8 @@ export default function FillZone({
   return (
     <>
       {shelfPositions.map((y, i) => (
-        <mesh key={i} position={[centerX, y + SHELF_THICKNESS / 2, centerZ]} castShadow receiveShadow>
+        // y is the shelf TOP in module-space; mesh center sits a half-thickness below.
+        <mesh key={i} position={[centerX, y - SHELF_THICKNESS / 2, centerZ]} castShadow receiveShadow>
           <boxGeometry args={[width, SHELF_THICKNESS, depth]} />
           <ClosetMaterial variant={hasDoor ? 'binnenkant' : 'buitenkant'} />
         </mesh>

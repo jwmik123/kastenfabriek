@@ -163,12 +163,21 @@ describe('computeShelfPositions', () => {
     expect(computeShelfPositions(cfg, 0, 2, false)).toEqual([0.35, 1.05])
   })
 
-  it('shelves without explicit startY: floor-aligned past startY', () => {
+  it('shelves without explicit startY: shelf TOPS snap to multiples of spacing strictly above startY', () => {
     const cfg: FillZoneConfig = { type: 'shelves', spacing: 0.35 }
-    // startY = 0.7 → firstIndex = round(0.7/0.35)+1 = 3 → first shelf at 1.05
+    // startY = 0.7 (drawer top) → first shelf top strictly above = 1.05
     const out = computeShelfPositions(cfg, 0.7, 2.4, true)
     expect(out[0]).toBeCloseTo(1.05, 5)
     expect(out[1]).toBeCloseTo(1.4, 5)
+  })
+
+  it('shelves: top at 70cm aligns with a 70cm drawer (full-shelves L1 case)', () => {
+    const cfg: FillZoneConfig = { type: 'shelves', spacing: 0.35 }
+    // startY = 0 (module floor) → shelf tops at 0.35, 0.70, 1.05 ...
+    const out = computeShelfPositions(cfg, 0, 2.4, true)
+    expect(out[0]).toBeCloseTo(0.35, 5)
+    expect(out[1]).toBeCloseTo(0.70, 5)
+    expect(out[2]).toBeCloseTo(1.05, 5)
   })
 
   it('shelves with explicit startY: first shelf at exactly startY', () => {
@@ -220,9 +229,9 @@ describe('MODULE_LAYOUTS (slice 3)', () => {
     expect(l.fillZone.below.type).toBe('open')
   })
 
-  it('L4 split: bboxTopAt(1.40)', () => {
+  it('L4 split: fromBottom(0) (sits on module floor; GLB sized to 1.40m)', () => {
     const l = getLayoutById(4)!
-    expect(l.elements[0].anchor).toEqual({ type: 'bboxTopAt', d: 1.40 })
+    expect(l.elements[0].anchor).toEqual({ type: 'fromBottom', d: 0 })
   })
 
   it('L6 rod+shelf: fromTop(0.35) and fixedShelves [0.35] below', () => {
