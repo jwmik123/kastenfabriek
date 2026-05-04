@@ -152,14 +152,15 @@ function buildBackDiagSlopePanelGeo(
   const xR =  W / 2
 
   // Inner face vertices (4)
-  // Inner face only — two triangles, CCW from room interior side.
+  // Winding flipped so the surface normal points down-and-forward into the room
+  // interior (visible from inside the closet looking up-and-back with FrontSide).
   const v = [
     xL, kinkH,   0,
     xR, kinkH,   0,
     xR, closetH, flatStartZ,
     xL, closetH, flatStartZ,
   ]
-  const idx = [0, 2, 1,  0, 3, 2]
+  const idx = [0, 1, 2,  0, 2, 3]
 
   const geo = new THREE.BufferGeometry()
   geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(v), 3))
