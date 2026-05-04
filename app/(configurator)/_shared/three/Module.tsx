@@ -363,14 +363,16 @@ export default function Module({ index, layout, hasDoor, span, diagParams: p, mi
     ? (index % 2 === 1 || isLastModule)
     : (moduleHasDiag ? leftWallH < rightWallH : (index % 2 === 1 || isLastModule)))
 
-  // Door profile for back diagonal: cap at moduleCapY (= mainHeight with TC, = fillerBottomY
-  // when filler is active without TC, = closetHeight otherwise).
+  // Door profile for back diagonal: door covers nearly to the shell height at its front
+  // face (which equals the filler-panel top edge), leaving a WALL-thickness gap below.
+  // With TC active, cap at mainHeight so the main-corpus door ends where TC begins.
+  // Door is intentionally NOT capped at moduleCapY — that cap is for module geometry only.
   const bdDoorProfile = useMemo((): Array<{ x: number; y: number }> => {
     if (!isBackDiag) return []
     const rawH = trapNaN(getBackDiagHeightAtZ(WALL + moduleDepth, p), `Module${index}-bdDoor-raw`)
-    const h = Math.max(0, Math.min(rawH, p.moduleCapY) - MODULE_FLOOR_Y - WALL)
+    const h = Math.max(0, (needsTop ? Math.min(rawH, p.mainHeight) : rawH) - MODULE_FLOOR_Y - WALL)
     return [{ x: 0, y: h }, { x: thisSlotW, y: h }]
-  }, [isBackDiag, moduleDepth, p, thisSlotW])
+  }, [isBackDiag, moduleDepth, needsTop, p, thisSlotW])
 
   const startX = -innerW / 2
   const x      = startX + slotOffset
