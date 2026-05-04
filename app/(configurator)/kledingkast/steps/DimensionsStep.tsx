@@ -6,6 +6,7 @@ import { Slider } from '@/components/ui/slider'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { cn } from '@/lib/utils'
 import { Info } from 'lucide-react'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import type { DiagonalSide } from '../scene/diagonalUtils'
 import { getWidthRange, getStartHeightRange, clamp, diagAmplification } from '../diagonalConstraints'
 import type { PlacementType } from '../store'
@@ -30,6 +31,7 @@ function DimensionInput({
   unit,
   onChange,
   hint,
+  tooltip,
 }: {
   label: string
   value: number
@@ -38,6 +40,7 @@ function DimensionInput({
   unit: string
   onChange: (v: number) => void
   hint?: string
+  tooltip?: string
 }) {
   const [draft, setDraft] = useState(String(value))
 
@@ -55,7 +58,23 @@ function DimensionInput({
   return (
     <div className="space-y-1">
       <div className="flex items-center gap-3">
-        <span className="w-16 shrink-0 text-sm font-medium">{label}</span>
+        <span className="w-16 shrink-0 text-sm font-medium flex items-center gap-1">
+          {label}
+          {tooltip && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button type="button" className="text-muted-foreground hover:text-foreground transition-colors">
+                    <Info className="size-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  {tooltip}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+        </span>
         <Slider
           min={min}
           max={max}
@@ -92,12 +111,14 @@ function DiagNumberInput({
   min,
   max,
   onChange,
+  tooltip,
 }: {
   label: string
   value: number
   min: number
   max: number
   onChange: (v: number) => void
+  tooltip?: string
 }) {
   const [draft, setDraft] = useState(String(value))
 
@@ -116,7 +137,23 @@ function DiagNumberInput({
 
   return (
     <div className="flex items-center gap-2">
-      <span className="w-24 text-sm text-muted-foreground shrink-0">{label}</span>
+      <span className="w-24 text-sm text-muted-foreground shrink-0 flex items-center gap-1">
+        {label}
+        {tooltip && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button type="button" className="text-muted-foreground hover:text-foreground transition-colors">
+                  <Info className="size-3.5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top">
+                {tooltip}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
+      </span>
       <input
         type="number"
         min={min}
@@ -147,8 +184,8 @@ const DIAGONAL_OPTIONS: { value: DiagonalSide; label: string }[] = [
 ]
 
 const PLACEMENT_OPTIONS: { value: PlacementType; label: string; hint: string }[] = [
-  { value: 'ingebouwd', label: 'Ingebouwd', hint: 'Zij- of achterwand schuin mogelijk' },
-  { value: 'vrijstaand', label: 'Vrijstaand', hint: 'Alleen achterwand schuin mogelijk' },
+  { value: 'ingebouwd', label: 'Ingebouwd', hint: '' },
+  { value: 'vrijstaand', label: 'Vrijstaand', hint: '' },
 ]
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -290,6 +327,7 @@ export default function DimensionsStep() {
           max={(sc?.maxHeight ?? 275) + topMax}
           unit="cm"
           onChange={setHeight}
+          tooltip="Bovenkast wordt automatisch toegevoegd bij hoogte > 275 cm"
         />
         <DimensionInput
           label="Diepte"
@@ -300,11 +338,6 @@ export default function DimensionsStep() {
           onChange={setDepth}
         />
 
-        {/* Always-visible info banner */}
-        <div className="flex items-start gap-2 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 px-3 py-2.5 rounded-md">
-          <Info className="size-4 shrink-0 mt-0.5" />
-          <span className="text-xs">Bovenkast wordt automatisch toegevoegd bij hoogte &gt; 275 cm</span>
-        </div>
       </section>
 
       {/* ── Section 3: Schuine wand ── */}
@@ -402,6 +435,7 @@ export default function DimensionsStep() {
                   min={backDiagFlatRange.min}
                   max={backDiagFlatRange.max}
                   onChange={setBackDiagFlatSectionDepth}
+                  tooltip="Diepte van het vlakke gedeelte van de bovenste plank in de kast."
                 />
               </div>
             )}

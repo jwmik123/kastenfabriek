@@ -14,7 +14,7 @@ export default function Home() {
     <>
       {/* Promo Strip */}
       
-    <div className="relative w-full h-screen -mt-6 font-poppins" data-nav-theme="dark">
+    <div className="relative w-full h-[90vh] -mt-6 font-poppins" data-nav-theme="dark">
       {/* <Image src="/homeplaceholder.png" alt="Home" fill className="object-cover" /> */}
        
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -58,9 +58,9 @@ export default function Home() {
     </div>
 
     {/* Promo Strip */}
-    <div className="w-full bg-primary text-white py-6 px-6 flex items-center justify-center gap-3 text-xl font-semibold">
+    <div className="w-full bg-amber-500 text-white py-6 px-6 flex items-center justify-center gap-3 text-xl font-semibold">
       <Hammer size={22} className="flex-shrink-0" />
-      <span>Alle kasten nu met <strong>gratis montage</strong> bij oplevering!</span>
+      <span>Alle kasten nu met <b>gratis montage</b> bij oplevering! Tot wel <b className="text-primary">€2160,-</b> korting!</span>
     </div>
 
     <ProductOptionsSection

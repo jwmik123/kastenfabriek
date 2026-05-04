@@ -80,7 +80,7 @@ const Navigation = () => {
 
   return (
     <div className="fixed top-0 left-0 right-0 z-30 font-poppins pointer-events-none">
-      <div className="w-full bg-primary text-amber-300 py-2.5 px-6 flex items-center justify-center gap-2 text-sm font-medium pointer-events-auto">
+      <div className="w-full bg-primary text-white py-2.5 px-6 flex items-center justify-center gap-2 text-sm font-medium pointer-events-auto">
         <Hammer size={14} className="flex-shrink-0" />
         <span>Alle kasten nu met <strong>gratis montage</strong> bij oplevering!</span>
       </div>

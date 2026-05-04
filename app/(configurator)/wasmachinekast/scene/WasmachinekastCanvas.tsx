@@ -8,6 +8,7 @@ import { useWasmachinekastStore } from '../store'
 import { setGlCanvas, captureNow, tickCapture, setCameraControls } from '@/lib/canvas-capture'
 import ThreeCanvas from '../../_shared/canvas/ThreeCanvas'
 import ThreeLoader from '../../_shared/canvas/ThreeLoader'
+import CanvasFreezeGuard from '../../_shared/canvas/CanvasFreezeGuard'
 import PostProcessing from '../../_shared/effects/PostProcessing'
 import WebGPURenderGuard from '../../_shared/effects/WebGPURenderGuard'
 import WasmachinekastScene from './WasmachinekastScene'
@@ -134,20 +135,28 @@ export default function WasmachinekastCanvas() {
 
   return (
     <div className="relative w-full h-full" data-tour="canvas-area">
-      <ThreeCanvas onPointerMissed={() => setSelectedSlot(null)}>
-        <WasmRoomWalls />
-        <CameraSystem />
-        <RaycasterSetup />
-        <ScreenshotCapture />
-        <PostProcessing />
-        <WebGPURenderGuard />
-        <WasmMeasurementProjectorLayer projectedRef={projectedRef} />
+      <CanvasFreezeGuard>
+        {({ canvasKey, monitorProps, Monitor }) => (
+          <ThreeCanvas
+            key={canvasKey}
+            onPointerMissed={() => setSelectedSlot(null)}
+          >
+            <Monitor {...monitorProps} />
+            <WasmRoomWalls />
+            <CameraSystem />
+            <RaycasterSetup />
+            <ScreenshotCapture />
+            <PostProcessing />
+            <WebGPURenderGuard />
+            <WasmMeasurementProjectorLayer projectedRef={projectedRef} />
 
-        <Suspense>
-          <WasmachinekastScene />
-        </Suspense>
-        <WasmachinekastModuleSpotlightTracker />
-      </ThreeCanvas>
+            <Suspense>
+              <WasmachinekastScene />
+            </Suspense>
+            <WasmachinekastModuleSpotlightTracker />
+          </ThreeCanvas>
+        )}
+      </CanvasFreezeGuard>
 
       <div
         id={TOUR_MODULE_TARGET_ID}

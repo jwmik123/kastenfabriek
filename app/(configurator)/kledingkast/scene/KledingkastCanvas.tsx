@@ -8,6 +8,7 @@ import { useClosetStore } from '../store'
 import { setGlCanvas, captureNow, tickCapture, setCameraControls } from '@/lib/canvas-capture'
 import ThreeCanvas from '../../_shared/canvas/ThreeCanvas'
 import ThreeLoader from '../../_shared/canvas/ThreeLoader'
+import CanvasFreezeGuard from '../../_shared/canvas/CanvasFreezeGuard'
 import ClosetScene from './ClosetScene'
 import RoomWalls from './RoomWalls'
 import SilhouettePlane from './SilhouettePlane'
@@ -135,21 +136,29 @@ export default function KledingkastCanvas() {
 
   return (
     <div className="relative w-full h-full" data-tour="canvas-area">
-      <ThreeCanvas onPointerMissed={() => setSelectedSlot(null)}>
-        <RoomWalls />
-        <CameraSystem />
-        <RaycasterSetup />
-        <ScreenshotCapture />
-        <PostProcessing />
-        <WebGPURenderGuard />
-        <MeasurementProjectorLayer projectedRef={projectedRef} />
+      <CanvasFreezeGuard>
+        {({ canvasKey, monitorProps, Monitor }) => (
+          <ThreeCanvas
+            key={canvasKey}
+            onPointerMissed={() => setSelectedSlot(null)}
+          >
+            <Monitor {...monitorProps} />
+            <RoomWalls />
+            <CameraSystem />
+            <RaycasterSetup />
+            <ScreenshotCapture />
+            <PostProcessing />
+            <WebGPURenderGuard />
+            <MeasurementProjectorLayer projectedRef={projectedRef} />
 
-        <Suspense>
-          <ClosetScene />
-          <SilhouettePlane />
-        </Suspense>
-        <ModuleSpotlightTracker />
-      </ThreeCanvas>
+            <Suspense>
+              <ClosetScene />
+              <SilhouettePlane />
+            </Suspense>
+            <ModuleSpotlightTracker />
+          </ThreeCanvas>
+        )}
+      </CanvasFreezeGuard>
 
       <div
         id={TOUR_MODULE_TARGET_ID}
