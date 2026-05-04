@@ -9,22 +9,7 @@ import { useStripWarmth } from './StripWarmthContext'
 import { createStripWarmthUniforms, buildWarmthNode } from '../shaders/stripWarmth'
 import { WardrobeRootGroup, useWardrobeInverse } from './WardrobeRoot'
 import { buildTriplanarNodes } from './triplanar'
-
-const TEXTURE_IDS = [
-  'h1199-thermo-eik',
-  'h1714-lincoln-notelaar',
-  'h3158-vicenza-eik-grijs',
-  'h3165-vicenza-eik-licht',
-  'h3190-fineline-antraciet',
-] as const
-
-const TEXTURE_PATHS: Record<string, string> = {
-  'h1199-thermo-eik': '/materials/H1199 ST12 Thermo eik zwartbruin.jpg',
-  'h1714-lincoln-notelaar': '/materials/H1714 ST19 Lincoln notelaar.jpg',
-  'h3158-vicenza-eik-grijs': '/materials/H3158 ST19 Vicenza eik grijs.jpg',
-  'h3165-vicenza-eik-licht': '/materials/H3165 ST12 Vicenza eik licht.jpg',
-  'h3190-fineline-antraciet': '/materials/H3190 ST19 Fineline metallic antraciet.jpg',
-}
+import { VENEERS } from './veneers'
 
 // Slice 1 globals — slice 2 replaces these with per-veneer registry values.
 // ANISOTROPY and BUMP_SCALE held at 0: anisotropy needs anisotropyNode wired
@@ -44,6 +29,8 @@ interface MaterialState {
   binnenkantMaterialId: string
   lightStripsEnabled: boolean
   textureMaps: Record<string, THREE.Texture>
+  normalMaps: Record<string, THREE.Texture>
+  roughnessMaps: Record<string, THREE.Texture>
   chromeMaterial: THREE.MeshPhysicalMaterial
   glassMaterial: THREE.MeshPhysicalMaterial
 }
@@ -93,23 +80,49 @@ export function ClosetMaterialProvider({
   children: ReactNode
 }) {
 
-  const loadedTextures = useLoader(THREE.TextureLoader, Object.values(TEXTURE_PATHS))
+  // Flatten the registry into a single deterministic path list so one
+  // useLoader call covers color + optional normal + optional roughness
+  // for every veneer. The layout array remembers which slot each path
+  // belongs to so we can split the loaded textures back per-veneer.
+  const { paths: allPaths, layout: pathLayout } = useMemo(() => {
+    const paths: string[] = []
+    const layout: { id: string; kind: 'color' | 'normal' | 'roughness' }[] = []
+    for (const v of VENEERS) {
+      paths.push(v.colorPath)
+      layout.push({ id: v.id, kind: 'color' })
+      if (v.normalPath) {
+        paths.push(v.normalPath)
+        layout.push({ id: v.id, kind: 'normal' })
+      }
+      if (v.roughnessPath) {
+        paths.push(v.roughnessPath)
+        layout.push({ id: v.id, kind: 'roughness' })
+      }
+    }
+    return { paths, layout }
+  }, [])
 
-  const textureMaps = useMemo(() => {
-    const map: Record<string, THREE.Texture> = {}
-    TEXTURE_IDS.forEach((id, i) => {
+  const loadedTextures = useLoader(THREE.TextureLoader, allPaths)
+
+  const { textureMaps, normalMaps, roughnessMaps } = useMemo(() => {
+    const textureMaps: Record<string, THREE.Texture> = {}
+    const normalMaps: Record<string, THREE.Texture> = {}
+    const roughnessMaps: Record<string, THREE.Texture> = {}
+    pathLayout.forEach((entry, i) => {
       const tex = loadedTextures[i]
-      tex.colorSpace = THREE.SRGBColorSpace
-      // Triplanar drives sampling via uvNode; wrap modes still apply per fragment.
+      // Color is sRGB; normal/roughness are linear data.
+      tex.colorSpace = entry.kind === 'color' ? THREE.SRGBColorSpace : THREE.NoColorSpace
       tex.wrapS = THREE.RepeatWrapping
       tex.wrapT = THREE.RepeatWrapping
       tex.center.set(0, 0)
       tex.rotation = 0
       tex.needsUpdate = true
-      map[id] = tex
+      if (entry.kind === 'color') textureMaps[entry.id] = tex
+      else if (entry.kind === 'normal') normalMaps[entry.id] = tex
+      else roughnessMaps[entry.id] = tex
     })
-    return map
-  }, [loadedTextures])
+    return { textureMaps, normalMaps, roughnessMaps }
+  }, [loadedTextures, pathLayout])
 
   const chromeMaterial = useMemo(() => new THREE.MeshPhysicalMaterial({
     color: 0xd3d3d3,
@@ -132,8 +145,8 @@ export function ClosetMaterialProvider({
   }), [])
 
   const state = useMemo<MaterialState>(
-    () => ({ buitenkantMaterialId, binnenkantMaterialId, lightStripsEnabled, textureMaps, chromeMaterial, glassMaterial }),
-    [buitenkantMaterialId, binnenkantMaterialId, lightStripsEnabled, textureMaps, chromeMaterial, glassMaterial],
+    () => ({ buitenkantMaterialId, binnenkantMaterialId, lightStripsEnabled, textureMaps, normalMaps, roughnessMaps, chromeMaterial, glassMaterial }),
+    [buitenkantMaterialId, binnenkantMaterialId, lightStripsEnabled, textureMaps, normalMaps, roughnessMaps, chromeMaterial, glassMaterial],
   )
 
   return (
@@ -169,17 +182,27 @@ function applyPhysicalProps(
 
   if (materialId && ctx?.textureMaps[materialId]) {
     const tex = ctx.textureMaps[materialId]
-    const { colorNode } = buildTriplanarNodes({
+    const normalTex = ctx.normalMaps[materialId]
+    const roughTex = ctx.roughnessMaps[materialId]
+    const { colorNode, normalNode, roughnessNode } = buildTriplanarNodes({
       texture: tex,
+      normalTexture: normalTex,
+      roughnessTexture: roughTex,
       wardrobeInverse,
       tileU: TILE_U,
       tileV: TILE_V,
       bumpScale: BUMP_SCALE,
     })
     mat.colorNode = colorNode as any
-    // normalNode left at default (normalLocal). Luminance-bump wiring
-    // returns in slice 2 once per-veneer bumpScale + seam-safe sampling
-    // are in place.
+    // Real normal map → wire normalNode. Without one, leave normalNode
+    // at default (normalLocal); the luminance-bump fallback returns in
+    // slice 2 once per-veneer bumpScale + seam-safe sampling are in place.
+    if (normalTex) {
+      mat.normalNode = normalNode as any
+    }
+    if (roughnessNode) {
+      mat.roughnessNode = roughnessNode as any
+    }
   } else {
     mat.colorNode = tslColor(MATERIAL_COLORS[materialId ?? 'premium-wit'] ?? '#ffffff') as any
   }

@@ -75,6 +75,8 @@ type AnyNode = ReturnType<typeof uniform>
 
 export interface TriplanarBuilderInput {
   texture: THREE.Texture
+  normalTexture?: THREE.Texture
+  roughnessTexture?: THREE.Texture
   wardrobeInverse: AnyNode
   tileU: number
   tileV: number
@@ -85,6 +87,7 @@ export interface TriplanarBuilderInput {
 export interface TriplanarNodes {
   colorNode: AnyNode
   normalNode: AnyNode
+  roughnessNode: AnyNode | null
   anisotropyTangentNode: AnyNode
 }
 
@@ -100,6 +103,8 @@ export interface TriplanarNodes {
  */
 export function buildTriplanarNodes({
   texture,
+  normalTexture,
+  roughnessTexture,
   wardrobeInverse,
   tileU,
   tileV,
@@ -138,15 +143,48 @@ export function buildTriplanarNodes({
     .add((cZ as any).mul((w as any).z))
     .toVar('triplanarColor')
 
-  // Luminance-bump helper. Derivatives of perceived luminance perturb
-  // the local normal by `bumpScale`. Used until real normal maps land.
-  const lum = dot(colorNode as any, vec3(0.299, 0.587, 0.114))
-  const bs = uniform(bumpScale)
-  const gx = (dFdx(lum as any) as any).mul(bs)
-  const gy = (dFdy(lum as any) as any).mul(bs)
-  const normalNode = normalize(
-    (normalLocal as any).add(vec3(gx, gy, 0)),
-  ) as any
+  // Normal: real triplanar-sampled normal map when supplied, else
+  // luminance-bump fallback derived from color derivatives.
+  let normalNode: AnyNode
+  if (normalTexture) {
+    // Decode each projection's tangent-space sample to [-1,1] and blend
+    // by the same triplanar weights, then perturb normalLocal. This is
+    // approximate (RNM/UDN would be more correct on near-45° surfaces),
+    // but sufficient for the slice 3 plumbing — supplier maps are not
+    // wired to any veneer today.
+    const decode = (n: any) => (n as any).mul(2).sub(1)
+    const nX = decode((tslTexture(normalTexture, uvX as any) as any).rgb)
+    const nY = decode((tslTexture(normalTexture, uvY as any) as any).rgb)
+    const nZ = decode((tslTexture(normalTexture, uvZ as any) as any).rgb)
+    const nBlend = (nX as any)
+      .mul((w as any).x)
+      .add((nY as any).mul((w as any).y))
+      .add((nZ as any).mul((w as any).z))
+    normalNode = normalize((normalLocal as any).add(nBlend)) as any
+  } else {
+    // Luminance-bump helper. Derivatives of perceived luminance perturb
+    // the local normal by `bumpScale`. Used until real normal maps land.
+    const lum = dot(colorNode as any, vec3(0.299, 0.587, 0.114))
+    const bs = uniform(bumpScale)
+    const gx = (dFdx(lum as any) as any).mul(bs)
+    const gy = (dFdy(lum as any) as any).mul(bs)
+    normalNode = normalize(
+      (normalLocal as any).add(vec3(gx, gy, 0)),
+    ) as any
+  }
+
+  // Roughness: triplanar-sampled scalar (green channel by convention)
+  // when supplied; otherwise null — caller falls back to material.roughness.
+  let roughnessNode: AnyNode | null = null
+  if (roughnessTexture) {
+    const rX = (tslTexture(roughnessTexture, uvX as any) as any).g
+    const rY = (tslTexture(roughnessTexture, uvY as any) as any).g
+    const rZ = (tslTexture(roughnessTexture, uvZ as any) as any).g
+    roughnessNode = (rX as any)
+      .mul((w as any).x)
+      .add((rY as any).mul((w as any).y))
+      .add((rZ as any).mul((w as any).z)) as any
+  }
 
   // Anisotropy tangent in world space — grain V direction, blended.
   // X/Z faces want world-Y, Y faces want world-Z.
@@ -159,5 +197,5 @@ export function buildTriplanarNodes({
     (tZ as any).mul((w as any).z),
   ) as any
 
-  return { colorNode: colorNode as any, normalNode, anisotropyTangentNode }
+  return { colorNode: colorNode as any, normalNode, roughnessNode, anisotropyTangentNode }
 }
