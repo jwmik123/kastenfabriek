@@ -5,6 +5,7 @@ import { Separator } from '@/components/ui/separator'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { ZoomIn, ZoomOut, Ruler, DoorOpen, DoorClosed, Dices } from 'lucide-react'
+import HelpButton from '../tour/HelpButton'
 
 function ToolBtn({
   onClick,
@@ -53,7 +54,7 @@ export default function CanvasToolbar() {
   const randomFill = useConfiguratorStore((s) => s.randomFill)
 
   return (
-    <div className="absolute left-4 top-1/3 flex flex-col items-center gap-0.5 bg-background/90 backdrop-blur-sm border border-border rounded-xl p-1.5 shadow-lg">
+    <div data-tour="canvas-toolbar" className="absolute left-4 top-1/3 flex flex-col items-center gap-0.5 bg-background/90 backdrop-blur-sm border border-border rounded-xl p-1.5 shadow-lg">
       <ToolBtn onClick={zoomIn} disabled={userZoom <= 0} tooltip="Inzoomen">
         <ZoomIn className="size-5" />
       </ToolBtn>
@@ -82,6 +83,10 @@ export default function CanvasToolbar() {
       <ToolBtn onClick={randomFill} tooltip="Willekeurige indeling">
         <Dices className="size-5" />
       </ToolBtn>
+
+      <Separator orientation="horizontal" className="w-6 my-1" />
+
+      <HelpButton />
     </div>
   )
 }

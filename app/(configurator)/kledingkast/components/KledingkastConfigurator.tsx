@@ -7,6 +7,8 @@ import type { ClosetConfigSnapshot } from '@/lib/cart/types'
 import { useClosetStore } from '../store'
 import { ConfiguratorStoreContext } from '../../_shared/store/context'
 import ConfiguratorTopBar from '../../_shared/components/ConfiguratorTopBar'
+import ConfiguratorTourProvider from '../../_shared/tour/ConfiguratorTourProvider'
+import { kledingkastTourSteps } from '../../_shared/tour/tourSteps'
 import StepWizard from './StepWizard'
 import MobileSheet from './MobileSheet'
 
@@ -112,23 +114,25 @@ export default function KledingkastConfigurator({ pricingData, editConfig, editI
 
   return (
     <ConfiguratorStoreContext.Provider value={useClosetStore}>
-      <div className="w-full h-[90vh] flex flex-col">
-        <ConfiguratorTopBar
-          steps={TOP_BAR_STEPS}
-          currentStep={step}
-          onStep={setStep}
-          productName="Kledingkast"
-        />
-        <div className="flex flex-1 min-h-0 flex-col lg:flex-row">
-          <div className="w-full h-full md:h-[50vh] lg:h-full flex-1 min-w-0">
-            <ThreeCanvas />
-          </div>
-          <div className="hidden md:block relative w-full lg:w-[420px] lg:max-w-[420px] shrink-0 h-full bg-white overflow-y-auto">
-            <StepWizard />
+      <ConfiguratorTourProvider steps={kledingkastTourSteps}>
+        <div className="w-full h-[90vh] flex flex-col">
+          <ConfiguratorTopBar
+            steps={TOP_BAR_STEPS}
+            currentStep={step}
+            onStep={setStep}
+            productName="Kledingkast"
+          />
+          <div className="flex flex-1 min-h-0 flex-col lg:flex-row">
+            <div className="w-full h-full md:h-[50vh] lg:h-full flex-1 min-w-0">
+              <ThreeCanvas />
+            </div>
+            <div className="hidden md:block relative w-full lg:w-[420px] lg:max-w-[420px] shrink-0 h-full bg-white overflow-y-auto">
+              <StepWizard />
+            </div>
           </div>
         </div>
-      </div>
-      <MobileSheet />
+        <MobileSheet />
+      </ConfiguratorTourProvider>
     </ConfiguratorStoreContext.Provider>
   )
 }
