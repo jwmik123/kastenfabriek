@@ -3,7 +3,7 @@
 import { useMemo } from 'react'
 import * as THREE from 'three/webgpu'
 import { useClosetStore } from '../store'
-import { getDiagHeightAt, CORPUS_WALL } from './diagonalUtils'
+import { getDiagHeightAt, getBackDiagHeightAtZ, CORPUS_WALL, FILLER_FLAT_SEC_THRESHOLD } from './diagonalUtils'
 import type { DiagParams } from './diagonalUtils'
 
 export const ROOM_WALL_THICKNESS = 0.01
@@ -253,6 +253,15 @@ export default function RoomWalls() {
   // Matches getBackDiagHeightAtZ: flatStartZ = outerDepth - backDiagFlatSectionDepth.
   const flatStartZ = D - flatSec
 
+  // Filler-active mirror of the corpus side wall: cap room side wall front-top at the
+  // shell height at fillerFrontZ so room and corpus stop at the same height at the
+  // closet's front face. Skips the flat-section kink for the same reason.
+  const CLOSET_INSIDE_INSET_M = 0.025
+  const fillerActive = backDiagonal && !needsTop && flatSec < FILLER_FLAT_SEC_THRESHOLD
+  const wallFrontTopY = fillerActive
+    ? getBackDiagHeightAtZ(D - CLOSET_INSIDE_INSET_M, p)
+    : topH
+
   // Horizontal reach of each diagonal slope when extrapolated to y=H (ceiling height).
   // Uses the same slope angle as the corpus (defined by mainH and stored topWidth).
   // Shared by wall shapes and ceiling trim so they meet exactly.
@@ -277,8 +286,8 @@ export default function RoomWalls() {
   const leftWallGeo = useMemo(() => {
     if (backDiagonal) {
       const pts: [number, number][] = [
-        [-T, 0], [D + RF, 0], [D + RF, H], [D, topH],
-        ...(flatSec > 0.001 ? [[flatStartZ, topH] as [number, number]] : []),
+        [-T, 0], [D + RF, 0], [D + RF, H], [D, wallFrontTopY],
+        ...(!fillerActive && flatSec > 0.001 ? [[flatStartZ, topH] as [number, number]] : []),
         [0, kinkH],
         [-T, kinkH],
       ]
@@ -291,14 +300,14 @@ export default function RoomWalls() {
     }
     const pts: [number, number][] = [[-T, 0], [D + RF, 0], [D + RF, H], [-T, H]]
     return buildSideWallGeo(pts, -W / 2, -W / 2 - T)
-  }, [backDiagonal, hasLeft, W, H, D, T, RF, kinkH, flatSec, flatStartZ, topH, p.leftDiagStartHeight, leftSlopeTopX])
+  }, [backDiagonal, hasLeft, W, H, D, T, RF, kinkH, flatSec, flatStartZ, topH, wallFrontTopY, fillerActive, p.leftDiagStartHeight, leftSlopeTopX])
 
   // ── Right wall ────────────────────────────────────────────────────────────
   const rightWallGeo = useMemo(() => {
     if (backDiagonal) {
       const pts: [number, number][] = [
-        [-T, 0], [D + RF, 0], [D + RF, H], [D, topH],
-        ...(flatSec > 0.001 ? [[flatStartZ, topH] as [number, number]] : []),
+        [-T, 0], [D + RF, 0], [D + RF, H], [D, wallFrontTopY],
+        ...(!fillerActive && flatSec > 0.001 ? [[flatStartZ, topH] as [number, number]] : []),
         [0, kinkH],
         [-T, kinkH],
       ]
@@ -311,7 +320,7 @@ export default function RoomWalls() {
     }
     const pts: [number, number][] = [[-T, 0], [D + RF, 0], [D + RF, H], [-T, H]]
     return buildSideWallGeo(pts, W / 2, W / 2 + T)
-  }, [backDiagonal, hasRight, W, H, D, T, RF, kinkH, flatSec, flatStartZ, topH, p.rightDiagStartHeight, rightSlopeTopX])
+  }, [backDiagonal, hasRight, W, H, D, T, RF, kinkH, flatSec, flatStartZ, topH, wallFrontTopY, fillerActive, p.rightDiagStartHeight, rightSlopeTopX])
 
   // ── Back wall ──────────────────────────────────────────────────────────────
   // XY cross-section polygon (world X = width axis, Y = height axis).
