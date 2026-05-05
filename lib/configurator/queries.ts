@@ -50,7 +50,8 @@ export const pricingDataQuery = groq`{
     "imageUrl": image.asset->url,
     price,
     allowedMaterials,
-    bodyColor
+    bodyColor,
+    meshId
   }
 }`;
 

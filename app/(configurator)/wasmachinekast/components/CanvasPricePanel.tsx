@@ -25,7 +25,7 @@ export default function CanvasPricePanel() {
     }
     if (step === 3) {
       const doorCount = modules.filter((m) => m.hasDoor).length
-      return { label: 'Modules', value: `${moduleCount} modules · ${doorCount} deuren` }
+      return { label: 'Indeling', value: `${moduleCount} modules · ${doorCount} deuren` }
     }
     return undefined
   })()

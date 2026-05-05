@@ -63,6 +63,7 @@ describe('METALS registry', () => {
 const EXPECTED_LEATHER_IDS: LeatherColor[] = [
   'leather-pink',
   'leather-beige',
+  'leather-brown',
   'leather-light-gray',
   'leather-black',
 ]

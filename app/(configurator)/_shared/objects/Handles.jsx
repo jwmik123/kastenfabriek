@@ -58,13 +58,39 @@ export const HANDLE_TYPES = [
   { id: '27', name: '27_Z0056' },
   { id: '28', name: '28_Z2168' },
   { id: '29', name: '29_Z2168' },
+  { id: '30', name: '30_H3121' },
+  { id: '31', name: '31_H3161' },
 ]
 
-const KNOB_NAME_REGEX = /knob/i
+const KNOB_NAME_REGEX = /Button/i
+
+// Per-handle position tweaks for multi-mesh handles whose GLB authoring places them
+// off the door surface or off-center. Coordinates are in metres, in the inner-group
+// frame *before* the +π/2 Y rotation: x = lateral on door (mirrored automatically
+// when mirror=true), y = vertical, z = outward from door surface (positive = out).
+const MULTI_MESH_OFFSETS = {
+  '30': [0, 0, -0.01],
+  '31': [0.05, 0, -0.01],
+}
+
+// Per-handle position tweaks for single-mesh handles. Same coordinate frame as
+// the multi-mesh offsets (after meshOffset centering, after the [0, π, 0] flip).
+// x = lateral on door (mirrored automatically when mirror=true), y = vertical,
+// z = outward from door surface. Default for handles not listed here is no shift.
+const SINGLE_MESH_OFFSETS = {
+  '1': [-0.06, 0, 0.02],
+  '2': [-0.06, 0, 0.02],
+  '3': [-0.06, 0, 0.02],
+  '4': [-0.06, 0, 0.02],
+  '5': [-0.06, 0, 0.02],
+  '6': [-0.06, 0, 0.02],
+  '7': [-0.06, 0, 0.02],
+}
 
 /**
  * @param {{
  *   id?: string,
+ *   meshId?: string,
  *   mirror?: boolean,
  *   material?: import('../constants/handleMaterials').HandleMaterial,
  *   bodyColor?: import('../constants/handleMaterials').LeatherColor,
@@ -73,6 +99,7 @@ const KNOB_NAME_REGEX = /knob/i
  */
 export function HandleByType({
   id,
+  meshId,
   mirror = false,
   material = DEFAULT_HANDLE_MATERIAL,
   bodyColor,
@@ -80,10 +107,12 @@ export function HandleByType({
 }) {
   const { nodes } = useGLTF('/objects/Handles-transformed.glb')
 
+  const lookupId = meshId ?? id
+
   const nodeKeys = useMemo(() => {
-    if (!id) return []
-    return Object.keys(nodes).filter((k) => k.startsWith(`${id}_`))
-  }, [nodes, id])
+    if (!lookupId) return []
+    return Object.keys(nodes).filter((k) => k.startsWith(`${lookupId}_`))
+  }, [nodes, lookupId])
 
   const handleNodes = useMemo(() => {
     return nodeKeys
@@ -116,12 +145,34 @@ export function HandleByType({
   // Offset the combined geometry so its back face (min z) sits at z=0 and x/y are
   // centered relative to the group, making the handle protrude outward from the
   // face it's placed on.
+  // Multi-mesh handles share a common layout position in the GLB (e.g. handle 30's
+  // body + button both sit at z=-2.9). Subtract the first node's position so the
+  // pair is anchored at our group origin while preserving the small relative offset
+  // between body and button.
+  const multiMeshOrigin = useMemo(() => {
+    if (!isMultiMesh) return null
+    return handleNodes[0].position.clone()
+  }, [handleNodes, isMultiMesh])
+
   const meshOffset = useMemo(() => {
     if (handleNodes.length === 0) return [0, 0, 0]
     const combined = new THREE.Box3()
+    const tmp = new THREE.Box3()
+    const m = new THREE.Matrix4()
     for (const n of handleNodes) {
       n.geometry.computeBoundingBox()
-      if (n.geometry.boundingBox) combined.union(n.geometry.boundingBox)
+      if (!n.geometry.boundingBox) continue
+      if (isMultiMesh) {
+        const adjPos = n.position.clone().sub(multiMeshOrigin)
+        m.compose(adjPos, n.quaternion, n.scale)
+        // Compose with the extra -π/2 Y rotation applied to the multi-mesh group
+        // so the offset centers the rotated geometry, not the unrotated one.
+        const rot = new THREE.Matrix4().makeRotationY(Math.PI / 2)
+        tmp.copy(n.geometry.boundingBox).applyMatrix4(m).applyMatrix4(rot)
+        combined.union(tmp)
+      } else {
+        combined.union(n.geometry.boundingBox)
+      }
     }
     if (combined.isEmpty()) return [0, 0, 0]
     const { min, max } = combined
@@ -130,7 +181,7 @@ export function HandleByType({
       -(min.y + max.y) / 2,
       -min.z,
     ]
-  }, [handleNodes])
+  }, [handleNodes, isMultiMesh, multiMeshOrigin])
 
   if (handleNodes.length === 0) return null
 
@@ -138,21 +189,31 @@ export function HandleByType({
     <group {...props} scale={mirror ? [-1, 1, 1] : undefined}>
       <group position={meshOffset} rotation={[0, Math.PI, 0]}>
         {isMultiMesh
-          ? handleNodes.map((n, i) => {
-              const isKnob = KNOB_NAME_REGEX.test(n.name ?? '')
-              return (
-                <mesh
-                  key={n.name ?? i}
-                  geometry={n.geometry}
-                  material={isKnob ? activeMaterial : leatherMaterial}
-                />
-              )
-            })
+          ? (
+            <group rotation={[0, Math.PI / 2, 0]} position={MULTI_MESH_OFFSETS[lookupId] ?? [0, 0, 0]}>
+              {handleNodes.map((n, i) => {
+                const isKnob = KNOB_NAME_REGEX.test(n.name ?? '')
+                const adjPos = n.position.clone().sub(multiMeshOrigin)
+                return (
+                  <mesh
+                    key={n.name ?? i}
+                    geometry={n.geometry}
+                    material={isKnob ? activeMaterial : leatherMaterial}
+                    position={adjPos}
+                    rotation={n.rotation}
+                    scale={n.scale}
+                  />
+                )
+              })}
+            </group>
+          )
           : (
-            <mesh
-              geometry={handleNodes[0].geometry}
-              material={activeMaterial}
-            />
+            <group position={SINGLE_MESH_OFFSETS[lookupId] ?? [0, 0, 0]}>
+              <mesh
+                geometry={handleNodes[0].geometry}
+                material={activeMaterial}
+              />
+            </group>
           )}
       </group>
     </group>

@@ -25,6 +25,7 @@ interface DoorProps {
   doorHandleId: string
   doorHandleMaterial?: HandleMaterial
   doorHandleBodyColor?: LeatherColor
+  doorHandleMeshId?: string
   mirror?: boolean
   extendToFloor?: boolean
   /**
@@ -66,6 +67,7 @@ export default function Door({
   doorHandleId,
   doorHandleMaterial = 'chrome',
   doorHandleBodyColor,
+  doorHandleMeshId,
   mirror = false,
   extendToFloor = false,
   topProfile,
@@ -140,6 +142,7 @@ export default function Door({
           {doorHandleId !== 'none' && (
             <HandleByType
               id={doorHandleId}
+              meshId={doorHandleMeshId}
               mirror={mirror}
               material={doorHandleMaterial}
               bodyColor={doorHandleBodyColor}

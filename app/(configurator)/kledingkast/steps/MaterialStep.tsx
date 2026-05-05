@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useClosetStore } from '../store'
 import { MATERIALS } from '../materials'
 import { cn } from '@/lib/utils'
@@ -13,6 +13,10 @@ export default function MaterialStep() {
   const setBinnenkantMaterialId = useClosetStore((s) => s.setBinnenkantMaterialId)
 
   const [activeTab, setActiveTab] = useState<'buitenkant' | 'binnenkant'>('buitenkant')
+
+  useEffect(() => {
+    useClosetStore.setState({ doorsOpen: activeTab === 'binnenkant' })
+  }, [activeTab])
 
   const materialId = activeTab === 'buitenkant' ? buitenkantMaterialId : binnenkantMaterialId
   const setMaterialId = activeTab === 'buitenkant' ? setBuitenkantMaterialId : setBinnenkantMaterialId
@@ -56,6 +60,18 @@ export default function MaterialStep() {
           <p className="text-sm font-medium">{selectedMaterial.name}</p>
         )}
       </div>
+
+      <button
+        type="button"
+        onClick={() => {
+          const target = document.getElementById('material-preview')
+          if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          else window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
+        }}
+        className="w-full text-sm text-muted-foreground hover:text-foreground underline underline-offset-4 py-2"
+      >
+        Scroll naar beneden om de kast in het echt te zien met je gekozen materiaal
+      </button>
     </div>
   )
 }

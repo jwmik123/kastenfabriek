@@ -71,7 +71,7 @@ export default function ColorwayPreview() {
   const slug = slugFor(activeId)
 
   return (
-    <section className="w-full bg-primary/10 py-12 md:py-20">
+    <section id="material-preview" className="w-full bg-primary/10 py-12 md:py-20">
       <div className="container mx-auto px-4">
         <div className="flex items-start justify-between gap-6 mb-6 flex-wrap">
           <div>

@@ -16,7 +16,7 @@ import MobileSheet from './MobileSheet'
 const TOP_BAR_STEPS = [
   { label: 'Afmetingen', number: 1 },
   { label: 'Wasmachine', number: 2 },
-  { label: 'Modules', number: 3 },
+  { label: 'Indeling', number: 3 },
   { label: 'Materiaal', number: 4 },
   { label: 'Handgrepen', number: 5 },
   { label: 'Accessoires', number: 6 },

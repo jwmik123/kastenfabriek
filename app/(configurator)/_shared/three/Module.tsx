@@ -138,7 +138,9 @@ export default function Module({ index, layout, hasDoor, span, diagParams: p, mi
   const doorHandleMaterial  = useConfiguratorStore((s) => s.doorHandleMaterial)
   const doorsExtendToFloor  = useConfiguratorStore((s) => s.doorsExtendToFloor)
   const pricingData         = useConfiguratorStore((s) => s.pricingData)
-  const doorHandleBodyColor = pricingData?.handles.find((h) => h.id === doorHandleId)?.bodyColor
+  const resolvedHandle      = pricingData?.handles.find((h) => h.id === doorHandleId)
+  const doorHandleBodyColor = resolvedHandle?.bodyColor
+  const doorHandleMeshId    = resolvedHandle?.meshId
   const allModules   = useConfiguratorStore((s) => s.modules)
   const moduleSlot   = allModules.find((m) => m.slotIndex === index)
   const needsTop     = useConfiguratorStore((s) => s.needsTopCabinet())
@@ -529,6 +531,7 @@ export default function Module({ index, layout, hasDoor, span, diagParams: p, mi
           doorHandleId={doorHandleId}
           doorHandleMaterial={doorHandleMaterial}
           doorHandleBodyColor={doorHandleBodyColor}
+          doorHandleMeshId={doorHandleMeshId}
           mirror={mirrorDoor}
           extendToFloor={doorsExtendToFloor}
           topProfile={isBackDiag ? bdDoorProfile : doorProfile}
@@ -545,6 +548,7 @@ export default function Module({ index, layout, hasDoor, span, diagParams: p, mi
             doorHandleId={doorHandleId}
             doorHandleMaterial={doorHandleMaterial}
           doorHandleBodyColor={doorHandleBodyColor}
+          doorHandleMeshId={doorHandleMeshId}
             extendToFloor={doorsExtendToFloor}
             topProfile={isBackDiag ? bdDoorProfile : leftDoorProfile}
           />
@@ -558,6 +562,7 @@ export default function Module({ index, layout, hasDoor, span, diagParams: p, mi
               doorHandleId={doorHandleId}
               doorHandleMaterial={doorHandleMaterial}
           doorHandleBodyColor={doorHandleBodyColor}
+          doorHandleMeshId={doorHandleMeshId}
               mirror
               extendToFloor={doorsExtendToFloor}
               topProfile={isBackDiag ? bdDoorProfile : rightDoorProfile}

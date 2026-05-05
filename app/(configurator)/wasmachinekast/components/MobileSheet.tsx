@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils'
 
 const STEPS = [
   { label: 'Afmetingen', number: 1 },
-  { label: 'Modules', number: 2 },
+  { label: 'Indeling', number: 2 },
   { label: 'Materiaal', number: 3 },
   { label: 'Handgrepen', number: 4 },
 ]

@@ -144,6 +144,7 @@ export function getMetal(id: HandleMaterial): MetalEntry {
 export type LeatherColor =
   | 'leather-pink'
   | 'leather-beige'
+  | 'leather-brown'
   | 'leather-light-gray'
   | 'leather-black'
 
@@ -156,6 +157,7 @@ export interface LeatherEntry {
 export const LEATHERS: readonly LeatherEntry[] = [
   { id: 'leather-pink', label: 'Huidskleur roze', hex: '#e6b8a8' },
   { id: 'leather-beige', label: 'Beige', hex: '#c8a884' },
+  { id: 'leather-brown', label: 'Bruin', hex: '#6b4423' },
   { id: 'leather-light-gray', label: 'Lichtgrijs', hex: '#a8a8a8' },
   { id: 'leather-black', label: 'Zwart', hex: '#1a1a1a' },
 ] as const

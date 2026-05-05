@@ -28,7 +28,7 @@ const STEP_META: Record<number, { eyebrow: string; title: string; subtitle: stri
   },
   3: {
     eyebrow: 'Stap 3 van 6',
-    title: 'Modules',
+    title: 'Indeling',
     subtitle: 'Kies per vak een indeling en of er een deur op komt.',
   },
   4: {

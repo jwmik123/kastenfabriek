@@ -92,6 +92,7 @@ export interface HandleType {
   price: number;
   allowedMaterials?: HandleMaterial[];
   bodyColor?: LeatherColor;
+  meshId?: string;
 }
 
 export interface FullPricingData {

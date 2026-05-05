@@ -67,6 +67,13 @@ export const handle = defineType({
       validation: (Rule) => Rule.unique(),
     }),
     defineField({
+      name: "meshId",
+      title: "Mesh ID (override)",
+      type: "string",
+      description:
+        'Optional. Use a different GLB mesh than handleId. Lets multiple handles share one mesh (e.g. 4 leather variants of the same shape). Set to the numeric prefix of the mesh name (e.g. "30").',
+    }),
+    defineField({
       name: "bodyColor",
       title: "Body Color (Leather)",
       type: "string",
@@ -76,6 +83,7 @@ export const handle = defineType({
         list: [
           { title: "Huidskleur roze", value: "leather-pink" },
           { title: "Beige", value: "leather-beige" },
+          { title: "Bruin", value: "leather-brown" },
           { title: "Lichtgrijs", value: "leather-light-gray" },
           { title: "Zwart", value: "leather-black" },
         ],
