@@ -14,13 +14,13 @@ export default function Home() {
     <>
       {/* Promo Strip */}
       
-    <div className="relative w-full h-screen -mt-6 font-poppins" data-nav-theme="dark">
+    <div className="relative w-full h-[90vh] -mt-6 font-poppins" data-nav-theme="dark">
       {/* <Image src="/homeplaceholder.png" alt="Home" fill className="object-cover" /> */}
        
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <HeroBackgroundVideo
           playbackId={process.env.NEXT_PUBLIC_MUX_HERO_PLAYBACK_ID!}
-          poster="https://image.mux.com/5FtXJkK4ufR75kELD1Zag02RaUnzneng013O00TkzJwlO4/thumbnail.webp?width=1920&time=11"
+            poster="https://image.mux.com/XDs012DOlQKPSETiCMAe4Mf00V1LzktQF8Cj3ClBcDjBs/thumbnail.webp?width=1920&time=0"
         />
       </div>
       <div className="absolute inset-0 bg-black/10 z-10" />
@@ -58,9 +58,9 @@ export default function Home() {
     </div>
 
     {/* Promo Strip */}
-    <div className="w-full bg-primary text-white py-6 px-6 flex items-center justify-center gap-3 text-xl font-semibold">
+    <div className="w-full bg-amber-500 text-white py-6 px-6 flex items-center justify-center gap-3 text-xl font-semibold">
       <Hammer size={22} className="flex-shrink-0" />
-      <span>Alle kasten nu met <strong>gratis montage</strong> bij oplevering!</span>
+      <span>Alle kasten nu met <b>gratis montage</b> bij oplevering! Tot wel <b className="text-primary">€2160,-</b> korting!</span>
     </div>
 
     <ProductOptionsSection

@@ -81,6 +81,8 @@ export interface PricingConfig {
   freeMontage?: boolean;
 }
 
+import type { HandleMaterial, LeatherColor } from "@/app/(configurator)/_shared/constants/handleMaterials";
+
 export interface HandleType {
   id: string;
   name: string;
@@ -88,6 +90,9 @@ export interface HandleType {
   productCode: string;
   imageUrl?: string;
   price: number;
+  allowedMaterials?: HandleMaterial[];
+  bodyColor?: LeatherColor;
+  meshId?: string;
 }
 
 export interface FullPricingData {
