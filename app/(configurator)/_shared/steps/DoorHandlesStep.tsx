@@ -6,16 +6,11 @@ import { useConfiguratorStore } from '../store/context'
 import { computeHandlePages } from '../components/computeHandlePages'
 import { cn } from '@/lib/utils'
 import type { HandleType } from '@/types/configurator-pricing'
+import { METALS } from '../constants/handleMaterials'
 
 type HandleItem =
   | HandleType
   | { id: 'none'; name: string; nameNl: string; price: number; imageUrl?: undefined }
-
-const MATERIALS = [
-  { value: 'chrome', label: 'Chrome' },
-  { value: 'black',  label: 'Zwart'  },
-  { value: 'gold',   label: 'Goud'   },
-] as const
 
 const PER_PAGE = 6
 
@@ -167,22 +162,51 @@ export default function DoorHandlesStep() {
       {doorHandleId !== 'none' && (
         <div>
           <p className="text-sm font-medium mb-2">Afwerking</p>
-          <div className="flex gap-2">
-            {MATERIALS.map((m) => (
-              <button
-                key={m.value}
-                onClick={() => setDoorHandleMaterial(m.value)}
-                className={cn(
-                  'flex-1 py-2 px-3 rounded-md border-2 text-sm font-medium transition-all',
-                  doorHandleMaterial === m.value
-                    ? 'border-foreground bg-primary text-primary-foreground'
-                    : 'border-border bg-background text-foreground hover:border-foreground/40 hover:bg-muted',
-                )}
-              >
-                {m.label}
-              </button>
-            ))}
+          <div className="flex flex-wrap gap-3" data-testid="handle-material-swatches">
+            {METALS.map((m) => {
+              const isActive = doorHandleMaterial === m.id
+              return (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => setDoorHandleMaterial(m.id)}
+                  aria-label={m.label}
+                  aria-pressed={isActive}
+                  title={m.label}
+                  data-testid="handle-material-swatch"
+                  data-material={m.id}
+                  data-active={isActive ? 'true' : 'false'}
+                  className={cn(
+                    'group relative size-8 rounded-full transition-all',
+                    'ring-offset-2 ring-offset-background focus:outline-none focus-visible:ring-2 focus-visible:ring-foreground',
+                    isActive
+                      ? 'ring-2 ring-foreground'
+                      : 'ring-1 ring-border hover:ring-foreground/40',
+                  )}
+                  style={{ backgroundColor: m.swatch }}
+                >
+                  <span className="sr-only">{m.label}</span>
+                  <span
+                    aria-hidden="true"
+                    className={cn(
+                      'pointer-events-none absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap',
+                      'rounded bg-foreground px-1.5 py-0.5 text-[10px] font-medium text-background',
+                      'opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100',
+                    )}
+                  >
+                    {m.label}
+                  </span>
+                </button>
+              )
+            })}
           </div>
+          <p
+            aria-live="polite"
+            className="mt-2 text-xs text-muted-foreground"
+            data-testid="handle-material-active-label"
+          >
+            {METALS.find((m) => m.id === doorHandleMaterial)?.label ?? ''}
+          </p>
         </div>
       )}
     </div>

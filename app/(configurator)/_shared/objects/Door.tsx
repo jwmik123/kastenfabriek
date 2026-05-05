@@ -6,6 +6,7 @@ import gsap from 'gsap'
 import ClosetMaterial from '../materials/ClosetMaterial'
 import { Model as HingeModel } from './Hinge'
 import { HandleByType } from './Handles'
+import type { HandleMaterial } from '../constants/handleMaterials'
 import { trapShape, trapGeo } from '@/utils/debugGeometry'
 
 const DOOR_DEPTH = 0.018
@@ -22,7 +23,7 @@ interface DoorProps {
   moduleDepth: number
   doorsOpen: boolean
   doorHandleId: string
-  doorHandleMaterial?: 'chrome' | 'black' | 'gold'
+  doorHandleMaterial?: HandleMaterial
   mirror?: boolean
   extendToFloor?: boolean
   /**

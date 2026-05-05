@@ -1,5 +1,6 @@
 import type { FullPricingData, ModuleLayout, PricingConstraints } from '@/types/configurator-pricing'
 import type { ClosetConfigSnapshot } from '@/lib/cart/types'
+import type { HandleMaterial } from '../constants/handleMaterials'
 
 export interface BaseModuleSlot {
   slotIndex: number
@@ -38,7 +39,7 @@ export interface BaseConfiguratorState {
   buitenkantMaterialId: string
   binnenkantMaterialId: string
   doorHandleId: string
-  doorHandleMaterial: 'chrome' | 'black' | 'gold'
+  doorHandleMaterial: HandleMaterial
   doorsExtendToFloor: boolean
   lightStripsEnabled: boolean
 
@@ -76,7 +77,7 @@ export interface BaseConfiguratorState {
   setBinnenkantMaterialId: (id: string) => void
   setModuleMaterial: (slotIndex: number, variant: 'buitenkant' | 'binnenkant', id: string) => void
   setDoorHandleId: (id: string) => void
-  setDoorHandleMaterial: (material: 'chrome' | 'black' | 'gold') => void
+  setDoorHandleMaterial: (material: HandleMaterial) => void
   setDoorsExtendToFloor: (v: boolean) => void
   setLightStripsEnabled: (v: boolean) => void
   toggleDoors: () => void

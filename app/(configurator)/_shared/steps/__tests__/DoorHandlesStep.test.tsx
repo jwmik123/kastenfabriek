@@ -16,9 +16,11 @@ const fakePricingData = {
   installation: [],
 }
 
+import type { HandleMaterial } from '../../constants/handleMaterials'
+
 let mockState = {
   doorHandleId: '23',
-  doorHandleMaterial: 'chrome' as 'chrome' | 'black' | 'gold',
+  doorHandleMaterial: 'chrome' as HandleMaterial,
   pricingData: fakePricingData as any,
   setDoorHandleId: vi.fn(),
   setDoorHandleMaterial: vi.fn(),
@@ -48,13 +50,37 @@ describe('DoorHandlesStep (shared)', () => {
     expect(html).toContain('Geen (push-to-open)')
   })
 
-  it('shows material control when a real handle is selected', async () => {
+  it('renders all 9 swatches with aria-labels when a real handle is selected', async () => {
     mockState.doorHandleId = '23'
     const { default: DoorHandlesStep } = await import('../DoorHandlesStep')
     const html = renderToStaticMarkup(<DoorHandlesStep />)
-    expect(html).toContain('Chrome')
-    expect(html).toContain('Zwart')
-    expect(html).toContain('Goud')
+    const swatches = html.match(/data-testid="handle-material-swatch"/g) ?? []
+    expect(swatches).toHaveLength(9)
+    // Dutch labels for all 9 metals carried via aria-label
+    for (const label of [
+      'Chrome',
+      'Zwart',
+      'Goud',
+      'Rosé goud',
+      'Zilver',
+      'Oud zilver',
+      'Grijsblauw',
+      'Grijs',
+      'Wit',
+    ]) {
+      expect(html).toContain(`aria-label="${label}"`)
+    }
+  })
+
+  it('marks the active swatch and reflects it in the aria-live label', async () => {
+    mockState.doorHandleId = '23'
+    mockState.doorHandleMaterial = 'gold'
+    const { default: DoorHandlesStep } = await import('../DoorHandlesStep')
+    const html = renderToStaticMarkup(<DoorHandlesStep />)
+    const active = html.match(/data-testid="handle-material-swatch"[^>]*data-active="true"/g) ?? []
+    expect(active).toHaveLength(1)
+    expect(html).toContain('data-material="gold"')
+    expect(html).toMatch(/handle-material-active-label[^>]*>Goud</)
   })
 
   it('hides material control when push-to-open is selected', async () => {

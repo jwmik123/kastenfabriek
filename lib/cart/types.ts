@@ -1,4 +1,5 @@
 import type { DiagonalSide } from "@/app/(configurator)/kledingkast/scene/diagonalUtils";
+import type { HandleMaterial } from "@/app/(configurator)/_shared/constants/handleMaterials";
 
 // Snapshot of a single module slot at cart time
 export interface ModuleSlotSnapshot {
@@ -50,7 +51,7 @@ export interface ClosetConfigSnapshot {
   backDiagFlatSectionDepth?: number;  // cm
 
   // Appearance extras
-  doorHandleMaterial?: 'chrome' | 'black' | 'gold';
+  doorHandleMaterial?: HandleMaterial;
   doorsExtendToFloor?: boolean;
 
   // Washer modules

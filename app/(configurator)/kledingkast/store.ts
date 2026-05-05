@@ -6,6 +6,7 @@ import { getWidthRange, getStartHeightRange, clamp, diagAmplification } from './
 import { MODULE_LAYOUTS } from './scene/moduleLayouts'
 import type { ClosetConfigSnapshot } from '@/lib/cart/types'
 import type { PopoverClickPoint } from '../_shared/components/popoverPlacement'
+import type { HandleMaterial } from '../_shared/constants/handleMaterials'
 
 export interface ModuleSlot {
   slotIndex: number
@@ -51,7 +52,7 @@ interface ClosetState {
   buitenkantMaterialId: string
   binnenkantMaterialId: string
   doorHandleId: string
-  doorHandleMaterial: 'chrome' | 'black' | 'gold'
+  doorHandleMaterial: HandleMaterial
   doorsExtendToFloor: boolean
   lightStripsEnabled: boolean
 
@@ -103,7 +104,7 @@ interface ClosetState {
   setBinnenkantMaterialId: (id: string) => void
   setModuleMaterial: (slotIndex: number, variant: 'buitenkant' | 'binnenkant', id: string) => void
   setDoorHandleId: (id: string) => void
-  setDoorHandleMaterial: (material: 'chrome' | 'black' | 'gold') => void
+  setDoorHandleMaterial: (material: HandleMaterial) => void
   setDoorsExtendToFloor: (v: boolean) => void
   setLightStripsEnabled: (v: boolean) => void
   toggleDoors: () => void
