@@ -1,6 +1,30 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { useClosetStore } from '../store'
 import type { ClosetConfigSnapshot } from '@/lib/cart/types'
+import type { FullPricingData, PricingConstraints } from '@/types/configurator-pricing'
+
+const baseConstraints: PricingConstraints = {
+  singleCorpus: { minWidth: 15, maxWidth: 65, minHeight: 200, maxHeight: 275, minDepth: 50, maxDepth: 80 },
+  doubleCorpus: { minWidth: 30, maxWidth: 130, minHeight: 200, maxHeight: 275, minDepth: 50, maxDepth: 80 },
+  topCabinet: { maxHeight: 110 },
+}
+
+function makePricingData(handles: FullPricingData['handles']): FullPricingData {
+  return {
+    config: {
+      currency: 'EUR',
+      lastUpdated: '2026-01-01',
+      led: { basePrice: 50, pricePerModule: 25 },
+      deliveryPrice: 95,
+      constraints: baseConstraints,
+    },
+    modules: [],
+    accessories: [],
+    doors: [],
+    installation: [],
+    handles,
+  }
+}
 
 function resetStore() {
   useClosetStore.setState(useClosetStore.getInitialState())
@@ -158,5 +182,59 @@ describe('setHasPowerHole', () => {
     expect(useClosetStore.getState().modules[0].hasPowerHole).toBe(false)
     expect(useClosetStore.getState().modules[1].hasPowerHole).toBe(true)
     expect(useClosetStore.getState().modules[2].hasPowerHole).toBe(false)
+  })
+})
+
+describe('handle material invariant', () => {
+  beforeEach(resetStore)
+
+  const handlesWithGating = [
+    { id: '23', name: 'W7845', productCode: 'W7845', price: 12, allowedMaterials: ['chrome', 'black'] as const },
+    { id: '42', name: 'WGold', productCode: 'WGold', price: 15, allowedMaterials: ['gold'] as const },
+    { id: '99', name: 'WAny', productCode: 'WAny', price: 10 },
+  ]
+
+  it('setDoorHandleId rewrites material when current is disallowed by new handle', () => {
+    useClosetStore.getState().hydrate(makePricingData(handlesWithGating as any))
+    useClosetStore.getState().setDoorHandleMaterial('chrome')
+    useClosetStore.getState().setDoorHandleId('42') // gold-only
+    expect(useClosetStore.getState().doorHandleMaterial).toBe('gold')
+  })
+
+  it('setDoorHandleId preserves material when allowed by new handle', () => {
+    useClosetStore.getState().hydrate(makePricingData(handlesWithGating as any))
+    useClosetStore.getState().setDoorHandleMaterial('black')
+    useClosetStore.getState().setDoorHandleId('23')
+    expect(useClosetStore.getState().doorHandleMaterial).toBe('black')
+  })
+
+  it('setDoorHandleMaterial rewrites to first allowed when disallowed', () => {
+    useClosetStore.getState().hydrate(makePricingData(handlesWithGating as any))
+    useClosetStore.getState().setDoorHandleId('42') // gold-only
+    useClosetStore.getState().setDoorHandleMaterial('chrome')
+    expect(useClosetStore.getState().doorHandleMaterial).toBe('gold')
+  })
+
+  it('empty/missing allowedMaterials means all metals allowed', () => {
+    useClosetStore.getState().hydrate(makePricingData(handlesWithGating as any))
+    useClosetStore.getState().setDoorHandleId('99')
+    useClosetStore.getState().setDoorHandleMaterial('rose-gold')
+    expect(useClosetStore.getState().doorHandleMaterial).toBe('rose-gold')
+  })
+
+  it('hydrate corrects material when invalid combination is loaded', () => {
+    // simulate a snapshot-restored state with chrome on a gold-only handle, then hydrate
+    useClosetStore.setState({ doorHandleId: '42', doorHandleMaterial: 'chrome' })
+    useClosetStore.getState().hydrate(makePricingData(handlesWithGating as any))
+    expect(useClosetStore.getState().doorHandleMaterial).toBe('gold')
+  })
+
+  it('push-to-open does not interfere with material validation', () => {
+    useClosetStore.getState().hydrate(makePricingData(handlesWithGating as any))
+    useClosetStore.getState().setDoorHandleId('99') // ungated
+    useClosetStore.getState().setDoorHandleMaterial('rose-gold')
+    useClosetStore.getState().setDoorHandleId('none') // push-to-open, not a real handle
+    // unknown handle id => no allowedMaterials => current material passes through
+    expect(useClosetStore.getState().doorHandleMaterial).toBe('rose-gold')
   })
 })

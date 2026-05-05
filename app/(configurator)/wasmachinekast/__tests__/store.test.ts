@@ -640,3 +640,61 @@ describe('restoreConfig — washer fields', () => {
     expect(s.washerModules[0].slotIndex).toBe(0)
   })
 })
+
+// ─── handle material invariant ───────────────────────────────────────────────
+
+describe('handle material invariant', () => {
+  beforeEach(resetStore)
+
+  const handlesWithGating = [
+    { id: '23', name: 'W7845', productCode: 'W7845', price: 12, allowedMaterials: ['chrome', 'black'] as const },
+    { id: '42', name: 'WGold', productCode: 'WGold', price: 15, allowedMaterials: ['gold'] as const },
+    { id: '99', name: 'WAny', productCode: 'WAny', price: 10 },
+  ]
+
+  function pricingWithHandles() {
+    return { ...basePricingData, handles: handlesWithGating as any }
+  }
+
+  it('setDoorHandleId rewrites material when current is disallowed by new handle', () => {
+    useWasmachinekastStore.getState().hydrate(pricingWithHandles())
+    useWasmachinekastStore.getState().setDoorHandleMaterial('chrome')
+    useWasmachinekastStore.getState().setDoorHandleId('42')
+    expect(useWasmachinekastStore.getState().doorHandleMaterial).toBe('gold')
+  })
+
+  it('setDoorHandleId preserves material when allowed by new handle', () => {
+    useWasmachinekastStore.getState().hydrate(pricingWithHandles())
+    useWasmachinekastStore.getState().setDoorHandleMaterial('black')
+    useWasmachinekastStore.getState().setDoorHandleId('23')
+    expect(useWasmachinekastStore.getState().doorHandleMaterial).toBe('black')
+  })
+
+  it('setDoorHandleMaterial rewrites to first allowed when disallowed', () => {
+    useWasmachinekastStore.getState().hydrate(pricingWithHandles())
+    useWasmachinekastStore.getState().setDoorHandleId('42')
+    useWasmachinekastStore.getState().setDoorHandleMaterial('chrome')
+    expect(useWasmachinekastStore.getState().doorHandleMaterial).toBe('gold')
+  })
+
+  it('empty/missing allowedMaterials means all metals allowed', () => {
+    useWasmachinekastStore.getState().hydrate(pricingWithHandles())
+    useWasmachinekastStore.getState().setDoorHandleId('99')
+    useWasmachinekastStore.getState().setDoorHandleMaterial('rose-gold')
+    expect(useWasmachinekastStore.getState().doorHandleMaterial).toBe('rose-gold')
+  })
+
+  it('hydrate corrects material when invalid combination is loaded', () => {
+    useWasmachinekastStore.setState({ doorHandleId: '42', doorHandleMaterial: 'chrome' })
+    useWasmachinekastStore.getState().hydrate(pricingWithHandles())
+    expect(useWasmachinekastStore.getState().doorHandleMaterial).toBe('gold')
+  })
+
+  it('push-to-open does not interfere with material validation', () => {
+    useWasmachinekastStore.getState().hydrate(pricingWithHandles())
+    useWasmachinekastStore.getState().setDoorHandleId('99')
+    useWasmachinekastStore.getState().setDoorHandleMaterial('rose-gold')
+    useWasmachinekastStore.getState().setDoorHandleId('none')
+    expect(useWasmachinekastStore.getState().doorHandleMaterial).toBe('rose-gold')
+  })
+})

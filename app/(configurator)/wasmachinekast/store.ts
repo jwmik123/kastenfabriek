@@ -4,6 +4,7 @@ import type { BaseConfiguratorState, BaseModuleSlot } from '../_shared/store/typ
 import type { ClosetConfigSnapshot } from '@/lib/cart/types'
 import { WASHER_LAYOUTS } from './moduleLayouts'
 import type { PopoverClickPoint } from '../_shared/components/popoverPlacement'
+import { validateHandleMaterial } from '../_shared/components/validateHandleMaterial'
 
 export type { BaseModuleSlot as ModuleSlot }
 
@@ -86,10 +87,14 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
   mainHeight: () => (get().needsTopCabinet() ? 225 : get().height - SIDE_WALL_EXTRA_CM),
 
   hydrate: (data: FullPricingData) => {
+    const { doorHandleId, doorHandleMaterial } = get()
+    const handle = data.handles.find((h) => h.id === doorHandleId)
+    const validatedMaterial = validateHandleMaterial(doorHandleMaterial, handle?.allowedMaterials)
     set({
       pricingData: data,
       constraints: data.config.constraints,
       moduleLayouts: data.modules,
+      doorHandleMaterial: validatedMaterial,
     })
   },
 
@@ -231,8 +236,19 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
       ),
     })),
 
-  setDoorHandleId: (doorHandleId) => set({ doorHandleId }),
-  setDoorHandleMaterial: (doorHandleMaterial) => set({ doorHandleMaterial }),
+  setDoorHandleId: (doorHandleId) => {
+    const { pricingData, doorHandleMaterial } = get()
+    const handle = pricingData?.handles.find((h) => h.id === doorHandleId)
+    set({
+      doorHandleId,
+      doorHandleMaterial: validateHandleMaterial(doorHandleMaterial, handle?.allowedMaterials),
+    })
+  },
+  setDoorHandleMaterial: (doorHandleMaterial) => {
+    const { pricingData, doorHandleId } = get()
+    const handle = pricingData?.handles.find((h) => h.id === doorHandleId)
+    set({ doorHandleMaterial: validateHandleMaterial(doorHandleMaterial, handle?.allowedMaterials) })
+  },
   setDoorsExtendToFloor: (doorsExtendToFloor) => set({ doorsExtendToFloor }),
   setLightStripsEnabled: (lightStripsEnabled) => set({ lightStripsEnabled }),
   toggleDoors: () => set((s) => ({ doorsOpen: !s.doorsOpen })),

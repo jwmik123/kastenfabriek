@@ -7,6 +7,7 @@ import { MODULE_LAYOUTS } from './scene/moduleLayouts'
 import type { ClosetConfigSnapshot } from '@/lib/cart/types'
 import type { PopoverClickPoint } from '../_shared/components/popoverPlacement'
 import type { HandleMaterial } from '../_shared/constants/handleMaterials'
+import { validateHandleMaterial } from '../_shared/components/validateHandleMaterial'
 
 export interface ModuleSlot {
   slotIndex: number
@@ -444,10 +445,14 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
   },
 
   hydrate: (data) => {
+    const { doorHandleId, doorHandleMaterial } = get()
+    const handle = data.handles.find((h) => h.id === doorHandleId)
+    const validatedMaterial = validateHandleMaterial(doorHandleMaterial, handle?.allowedMaterials)
     set({
       pricingData: data,
       constraints: data.config.constraints,
       moduleLayouts: data.modules,
+      doorHandleMaterial: validatedMaterial,
     })
   },
 
@@ -635,8 +640,19 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
           : m
       ),
     })),
-  setDoorHandleId: (doorHandleId) => set({ doorHandleId }),
-  setDoorHandleMaterial: (doorHandleMaterial) => set({ doorHandleMaterial }),
+  setDoorHandleId: (doorHandleId) => {
+    const { pricingData, doorHandleMaterial } = get()
+    const handle = pricingData?.handles.find((h) => h.id === doorHandleId)
+    set({
+      doorHandleId,
+      doorHandleMaterial: validateHandleMaterial(doorHandleMaterial, handle?.allowedMaterials),
+    })
+  },
+  setDoorHandleMaterial: (doorHandleMaterial) => {
+    const { pricingData, doorHandleId } = get()
+    const handle = pricingData?.handles.find((h) => h.id === doorHandleId)
+    set({ doorHandleMaterial: validateHandleMaterial(doorHandleMaterial, handle?.allowedMaterials) })
+  },
   setDoorsExtendToFloor: (doorsExtendToFloor) => set({ doorsExtendToFloor }),
   setLightStripsEnabled: (lightStripsEnabled) => set({ lightStripsEnabled }),
   toggleDoors: () => set((s) => ({ doorsOpen: !s.doorsOpen })),

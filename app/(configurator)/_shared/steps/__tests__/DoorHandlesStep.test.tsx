@@ -130,6 +130,38 @@ describe('DoorHandlesStep (shared)', () => {
     expect(html).toContain('Handgreep W6')
   })
 
+  it('filters swatches by selected handle allowedMaterials', async () => {
+    const handlesWithGating = [
+      { id: '1',  name: 'W4080', nameNl: 'Handgreep W4080', productCode: 'W4080', price: 8, allowedMaterials: ['chrome', 'black'] },
+      { id: '23', name: 'W7845', nameNl: 'Handgreep W7845', productCode: 'W7845', price: 12 },
+    ]
+    mockState.pricingData = { ...fakePricingData, handles: handlesWithGating } as any
+    mockState.doorHandleId = '1'
+    const { default: DoorHandlesStep } = await import('../DoorHandlesStep')
+    const html = renderToStaticMarkup(<DoorHandlesStep />)
+    const swatches = html.match(/data-testid="handle-material-swatch"/g) ?? []
+    expect(swatches).toHaveLength(2)
+    expect(html).toContain('data-material="chrome"')
+    expect(html).toContain('data-material="black"')
+    expect(html).not.toContain('data-material="gold"')
+  })
+
+  it('renders a single swatch when allowedMaterials has exactly one entry', async () => {
+    const handlesWithGating = [
+      { id: '1', name: 'WGoldOnly', nameNl: 'Goud only', productCode: 'WGold', price: 10, allowedMaterials: ['gold'] },
+    ]
+    mockState.pricingData = { ...fakePricingData, handles: handlesWithGating } as any
+    mockState.doorHandleId = '1'
+    mockState.doorHandleMaterial = 'gold'
+    const { default: DoorHandlesStep } = await import('../DoorHandlesStep')
+    const html = renderToStaticMarkup(<DoorHandlesStep />)
+    const swatches = html.match(/data-testid="handle-material-swatch"/g) ?? []
+    expect(swatches).toHaveLength(1)
+    expect(html).toContain('data-material="gold"')
+    const active = html.match(/data-testid="handle-material-swatch"[^>]*data-active="true"/g) ?? []
+    expect(active).toHaveLength(1)
+  })
+
   it('places push-to-open as the final cell after handles sorted by id', async () => {
     const handles = Array.from({ length: 5 }, (_, i) => ({
       id: String(i + 1),

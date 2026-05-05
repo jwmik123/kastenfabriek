@@ -159,11 +159,18 @@ export default function DoorHandlesStep() {
         )}
       </div>
 
-      {doorHandleId !== 'none' && (
+      {doorHandleId !== 'none' && (() => {
+        const selectedHandle = handles.find((h) => h.id === doorHandleId)
+        const allowed = selectedHandle?.allowedMaterials
+        const visibleMetals =
+          !allowed || allowed.length === 0
+            ? METALS
+            : METALS.filter((m) => allowed.includes(m.id))
+        return (
         <div>
           <p className="text-sm font-medium mb-2">Afwerking</p>
           <div className="flex flex-wrap gap-3" data-testid="handle-material-swatches">
-            {METALS.map((m) => {
+            {visibleMetals.map((m) => {
               const isActive = doorHandleMaterial === m.id
               return (
                 <button
@@ -208,7 +215,8 @@ export default function DoorHandlesStep() {
             {METALS.find((m) => m.id === doorHandleMaterial)?.label ?? ''}
           </p>
         </div>
-      )}
+        )
+      })()}
     </div>
   )
 }

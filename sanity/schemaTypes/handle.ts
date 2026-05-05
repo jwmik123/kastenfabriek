@@ -43,6 +43,29 @@ export const handle = defineType({
       type: "number",
       validation: (Rule) => Rule.required().min(0),
     }),
+    defineField({
+      name: "allowedMaterials",
+      title: "Allowed Materials",
+      type: "array",
+      of: [{ type: "string" }],
+      description:
+        "Restrict which metal finishes are available for this handle. Leave empty to allow all finishes.",
+      options: {
+        layout: "grid",
+        list: [
+          { title: "Chrome", value: "chrome" },
+          { title: "Zwart", value: "black" },
+          { title: "Goud", value: "gold" },
+          { title: "Rosé goud", value: "rose-gold" },
+          { title: "Zilver", value: "silver" },
+          { title: "Oud zilver", value: "old-silver" },
+          { title: "Grijsblauw", value: "gray-blue" },
+          { title: "Grijs", value: "gray" },
+          { title: "Wit", value: "white" },
+        ],
+      },
+      validation: (Rule) => Rule.unique(),
+    }),
   ],
   preview: {
     select: {
