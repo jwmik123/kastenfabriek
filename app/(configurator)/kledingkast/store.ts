@@ -5,6 +5,7 @@ import { getDiagHeightAt, isFullHeight } from './scene/diagonalUtils'
 import { getWidthRange, getStartHeightRange, clamp, diagAmplification } from './diagonalConstraints'
 import { MODULE_LAYOUTS } from './scene/moduleLayouts'
 import type { ClosetConfigSnapshot } from '@/lib/cart/types'
+import type { PopoverClickPoint } from '../_shared/components/popoverPlacement'
 
 export interface ModuleSlot {
   slotIndex: number
@@ -62,6 +63,7 @@ interface ClosetState {
   // Selection (shared between 3D scene and step panels)
   selectedSlot: number | null
   hoveredSlot: number | null
+  lastClickPoint: PopoverClickPoint
 
   // Derived
   moduleWidthCm: () => number
@@ -108,7 +110,7 @@ interface ClosetState {
   toggleMeasurements: () => void
   zoomIn: () => void
   zoomOut: () => void
-  setSelectedSlot: (slot: number | null) => void
+  setSelectedSlot: (slot: number | null, clickPoint?: PopoverClickPoint) => void
   setHoveredSlot: (slot: number | null) => void
   randomFill: () => void
   restoreConfig: (config: ClosetConfigSnapshot) => void
@@ -178,6 +180,7 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
   userZoom: 0.5,
   selectedSlot: null,
   hoveredSlot: null,
+  lastClickPoint: null,
 
   // Derived
   moduleWidthCm: () => {
@@ -413,9 +416,9 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
     })
   },
 
-  setStep: (step) => set({ step, selectedSlot: null }),
-  nextStep: () => set((s) => ({ step: Math.min(s.step + 1, 5), selectedSlot: null })),
-  prevStep: () => set((s) => ({ step: Math.max(s.step - 1, 1), selectedSlot: null })),
+  setStep: (step) => set({ step, selectedSlot: null, lastClickPoint: null }),
+  nextStep: () => set((s) => ({ step: Math.min(s.step + 1, 5), selectedSlot: null, lastClickPoint: null })),
+  prevStep: () => set((s) => ({ step: Math.max(s.step - 1, 1), selectedSlot: null, lastClickPoint: null })),
 
   setWidth: (width) => {
     const minW = get().constraints?.singleCorpus.minWidth ?? FALLBACK_MODULE_MIN_WIDTH
@@ -585,7 +588,11 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
   toggleMeasurements: () => set((s) => ({ showMeasurements: !s.showMeasurements })),
   zoomIn: () => set((s) => ({ userZoom: Math.max(0, s.userZoom - 0.1) })),
   zoomOut: () => set((s) => ({ userZoom: Math.min(1, s.userZoom + 0.1) })),
-  setSelectedSlot: (slot) => set({ selectedSlot: slot }),
+  setSelectedSlot: (slot, clickPoint) =>
+    set({
+      selectedSlot: slot,
+      lastClickPoint: slot === null ? null : (clickPoint ?? null),
+    }),
   setHoveredSlot: (slot) => set({ hoveredSlot: slot }),
   restoreConfig: (config: ClosetConfigSnapshot) => {
     // Support both new per-side format and legacy shared diagTopWidth
@@ -621,6 +628,7 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
       lightStripsEnabled: config.lightStripsEnabled ?? false,
       step: 1,
       selectedSlot: null,
+      lastClickPoint: null,
     })
   },
   randomFill: () => {

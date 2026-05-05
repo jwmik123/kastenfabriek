@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { X } from 'lucide-react'
 import { useClosetStore } from '../store'
 import { MODULE_LAYOUTS } from '../scene/moduleLayouts'
@@ -8,6 +8,9 @@ import { LAYOUT_SVGS } from './LayoutSvgs'
 import { getDiagHeightAt, getBackDiagHeightAtZ } from '../scene/diagonalUtils'
 import { Toggle } from '@/components/ui/Toggle'
 import { cn } from '@/lib/utils'
+import { computePopoverPlacement, type PopoverPlacement } from '../../_shared/components/popoverPlacement'
+
+const POPOVER_WIDTH_PX = 320
 
 const WALL = 0.018
 const ONDERSTEL_HEIGHT = 0.108
@@ -24,6 +27,7 @@ export default function ModulePopover() {
   const toggleModuleDoor = useClosetStore((s) => s.toggleModuleDoor)
   const modules          = useClosetStore((s) => s.modules)
   const moduleCount      = useClosetStore((s) => s.moduleCount)
+  const lastClickPoint   = useClosetStore((s) => s.lastClickPoint)
 
   const diagonalSide          = useClosetStore((s) => s.diagonalSide)
   const leftDiagStartHeight   = useClosetStore((s) => s.leftDiagStartHeight)
@@ -39,6 +43,7 @@ export default function ModulePopover() {
   const depthCm               = useClosetStore((s) => s.depth)
 
   const ref = useRef<HTMLDivElement>(null)
+  const [placement, setPlacement] = useState<PopoverPlacement | null>(null)
 
   const isActive = step === MODULES_STEP && selectedSlot !== null
 
@@ -52,13 +57,38 @@ export default function ModulePopover() {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setSelectedSlot(null)
     }
+    const onResize = () => setSelectedSlot(null)
     document.addEventListener('mousedown', onDown)
     document.addEventListener('keydown', onKey)
+    window.addEventListener('resize', onResize)
     return () => {
       document.removeEventListener('mousedown', onDown)
       document.removeEventListener('keydown', onKey)
+      window.removeEventListener('resize', onResize)
     }
   }, [isActive, setSelectedSlot])
+
+  useLayoutEffect(() => {
+    if (!isActive || selectedSlot === null) return
+    const node = ref.current
+    const parent = node?.parentElement
+    if (!node || !parent) return
+    const containerRect = parent.getBoundingClientRect()
+    const popHeight = node.getBoundingClientRect().height || 0
+    const next = computePopoverPlacement({
+      clickPoint: lastClickPoint,
+      container: {
+        left: containerRect.left,
+        top: containerRect.top,
+        width: containerRect.width,
+        height: containerRect.height,
+      },
+      popoverSize: { width: POPOVER_WIDTH_PX, height: popHeight },
+      selectedSlot,
+      moduleCount,
+    })
+    setPlacement(next)
+  }, [isActive, selectedSlot, lastClickPoint, moduleCount])
 
   const widthM = widthCm / 100
   const mainHeightM = mainHeightCm / 100
@@ -108,18 +138,18 @@ export default function ModulePopover() {
     (l) => (l.minSlotHeight ?? 0) <= selectedSlotEffectiveHeightM
   )
 
-  // Approximate horizontal position above the bay: percentage along the canvas
-  const center = (selectedSlot + 0.5) / moduleCount
-  const leftPct = Math.min(85, Math.max(15, center * 100))
-
   const activeLayoutId = modules[selectedSlot]?.layoutId
 
   return (
     <div
       ref={ref}
       data-testid="module-popover"
-      className="absolute top-20 z-20 w-[320px] -translate-x-1/2 rounded-xl bg-background/95 backdrop-blur-sm border border-border shadow-lg p-4 space-y-4"
-      style={{ left: `${leftPct}%` }}
+      className="absolute z-20 w-[320px] rounded-xl bg-background/95 backdrop-blur-sm border border-border shadow-lg p-4 space-y-4"
+      style={
+        placement
+          ? { left: `${placement.left}px`, top: `${placement.top}px` }
+          : { left: 0, top: 0, visibility: 'hidden' }
+      }
     >
       <div className="flex items-center gap-2 pb-3 border-b border-border/30">
         <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-semibold shrink-0">

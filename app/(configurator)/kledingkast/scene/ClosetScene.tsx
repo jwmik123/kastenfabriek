@@ -141,7 +141,15 @@ function ModuleSlotInteraction({ slotIndex, span, diagParams }: { slotIndex: num
         material={material}
         onPointerOver={(e) => { e.stopPropagation(); setHovered(true); setHoveredSlot(slotIndex) }}
         onPointerOut={() => { setHovered(false); setHoveredSlot(null) }}
-        onClick={(e) => { e.stopPropagation(); setSelectedSlot(isSelected ? null : slotIndex) }}
+        onClick={(e) => {
+          e.stopPropagation()
+          if (isSelected) {
+            setSelectedSlot(null)
+          } else {
+            const ne = e.nativeEvent as MouseEvent
+            setSelectedSlot(slotIndex, { x: ne.clientX, y: ne.clientY })
+          }
+        }}
       />
     </group>
   )
