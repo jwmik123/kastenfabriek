@@ -73,13 +73,11 @@ export default function Door({
   const leftH  = topProfile[0].y
   const rightH = topProfile[topProfile.length - 1].y
 
-  // Module group origin sits at world y = MODULE_FLOOR_Y + MODULE_WALL (top of
-  // the floor panel). Default door bottom hugs the bottom of the floor panel
-  // (door-local y = -MODULE_WALL + SPACE) so it covers the panel's side edge.
-  // extendToFloor drops the bottom to world y=0.02 → door-local same offset.
-  const bottomY = extendToFloor
-    ? 0.02 - MODULE_FLOOR_Y - MODULE_WALL
-    : SPACE - MODULE_WALL
+  // Module group origin sits at world y = MODULE_FLOOR_Y (bottom of the floor
+  // panel). Default door bottom ends at the bottom of the panel (door-local
+  // y = SPACE). extendToFloor drops the bottom to world y = 0.02 (2 cm above
+  // the scene floor) → door-local 0.02 - MODULE_FLOOR_Y.
+  const bottomY = extendToFloor ? 0.02 - MODULE_FLOOR_Y : SPACE
 
   const doorGeometry = useMemo(() => {
     const shape = buildDoorShape(slotW, topProfile, bottomY)

@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest'
 import { getWasmLayoutConfig } from '../moduleLayoutConfigs'
-import { MODULE_FLOOR_Y } from '../../kledingkast/scene/closetConstants'
 
 describe('getWasmLayoutConfig — washer variants', () => {
   describe.each([
@@ -28,9 +27,9 @@ describe('getWasmLayoutConfig — washer variants', () => {
       expect(cfg.elements[0].centered).toBe(true)
     })
 
-    it('uses fromBottom anchor at -MODULE_FLOOR_Y (world floor)', () => {
+    it('uses fromBottom anchor at 0 (sits on module floor panel)', () => {
       const cfg = getWasmLayoutConfig(id)!
-      expect(cfg.elements[0].anchor).toEqual({ type: 'fromBottom', d: -MODULE_FLOOR_Y })
+      expect(cfg.elements[0].anchor).toEqual({ type: 'fromBottom', d: 0 })
     })
 
     it('preserves noDoorDepthOffset on the element', () => {

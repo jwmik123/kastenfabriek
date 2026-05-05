@@ -1,6 +1,5 @@
 import { getLayoutById } from '../kledingkast/scene/moduleLayouts'
 import type { ModuleLayoutConfig } from '../kledingkast/scene/moduleLayouts'
-import { MODULE_FLOOR_Y } from '../kledingkast/scene/closetConstants'
 
 const WASHER_HEIGHT = 0.90
 
@@ -11,7 +10,7 @@ const WASHER_SINGLE_CONFIG: ModuleLayoutConfig = {
   elements: [
     {
       glbPath: '/objects/washermodules/ModuleWasherSingle.glb',
-      anchor: { type: 'fromBottom', d: -MODULE_FLOOR_Y },
+      anchor: { type: 'fromBottom', d: 0 },
       centered: true,
       noDoorDepthOffset: 0.031,
       glbMaterialMeshes: ['Plane051_1'],
@@ -33,7 +32,7 @@ const WASHER_DOUBLE_GLB_CONFIG: ModuleLayoutConfig = {
   elements: [
     {
       glbPath: '/objects/washermodules/ModuleWasherDouble.glb',
-      anchor: { type: 'fromBottom', d: -MODULE_FLOOR_Y },
+      anchor: { type: 'fromBottom', d: 0 },
       centered: true,
       noDoorDepthOffset: 0.031,
       glbMaterialMeshes: ['Plane005_1'],
@@ -55,7 +54,7 @@ const WASHER_PLANK_CONFIG: ModuleLayoutConfig = {
   elements: [
     {
       glbPath: '/objects/washermodules/ModuleWasherPlank.glb',
-      anchor: { type: 'fromBottom', d: -MODULE_FLOOR_Y },
+      anchor: { type: 'fromBottom', d: 0 },
       centered: true,
       noDoorDepthOffset: 0.031,
       glbMaterialMeshes: ['Mesh929', 'Mesh928', 'Plane006_1'],
