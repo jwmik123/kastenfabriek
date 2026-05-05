@@ -8,7 +8,7 @@ import { useCartPrice, formatter } from '../hooks/useCartPrice'
 import DimensionsStep from '../steps/DimensionsStep'
 import ModulesStep from '../steps/ModulesStep'
 import MaterialStep from '../steps/MaterialStep'
-import DoorHandlesStep from '../steps/DoorHandlesStep'
+import DoorHandlesStep from '../../_shared/steps/DoorHandlesStep'
 import ModuleMaterialPanel from './ModuleMaterialPanel'
 import { cn } from '@/lib/utils'
 
