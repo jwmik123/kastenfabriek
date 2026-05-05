@@ -1,14 +1,16 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { X } from 'lucide-react'
 import { useWasmachinekastStore } from '../store'
 import { WASHER_LAYOUTS, isLayoutAvailable } from '../moduleLayouts'
 import { LAYOUT_SVGS } from '../../kledingkast/components/LayoutSvgs'
 import { Toggle } from '@/components/ui/Toggle'
 import { cn } from '@/lib/utils'
+import { computePopoverPlacement, type PopoverPlacement } from '../../_shared/components/popoverPlacement'
 
 const MODULES_STEP = 3
+const POPOVER_WIDTH_PX = 320
 
 export default function ModulePopover() {
   const step             = useWasmachinekastStore((s) => s.step)
@@ -22,8 +24,10 @@ export default function ModulePopover() {
   const moduleWidthCm    = useWasmachinekastStore((s) => s.moduleWidthCm())
   const moduleLayouts    = useWasmachinekastStore((s) => s.moduleLayouts)
   const washerModules    = useWasmachinekastStore((s) => s.washerModules)
+  const lastClickPoint   = useWasmachinekastStore((s) => s.lastClickPoint)
 
   const ref = useRef<HTMLDivElement>(null)
+  const [placement, setPlacement] = useState<PopoverPlacement | null>(null)
 
   const washerSlots = new Set(washerModules.map((w) => w.slotIndex))
   const washerIds   = new Set(WASHER_LAYOUTS.map((l) => l.layoutId))
@@ -41,13 +45,38 @@ export default function ModulePopover() {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setSelectedSlot(null)
     }
+    const onResize = () => setSelectedSlot(null)
     document.addEventListener('mousedown', onDown)
     document.addEventListener('keydown', onKey)
+    window.addEventListener('resize', onResize)
     return () => {
       document.removeEventListener('mousedown', onDown)
       document.removeEventListener('keydown', onKey)
+      window.removeEventListener('resize', onResize)
     }
   }, [isActive, setSelectedSlot])
+
+  useLayoutEffect(() => {
+    if (!isActive || selectedSlot === null) return
+    const node = ref.current
+    const parent = node?.parentElement
+    if (!node || !parent) return
+    const containerRect = parent.getBoundingClientRect()
+    const popHeight = node.getBoundingClientRect().height || 0
+    const next = computePopoverPlacement({
+      clickPoint: lastClickPoint,
+      container: {
+        left: containerRect.left,
+        top: containerRect.top,
+        width: containerRect.width,
+        height: containerRect.height,
+      },
+      popoverSize: { width: POPOVER_WIDTH_PX, height: popHeight },
+      selectedSlot,
+      moduleCount,
+    })
+    setPlacement(next)
+  }, [isActive, selectedSlot, lastClickPoint, moduleCount])
 
   if (!isActive || selectedSlot === null) return null
 
@@ -60,17 +89,18 @@ export default function ModulePopover() {
 
   const availableLayouts = moduleLayouts.filter((l) => !washerIds.has(l.layoutId))
 
-  const center = (selectedSlot + 0.5) / moduleCount
-  const leftPct = Math.min(85, Math.max(15, center * 100))
-
   const activeLayoutId = modules[selectedSlot]?.layoutId
 
   return (
     <div
       ref={ref}
       data-testid="module-popover"
-      className="absolute top-20 z-20 w-[320px] -translate-x-1/2 rounded-xl bg-background/95 backdrop-blur-sm border border-border shadow-lg p-4 space-y-4"
-      style={{ left: `${leftPct}%` }}
+      className="absolute z-20 w-[320px] rounded-xl bg-background/95 backdrop-blur-sm border border-border shadow-lg p-4 space-y-4"
+      style={
+        placement
+          ? { left: `${placement.left}px`, top: `${placement.top}px` }
+          : { left: 0, top: 0, visibility: 'hidden' }
+      }
     >
       <div className="flex items-center gap-2 pb-3 border-b border-border/30">
         <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-semibold shrink-0">

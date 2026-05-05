@@ -106,7 +106,15 @@ function WasmModuleSlotInteraction({
         material={material}
         onPointerOver={(e) => { e.stopPropagation(); setLocalHovered(true); setHoveredSlot(slotIndex) }}
         onPointerOut={() => { setLocalHovered(false); setHoveredSlot(null) }}
-        onClick={(e) => { e.stopPropagation(); setSelectedSlot(isSelected ? null : slotIndex) }}
+        onClick={(e) => {
+          e.stopPropagation()
+          if (isSelected) {
+            setSelectedSlot(null)
+          } else {
+            const ne = e.nativeEvent as MouseEvent
+            setSelectedSlot(slotIndex, { x: ne.clientX, y: ne.clientY })
+          }
+        }}
       />
     </group>
   )

@@ -22,6 +22,7 @@ interface MockState {
   moduleWidthCm: () => number
   moduleLayouts: Array<{ layoutId: number; name: string; minSlotWidth?: number }>
   washerModules: Array<{ slotIndex: number; layoutId: number }>
+  lastClickPoint: { x: number; y: number } | null
 }
 
 const baseModules: Mod[] = [
@@ -56,6 +57,7 @@ beforeEach(() => {
     moduleWidthCm: () => 70,
     moduleLayouts: baseLayouts,
     washerModules: [{ slotIndex: 0, layoutId: 11 }],
+    lastClickPoint: null,
   }
 })
 

@@ -2,6 +2,8 @@ import { create } from 'zustand'
 import type { FullPricingData } from '@/types/configurator-pricing'
 import type { BaseConfiguratorState, BaseModuleSlot } from '../_shared/store/types'
 import type { ClosetConfigSnapshot } from '@/lib/cart/types'
+import { WASHER_LAYOUTS } from './moduleLayouts'
+import type { PopoverClickPoint } from '../_shared/components/popoverPlacement'
 
 export type { BaseModuleSlot as ModuleSlot }
 
@@ -25,6 +27,8 @@ interface WasmState extends BaseConfiguratorState {
   addWasherModule: (slotIndex: number, layoutId: number) => void
   removeWasherModule: (slotIndex: number) => void
   clearWasherModules: () => void
+  lastClickPoint: PopoverClickPoint
+  setSelectedSlot: (slot: number | null, clickPoint?: PopoverClickPoint) => void
 }
 
 export const useWasmachinekastStore = create<WasmState>((set, get) => ({
@@ -60,6 +64,7 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
   userZoom: 0.5,
   selectedSlot: null,
   hoveredSlot: null,
+  lastClickPoint: null,
 
   moduleWidthCm: () => {
     const { width, moduleCount } = get()
@@ -118,9 +123,9 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
     }))
   },
 
-  setStep: (step) => set({ step, selectedSlot: null }),
-  nextStep: () => set((s) => ({ step: Math.min(s.step + 1, 6), selectedSlot: null })),
-  prevStep: () => set((s) => ({ step: Math.max(s.step - 1, 1), selectedSlot: null })),
+  setStep: (step) => set({ step, selectedSlot: null, lastClickPoint: null }),
+  nextStep: () => set((s) => ({ step: Math.min(s.step + 1, 6), selectedSlot: null, lastClickPoint: null })),
+  prevStep: () => set((s) => ({ step: Math.max(s.step - 1, 1), selectedSlot: null, lastClickPoint: null })),
 
   setWidth: (width) => {
     const minW = get().constraints?.singleCorpus.minWidth ?? FALLBACK_MODULE_MIN_WIDTH
@@ -234,15 +239,21 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
   toggleMeasurements: () => set((s) => ({ showMeasurements: !s.showMeasurements })),
   zoomIn: () => set((s) => ({ userZoom: Math.max(0, s.userZoom - 0.1) })),
   zoomOut: () => set((s) => ({ userZoom: Math.min(1, s.userZoom + 0.1) })),
-  setSelectedSlot: (slot) => set({ selectedSlot: slot }),
+  setSelectedSlot: (slot, clickPoint) =>
+    set({
+      selectedSlot: slot,
+      lastClickPoint: slot === null ? null : (clickPoint ?? null),
+    }),
   setHoveredSlot: (slot) => set({ hoveredSlot: slot }),
 
   randomFill: () => {
     const { modules, moduleLayouts, washerModules } = get()
     const washerSlots = new Set(washerModules.map((w) => w.slotIndex))
+    const washerLayoutIds = new Set(WASHER_LAYOUTS.map((l) => l.layoutId))
+    const pool = moduleLayouts.filter((l) => !washerLayoutIds.has(l.layoutId))
     const newModules: BaseModuleSlot[] = modules.map((m, i) => {
       if (washerSlots.has(i)) return m
-      const layoutId = moduleLayouts[Math.floor(Math.random() * moduleLayouts.length)]?.layoutId ?? null
+      const layoutId = pool[Math.floor(Math.random() * pool.length)]?.layoutId ?? null
       return { ...m, slotIndex: i, layoutId }
     })
     set({ modules: newModules })
@@ -277,9 +288,11 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
       doorHandleMaterial: config.doorHandleMaterial ?? 'chrome',
       doorsExtendToFloor: config.doorsExtendToFloor ?? false,
       lightStripsEnabled: config.lightStripsEnabled,
+      placementType: (config.placementType ?? 'ingebouwd') as PlacementType,
       washerModules,
       step: 1,
       selectedSlot: null,
+      lastClickPoint: null,
     })
   },
 }))
