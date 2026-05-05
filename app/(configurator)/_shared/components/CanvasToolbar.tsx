@@ -43,7 +43,7 @@ function ToolBtn({
   )
 }
 
-export default function CanvasToolbar() {
+export default function CanvasToolbar({ showRandomize = true }: { showRandomize?: boolean } = {}) {
   const doorsOpen = useConfiguratorStore((s) => s.doorsOpen)
   const toggleDoors = useConfiguratorStore((s) => s.toggleDoors)
   const showMeasurements = useConfiguratorStore((s) => s.showMeasurements)
@@ -80,11 +80,15 @@ export default function CanvasToolbar() {
 
       <Separator orientation="horizontal" className="w-6 my-1" />
 
-      <ToolBtn onClick={randomFill} tooltip="Willekeurige indeling">
-        <Dices className="size-5" />
-      </ToolBtn>
+      {showRandomize && (
+        <>
+          <ToolBtn onClick={randomFill} tooltip="Willekeurige indeling">
+            <Dices className="size-5" />
+          </ToolBtn>
 
-      <Separator orientation="horizontal" className="w-6 my-1" />
+          <Separator orientation="horizontal" className="w-6 my-1" />
+        </>
+      )}
 
       <HelpButton />
     </div>

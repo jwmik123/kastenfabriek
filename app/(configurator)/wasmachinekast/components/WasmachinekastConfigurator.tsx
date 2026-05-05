@@ -99,13 +99,14 @@ export default function WasmachinekastConfigurator({ pricingData, editConfig, ed
           rightDiagStartHeight: 0,
           leftDiagTopWidth: 0,
           rightDiagTopWidth: 0,
-          placementType: 'ingebouwd',
+          placementType: state.placementType,
           backDiagonal: false,
           backDiagKinkHeight: 0,
           backDiagFlatSectionDepth: 0,
           doorHandleMaterial: state.doorHandleMaterial,
           doorsExtendToFloor: state.doorsExtendToFloor,
           lightStripsEnabled: state.lightStripsEnabled,
+          washerModules: state.washerModules,
           hasTopCabinet: state.needsTopCabinet(),
           topCabinetHeightCm: state.topCabinetHeight(),
         }
@@ -122,7 +123,7 @@ export default function WasmachinekastConfigurator({ pricingData, editConfig, ed
   return (
     <ConfiguratorStoreContext.Provider value={useWasmachinekastStore}>
       <ConfiguratorTourProvider steps={wasmachinekastTourSteps}>
-        <div className="w-full h-[90vh] flex flex-col">
+        <div className="w-full h-[95vh] flex flex-col">
           <ConfiguratorTopBar
             steps={TOP_BAR_STEPS}
             currentStep={step}

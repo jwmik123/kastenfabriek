@@ -42,7 +42,7 @@ export type ModuleLayoutConfig = {
 
 export type ElementBbox = { minY: number; maxY: number }
 
-export const SHELF_SPACING = 0.35
+export const SHELF_SPACING = 0.368
 export const SHELF_THICKNESS = 0.018
 
 const DRAWER_GLB = '/objects/mainmodules/DrawerModule.glb'
@@ -83,7 +83,7 @@ export const MODULE_LAYOUTS: ModuleLayoutConfig[] = [
     label: 'Double Rod',
     description: 'Twee roeden boven elkaar',
     elements: [
-      { glbPath: ROD_GLB, anchor: { type: 'fromTop',   d: 0.35 } },
+      { glbPath: ROD_GLB, anchor: { type: 'fromTop',   d: 0.368 } },
       { glbPath: ROD_GLB, anchor: { type: 'midpoint',  refIndex: 0 } },
     ],
     fillZone: bothOpen,
@@ -93,37 +93,37 @@ export const MODULE_LAYOUTS: ModuleLayoutConfig[] = [
     id: 4,
     label: 'Split + shelves',
     description: 'Split-vak onderin, planken erboven',
-    // Sit on module floor (was bboxTopAt(1.40) — that pushed bbox bottom into
-    // the plinth when the GLB exceeded 1.40m). The split GLB should be authored
-    // ~1.40m tall so its top still aligns with the L5 rod-at-140.
+    // Sit on module floor (was bboxTopAt(1.472) — that pushed bbox bottom into
+    // the plinth when the GLB exceeded 1.472m). The split GLB should be authored
+    // ~1.472m tall so its top still aligns with the L5 rod-at-147.2.
     elements: [
       { glbPath: SPLIT_GLB, anchor: { type: 'fromBottom', d: 0 } },
     ],
     fillZone: shelvesAbove,
-    minSlotHeight: 1.40,
+    minSlotHeight: 1.472,
   },
   {
     id: 5,
     label: 'Single Rod 140',
     description: 'Roede op 140 cm, planken erboven',
     elements: [
-      { glbPath: ROD_GLB, anchor: { type: 'bboxTopAt', d: 1.40 } },
+      { glbPath: ROD_GLB, anchor: { type: 'bboxTopAt', d: 1.472 } },
     ],
     fillZone: shelvesAbove,
-    minSlotHeight: 1.40,
+    minSlotHeight: 1.472,
   },
   {
     id: 6,
     label: 'Rod + plank',
     description: 'Roede 35 cm onder plafond, plank op 35 cm',
     elements: [
-      { glbPath: ROD_GLB, anchor: { type: 'fromTop', d: 0.35 } },
+      { glbPath: ROD_GLB, anchor: { type: 'fromTop', d: 0.368 } },
     ],
     fillZone: {
       above: { type: 'open' } as const,
-      below: { type: 'fixedShelves', positions: [0.35] } as const,
+      below: { type: 'fixedShelves', positions: [0.368] } as const,
     },
-    minSlotHeight: 0.70,
+    minSlotHeight: 0.736,
   },
   {
     id: 7,
@@ -131,7 +131,7 @@ export const MODULE_LAYOUTS: ModuleLayoutConfig[] = [
     description: 'Laden onderin, roede onder plafond',
     elements: [
       { glbPath: DRAWER_GLB, anchor: { type: 'fromBottom', d: 0 } },
-      { glbPath: ROD_GLB,    anchor: { type: 'fromTop',    d: 0.35 } },
+      { glbPath: ROD_GLB,    anchor: { type: 'fromTop',    d: 0.368 } },
     ],
     fillZone: bothOpen,
     minSlotHeight: 1.20,
@@ -144,10 +144,10 @@ export const MODULE_LAYOUTS: ModuleLayoutConfig[] = [
       { glbPath: DESK_GLB, anchor: { type: 'fromBottom', d: 0 } },
     ],
     fillZone: {
-      above: { type: 'shelves', spacing: SHELF_SPACING, startY: 1.75 } as const,
+      above: { type: 'shelves', spacing: SHELF_SPACING, startY: 1.84 } as const,
       below: { type: 'open' } as const,
     },
-    minSlotHeight: 1.75,
+    minSlotHeight: 1.84,
   },
 ]
 

@@ -20,7 +20,7 @@ export default function Home() {
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <HeroBackgroundVideo
           playbackId={process.env.NEXT_PUBLIC_MUX_HERO_PLAYBACK_ID!}
-          poster="https://image.mux.com/5FtXJkK4ufR75kELD1Zag02RaUnzneng013O00TkzJwlO4/thumbnail.webp?width=1920&time=11"
+            poster="https://image.mux.com/XDs012DOlQKPSETiCMAe4Mf00V1LzktQF8Cj3ClBcDjBs/thumbnail.webp?width=1920&time=0"
         />
       </div>
       <div className="absolute inset-0 bg-black/10 z-10" />

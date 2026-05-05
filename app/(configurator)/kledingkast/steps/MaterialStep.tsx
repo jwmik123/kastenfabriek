@@ -22,10 +22,10 @@ export default function MaterialStep() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-base font-semibold">Materiaal</h2>
+        {/* <h2 className="text-base font-semibold">Materiaal</h2>
         <p className="text-sm text-muted-foreground mt-1">
           Kies een kleur of materiaal voor je kast.
-        </p>
+        </p> */}
         <p className='text-sm text-green-700 font-bold'>Tip: Klik op een module om de kleur te wijzigen voor die module.</p>
       </div>
 

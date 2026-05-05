@@ -115,7 +115,7 @@ export default function KledingkastConfigurator({ pricingData, editConfig, editI
   return (
     <ConfiguratorStoreContext.Provider value={useClosetStore}>
       <ConfiguratorTourProvider steps={kledingkastTourSteps}>
-        <div className="w-full h-[90vh] flex flex-col">
+        <div className="w-full h-[95vh] flex flex-col">
           <ConfiguratorTopBar
             steps={TOP_BAR_STEPS}
             currentStep={step}

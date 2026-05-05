@@ -118,17 +118,51 @@ interface ClosetState {
 
 const WALL_M = 0.018
 
-/** Reset span=2 on any slots that fall under the diagonal zone. */
+/** Reset span=2 on any slots that fall under the diagonal zone. Returns the
+ *  same reference when nothing changed to avoid spurious renders. */
 function resetDiagDoubles(modules: ModuleSlot[], diagParams: DiagParams, moduleCount: number, widthM: number): ModuleSlot[] {
   if (diagParams.diagonalSide === 'none') return modules
   const slotW = (widthM - WALL_M * 2) / moduleCount
-  return modules.map((m) => {
+  let changed = false
+  const next = modules.map((m) => {
     if (m.span !== 2) return m
     const leftX  = WALL_M + m.slotIndex * slotW
     const rightX = WALL_M + (m.slotIndex + m.span) * slotW
-    if (!isFullHeight(leftX, rightX, diagParams)) return { ...m, span: 1 as const }
+    if (!isFullHeight(leftX, rightX, diagParams)) {
+      changed = true
+      return { ...m, span: 1 as const }
+    }
     return m
   })
+  return changed ? next : modules
+}
+
+/** Build DiagParams from current store state for use in resetDiagDoubles. */
+function diagParamsFromState(s: {
+  diagonalSide: DiagonalSide
+  leftDiagStartHeight: number
+  rightDiagStartHeight: number
+  leftDiagTopWidth: number
+  rightDiagTopWidth: number
+  width: number
+  mainHeight: () => number
+}): DiagParams {
+  const mainH = s.mainHeight()
+  return {
+    diagonalSide: s.diagonalSide,
+    leftDiagStartHeight:  Math.min(s.leftDiagStartHeight,  mainH - 20) / 100,
+    rightDiagStartHeight: Math.min(s.rightDiagStartHeight, mainH - 20) / 100,
+    leftDiagTopWidth:  s.leftDiagTopWidth  / 100,
+    rightDiagTopWidth: s.rightDiagTopWidth / 100,
+    outerWidth: s.width / 100,
+    mainHeight:   mainH / 100,
+    closetHeight: mainH / 100,
+    backDiagonal: false,
+    backDiagKinkHeight: 1.8,
+    backDiagFlatSectionDepth: 0,
+    outerDepth: s.width / 100,
+    moduleCapY: mainH / 100,
+  }
 }
 
 const TOP_CABINET_THRESHOLD = 275
@@ -460,6 +494,15 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
       }
       if (Object.keys(updates).length > 0) set(updates)
     }
+
+    // Re-validate span=2 against the (possibly) new slot widths and diagonal.
+    // Width changes shift which slots are full-height; without this a stale
+    // span=2 produces a degenerate door profile and NaN geometry.
+    const sFinal = get()
+    if (sFinal.diagonalSide !== 'none') {
+      const cleaned = resetDiagDoubles(sFinal.modules, diagParamsFromState(sFinal), sFinal.moduleCount, sFinal.width / 100)
+      if (cleaned !== sFinal.modules) set({ modules: cleaned })
+    }
   },
 
   setHeight: (height) => {
@@ -479,6 +522,13 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
     if (s.rightDiagStartHeight < min) updates.rightDiagStartHeight = min
     if (Object.keys(updates).length > 0) set(updates)
 
+    // Height change shifts mainHeight, which moves the diagonal start cap and
+    // can put previously full-height span=2 slots under the diagonal.
+    const sFinal = get()
+    if (sFinal.diagonalSide !== 'none') {
+      const cleaned = resetDiagDoubles(sFinal.modules, diagParamsFromState(sFinal), sFinal.moduleCount, sFinal.width / 100)
+      if (cleaned !== sFinal.modules) set({ modules: cleaned })
+    }
   },
 
   setDepth: (depth) => {
@@ -519,7 +569,7 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
       }
       if (Object.keys(updates).length > 0) set(updates)
     }
-    const modules: ModuleSlot[] = Array.from({ length: clamped }, (_, i) =>
+    const rebuilt: ModuleSlot[] = Array.from({ length: clamped }, (_, i) =>
       existing[i] ?? { slotIndex: i, layoutId: null, hasDoor: true, span: 1, hasPowerHole: false }
     ).map((m) => ({
       ...m,
@@ -527,6 +577,10 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
       // clear a double that would overflow beyond the new count
       span: (m.span === 2 && m.slotIndex + 1 >= clamped ? 1 : m.span) as 1 | 2,
     }))
+    // Slot widths change with module count → previously full-height span=2
+    // slots can now intersect the diagonal. Drop those before commit.
+    const sNow = get()
+    const modules = resetDiagDoubles(rebuilt, diagParamsFromState(sNow), clamped, sNow.width / 100)
     set({ moduleCount: clamped, modules })
   },
 
@@ -632,7 +686,11 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
     })
   },
   randomFill: () => {
-    const { moduleCount, modules, width, diagonalSide, leftDiagStartHeight, rightDiagStartHeight, leftDiagTopWidth, rightDiagTopWidth } = get()
+    const { moduleCount, modules: existingModules, width, diagonalSide, leftDiagStartHeight, rightDiagStartHeight, leftDiagTopWidth, rightDiagTopWidth } = get()
+    // Reset every slot before refill so stale span/layout state can't leak
+    // into the new layout (e.g. an orphan span=2 carried over from a slot
+    // whose neighbour is now under a diagonal).
+    const modules: ModuleSlot[] = existingModules.map((m) => ({ ...m, layoutId: null, span: 1 as const }))
     const widthM = width / 100
     const mainHeightM = get().mainHeight() / 100
     const MODULE_FLOOR_Y = 0.118 // ONDERSTEL_HEIGHT (0.108) + ONDERSTEL_GAP (0.010)

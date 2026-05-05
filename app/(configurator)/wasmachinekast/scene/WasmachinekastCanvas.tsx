@@ -131,6 +131,7 @@ function CameraSystem() {
 
 export default function WasmachinekastCanvas() {
   const setSelectedSlot = useWasmachinekastStore((s) => s.setSelectedSlot)
+  const step = useWasmachinekastStore((s) => s.step)
   const projectedRef = useRef<ProjectedMap>({})
 
   return (
@@ -166,7 +167,7 @@ export default function WasmachinekastCanvas() {
       />
 
       <WasmMeasurementsOverlayLayer projectedRef={projectedRef} />
-      <CanvasToolbar />
+      <CanvasToolbar showRandomize={step >= 3} />
       <ModulePopover />
       <CanvasPricePanel />
       <ThreeLoader />
