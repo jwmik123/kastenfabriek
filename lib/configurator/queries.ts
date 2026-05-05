@@ -49,7 +49,8 @@ export const pricingDataQuery = groq`{
     productCode,
     "imageUrl": image.asset->url,
     price,
-    allowedMaterials
+    allowedMaterials,
+    bodyColor
   }
 }`;
 

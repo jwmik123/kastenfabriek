@@ -4,7 +4,11 @@ import {
   HANDLE_MATERIAL_IDS,
   DEFAULT_HANDLE_MATERIAL,
   getMetal,
+  LEATHERS,
+  LEATHER_COLOR_IDS,
+  getLeather,
   type HandleMaterial,
+  type LeatherColor,
 } from '../handleMaterials'
 
 const EXPECTED_IDS: HandleMaterial[] = [
@@ -52,6 +56,40 @@ describe('METALS registry', () => {
 
   it('labels are unique', () => {
     const labels = METALS.map((m) => m.label)
+    expect(new Set(labels).size).toBe(labels.length)
+  })
+})
+
+const EXPECTED_LEATHER_IDS: LeatherColor[] = [
+  'leather-pink',
+  'leather-beige',
+  'leather-light-gray',
+  'leather-black',
+]
+
+describe('LEATHERS registry', () => {
+  it('exposes all 4 leathers in declared order', () => {
+    expect(LEATHERS.map((l) => l.id)).toEqual(EXPECTED_LEATHER_IDS)
+    expect(LEATHER_COLOR_IDS).toEqual(EXPECTED_LEATHER_IDS)
+  })
+
+  it('every entry has id, label and hex', () => {
+    for (const l of LEATHERS) {
+      expect(l.id).toBeTruthy()
+      expect(l.label).toBeTruthy()
+      expect(l.hex).toMatch(/^#[0-9a-f]{6}$/i)
+    }
+  })
+
+  it('getLeather returns matching entry; falls back to first on unknown', () => {
+    expect(getLeather('leather-beige').id).toBe('leather-beige')
+    expect(getLeather('leather-black').label).toBe('Zwart')
+    // @ts-expect-error — defensive fallback for an out-of-band id
+    expect(getLeather('not-a-leather').id).toBe('leather-pink')
+  })
+
+  it('labels are unique', () => {
+    const labels = LEATHERS.map((l) => l.label)
     expect(new Set(labels).size).toBe(labels.length)
   })
 })

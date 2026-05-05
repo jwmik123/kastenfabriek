@@ -6,7 +6,7 @@ import gsap from 'gsap'
 import ClosetMaterial from '../materials/ClosetMaterial'
 import { Model as HingeModel } from './Hinge'
 import { HandleByType } from './Handles'
-import type { HandleMaterial } from '../constants/handleMaterials'
+import type { HandleMaterial, LeatherColor } from '../constants/handleMaterials'
 import { trapShape, trapGeo } from '@/utils/debugGeometry'
 
 const DOOR_DEPTH = 0.018
@@ -24,6 +24,7 @@ interface DoorProps {
   doorsOpen: boolean
   doorHandleId: string
   doorHandleMaterial?: HandleMaterial
+  doorHandleBodyColor?: LeatherColor
   mirror?: boolean
   extendToFloor?: boolean
   /**
@@ -64,6 +65,7 @@ export default function Door({
   doorsOpen,
   doorHandleId,
   doorHandleMaterial = 'chrome',
+  doorHandleBodyColor,
   mirror = false,
   extendToFloor = false,
   topProfile,
@@ -140,6 +142,7 @@ export default function Door({
               id={doorHandleId}
               mirror={mirror}
               material={doorHandleMaterial}
+              bodyColor={doorHandleBodyColor}
               position={[handleX, handleY, -DOOR_DEPTH / 2]}
             />
           )}

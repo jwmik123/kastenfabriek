@@ -11,12 +11,22 @@ selectable; each is placed at [0,0,0] at the position supplied by the caller.
 
 Mesh names follow the pattern `{numericId}_{productCode}`. The numeric ID uniquely
 identifies each mesh; the product code appears on multiple size variants.
+
+Multi-mesh handles (slice 056): when a handle is authored as multiple meshes that share
+the same `{id}_` prefix, meshes whose name contains `knob` receive the customer-selected
+metal material; remaining meshes receive a leather material derived from the handle's
+`bodyColor`. Single-mesh handles (one node for a given id, or no `bodyColor`) keep the
+original single-material path.
 */
 
 import { useMemo } from 'react'
 import { useGLTF } from '@react-three/drei'
 import * as THREE from 'three/webgpu'
-import { METALS, DEFAULT_HANDLE_MATERIAL } from '../constants/handleMaterials'
+import {
+  METALS,
+  DEFAULT_HANDLE_MATERIAL,
+  getLeather,
+} from '../constants/handleMaterials'
 
 export const HANDLE_TYPES = [
   { id: '1',  name: '1_W4080' },
@@ -50,11 +60,36 @@ export const HANDLE_TYPES = [
   { id: '29', name: '29_Z2168' },
 ]
 
-export function HandleByType({ id, mirror = false, material = DEFAULT_HANDLE_MATERIAL, ...props }) {
+const KNOB_NAME_REGEX = /knob/i
+
+/**
+ * @param {{
+ *   id?: string,
+ *   mirror?: boolean,
+ *   material?: import('../constants/handleMaterials').HandleMaterial,
+ *   bodyColor?: import('../constants/handleMaterials').LeatherColor,
+ *   [key: string]: any,
+ * }} props
+ */
+export function HandleByType({
+  id,
+  mirror = false,
+  material = DEFAULT_HANDLE_MATERIAL,
+  bodyColor,
+  ...props
+}) {
   const { nodes } = useGLTF('/objects/Handles-transformed.glb')
 
-  const nodeKey = id ? Object.keys(nodes).find((k) => k.startsWith(`${id}_`)) : null
-  const node = nodeKey ? nodes[nodeKey] : null
+  const nodeKeys = useMemo(() => {
+    if (!id) return []
+    return Object.keys(nodes).filter((k) => k.startsWith(`${id}_`))
+  }, [nodes, id])
+
+  const handleNodes = useMemo(() => {
+    return nodeKeys
+      .map((k) => nodes[k])
+      .filter((n) => n && n.geometry)
+  }, [nodes, nodeKeys])
 
   const materialMap = useMemo(() => {
     const map = {}
@@ -66,27 +101,60 @@ export function HandleByType({ id, mirror = false, material = DEFAULT_HANDLE_MAT
 
   const activeMaterial = materialMap[material] ?? materialMap[DEFAULT_HANDLE_MATERIAL]
 
-  // Offset the mesh so its back face (min z) sits at z=0 relative to the group,
-  // making the handle protrude outward from whichever face the group is placed on.
-  // Also centers x and y so placement position is the visual center of the handle.
+  const leatherMaterial = useMemo(() => {
+    if (!bodyColor) return null
+    const entry = getLeather(bodyColor)
+    return new THREE.MeshStandardMaterial({
+      color: entry.hex,
+      metalness: 0.0,
+      roughness: 0.7,
+    })
+  }, [bodyColor])
+
+  const isMultiMesh = handleNodes.length > 1 && !!leatherMaterial
+
+  // Offset the combined geometry so its back face (min z) sits at z=0 and x/y are
+  // centered relative to the group, making the handle protrude outward from the
+  // face it's placed on.
   const meshOffset = useMemo(() => {
-    if (!node?.geometry) return [0, 0, 0]
-    const geo = node.geometry
-    geo.computeBoundingBox()
-    if (!geo.boundingBox) return [0, 0, 0]
-    const { min, max } = geo.boundingBox
+    if (handleNodes.length === 0) return [0, 0, 0]
+    const combined = new THREE.Box3()
+    for (const n of handleNodes) {
+      n.geometry.computeBoundingBox()
+      if (n.geometry.boundingBox) combined.union(n.geometry.boundingBox)
+    }
+    if (combined.isEmpty()) return [0, 0, 0]
+    const { min, max } = combined
     return [
       -(min.x + max.x) / 2,
       -(min.y + max.y) / 2,
       -min.z,
     ]
-  }, [node])
+  }, [handleNodes])
 
-  if (!node) return null
+  if (handleNodes.length === 0) return null
 
   return (
     <group {...props} scale={mirror ? [-1, 1, 1] : undefined}>
-      <mesh geometry={node.geometry} material={activeMaterial} position={meshOffset} rotation={[0, Math.PI, 0]} />
+      <group position={meshOffset} rotation={[0, Math.PI, 0]}>
+        {isMultiMesh
+          ? handleNodes.map((n, i) => {
+              const isKnob = KNOB_NAME_REGEX.test(n.name ?? '')
+              return (
+                <mesh
+                  key={n.name ?? i}
+                  geometry={n.geometry}
+                  material={isKnob ? activeMaterial : leatherMaterial}
+                />
+              )
+            })
+          : (
+            <mesh
+              geometry={handleNodes[0].geometry}
+              material={activeMaterial}
+            />
+          )}
+      </group>
     </group>
   )
 }

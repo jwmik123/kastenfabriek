@@ -140,3 +140,28 @@ export const DEFAULT_HANDLE_MATERIAL: HandleMaterial = 'chrome'
 export function getMetal(id: HandleMaterial): MetalEntry {
   return METALS.find((m) => m.id === id) ?? METALS[0]
 }
+
+export type LeatherColor =
+  | 'leather-pink'
+  | 'leather-beige'
+  | 'leather-light-gray'
+  | 'leather-black'
+
+export interface LeatherEntry {
+  id: LeatherColor
+  label: string
+  hex: string
+}
+
+export const LEATHERS: readonly LeatherEntry[] = [
+  { id: 'leather-pink', label: 'Huidskleur roze', hex: '#e6b8a8' },
+  { id: 'leather-beige', label: 'Beige', hex: '#c8a884' },
+  { id: 'leather-light-gray', label: 'Lichtgrijs', hex: '#a8a8a8' },
+  { id: 'leather-black', label: 'Zwart', hex: '#1a1a1a' },
+] as const
+
+export const LEATHER_COLOR_IDS: readonly LeatherColor[] = LEATHERS.map((l) => l.id)
+
+export function getLeather(id: LeatherColor): LeatherEntry {
+  return LEATHERS.find((l) => l.id === id) ?? LEATHERS[0]
+}

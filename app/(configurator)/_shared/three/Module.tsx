@@ -137,6 +137,8 @@ export default function Module({ index, layout, hasDoor, span, diagParams: p, mi
   const doorHandleId        = useConfiguratorStore((s) => s.doorHandleId)
   const doorHandleMaterial  = useConfiguratorStore((s) => s.doorHandleMaterial)
   const doorsExtendToFloor  = useConfiguratorStore((s) => s.doorsExtendToFloor)
+  const pricingData         = useConfiguratorStore((s) => s.pricingData)
+  const doorHandleBodyColor = pricingData?.handles.find((h) => h.id === doorHandleId)?.bodyColor
   const allModules   = useConfiguratorStore((s) => s.modules)
   const moduleSlot   = allModules.find((m) => m.slotIndex === index)
   const needsTop     = useConfiguratorStore((s) => s.needsTopCabinet())
@@ -526,6 +528,7 @@ export default function Module({ index, layout, hasDoor, span, diagParams: p, mi
           doorsOpen={doorsOpen}
           doorHandleId={doorHandleId}
           doorHandleMaterial={doorHandleMaterial}
+          doorHandleBodyColor={doorHandleBodyColor}
           mirror={mirrorDoor}
           extendToFloor={doorsExtendToFloor}
           topProfile={isBackDiag ? bdDoorProfile : doorProfile}
@@ -541,6 +544,7 @@ export default function Module({ index, layout, hasDoor, span, diagParams: p, mi
             doorsOpen={doorsOpen}
             doorHandleId={doorHandleId}
             doorHandleMaterial={doorHandleMaterial}
+          doorHandleBodyColor={doorHandleBodyColor}
             extendToFloor={doorsExtendToFloor}
             topProfile={isBackDiag ? bdDoorProfile : leftDoorProfile}
           />
@@ -553,6 +557,7 @@ export default function Module({ index, layout, hasDoor, span, diagParams: p, mi
               doorsOpen={doorsOpen}
               doorHandleId={doorHandleId}
               doorHandleMaterial={doorHandleMaterial}
+          doorHandleBodyColor={doorHandleBodyColor}
               mirror
               extendToFloor={doorsExtendToFloor}
               topProfile={isBackDiag ? bdDoorProfile : rightDoorProfile}

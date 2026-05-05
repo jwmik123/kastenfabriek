@@ -66,6 +66,21 @@ export const handle = defineType({
       },
       validation: (Rule) => Rule.unique(),
     }),
+    defineField({
+      name: "bodyColor",
+      title: "Body Color (Leather)",
+      type: "string",
+      description:
+        "Optional. Set when the handle has a fixed leather body and a customer-selected metal knob. Leave empty for single-material handles.",
+      options: {
+        list: [
+          { title: "Huidskleur roze", value: "leather-pink" },
+          { title: "Beige", value: "leather-beige" },
+          { title: "Lichtgrijs", value: "leather-light-gray" },
+          { title: "Zwart", value: "leather-black" },
+        ],
+      },
+    }),
   ],
   preview: {
     select: {
