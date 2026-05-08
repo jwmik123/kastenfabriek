@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
+import { PortableText } from '@portabletext/react'
 
 import { MATERIALS, type Material } from '@/app/(configurator)/kledingkast/materials'
 import { Button } from '@/components/ui/button'
@@ -145,125 +146,140 @@ export default function PaxDoorConfigurator({ product }: { product: Product }) {
   if (!cfg) return null
 
   return (
-    <div className="space-y-8">
-      {/* Preview */}
-      {slug && (
-        <div className="grid grid-cols-2 gap-3">
-          {[1, 2].map((n) => (
-            <div
-              key={n}
-              className="relative aspect-[4/3] overflow-hidden rounded-lg bg-muted"
-            >
-              <Image
-                src={`/colorways/${slug}-${n}.webp`}
-                alt={`${activeMaterial?.name ?? ''} ${n}`}
-                fill
-                sizes="(max-width: 1024px) 50vw, 25vw"
-                className="object-cover"
-              />
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Width */}
-      <div>
-        <h3 className="text-sm font-medium mb-2">Breedte</h3>
-        <div className="flex flex-wrap gap-2">
-          {cfg.widths.map((w) => (
-            <PillButton
-              key={w}
-              active={w === widthCm}
-              onClick={() => setWidthCm(w)}
-            >
-              {w} cm
-            </PillButton>
-          ))}
-        </div>
-      </div>
-
-      {/* Height */}
-      <div>
-        <h3 className="text-sm font-medium mb-2">Hoogte</h3>
-        <div className="flex flex-wrap gap-2">
-          {cfg.heights.map((h) => {
-            const enabled = variantHas(widthCm, h)
-            return (
-              <PillButton
-                key={h}
-                active={h === heightCm}
-                disabled={!enabled}
-                onClick={() => enabled && setHeightCm(h)}
+    <div className="grid gap-10 lg:grid-cols-2">
+      {/* Left: stacked colorway images, reactive to material selection */}
+      <div className="space-y-4">
+        {slug
+          ? [1, 2].map((n) => (
+              <div
+                key={n}
+                className="relative aspect-square overflow-hidden rounded-xl bg-muted"
               >
-                {h} cm
-              </PillButton>
-            )
-          })}
-        </div>
+                <Image
+                  src={`/colorways/${slug}-${n}.webp`}
+                  alt={`${activeMaterial?.name ?? ''} ${n}`}
+                  fill
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                  priority={n === 1}
+                  className="object-cover"
+                />
+              </div>
+            ))
+          : null}
       </div>
 
-      {/* Material */}
+      {/* Right: title, description, controls */}
       <div>
-        <h3 className="text-sm font-medium mb-2">
-          Materiaal{' '}
-          <span className="text-muted-foreground font-normal">
-            — {activeMaterial?.name}
-          </span>
-        </h3>
-        <div className="flex flex-wrap gap-2">
-          {allowedMaterials.map((m) => (
-            <MaterialSwatch
-              key={m.id}
-              material={m}
-              active={m.id === materialId}
-              onClick={() => setMaterialId(m.id)}
-            />
-          ))}
-        </div>
-      </div>
+        <h1 className="text-4xl font-serif text-gray-900 mb-3">
+          {product.title}
+        </h1>
+        <p className="text-lg text-gray-600 mb-8">{product.shortDescription}</p>
 
-      {/* Qty */}
-      <div>
-        <h3 className="text-sm font-medium mb-2">Aantal</h3>
-        <div className="inline-flex items-center gap-2">
-          <Button
-            type="button"
-            size="icon"
-            variant="outline"
-            disabled={qty <= 1}
-            onClick={() => setQty((q) => Math.max(1, q - 1))}
-            aria-label="Min"
-          >
-            −
-          </Button>
-          <span className="w-10 text-center text-base">{qty}</span>
-          <Button
-            type="button"
-            size="icon"
-            variant="outline"
-            disabled={qty >= 10}
-            onClick={() => setQty((q) => Math.min(10, q + 1))}
-            aria-label="Plus"
-          >
-            +
-          </Button>
+        <div className="prose prose-sm max-w-none text-gray-700 mb-8">
+          <PortableText value={product.longDescription} />
         </div>
-      </div>
 
-      {/* Total + CTA */}
-      <div className="border-t pt-6 flex items-center justify-between gap-4">
-        <div>
-          <div className="text-sm text-muted-foreground">Totaal</div>
-          <div className="text-3xl font-serif">{formatEuro(lineTotal)}</div>
-          {priceSnapshot && priceSnapshot.materialSurcharge > 0 && (
-            <div className="text-xs text-muted-foreground mt-1">
-              incl. {formatEuro(priceSnapshot.materialSurcharge)} materiaal-toeslag per stuk
+        <div className="space-y-8">
+          {/* Width */}
+          <div>
+            <h3 className="text-sm font-medium mb-2">Breedte</h3>
+            <div className="flex flex-wrap gap-2">
+              {cfg.widths.map((w) => (
+                <PillButton
+                  key={w}
+                  active={w === widthCm}
+                  onClick={() => setWidthCm(w)}
+                >
+                  {w} cm
+                </PillButton>
+              ))}
             </div>
-          )}
+          </div>
+
+          {/* Height */}
+          <div>
+            <h3 className="text-sm font-medium mb-2">Hoogte</h3>
+            <div className="flex flex-wrap gap-2">
+              {cfg.heights.map((h) => {
+                const enabled = variantHas(widthCm, h)
+                return (
+                  <PillButton
+                    key={h}
+                    active={h === heightCm}
+                    disabled={!enabled}
+                    onClick={() => enabled && setHeightCm(h)}
+                  >
+                    {h} cm
+                  </PillButton>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Material */}
+          <div>
+            <h3 className="text-sm font-medium mb-2">
+              Materiaal{' '}
+              <span className="text-muted-foreground font-normal">
+                — {activeMaterial?.name}
+              </span>
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              {allowedMaterials.map((m) => (
+                <MaterialSwatch
+                  key={m.id}
+                  material={m}
+                  active={m.id === materialId}
+                  onClick={() => setMaterialId(m.id)}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Qty */}
+          <div>
+            <h3 className="text-sm font-medium mb-2">Aantal</h3>
+            <div className="inline-flex items-center gap-2">
+              <Button
+                type="button"
+                size="icon"
+                variant="outline"
+                disabled={qty <= 1}
+                onClick={() => setQty((q) => Math.max(1, q - 1))}
+                aria-label="Min"
+              >
+                −
+              </Button>
+              <span className="w-10 text-center text-base">{qty}</span>
+              <Button
+                type="button"
+                size="icon"
+                variant="outline"
+                disabled={qty >= 10}
+                onClick={() => setQty((q) => Math.min(10, q + 1))}
+                aria-label="Plus"
+              >
+                +
+              </Button>
+            </div>
+          </div>
+
+          {/* Total + CTA */}
+          <div className="border-t pt-6 flex items-center justify-between gap-4">
+            <div>
+              <div className="text-sm text-muted-foreground">Totaal</div>
+              <div className="text-3xl font-serif">{formatEuro(lineTotal)}</div>
+              {priceSnapshot && priceSnapshot.materialSurcharge > 0 && (
+                <div className="text-xs text-muted-foreground mt-1">
+                  incl. {formatEuro(priceSnapshot.materialSurcharge)} materiaal-toeslag per stuk
+                </div>
+              )}
+            </div>
+            <Button type="button" size="lg" disabled aria-disabled>
+              Voeg toe aan winkelwagen
+            </Button>
+          </div>
         </div>
-        <Button type="button" size="lg" disabled aria-disabled>
-          Voeg toe aan winkelwagen
-        </Button>
       </div>
     </div>
   )

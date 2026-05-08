@@ -30,37 +30,39 @@ export default async function ProductPage({
 
   if (!product) notFound();
 
+  const isPax = product.productType === "pax-doors";
+
   return (
     <main className="mx-auto max-w-6xl px-4 pt-32 pb-20">
-      <div className="grid gap-10 lg:grid-cols-2">
-        <div className="relative aspect-square bg-gray-100 rounded-xl overflow-hidden">
-          <Image
-            src={urlFor(product.heroImage).width(1200).height(1200).url()}
-            alt={product.title}
-            fill
-            sizes="(max-width: 1024px) 100vw, 50vw"
-            priority
-            className="object-cover"
-          />
-        </div>
-
-        <div>
-          <h1 className="text-4xl font-serif text-gray-900 mb-3">
-            {product.title}
-          </h1>
-          <p className="text-lg text-gray-600 mb-8">
-            {product.shortDescription}
-          </p>
-
-          <div className="prose prose-sm max-w-none text-gray-700 mb-8">
-            <PortableText value={product.longDescription} />
+      {isPax ? (
+        <PaxDoorConfigurator product={product} />
+      ) : (
+        <div className="grid gap-10 lg:grid-cols-2">
+          <div className="relative aspect-square bg-gray-100 rounded-xl overflow-hidden">
+            <Image
+              src={urlFor(product.heroImage).width(1200).height(1200).url()}
+              alt={product.title}
+              fill
+              sizes="(max-width: 1024px) 100vw, 50vw"
+              priority
+              className="object-cover"
+            />
           </div>
 
-          {product.productType === "pax-doors" && (
-            <PaxDoorConfigurator product={product} />
-          )}
+          <div>
+            <h1 className="text-4xl font-serif text-gray-900 mb-3">
+              {product.title}
+            </h1>
+            <p className="text-lg text-gray-600 mb-8">
+              {product.shortDescription}
+            </p>
+
+            <div className="prose prose-sm max-w-none text-gray-700">
+              <PortableText value={product.longDescription} />
+            </div>
+          </div>
         </div>
-      </div>
+      )}
 
       {product.gallery && product.gallery.length > 0 && (
         <section className="mt-16">
