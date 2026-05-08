@@ -52,6 +52,7 @@ export interface Product {
   longDescription: PortableTextBlock[];
   heroImage: SanityImageRef;
   gallery?: SanityImageRef[];
+  productInfo?: PortableTextBlock[];
   deliveryFee: number;
   paxConfig?: PaxConfig;
 }
@@ -75,6 +76,7 @@ const productProjection = groq`
   longDescription,
   heroImage,
   gallery,
+  productInfo,
   deliveryFee,
   paxConfig
 `;

@@ -21,6 +21,7 @@ import {
 } from '@/lib/actions/cart'
 import type { ProductCartItem } from '@/lib/cart/types'
 import { useSession } from '@/lib/auth-client'
+import Lightbox from './Lightbox'
 
 const COLORWAY_SLUGS: Record<string, string> = {
   'h1199-thermo-eik': 'thermo-eik-zwartbruin',
@@ -147,6 +148,8 @@ export default function PaxDoorConfigurator({
     seed?.configuration.materialId ?? allowedMaterials[0]?.id ?? MATERIALS[0].id,
   )
   const [qty, setQty] = useState<number>(seed?.quantity ?? 1)
+  const [lightboxOpen, setLightboxOpen] = useState(false)
+  const [lightboxStart, setLightboxStart] = useState(0)
   // The id we will replace on save. Null = create-new flow.
   const [activeEditId, setActiveEditId] = useState<string | null>(
     seed ? seed.id : null,
@@ -246,10 +249,16 @@ export default function PaxDoorConfigurator({
       {/* Left: stacked colorway images, reactive to material selection */}
       <div className="space-y-4">
         {slug
-          ? [1, 2].map((n) => (
-              <div
+          ? [1, 2].map((n, i) => (
+              <button
                 key={n}
-                className="relative aspect-video overflow-hidden rounded-xl bg-muted"
+                type="button"
+                onClick={() => {
+                  setLightboxStart(i)
+                  setLightboxOpen(true)
+                }}
+                aria-label="Afbeelding vergroten"
+                className="relative aspect-video w-full overflow-hidden rounded-xl bg-muted cursor-zoom-in group"
               >
                 <Image
                   src={`/colorways/${slug}-${n}.webp`}
@@ -257,12 +266,24 @@ export default function PaxDoorConfigurator({
                   fill
                   sizes="(max-width: 768px) 100vw, 50vw"
                   priority={n === 1}
-                  className="object-cover"
+                  className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
                 />
-              </div>
+              </button>
             ))
           : null}
       </div>
+
+      {slug && (
+        <Lightbox
+          images={[1, 2].map((n) => ({
+            url: `/colorways/${slug}-${n}.webp`,
+            alt: `${activeMaterial?.name ?? ''} ${n}`,
+          }))}
+          startIndex={lightboxStart}
+          open={lightboxOpen}
+          onClose={() => setLightboxOpen(false)}
+        />
+      )}
 
       {/* Right: title, description, controls */}
       <div>

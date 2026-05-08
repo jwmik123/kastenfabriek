@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PortableText } from "@portabletext/react";
@@ -7,6 +6,7 @@ import { ChevronRight } from "lucide-react";
 import { getProductBySlug } from "@/sanity/lib/products";
 import { urlFor } from "@/sanity/lib/image";
 import PaxDoorConfigurator from "@/components/products/PaxDoorConfigurator";
+import ProductImageGallery from "@/components/products/ProductImageGallery";
 import { getServerSession } from "@/lib/actions/auth";
 import { getDbCartItemById } from "@/lib/actions/cart";
 import type { ProductCartItem } from "@/lib/cart/types";
@@ -79,16 +79,18 @@ export default async function ProductPage({
         />
       ) : (
         <div className="grid gap-10 lg:grid-cols-2">
-          <div className="relative aspect-square bg-gray-100 rounded-xl overflow-hidden">
-            <Image
-              src={urlFor(product.heroImage).width(1200).height(1200).url()}
-              alt={product.title}
-              fill
-              sizes="(max-width: 1024px) 100vw, 50vw"
-              priority
-              className="object-cover"
-            />
-          </div>
+          <ProductImageGallery
+            images={[
+              {
+                url: urlFor(product.heroImage).width(1600).height(1600).url(),
+                alt: product.title,
+              },
+              ...(product.gallery ?? []).map((img, i) => ({
+                url: urlFor(img).width(1600).height(1600).url(),
+                alt: `${product.title} — afbeelding ${i + 1}`,
+              })),
+            ]}
+          />
 
           <div>
             <h1 className="text-4xl font-serif text-gray-900 mb-3">
@@ -105,25 +107,14 @@ export default async function ProductPage({
         </div>
       )}
 
-      {product.gallery && product.gallery.length > 0 && (
+      {product.productInfo && product.productInfo.length > 0 && (
         <section className="mt-16">
-          <h2 className="text-2xl font-serif text-gray-900 mb-6">Galerij</h2>
-          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {product.gallery.map((img, i) => (
-              <li
-                key={i}
-                className="relative aspect-[4/3] bg-gray-100 rounded-lg overflow-hidden"
-              >
-                <Image
-                  src={urlFor(img).width(800).height(600).url()}
-                  alt={`${product.title} — afbeelding ${i + 1}`}
-                  fill
-                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                  className="object-cover"
-                />
-              </li>
-            ))}
-          </ul>
+          <h2 className="text-2xl font-serif text-gray-900 mb-6">
+            Productinformatie
+          </h2>
+          <div className="prose prose-sm max-w-none text-gray-700">
+            <PortableText value={product.productInfo} />
+          </div>
         </section>
       )}
     </main>

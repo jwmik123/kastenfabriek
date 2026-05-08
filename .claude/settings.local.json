@@ -11,7 +11,8 @@
       "Bash(npx -y react-doctor@latest . --verbose --diff)",
       "Bash(npx shadcn@latest add button slider badge separator --yes)",
       "Bash(head -1 \"/Users/joelmik/Code/kastenfabriek/app/\\(main\\)/\\(bouw-je-kast\\)/kledingkast/components/ThreeCanvas.tsx\")",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(npm run *)"
     ]
   }
 }

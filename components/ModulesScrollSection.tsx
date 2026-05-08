@@ -137,7 +137,18 @@ export default function ModulesScrollSection() {
   }, []);
 
   return (
-    <div ref={outerRef}>
+    <>
+    {/* Mobile: full-width image, no scroll/text */}
+    <div className="md:hidden w-full">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/images/ModulesH.webp"
+        alt="Alle modules"
+        className="w-full h-auto select-none"
+        draggable={false}
+      />
+    </div>
+    <div ref={outerRef} className="hidden md:block">
       <div className="sticky top-0 h-screen overflow-hidden">
         {/* Image strip */}
         <div
@@ -204,5 +215,6 @@ export default function ModulesScrollSection() {
         ))}
       </div>
     </div>
+    </>
   );
 }

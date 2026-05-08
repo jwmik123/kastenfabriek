@@ -228,6 +228,13 @@ export const product = defineType({
       of: [{ type: "image", options: { hotspot: true } }],
     }),
     defineField({
+      name: "productInfo",
+      title: "Product informatie",
+      type: "array",
+      of: [{ type: "block" }],
+      description: "Extra productinformatie getoond onder de galerij.",
+    }),
+    defineField({
       name: "deliveryFee",
       title: "Bezorgkosten (€)",
       type: "number",

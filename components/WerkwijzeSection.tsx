@@ -86,9 +86,9 @@ export default function WerkwijzeSection() {
           {steps.map((step, index) => (
             <div
               key={step.number}
-              className={index === steps.length - 1 && steps.length % 2 !== 0 ? "col-span-2 max-w-[calc(50%-0.75rem)]" : ""}
+              className={index === steps.length - 1 && steps.length % 2 !== 0 ? "col-span-2" : ""}
             >
-              <div className="relative h-36 mb-3">
+              <div className={`relative mb-3 ${index === steps.length - 1 && steps.length % 2 !== 0 ? "h-56" : "h-36"}`}>
                 <span className="absolute -top-[0.4em] -left-[0.2em] z-10 text-[5rem] font-black text-white/[0.15] leading-none select-none pointer-events-none">
                   {step.number}
                 </span>
