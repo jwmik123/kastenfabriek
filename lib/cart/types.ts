@@ -65,7 +65,23 @@ export interface ClosetConfigSnapshot {
   topCabinetHeightCm: number;
 }
 
-// Price calculated at "Add to Cart" time
+// Serialized non-configurator product line (e.g. PAX doors)
+export interface ProductConfigSnapshot {
+  id: string; // uuid generated at cart time
+  capturedAt: string; // ISO timestamp
+
+  sanityProductId: string;
+  productType: string; // e.g. 'pax-doors'
+  productSlug: string;
+  productName: string;
+
+  widthCm: number;
+  heightCm: number;
+  materialId: string;
+  materialName: string;
+}
+
+// Price calculated at "Add to Cart" time for a closet
 export interface PriceSnapshot {
   calculatedAt: string; // ISO timestamp
   currency: "EUR";
@@ -90,16 +106,42 @@ export interface PriceSnapshot {
   discountType?: "percent" | "fixed";
 }
 
-// One item in the cart (typically quantity=1 for custom closets)
-export interface CartItem {
+// Price snapshot for a non-configurator product line (e.g. PAX doors)
+export interface ProductPriceSnapshot {
+  calculatedAt: string; // ISO timestamp
+  currency: "EUR";
+
+  unitPrice: number;
+  materialSurcharge: number;
+  deliveryCost: number;
+  total: number; // unitPrice + materialSurcharge (excludes delivery)
+
+  discountCode?: string;
+  discountAmount?: number;
+  discountType?: "percent" | "fixed";
+}
+
+interface BaseCartItem {
   id: string; // uuid
   addedAt: string; // ISO timestamp
+  quantity: number;
+  screenshotClosedUrl?: string;
+  screenshotOpenUrl?: string;
+}
+
+export interface ClosetCartItem extends BaseCartItem {
+  kind: 'closet';
   configuration: ClosetConfigSnapshot;
   priceSnapshot: PriceSnapshot;
-  quantity: number;
-  screenshotClosedUrl?: string; // base64 JPEG with doors closed, front-facing
-  screenshotOpenUrl?: string;   // base64 JPEG with doors open, front-facing
 }
+
+export interface ProductCartItem extends BaseCartItem {
+  kind: 'product';
+  configuration: ProductConfigSnapshot;
+  priceSnapshot: ProductPriceSnapshot;
+}
+
+export type CartItem = ClosetCartItem | ProductCartItem;
 
 // The full cart stored in localStorage
 export interface Cart {
@@ -108,5 +150,5 @@ export interface Cart {
   updatedAt: string;
 }
 
-export const CART_VERSION = 1;
+export const CART_VERSION = 2;
 export const CART_LS_KEY = "kf-cart";

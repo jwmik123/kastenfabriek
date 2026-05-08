@@ -6,6 +6,7 @@ export const cartItem = pgTable("cart_item", {
   userId: text("user_id")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
+  kind: text("kind").notNull().default("closet"),
   configuration: jsonb("configuration").notNull(),
   priceSnapshot: jsonb("price_snapshot").notNull(),
   quantity: integer("quantity").notNull().default(1),

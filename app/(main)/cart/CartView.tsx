@@ -3,11 +3,20 @@
 import { useEffect, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Trash2, ShoppingBag, ArrowRight, Pencil } from 'lucide-react'
-import type { CartItem } from '@/lib/cart/types'
+import type { CartItem, ClosetCartItem, ProductCartItem } from '@/lib/cart/types'
 import { getCart, removeItem, clearCart } from '@/lib/cart/cart-store'
 import { syncCartItems, removeDbCartItem } from '@/lib/actions/cart'
 import { getDeliveryWindow } from '@/lib/delivery-window'
+
+const COLORWAY_SLUGS: Record<string, string> = {
+  'h1199-thermo-eik': 'thermo-eik-zwartbruin',
+  'h3165-vicenza-eik-licht': 'vicenza-eik-licht',
+  'h3158-vicenza-eik-grijs': 'vicenza-eik-grijs',
+  'h1714-lincoln-notelaar': 'lincoln-notelaar',
+  'h3190-fineline-antraciet': 'fineline-metallic-antraciet',
+}
 
 const fmt = new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 })
 
@@ -69,11 +78,21 @@ export default function CartView({ isAuthenticated, initialDbItems }: CartViewPr
   }
 
   const totals = items.reduce(
-    (acc, item) => ({
-      subtotal: acc.subtotal + item.priceSnapshot.subtotal * item.quantity,
-      installation: acc.installation + item.priceSnapshot.installationCost * item.quantity,
-      total: acc.total + item.priceSnapshot.total * item.quantity,
-    }),
+    (acc, item) => {
+      if (item.kind === 'closet') {
+        return {
+          subtotal: acc.subtotal + item.priceSnapshot.subtotal * item.quantity,
+          installation: acc.installation + item.priceSnapshot.installationCost * item.quantity,
+          total: acc.total + item.priceSnapshot.total * item.quantity,
+        }
+      }
+      // Product line: total excludes delivery; show under subtotal.
+      return {
+        subtotal: acc.subtotal + (item.priceSnapshot.total + item.priceSnapshot.deliveryCost) * item.quantity,
+        installation: acc.installation,
+        total: acc.total + (item.priceSnapshot.total + item.priceSnapshot.deliveryCost) * item.quantity,
+      }
+    },
     { subtotal: 0, installation: 0, total: 0 }
   )
 
@@ -106,14 +125,23 @@ export default function CartView({ isAuthenticated, initialDbItems }: CartViewPr
       <h1 className="text-3xl font-bold text-gray-900 mb-8 pt-20">Winkelwagen</h1>
 
       <div className="space-y-4 mb-8">
-        {items.map((item) => (
-          <CartItemCard
-            key={item.id}
-            item={item}
-            onRemove={() => handleRemove(item)}
-            editHref={`/kledingkast?edit=${item.id}`}
-          />
-        ))}
+        {items.map((item) =>
+          item.kind === 'product' ? (
+            <ProductItemCard
+              key={item.id}
+              item={item}
+              onRemove={() => handleRemove(item)}
+              editHref={`/producten/${item.configuration.productSlug}?edit=${item.id}`}
+            />
+          ) : (
+            <CartItemCard
+              key={item.id}
+              item={item}
+              onRemove={() => handleRemove(item)}
+              editHref={`/kledingkast?edit=${item.id}`}
+            />
+          )
+        )}
       </div>
 
       {/* Order summary */}
@@ -164,7 +192,7 @@ export default function CartView({ isAuthenticated, initialDbItems }: CartViewPr
             </div>
           )}
           <Link
-            href={`/kledingkast${items.length === 1 ? `?edit=${items[0].id}` : ''}`}
+            href={`/kledingkast${items.length === 1 && items[0].kind === 'closet' ? `?edit=${items[0].id}` : ''}`}
             className="flex items-center justify-center w-full py-3 px-6 border border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors text-sm"
           >
             Verder configureren
@@ -175,7 +203,7 @@ export default function CartView({ isAuthenticated, initialDbItems }: CartViewPr
   )
 }
 
-function CartItemCard({ item, onRemove, editHref }: { item: CartItem; onRemove: () => void; editHref: string }) {
+function CartItemCard({ item, onRemove, editHref }: { item: ClosetCartItem; onRemove: () => void; editHref: string }) {
   const config = item.configuration
   const price = item.priceSnapshot
   const [expanded, setExpanded] = useState(false)
@@ -272,6 +300,74 @@ function CartItemCard({ item, onRemove, editHref }: { item: CartItem; onRemove: 
       <div className="flex justify-end">
         <span className="font-semibold text-gray-900">{fmt.format(price.total)}</span>
       </div>
+      </div>
+    </div>
+  )
+}
+
+function ProductItemCard({
+  item,
+  onRemove,
+  editHref,
+}: {
+  item: ProductCartItem
+  onRemove: () => void
+  editHref: string
+}) {
+  const { configuration: cfg, priceSnapshot: price, quantity } = item
+  const slug = COLORWAY_SLUGS[cfg.materialId] ?? cfg.materialId
+  const lineTotal = (price.total + price.deliveryCost) * quantity
+
+  return (
+    <div className="bg-white rounded-2xl shadow-sm overflow-hidden flex gap-0">
+      <div className="shrink-0 w-1/4 self-stretch bg-gray-100 relative min-h-[160px]">
+        <Image
+          src={`/colorways/${slug}-1.webp`}
+          alt={cfg.materialName}
+          fill
+          sizes="(max-width: 768px) 25vw, 200px"
+          className="object-cover"
+        />
+      </div>
+
+      <div className="flex-1 min-w-0 p-6">
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <h3 className="font-semibold text-gray-900 text-lg">{cfg.productName}</h3>
+            <p className="text-sm text-gray-500 mt-0.5">
+              {cfg.widthCm} × {cfg.heightCm} cm · {cfg.materialName}
+              {' · '}{quantity} {quantity === 1 ? 'stuk' : 'stuks'}
+            </p>
+          </div>
+          <div className="flex items-center gap-1">
+            <Link
+              href={editHref}
+              className="text-gray-400 hover:text-primary transition-colors p-1"
+              aria-label="Aanpassen"
+            >
+              <Pencil className="w-4 h-4" />
+            </Link>
+            <button
+              onClick={onRemove}
+              className="text-gray-400 hover:text-red-500 transition-colors p-1"
+              aria-label="Verwijder item"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        <div className="text-sm text-gray-500 space-y-1 mb-4">
+          <div className="flex justify-between"><span>Stuksprijs</span><span>{fmt.format(price.unitPrice)}</span></div>
+          {price.materialSurcharge > 0 && (
+            <div className="flex justify-between"><span>Materiaal-toeslag</span><span>{fmt.format(price.materialSurcharge)}</span></div>
+          )}
+          <div className="flex justify-between"><span>Bezorging</span><span>{fmt.format(price.deliveryCost)}</span></div>
+        </div>
+
+        <div className="flex justify-end">
+          <span className="font-semibold text-gray-900">{fmt.format(lineTotal)}</span>
+        </div>
       </div>
     </div>
   )

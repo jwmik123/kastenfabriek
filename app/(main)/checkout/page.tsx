@@ -14,10 +14,13 @@ export default async function CheckoutPage() {
     redirect("/login?callbackUrl=/checkout");
   }
 
-  const [cartItems, addresses] = await Promise.all([
+  const [allCartItems, addresses] = await Promise.all([
     getDbCartItems(),
     getAddresses(),
   ]);
+
+  // TODO(slice 062): wire product items through checkout. For now closet-only.
+  const cartItems = allCartItems.filter((i) => i.kind === "closet");
 
   if (cartItems.length === 0) {
     redirect("/cart");

@@ -6,7 +6,7 @@ import { order, orderItem, cartItem, address } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { getCurrentUser } from "./auth";
 import { revalidatePath } from "next/cache";
-import type { CartItem } from "@/lib/cart/types";
+import type { ClosetCartItem } from "@/lib/cart/types";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2026-02-25.clover",
@@ -33,15 +33,20 @@ export async function createCheckoutSession(
 
   if (cartRows.length === 0) throw new Error("Cart is empty");
 
-  const items = cartRows.map((row) => ({
-    id: row.id,
-    addedAt: row.addedAt.toISOString(),
-    configuration: row.configuration as CartItem["configuration"],
-    priceSnapshot: row.priceSnapshot as CartItem["priceSnapshot"],
-    quantity: row.quantity,
-    screenshotClosedUrl: row.screenshotClosedUrl ?? undefined,
-    screenshotOpenUrl: row.screenshotOpenUrl ?? undefined,
-  })) satisfies CartItem[];
+  // TODO(slice 062): wire product items through Stripe + cart-totals.
+  // For now closet-only. Product items remain in the cart untouched.
+  const items: ClosetCartItem[] = cartRows
+    .filter((row) => row.kind === "closet")
+    .map((row) => ({
+      id: row.id,
+      addedAt: row.addedAt.toISOString(),
+      kind: "closet",
+      configuration: row.configuration as ClosetCartItem["configuration"],
+      priceSnapshot: row.priceSnapshot as ClosetCartItem["priceSnapshot"],
+      quantity: row.quantity,
+      screenshotClosedUrl: row.screenshotClosedUrl ?? undefined,
+      screenshotOpenUrl: row.screenshotOpenUrl ?? undefined,
+    }));
 
   // Fetch shipping address for snapshot
   const shippingAddr = await db.query.address.findFirst({

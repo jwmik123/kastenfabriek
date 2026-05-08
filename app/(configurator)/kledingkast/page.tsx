@@ -22,7 +22,7 @@ export default async function KledingkastPage({
     const session = await getServerSession()
     if (session?.user) {
       const item = await getDbCartItemById(edit)
-      if (item) editConfig = item.configuration
+      if (item && item.kind === 'closet') editConfig = item.configuration
     }
     // Unauthenticated: client reads from localStorage cart (editItemId prop passed below)
   }

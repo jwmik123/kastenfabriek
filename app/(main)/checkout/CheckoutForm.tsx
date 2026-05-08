@@ -7,7 +7,7 @@ import { createAddress } from '@/lib/actions/address'
 import { validateCoupon } from '@/lib/actions/coupon'
 import type { ValidateCouponResult } from '@/lib/actions/coupon'
 import { calculateDiscount } from '@/lib/cart/discount'
-import type { CartItem } from '@/lib/cart/types'
+import type { ClosetCartItem } from '@/lib/cart/types'
 import { getDeliveryWindow } from '@/lib/delivery-window'
 
 type Address = {
@@ -28,7 +28,7 @@ type Address = {
 
 interface CheckoutFormProps {
   addresses: Address[]
-  cartItems: CartItem[]
+  cartItems: ClosetCartItem[]
 }
 
 const fmt = new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 })

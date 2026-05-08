@@ -1,5 +1,6 @@
 import type { Cart, CartItem } from "./types";
 import { CART_LS_KEY, CART_VERSION } from "./types";
+import { mergeOrAddProduct } from "./merge";
 
 function emptyCart(): Cart {
   return { version: CART_VERSION, items: [], updatedAt: new Date().toISOString() };
@@ -33,12 +34,16 @@ function saveCart(cart: Cart) {
 
 export function addItem(item: CartItem): void {
   const cart = getCart();
-  // Replace if same id already exists (prevents duplicates)
-  const idx = cart.items.findIndex((i) => i.id === item.id);
-  if (idx >= 0) {
-    cart.items[idx] = item;
+  if (item.kind === 'product') {
+    cart.items = mergeOrAddProduct(cart.items, item);
   } else {
-    cart.items.push(item);
+    // Replace if same id already exists (prevents duplicates)
+    const idx = cart.items.findIndex((i) => i.id === item.id);
+    if (idx >= 0) {
+      cart.items[idx] = item;
+    } else {
+      cart.items.push(item);
+    }
   }
   saveCart(cart);
 }

@@ -56,7 +56,7 @@ export default function WasmachinekastConfigurator({ pricingData, editConfig, ed
       restoreConfig(editConfig)
     } else if (editItemId) {
       const item = getCart().items.find((i) => i.id === editItemId)
-      if (item) restoreConfig(item.configuration)
+      if (item && item.kind === 'closet') restoreConfig(item.configuration)
     } else {
       const draft = getDraftConfig('wasmachinekast')
       if (draft) restoreConfig(draft)

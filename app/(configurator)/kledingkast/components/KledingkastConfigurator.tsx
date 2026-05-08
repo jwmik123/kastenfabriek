@@ -47,7 +47,7 @@ export default function KledingkastConfigurator({ pricingData, editConfig, editI
     } else if (editItemId) {
       // Unauthenticated: find in localStorage cart
       const item = getCart().items.find((i) => i.id === editItemId)
-      if (item) restoreConfig(item.configuration)
+      if (item && item.kind === 'closet') restoreConfig(item.configuration)
     } else {
       // Restore autosaved draft if available
       const draft = getDraftConfig('kledingkast')

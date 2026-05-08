@@ -186,6 +186,7 @@ export function useCartPrice() {
     const cartItem: CartItem = {
       id: itemId,
       addedAt: configSnapshot.capturedAt,
+      kind: 'closet',
       configuration: configSnapshot,
       priceSnapshot,
       quantity: 1,

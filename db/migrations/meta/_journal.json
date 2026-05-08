@@ -15,6 +15,13 @@
       "when": 1777283781853,
       "tag": "0001_hesitant_moira_mactaggert",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1778232000363,
+      "tag": "0002_add_kind_to_cart_and_order",
+      "breakpoints": true
     }
   ]
 }

@@ -75,6 +75,7 @@ const mockCartRow = {
   id: "cart_1",
   addedAt: new Date("2024-01-01"),
   userId: "user_1",
+  kind: "closet",
   quantity: 1,
   screenshotClosedUrl: null,
   screenshotOpenUrl: null,

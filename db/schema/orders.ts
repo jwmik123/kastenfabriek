@@ -39,6 +39,7 @@ export const orderItem = pgTable("order_item", {
   orderId: text("order_id")
     .notNull()
     .references(() => order.id, { onDelete: "cascade" }),
+  kind: text("kind").notNull().default("closet"),
   sanityProductId: text("sanity_product_id").notNull(), // Reference to Sanity product
   productName: text("product_name").notNull(), // Snapshot of product name
   // Full configuration snapshot at time of order

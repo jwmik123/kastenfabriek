@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useTransition } from 'react'
 import Image from 'next/image'
+import { useRouter } from 'next/navigation'
 import { PortableText } from '@portabletext/react'
 
 import { MATERIALS, type Material } from '@/app/(configurator)/kledingkast/materials'
@@ -9,6 +10,10 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import type { Product } from '@/sanity/lib/products'
 import { calcProductPrice } from '@/lib/products/pricing'
+import { addItem as addLocalCartItem } from '@/lib/cart/cart-store'
+import { addProductCartItem } from '@/lib/actions/cart'
+import type { ProductCartItem } from '@/lib/cart/types'
+import { useSession } from '@/lib/auth-client'
 
 const COLORWAY_SLUGS: Record<string, string> = {
   'h1199-thermo-eik': 'thermo-eik-zwartbruin',
@@ -94,6 +99,9 @@ function MaterialSwatch({
 }
 
 export default function PaxDoorConfigurator({ product }: { product: Product }) {
+  const router = useRouter()
+  const session = useSession()
+  const [isAdding, startAddTransition] = useTransition()
   const cfg = product.paxConfig
   const widths = cfg?.widths ?? []
   const heights = cfg?.heights ?? []
@@ -143,23 +151,61 @@ export default function PaxDoorConfigurator({ product }: { product: Product }) {
     allowedMaterials.find((m) => m.id === materialId) ?? allowedMaterials[0]
   const slug = activeMaterial ? slugFor(activeMaterial.id) : null
 
+  const handleAddToCart = () => {
+    if (!priceSnapshot || !activeMaterial) return
+    const itemId =
+      typeof crypto !== 'undefined' && 'randomUUID' in crypto
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random()}`
+    const now = new Date().toISOString()
+    const cartItem: ProductCartItem = {
+      id: itemId,
+      addedAt: now,
+      kind: 'product',
+      configuration: {
+        id: itemId,
+        capturedAt: now,
+        sanityProductId: product._id,
+        productType: product.productType,
+        productSlug: product.slug,
+        productName: product.title,
+        widthCm,
+        heightCm,
+        materialId: activeMaterial.id,
+        materialName: activeMaterial.name,
+      },
+      priceSnapshot,
+      quantity: qty,
+    }
+
+    if (session.data?.user) {
+      startAddTransition(async () => {
+        await addProductCartItem(cartItem)
+        router.push('/cart')
+      })
+    } else {
+      addLocalCartItem(cartItem)
+      router.push('/cart')
+    }
+  }
+
   if (!cfg) return null
 
   return (
-    <div className="grid gap-10 lg:grid-cols-2">
+    <div className="grid gap-10 md:grid-cols-2">
       {/* Left: stacked colorway images, reactive to material selection */}
       <div className="space-y-4">
         {slug
           ? [1, 2].map((n) => (
               <div
                 key={n}
-                className="relative aspect-square overflow-hidden rounded-xl bg-muted"
+                className="relative aspect-video overflow-hidden rounded-xl bg-muted"
               >
                 <Image
                   src={`/colorways/${slug}-${n}.webp`}
                   alt={`${activeMaterial?.name ?? ''} ${n}`}
                   fill
-                  sizes="(max-width: 1024px) 100vw, 50vw"
+                  sizes="(max-width: 768px) 100vw, 50vw"
                   priority={n === 1}
                   className="object-cover"
                 />
@@ -275,8 +321,13 @@ export default function PaxDoorConfigurator({ product }: { product: Product }) {
                 </div>
               )}
             </div>
-            <Button type="button" size="lg" disabled aria-disabled>
-              Voeg toe aan winkelwagen
+            <Button
+              type="button"
+              size="lg"
+              onClick={handleAddToCart}
+              disabled={!priceSnapshot || isAdding}
+            >
+              {isAdding ? 'Bezig…' : 'Voeg toe aan winkelwagen'}
             </Button>
           </div>
         </div>

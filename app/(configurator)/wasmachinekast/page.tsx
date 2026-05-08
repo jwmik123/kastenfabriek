@@ -19,7 +19,7 @@ export default async function WasmachinekastPage({
     const session = await getServerSession()
     if (session?.user) {
       const item = await getDbCartItemById(edit)
-      if (item) editConfig = item.configuration
+      if (item && item.kind === 'closet') editConfig = item.configuration
     }
   }
 
