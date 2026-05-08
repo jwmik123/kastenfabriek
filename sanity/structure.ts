@@ -31,6 +31,7 @@ export const structure: StructureResolver = (S) =>
           S.list()
             .title('Commerce')
             .items([
+              S.documentTypeListItem('product').title('Producten'),
               S.documentTypeListItem('coupon').title('Kortingscodes'),
             ]),
         ),
@@ -46,10 +47,10 @@ export const structure: StructureResolver = (S) =>
               singleton(S, 'pricingConfig', 'Prijsconfiguratie'),
               S.divider(),
               S.listItem()
-                .title('Producten')
+                .title('Onderdelen')
                 .child(
                   S.list()
-                    .title('Producten')
+                    .title('Onderdelen')
                     .items([
                       S.documentTypeListItem('moduleLayout').title('Modules'),
                       S.documentTypeListItem('doorType').title('Deuren'),
