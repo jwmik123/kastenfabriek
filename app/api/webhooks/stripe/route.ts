@@ -5,7 +5,13 @@ import { order, orderItem, cartItem } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { sendOrderConfirmationEmail } from "@/lib/email/resend";
 import { incrementCouponUseCount } from "@/lib/actions/coupon";
-import type { ClosetConfigSnapshot, PriceSnapshot } from "@/lib/cart/types";
+import type {
+  ClosetConfigSnapshot,
+  PriceSnapshot,
+  ProductConfigSnapshot,
+  ProductPriceSnapshot,
+} from "@/lib/cart/types";
+import type { EmailOrderItem } from "@/emails/OrderConfirmation";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2026-02-25.clover",
@@ -90,7 +96,19 @@ export async function POST(request: NextRequest) {
           phone?: string | null;
         };
 
-        const items = orderItems.map((item) => {
+        const items: EmailOrderItem[] = orderItems.map((item) => {
+          if (item.kind === "product") {
+            const snapshot = item.configurationSnapshot as {
+              configuration: ProductConfigSnapshot;
+              priceSnapshot: ProductPriceSnapshot;
+            };
+            return {
+              kind: "product",
+              configuration: snapshot.configuration,
+              priceSnapshot: snapshot.priceSnapshot,
+              quantity: item.quantity,
+            };
+          }
           const snapshot = item.configurationSnapshot as {
             configuration: ClosetConfigSnapshot;
             priceSnapshot: PriceSnapshot;
@@ -98,8 +116,10 @@ export async function POST(request: NextRequest) {
             screenshotOpenUrl?: string | null;
           };
           return {
+            kind: "closet",
             configuration: snapshot.configuration,
             priceSnapshot: snapshot.priceSnapshot,
+            quantity: item.quantity,
             screenshotClosedUrl: snapshot.screenshotClosedUrl ?? undefined,
             screenshotOpenUrl: snapshot.screenshotOpenUrl ?? undefined,
           };

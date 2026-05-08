@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { render } from "@react-email/components";
 import React from "react";
 import OrderConfirmation from "../OrderConfirmation";
-import type { OrderConfirmationProps } from "../OrderConfirmation";
+import type { OrderConfirmationProps, ClosetEmailItem } from "../OrderConfirmation";
 
 const basePrice = {
   calculatedAt: "2026-01-01T00:00:00Z",
@@ -55,11 +55,20 @@ const baseProps: OrderConfirmationProps = {
   },
   items: [
     {
+      kind: "closet",
       configuration: baseConfig,
       priceSnapshot: basePrice,
-    },
+      quantity: 1,
+    } satisfies ClosetEmailItem,
   ],
   totalAmountCents: 109500,
+};
+
+const baseClosetItem: ClosetEmailItem = {
+  kind: "closet",
+  configuration: baseConfig,
+  priceSnapshot: basePrice,
+  quantity: 1,
 };
 
 describe("OrderConfirmation", () => {
@@ -86,7 +95,7 @@ describe("OrderConfirmation", () => {
       ...baseProps,
       items: [
         {
-          ...baseProps.items[0],
+          ...baseClosetItem,
           priceSnapshot: {
             ...basePrice,
             discountCode: "SAVE25",
@@ -110,7 +119,7 @@ describe("OrderConfirmation", () => {
       ...baseProps,
       items: [
         {
-          ...baseProps.items[0],
+          ...baseClosetItem,
           priceSnapshot: {
             ...basePrice,
             installationCost: 0,
@@ -136,7 +145,7 @@ describe("OrderConfirmation", () => {
       ...baseProps,
       items: [
         {
-          ...baseProps.items[0],
+          ...baseClosetItem,
           priceSnapshot: {
             ...basePrice,
             freeMontageApplied: true,
@@ -149,12 +158,88 @@ describe("OrderConfirmation", () => {
     expect(html).not.toContain("Gratis montage");
   });
 
+  it("renders PAX product line with size, material, qty", async () => {
+    const props: OrderConfirmationProps = {
+      ...baseProps,
+      items: [
+        {
+          kind: "product",
+          configuration: {
+            id: "p1",
+            capturedAt: "2026-01-01T00:00:00Z",
+            sanityProductId: "pax-1",
+            productType: "pax-doors",
+            productSlug: "pax-deuren",
+            productName: "PAX Deur",
+            widthCm: 50,
+            heightCm: 229,
+            materialId: "white",
+            materialName: "Wit",
+          },
+          priceSnapshot: {
+            calculatedAt: "2026-01-01T00:00:00Z",
+            currency: "EUR",
+            unitPrice: 80,
+            materialSurcharge: 0,
+            deliveryCost: 20,
+            total: 80,
+          },
+          quantity: 2,
+        },
+      ],
+      totalAmountCents: 18000,
+    };
+    const html = await render(<OrderConfirmation {...props} />);
+    expect(html).toContain("PAX Deur");
+    expect(html).toContain("50");
+    expect(html).toContain("229");
+    expect(html).toContain("Wit");
+    expect(html).toContain("Aantal");
+  });
+
+  it("renders both line types in a mixed cart", async () => {
+    const props: OrderConfirmationProps = {
+      ...baseProps,
+      items: [
+        baseProps.items[0],
+        {
+          kind: "product",
+          configuration: {
+            id: "p1",
+            capturedAt: "2026-01-01T00:00:00Z",
+            sanityProductId: "pax-1",
+            productType: "pax-doors",
+            productSlug: "pax-deuren",
+            productName: "PAX Deur",
+            widthCm: 50,
+            heightCm: 229,
+            materialId: "white",
+            materialName: "Wit",
+          },
+          priceSnapshot: {
+            calculatedAt: "2026-01-01T00:00:00Z",
+            currency: "EUR",
+            unitPrice: 80,
+            materialSurcharge: 0,
+            deliveryCost: 20,
+            total: 80,
+          },
+          quantity: 1,
+        },
+      ],
+      totalAmountCents: 119500,
+    };
+    const html = await render(<OrderConfirmation {...props} />);
+    expect(html).toContain("Maatwerkkast");
+    expect(html).toContain("PAX Deur");
+  });
+
   it("total reflects discounted amount", async () => {
     const props: OrderConfirmationProps = {
       ...baseProps,
       items: [
         {
-          ...baseProps.items[0],
+          ...baseClosetItem,
           priceSnapshot: {
             ...basePrice,
             discountCode: "SAVE25",

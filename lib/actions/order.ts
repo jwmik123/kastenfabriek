@@ -51,6 +51,18 @@ export async function getOrderById(orderId: string) {
   return result;
 }
 
+export async function getOrderItems(orderId: string) {
+  const user = await getCurrentUser();
+  if (!user) return [];
+
+  const o = await db.query.order.findFirst({ where: eq(order.id, orderId) });
+  if (!o || o.userId !== user.id) return [];
+
+  return db.query.orderItem.findMany({
+    where: eq(orderItem.orderId, orderId),
+  });
+}
+
 export async function createOrder(data: CreateOrderInput) {
   const user = await getCurrentUser();
   if (!user) throw new Error("Not authenticated");

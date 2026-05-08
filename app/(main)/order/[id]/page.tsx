@@ -2,7 +2,16 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle, Package } from "lucide-react";
 import { getServerSession } from "@/lib/actions/auth";
-import { getOrderById } from "@/lib/actions/order";
+import { getOrderById, getOrderItems } from "@/lib/actions/order";
+import OrderLineItem, {
+  type OrderLineSnapshot,
+} from "@/components/order/OrderLineItem";
+import type {
+  ClosetConfigSnapshot,
+  PriceSnapshot,
+  ProductConfigSnapshot,
+  ProductPriceSnapshot,
+} from "@/lib/cart/types";
 
 export const metadata = {
   title: "Bestelling bevestigd | Kastenfabriek",
@@ -40,6 +49,32 @@ export default async function OrderPage({
   if (!orderRecord) {
     redirect("/account/orders");
   }
+
+  const rows = await getOrderItems(id);
+  const lines: OrderLineSnapshot[] = rows.map((row) => {
+    if (row.kind === "product") {
+      const snap = row.configurationSnapshot as {
+        configuration: ProductConfigSnapshot;
+        priceSnapshot: ProductPriceSnapshot;
+      };
+      return {
+        kind: "product",
+        configuration: snap.configuration,
+        priceSnapshot: snap.priceSnapshot,
+        quantity: row.quantity,
+      };
+    }
+    const snap = row.configurationSnapshot as {
+      configuration: ClosetConfigSnapshot;
+      priceSnapshot: PriceSnapshot;
+    };
+    return {
+      kind: "closet",
+      configuration: snap.configuration,
+      priceSnapshot: snap.priceSnapshot,
+      quantity: row.quantity,
+    };
+  });
 
   const shippingAddress = orderRecord.shippingAddressSnapshot as {
     firstName?: string;
@@ -103,6 +138,16 @@ export default async function OrderPage({
               )}
               {shippingAddress.country && <p>{shippingAddress.country}</p>}
             </div>
+          </div>
+        )}
+
+        {/* Line items */}
+        {lines.length > 0 && (
+          <div className="space-y-3">
+            <h2 className="font-medium text-gray-900">Bestelde items</h2>
+            {lines.map((line, i) => (
+              <OrderLineItem key={i} item={line} />
+            ))}
           </div>
         )}
 

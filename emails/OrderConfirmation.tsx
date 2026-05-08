@@ -13,7 +13,12 @@ import {
   Text,
 } from "@react-email/components";
 import { MATERIALS } from "@/app/(configurator)/kledingkast/materials";
-import type { ClosetConfigSnapshot, PriceSnapshot } from "@/lib/cart/types";
+import type {
+  ClosetConfigSnapshot,
+  PriceSnapshot,
+  ProductConfigSnapshot,
+  ProductPriceSnapshot,
+} from "@/lib/cart/types";
 import { getDeliveryWindow } from "@/lib/delivery-window";
 
 interface AddressSnapshot {
@@ -29,19 +34,30 @@ interface AddressSnapshot {
   phone?: string | null;
 }
 
-interface OrderItemSnapshot {
+export interface ClosetEmailItem {
+  kind: "closet";
   configuration: ClosetConfigSnapshot;
   priceSnapshot: PriceSnapshot;
+  quantity?: number;
   screenshotClosedUrl?: string;
   screenshotOpenUrl?: string;
 }
+
+export interface ProductEmailItem {
+  kind: "product";
+  configuration: ProductConfigSnapshot;
+  priceSnapshot: ProductPriceSnapshot;
+  quantity: number;
+}
+
+export type EmailOrderItem = ClosetEmailItem | ProductEmailItem;
 
 export interface OrderConfirmationProps {
   orderNumber: string;
   orderDate: Date;
   customerEmail: string;
   shippingAddress: AddressSnapshot;
-  items: OrderItemSnapshot[];
+  items: EmailOrderItem[];
   totalAmountCents: number;
 }
 
@@ -139,6 +155,66 @@ export default function OrderConfirmation({
 
           {/* Order items */}
           {items.map((item, i) => {
+            if (item.kind === "product") {
+              const cfg = item.configuration;
+              const ps = item.priceSnapshot;
+              const qty = item.quantity;
+              const lineTotal = (ps.total + ps.deliveryCost) * qty;
+              return (
+                <Section key={i} style={itemSection}>
+                  <Heading as="h3" style={h3}>
+                    {cfg.productName} — {cfg.widthCm} × {cfg.heightCm} cm
+                  </Heading>
+                  <table width="100%" cellPadding="0" cellSpacing="0" style={{ marginTop: "8px" }}>
+                    <tr>
+                      <td style={detailLabel}><Text style={label}>Maat</Text></td>
+                      <td><Text style={value}>{cfg.widthCm} × {cfg.heightCm} cm</Text></td>
+                    </tr>
+                    <tr>
+                      <td style={detailLabel}><Text style={label}>Materiaal</Text></td>
+                      <td><Text style={value}>{cfg.materialName}</Text></td>
+                    </tr>
+                    <tr>
+                      <td style={detailLabel}><Text style={label}>Aantal</Text></td>
+                      <td><Text style={value}>{qty}</Text></td>
+                    </tr>
+                  </table>
+                  <Section style={priceSection}>
+                    <Heading as="h4" style={h4}>Prijsoverzicht</Heading>
+                    <table width="100%" cellPadding="0" cellSpacing="0">
+                      <tr>
+                        <td><Text style={priceLabel}>Stuksprijs</Text></td>
+                        <td style={{ textAlign: "right" }}><Text style={priceAmount}>{formatPrice(ps.unitPrice)}</Text></td>
+                      </tr>
+                      {ps.materialSurcharge > 0 && (
+                        <tr>
+                          <td><Text style={priceLabel}>Materiaal-toeslag</Text></td>
+                          <td style={{ textAlign: "right" }}><Text style={priceAmount}>{formatPrice(ps.materialSurcharge)}</Text></td>
+                        </tr>
+                      )}
+                      <tr>
+                        <td><Text style={priceLabel}>Bezorging</Text></td>
+                        <td style={{ textAlign: "right" }}><Text style={priceAmount}>{formatPrice(ps.deliveryCost)}</Text></td>
+                      </tr>
+                      {qty > 1 && (
+                        <tr>
+                          <td><Text style={priceLabel}>Aantal</Text></td>
+                          <td style={{ textAlign: "right" }}><Text style={priceAmount}>× {qty}</Text></td>
+                        </tr>
+                      )}
+                    </table>
+                    <Hr style={thinHr} />
+                    <table width="100%" cellPadding="0" cellSpacing="0">
+                      <tr>
+                        <td><Text style={totalLabel}>Totaal</Text></td>
+                        <td style={{ textAlign: "right" }}><Text style={totalAmountStyle}>{formatPrice(lineTotal)}</Text></td>
+                      </tr>
+                    </table>
+                  </Section>
+                </Section>
+              );
+            }
+
             const { configuration: c, priceSnapshot: p } = item;
             const outerMaterial = getMaterialName(c.buitenkantMaterialId);
             const innerMaterial = getMaterialName(c.binnenkantMaterialId);
