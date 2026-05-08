@@ -166,3 +166,26 @@ export async function addProductCartItem(incoming: ProductCartItem): Promise<voi
     addedAt: new Date(incoming.addedAt),
   });
 }
+
+/**
+ * Update a product cart line in place, identified by `(id, userId)`.
+ *
+ * Unlike `addProductCartItem`, this never merges with another line — line
+ * identity is preserved on edit even if the new (size + material) matches
+ * a different existing line. If the row no longer exists, this is a no-op.
+ */
+export async function updateProductCartItem(incoming: ProductCartItem): Promise<void> {
+  const user = await getCurrentUser();
+  if (!user) throw new Error("Not authenticated");
+
+  await db
+    .update(cartItem)
+    .set({
+      kind: 'product',
+      configuration: incoming.configuration as unknown as Record<string, unknown>,
+      priceSnapshot: incoming.priceSnapshot as unknown as Record<string, unknown>,
+      quantity: incoming.quantity,
+      updatedAt: new Date(),
+    })
+    .where(and(eq(cartItem.id, incoming.id), eq(cartItem.userId, user.id)));
+}

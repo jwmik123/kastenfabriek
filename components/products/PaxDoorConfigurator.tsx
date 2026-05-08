@@ -10,8 +10,15 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import type { Product } from '@/sanity/lib/products'
 import { calcProductPrice } from '@/lib/products/pricing'
-import { addItem as addLocalCartItem } from '@/lib/cart/cart-store'
-import { addProductCartItem } from '@/lib/actions/cart'
+import {
+  addItem as addLocalCartItem,
+  replaceItem as replaceLocalCartItem,
+  getCart,
+} from '@/lib/cart/cart-store'
+import {
+  addProductCartItem,
+  updateProductCartItem,
+} from '@/lib/actions/cart'
 import type { ProductCartItem } from '@/lib/cart/types'
 import { useSession } from '@/lib/auth-client'
 
@@ -98,7 +105,15 @@ function MaterialSwatch({
   )
 }
 
-export default function PaxDoorConfigurator({ product }: { product: Product }) {
+export default function PaxDoorConfigurator({
+  product,
+  editItemId = null,
+  editItem = null,
+}: {
+  product: Product
+  editItemId?: string | null
+  editItem?: ProductCartItem | null
+}) {
   const router = useRouter()
   const session = useSession()
   const [isAdding, startAddTransition] = useTransition()
@@ -118,15 +133,40 @@ export default function PaxDoorConfigurator({ product }: { product: Product }) {
   const variantHas = (w: number, h: number) =>
     variants.some((v) => v.widthCm === w && v.heightCm === h)
 
-  const [widthCm, setWidthCm] = useState<number>(widths[0] ?? 0)
+  // Server-fetched edit (authed) seeds initial state synchronously.
+  const seed = editItem
+  const [widthCm, setWidthCm] = useState<number>(
+    seed?.configuration.widthCm ?? widths[0] ?? 0,
+  )
   const [heightCm, setHeightCm] = useState<number>(() => {
+    if (seed) return seed.configuration.heightCm
     const firstHeight = heights.find((h) => variantHas(widths[0], h))
     return firstHeight ?? heights[0] ?? 0
   })
   const [materialId, setMaterialId] = useState<string>(
-    allowedMaterials[0]?.id ?? MATERIALS[0].id,
+    seed?.configuration.materialId ?? allowedMaterials[0]?.id ?? MATERIALS[0].id,
   )
-  const [qty, setQty] = useState(1)
+  const [qty, setQty] = useState<number>(seed?.quantity ?? 1)
+  // The id we will replace on save. Null = create-new flow.
+  const [activeEditId, setActiveEditId] = useState<string | null>(
+    seed ? seed.id : null,
+  )
+
+  // Anon path: editItemId is in URL but editItem wasn't fetched server-side.
+  // Look it up in localStorage and prefill. If not found, drop edit mode.
+  useEffect(() => {
+    if (!editItemId || seed) return
+    const found = getCart().items.find((i) => i.id === editItemId)
+    if (found && found.kind === 'product') {
+      setWidthCm(found.configuration.widthCm)
+      setHeightCm(found.configuration.heightCm)
+      setMaterialId(found.configuration.materialId)
+      setQty(found.quantity)
+      setActiveEditId(found.id)
+    }
+    // Not found → silently fall back to fresh state (no error, no edit mode).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Snap height to a valid one when width changes
   useEffect(() => {
@@ -153,14 +193,16 @@ export default function PaxDoorConfigurator({ product }: { product: Product }) {
 
   const handleAddToCart = () => {
     if (!priceSnapshot || !activeMaterial) return
+    const isEditing = activeEditId !== null
     const itemId =
-      typeof crypto !== 'undefined' && 'randomUUID' in crypto
+      activeEditId ??
+      (typeof crypto !== 'undefined' && 'randomUUID' in crypto
         ? crypto.randomUUID()
-        : `${Date.now()}-${Math.random()}`
+        : `${Date.now()}-${Math.random()}`)
     const now = new Date().toISOString()
     const cartItem: ProductCartItem = {
       id: itemId,
-      addedAt: now,
+      addedAt: editItem?.addedAt ?? now,
       kind: 'product',
       configuration: {
         id: itemId,
@@ -180,11 +222,19 @@ export default function PaxDoorConfigurator({ product }: { product: Product }) {
 
     if (session.data?.user) {
       startAddTransition(async () => {
-        await addProductCartItem(cartItem)
+        if (isEditing) {
+          await updateProductCartItem(cartItem)
+        } else {
+          await addProductCartItem(cartItem)
+        }
         router.push('/cart')
       })
     } else {
-      addLocalCartItem(cartItem)
+      if (isEditing) {
+        replaceLocalCartItem(cartItem)
+      } else {
+        addLocalCartItem(cartItem)
+      }
       router.push('/cart')
     }
   }
@@ -327,7 +377,11 @@ export default function PaxDoorConfigurator({ product }: { product: Product }) {
               onClick={handleAddToCart}
               disabled={!priceSnapshot || isAdding}
             >
-              {isAdding ? 'Bezig…' : 'Voeg toe aan winkelwagen'}
+              {isAdding
+                ? 'Bezig…'
+                : activeEditId
+                  ? 'Wijzigingen opslaan'
+                  : 'Voeg toe aan winkelwagen'}
             </Button>
           </div>
         </div>

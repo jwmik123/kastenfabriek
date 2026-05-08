@@ -1,10 +1,15 @@
 import Image from "next/image";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PortableText } from "@portabletext/react";
+import { ChevronRight } from "lucide-react";
 
 import { getProductBySlug } from "@/sanity/lib/products";
 import { urlFor } from "@/sanity/lib/image";
 import PaxDoorConfigurator from "@/components/products/PaxDoorConfigurator";
+import { getServerSession } from "@/lib/actions/auth";
+import { getDbCartItemById } from "@/lib/actions/cart";
+import type { ProductCartItem } from "@/lib/cart/types";
 
 export async function generateMetadata({
   params,
@@ -22,20 +27,56 @@ export async function generateMetadata({
 
 export default async function ProductPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ edit?: string }>;
 }) {
   const { slug } = await params;
+  const { edit } = await searchParams;
   const product = await getProductBySlug(slug);
 
   if (!product) notFound();
 
   const isPax = product.productType === "pax-doors";
 
+  // If editing, fetch existing line server-side for authed users.
+  let editItem: ProductCartItem | null = null;
+  if (edit) {
+    const session = await getServerSession();
+    if (session?.user) {
+      const item = await getDbCartItemById(edit);
+      if (item && item.kind === "product") editItem = item;
+    }
+    // Anon: client falls back to localStorage cart.
+  }
+
   return (
     <main className="mx-auto max-w-6xl px-4 pt-32 pb-20">
+      <nav
+        aria-label="Kruimelpad"
+        className="mb-8 flex items-center gap-1.5 text-sm text-muted-foreground"
+      >
+        <Link href="/" className="hover:text-foreground transition-colors">
+          Home
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5" />
+        <Link
+          href="/producten"
+          className="hover:text-foreground transition-colors"
+        >
+          Producten
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5" />
+        <span className="text-foreground">{product.title}</span>
+      </nav>
+
       {isPax ? (
-        <PaxDoorConfigurator product={product} />
+        <PaxDoorConfigurator
+          product={product}
+          editItemId={edit ?? null}
+          editItem={editItem}
+        />
       ) : (
         <div className="grid gap-10 lg:grid-cols-2">
           <div className="relative aspect-square bg-gray-100 rounded-xl overflow-hidden">

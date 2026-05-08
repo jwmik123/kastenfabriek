@@ -48,6 +48,17 @@ export function addItem(item: CartItem): void {
   saveCart(cart);
 }
 
+export function replaceItem(item: CartItem): void {
+  const cart = getCart();
+  const idx = cart.items.findIndex((i) => i.id === item.id);
+  if (idx >= 0) {
+    cart.items[idx] = item;
+  } else {
+    cart.items.push(item);
+  }
+  saveCart(cart);
+}
+
 export function removeItem(itemId: string): void {
   const cart = getCart();
   cart.items = cart.items.filter((i) => i.id !== itemId);
