@@ -4,6 +4,7 @@ import { PortableText } from "@portabletext/react";
 
 import { getProductBySlug } from "@/sanity/lib/products";
 import { urlFor } from "@/sanity/lib/image";
+import PaxDoorConfigurator from "@/components/products/PaxDoorConfigurator";
 
 export async function generateMetadata({
   params,
@@ -51,9 +52,13 @@ export default async function ProductPage({
             {product.shortDescription}
           </p>
 
-          <div className="prose prose-sm max-w-none text-gray-700">
+          <div className="prose prose-sm max-w-none text-gray-700 mb-8">
             <PortableText value={product.longDescription} />
           </div>
+
+          {product.productType === "pax-doors" && (
+            <PaxDoorConfigurator product={product} />
+          )}
         </div>
       </div>
 
