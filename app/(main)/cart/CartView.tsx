@@ -9,6 +9,7 @@ import type { CartItem, ClosetCartItem, ProductCartItem } from '@/lib/cart/types
 import { getCart, removeItem, clearCart } from '@/lib/cart/cart-store'
 import { syncCartItems, removeDbCartItem } from '@/lib/actions/cart'
 import { getDeliveryWindow } from '@/lib/delivery-window'
+import { calcCartTotals } from '@/lib/cart/totals'
 
 const COLORWAY_SLUGS: Record<string, string> = {
   'h1199-thermo-eik': 'thermo-eik-zwartbruin',
@@ -77,24 +78,7 @@ export default function CartView({ isAuthenticated, initialDbItems }: CartViewPr
     }
   }
 
-  const totals = items.reduce(
-    (acc, item) => {
-      if (item.kind === 'closet') {
-        return {
-          subtotal: acc.subtotal + item.priceSnapshot.subtotal * item.quantity,
-          installation: acc.installation + item.priceSnapshot.installationCost * item.quantity,
-          total: acc.total + item.priceSnapshot.total * item.quantity,
-        }
-      }
-      // Product line: total excludes delivery; show under subtotal.
-      return {
-        subtotal: acc.subtotal + (item.priceSnapshot.total + item.priceSnapshot.deliveryCost) * item.quantity,
-        installation: acc.installation,
-        total: acc.total + (item.priceSnapshot.total + item.priceSnapshot.deliveryCost) * item.quantity,
-      }
-    },
-    { subtotal: 0, installation: 0, total: 0 }
-  )
+  const totals = calcCartTotals(items)
 
   if (isPending && items.length === 0) {
     return <div className="text-center pt-24 py-20 text-gray-500">Laden...</div>
@@ -149,18 +133,22 @@ export default function CartView({ isAuthenticated, initialDbItems }: CartViewPr
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Overzicht</h2>
         <div className="space-y-2 text-sm text-gray-600">
           <div className="flex justify-between">
-            <span>Kast(en) + bezorging</span>
-            <span>{fmt.format(totals.subtotal)}</span>
+            <span>Subtotaal</span>
+            <span>{fmt.format(totals.lineSubtotal)}</span>
           </div>
-          {totals.installation > 0 && (
+          <div className="flex justify-between">
+            <span>Bezorging</span>
+            <span>{fmt.format(totals.delivery)}</span>
+          </div>
+          {totals.install > 0 && (
             <div className="flex justify-between">
               <span>Installatie</span>
-              <span>{fmt.format(totals.installation)}</span>
+              <span>{fmt.format(totals.install)}</span>
             </div>
           )}
           <div className="flex justify-between font-semibold text-gray-900 pt-2 border-t border-gray-100 text-base">
             <span>Totaal</span>
-            <span>{fmt.format(totals.total)}</span>
+            <span>{fmt.format(totals.grandTotal)}</span>
           </div>
           <div className="flex justify-between pt-1">
             <span className="text-gray-500">Geschatte aankomst</span>

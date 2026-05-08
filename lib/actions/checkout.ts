@@ -6,7 +6,8 @@ import { order, orderItem, cartItem, address } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { getCurrentUser } from "./auth";
 import { revalidatePath } from "next/cache";
-import type { ClosetCartItem } from "@/lib/cart/types";
+import type { CartItem, ClosetCartItem, ProductCartItem } from "@/lib/cart/types";
+import { calcCartTotals, lineNetOfDelivery } from "@/lib/cart/totals";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2026-02-25.clover",
@@ -33,20 +34,29 @@ export async function createCheckoutSession(
 
   if (cartRows.length === 0) throw new Error("Cart is empty");
 
-  // TODO(slice 062): wire product items through Stripe + cart-totals.
-  // For now closet-only. Product items remain in the cart untouched.
-  const items: ClosetCartItem[] = cartRows
-    .filter((row) => row.kind === "closet")
-    .map((row) => ({
+  const items: CartItem[] = cartRows.map((row) => {
+    const base = {
       id: row.id,
       addedAt: row.addedAt.toISOString(),
-      kind: "closet",
-      configuration: row.configuration as ClosetCartItem["configuration"],
-      priceSnapshot: row.priceSnapshot as ClosetCartItem["priceSnapshot"],
       quantity: row.quantity,
       screenshotClosedUrl: row.screenshotClosedUrl ?? undefined,
       screenshotOpenUrl: row.screenshotOpenUrl ?? undefined,
-    }));
+    };
+    if (row.kind === "product") {
+      return {
+        ...base,
+        kind: "product",
+        configuration: row.configuration as ProductCartItem["configuration"],
+        priceSnapshot: row.priceSnapshot as ProductCartItem["priceSnapshot"],
+      };
+    }
+    return {
+      ...base,
+      kind: "closet",
+      configuration: row.configuration as ClosetCartItem["configuration"],
+      priceSnapshot: row.priceSnapshot as ClosetCartItem["priceSnapshot"],
+    };
+  });
 
   // Fetch shipping address for snapshot
   const shippingAddr = await db.query.address.findFirst({
@@ -57,13 +67,12 @@ export async function createCheckoutSession(
     throw new Error("Address not found");
   }
 
-  const totalCents = items.reduce(
-    (sum, item) => sum + Math.round(item.priceSnapshot.total * 100) * item.quantity,
-    0
-  );
+  const totals = calcCartTotals(items);
+  const totalCents = Math.round(totals.grandTotal * 100);
 
   const discountCents = coupon ? Math.min(coupon.discountAmount, totalCents) : 0;
   const discountedTotal = totalCents - discountCents;
+  const deliveryCents = Math.round(totals.delivery * 100);
 
   // Create order
   const orderId = crypto.randomUUID();
@@ -83,45 +92,85 @@ export async function createCheckoutSession(
     discountAmount: coupon ? discountCents : null,
   });
 
-  // Create order items
+  // Create order items (dispatch by kind)
   for (const item of items) {
+    const kind = item.kind;
+    const sanityId =
+      kind === "product"
+        ? item.configuration.sanityProductId
+        : "custom-closet";
+    const productName =
+      kind === "product" ? item.configuration.productName : "Maatwerkkast";
+    const lineNetEur = lineNetOfDelivery(item);
+    const unitPriceCents = Math.round(lineNetEur * 100);
+
     await db.insert(orderItem).values({
       id: crypto.randomUUID(),
       orderId,
-      sanityProductId: "custom-closet",
-      productName: "Maatwerkkast",
+      sanityProductId: sanityId,
+      productName,
+      kind,
       configurationSnapshot: {
         configuration: item.configuration,
         priceSnapshot: {
           ...item.priceSnapshot,
-          ...(coupon && { discountCode: coupon.couponCode, discountAmount: discountCents }),
+          ...(coupon && kind === "closet"
+            ? { discountCode: coupon.couponCode, discountAmount: discountCents }
+            : {}),
         },
         screenshotClosedUrl: item.screenshotClosedUrl ?? null,
         screenshotOpenUrl: item.screenshotOpenUrl ?? null,
       },
       quantity: item.quantity,
-      unitPrice: Math.round(item.priceSnapshot.total * 100),
-      totalPrice: Math.round(item.priceSnapshot.total * 100) * item.quantity,
+      unitPrice: unitPriceCents,
+      totalPrice: unitPriceCents * item.quantity,
     });
   }
 
-  // Build Stripe line items
+  // Build Stripe line items: each line bills (line.total − deliveryCost) × qty.
   const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = items.map(
     (item) => {
-      const config = item.configuration;
+      const unitAmount = Math.round(lineNetOfDelivery(item) * 100);
+      if (item.kind === "product") {
+        const cfg = item.configuration;
+        return {
+          price_data: {
+            currency: "eur",
+            product_data: {
+              name: cfg.productName,
+              description: `${cfg.widthCm}×${cfg.heightCm} cm · ${cfg.materialName}`,
+            },
+            unit_amount: unitAmount,
+          },
+          quantity: item.quantity,
+        };
+      }
+      const cfg = item.configuration;
       return {
         price_data: {
           currency: "eur",
           product_data: {
-            name: `Maatwerkkast ${config.widthCm}×${config.heightCm}×${config.depthCm} cm`,
-            description: `${config.moduleCount} modules · ${config.buitenkantMaterialId}`,
+            name: `Maatwerkkast ${cfg.widthCm}×${cfg.heightCm}×${cfg.depthCm} cm`,
+            description: `${cfg.moduleCount} modules · ${cfg.buitenkantMaterialId}`,
           },
-          unit_amount: Math.round(item.priceSnapshot.total * 100),
+          unit_amount: unitAmount,
         },
         quantity: item.quantity,
       };
     }
   );
+
+  // One deduplicated delivery line.
+  if (deliveryCents > 0) {
+    lineItems.push({
+      price_data: {
+        currency: "eur",
+        product_data: { name: "Bezorging" },
+        unit_amount: deliveryCents,
+      },
+      quantity: 1,
+    });
+  }
 
   const baseUrl = process.env.NEXT_PUBLIC_BETTER_AUTH_URL || "http://localhost:3000";
 

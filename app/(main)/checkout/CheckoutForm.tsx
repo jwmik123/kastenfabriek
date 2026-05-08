@@ -7,8 +7,9 @@ import { createAddress } from '@/lib/actions/address'
 import { validateCoupon } from '@/lib/actions/coupon'
 import type { ValidateCouponResult } from '@/lib/actions/coupon'
 import { calculateDiscount } from '@/lib/cart/discount'
-import type { ClosetCartItem } from '@/lib/cart/types'
+import type { CartItem } from '@/lib/cart/types'
 import { getDeliveryWindow } from '@/lib/delivery-window'
+import { calcCartTotals } from '@/lib/cart/totals'
 
 type Address = {
   id: string
@@ -28,7 +29,7 @@ type Address = {
 
 interface CheckoutFormProps {
   addresses: Address[]
-  cartItems: ClosetCartItem[]
+  cartItems: CartItem[]
 }
 
 const fmt = new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 })
@@ -62,24 +63,20 @@ export default function CheckoutForm({ addresses, cartItems }: CheckoutFormProps
     houseNumberAddition: '', postalCode: '', city: '', country: 'NL', phone: '',
   })
 
-  const totals = cartItems.reduce(
-    (acc, item) => ({
-      subtotal: acc.subtotal + item.priceSnapshot.subtotal * item.quantity,
-      installation: acc.installation + item.priceSnapshot.installationCost * item.quantity,
-      total: acc.total + item.priceSnapshot.total * item.quantity,
-    }),
-    { subtotal: 0, installation: 0, total: 0 }
-  )
+  const totals = calcCartTotals(cartItems)
 
   const freeMontageTotal = cartItems.reduce(
-    (sum, item) => sum + (item.priceSnapshot.freeMontageDiscount ?? 0) * item.quantity,
+    (sum, item) =>
+      item.kind === 'closet'
+        ? sum + (item.priceSnapshot.freeMontageDiscount ?? 0) * item.quantity
+        : sum,
     0
   )
 
   const discountAmountEur = appliedCoupon
-    ? calculateDiscount(totals.subtotal, appliedCoupon)
+    ? calculateDiscount(totals.lineSubtotal + totals.install, appliedCoupon)
     : 0
-  const discountedTotal = totals.total - discountAmountEur
+  const discountedTotal = totals.grandTotal - discountAmountEur
   const discountAmountCents = Math.round(discountAmountEur * 100)
 
   const handleApplyCoupon = () => {
@@ -312,23 +309,34 @@ export default function CheckoutForm({ addresses, cartItems }: CheckoutFormProps
             {cartItems.map((item) => (
               <div key={item.id} className="py-3 border-b border-gray-100 last:border-0">
                 <div className="flex justify-between items-start">
-                  <div>
-                    <p className="font-medium text-sm text-gray-900">Maatwerkkast</p>
-                    <p className="text-xs text-gray-500">
-                      {item.configuration.widthCm} × {item.configuration.heightCm} × {item.configuration.depthCm} cm
-                    </p>
-                  </div>
-                  <span className="text-sm font-medium">{fmt.format(item.priceSnapshot.total)}</span>
+                  {item.kind === 'closet' ? (
+                    <div>
+                      <p className="font-medium text-sm text-gray-900">Maatwerkkast</p>
+                      <p className="text-xs text-gray-500">
+                        {item.configuration.widthCm} × {item.configuration.heightCm} × {item.configuration.depthCm} cm
+                      </p>
+                    </div>
+                  ) : (
+                    <div>
+                      <p className="font-medium text-sm text-gray-900">{item.configuration.productName}</p>
+                      <p className="text-xs text-gray-500">
+                        {item.configuration.widthCm} × {item.configuration.heightCm} cm · {item.configuration.materialName}
+                        {item.quantity > 1 ? ` · ${item.quantity}×` : ''}
+                      </p>
+                    </div>
+                  )}
+                  <span className="text-sm font-medium">{fmt.format(item.priceSnapshot.total * item.quantity)}</span>
                 </div>
               </div>
             ))}
 
             <div className="pt-4 space-y-1.5 text-sm text-gray-600">
-              <div className="flex justify-between"><span>Subtotaal</span><span>{fmt.format(totals.subtotal)}</span></div>
-              {(totals.installation > 0 || freeMontageTotal > 0) && (
+              <div className="flex justify-between"><span>Subtotaal</span><span>{fmt.format(totals.lineSubtotal)}</span></div>
+              <div className="flex justify-between"><span>Bezorging</span><span>{fmt.format(totals.delivery)}</span></div>
+              {(totals.install > 0 || freeMontageTotal > 0) && (
                 <div className="flex justify-between">
                   <span>Installatie</span>
-                  <span>{fmt.format(totals.installation > 0 ? totals.installation : freeMontageTotal)}</span>
+                  <span>{fmt.format(totals.install > 0 ? totals.install : freeMontageTotal)}</span>
                 </div>
               )}
               {freeMontageTotal > 0 && (
