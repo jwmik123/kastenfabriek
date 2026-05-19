@@ -3,6 +3,7 @@ import {
   resolveElementPositions,
   computeShelfPositions,
   SHELF_THICKNESS,
+  MIN_TOP_CLEARANCE,
   MODULE_LAYOUTS,
   getLayoutById,
   type ModuleLayoutConfig,
@@ -187,12 +188,30 @@ describe('computeShelfPositions', () => {
     expect(out[1]).toBeCloseTo(2.1, 5)
   })
 
-  it('shelves: !fillToTop drops last when gap to endY < spacing', () => {
+  it('shelves: !fillToTop keeps last when gap to endY >= MIN_TOP_CLEARANCE', () => {
     const cfg: FillZoneConfig = { type: 'shelves', spacing: 0.35 }
-    // endY = 1.5; positions before drop: [0.35, 0.7, 1.05, 1.4]
-    // last 1.4: gap = 1.5 - (1.4 + 0.009) = 0.091 < 0.35 → dropped
+    // endY = 1.5; positions: [0.35, 0.7, 1.05, 1.4]; gap above 1.4 = 0.1 > 0.05 → kept.
     const out = computeShelfPositions(cfg, 0, 1.5, false)
+    expect(out[out.length - 1]).toBeCloseTo(1.4, 5)
+  })
+
+  it('shelves: !fillToTop drops last when gap to endY < MIN_TOP_CLEARANCE', () => {
+    const cfg: FillZoneConfig = { type: 'shelves', spacing: 0.35 }
+    // endY = 1.43; positions before drop: [0.35, 0.7, 1.05, 1.4]; gap = 0.03 < 0.05 → drop.
+    const out = computeShelfPositions(cfg, 0, 1.43, false)
     expect(out[out.length - 1]).toBeCloseTo(1.05, 5)
+  })
+
+  it('tall straight module fills shelves close to roof (issue 066)', () => {
+    // SHELF_SPACING=0.368, endY=2.7 → tops: 0.368,0.736,1.104,1.472,1.84,2.208,2.576
+    // Previous bug: gap 0.124 < spacing 0.368 → dropped to 2.208, leaving ~50cm void.
+    // Fix: gap 0.124 > MIN_TOP_CLEARANCE 0.05 → kept.
+    const cfg: FillZoneConfig = { type: 'shelves', spacing: 0.368 }
+    const out = computeShelfPositions(cfg, 0, 2.7, false)
+    const top = out[out.length - 1]
+    expect(top).toBeCloseTo(2.576, 5)
+    expect(2.7 - top).toBeLessThan(0.368)
+    expect(2.7 - top).toBeGreaterThanOrEqual(MIN_TOP_CLEARANCE)
   })
 
   it('shelves: zone height below 2*SHELF_THICKNESS returns []', () => {

@@ -44,6 +44,10 @@ export type ElementBbox = { minY: number; maxY: number }
 
 export const SHELF_SPACING = 0.368
 export const SHELF_THICKNESS = 0.018
+// Min gap between top shelf and roof. Below this, drop the last shelf so it
+// doesn't kiss the ceiling. Replaces the previous "drop when gap < spacing"
+// rule that left a ~half-meter void at the top of tall straight modules.
+export const MIN_TOP_CLEARANCE = 0.05
 
 const DRAWER_GLB = '/objects/mainmodules/DrawerModule.glb'
 const ROD_GLB    = '/objects/mainmodules/RodModule.glb'
@@ -311,7 +315,7 @@ export function computeShelfPositions(
   if (!fillToTop && positions.length > 0) {
     const lastY = positions[positions.length - 1]
     const gapAbove = endY - lastY
-    if (gapAbove < config.spacing) {
+    if (gapAbove < MIN_TOP_CLEARANCE) {
       positions.pop()
     }
   }
