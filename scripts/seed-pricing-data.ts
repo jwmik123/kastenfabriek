@@ -18,6 +18,8 @@ const pricingData = {
       pricePerModule: 65,
     },
     deliveryPrice: 95,
+    slopedBackWallSurcharge: 1100,
+    slopedSideWallSurchargePerSide: 1100,
     constraints: {
       singleCorpus: {
         minWidth: 15,
@@ -238,11 +240,19 @@ const pricingData = {
     },
     {
       id: "power-outlet",
-      name: "Power Outlet",
-      nameNl: "WCD achter in kast",
-      price: 75,
+      name: "Prado 2.0",
+      nameNl: "Prado 2.0",
+      price: 145,
       category: "electrical",
       perUnit: true,
+    },
+    {
+      id: "side-panels-36mm",
+      name: "Side Panels 36mm Upgrade",
+      nameNl: "Zijpanelen 36mm (upgrade)",
+      price: 0,
+      category: "upgrade",
+      perUnit: false,
     },
     {
       id: "push-to-open",
@@ -360,6 +370,8 @@ async function seedPricingData() {
       lastUpdated: new Date().toISOString(),
       led: pricingData.config.led,
       deliveryPrice: pricingData.config.deliveryPrice,
+      slopedBackWallSurcharge: pricingData.config.slopedBackWallSurcharge,
+      slopedSideWallSurchargePerSide: pricingData.config.slopedSideWallSurchargePerSide,
       constraints: pricingData.config.constraints,
     });
     console.log("   ✅ Pricing configuration created\n");

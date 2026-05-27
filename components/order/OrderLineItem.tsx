@@ -84,6 +84,8 @@ function ClosetLine({
   const outerMaterial = getMaterialName(c.buitenkantMaterialId);
   const innerMaterial = getMaterialName(c.binnenkantMaterialId);
   const powerHoleCount = c.modules.filter((m) => m.hasPowerHole).length;
+  const sidePanelThickness = c.sidePanelThickness ?? "18mm";
+  const sidePanelsUpgraded = sidePanelThickness === "36mm";
   const lineTotal =
     (p.total - (p.discountAmount ?? 0) / 100) * item.quantity;
   return (
@@ -120,13 +122,15 @@ function ClosetLine({
           powerHoleCount > 0 ||
           c.hasTopCabinet ||
           c.diagonalSide !== "none" ||
-          c.backDiagonal) && (
+          c.backDiagonal ||
+          sidePanelsUpgraded) && (
           <>
             <dt>Extra&apos;s</dt>
             <dd>
               {[
                 c.lightStripsEnabled && "LED-strips",
                 powerHoleCount > 0 && `Kabeldoorvoer (${powerHoleCount}×)`,
+                sidePanelsUpgraded && "Zijpanelen 36 mm (upgrade)",
                 c.hasTopCabinet &&
                   `Bovenkast (${c.topCabinetHeightCm} cm)`,
                 c.diagonalSide !== "none" &&
@@ -158,6 +162,33 @@ function ClosetLine({
           <>
             <dt>LED-strips</dt>
             <dd className="text-right">{fmt.format(p.ledCost)}</dd>
+          </>
+        )}
+        {(p.slopedBackWallSurcharge ?? 0) > 0 && (
+          <>
+            <dt>Schuine achterwand</dt>
+            <dd className="text-right">
+              {fmt.format(p.slopedBackWallSurcharge as number)}
+            </dd>
+          </>
+        )}
+        {(p.slopedSideWallSurcharge ?? 0) > 0 && (
+          <>
+            <dt>
+              Schuine zijwand
+              {c.diagonalSide === "both" ? " (×2)" : ""}
+            </dt>
+            <dd className="text-right">
+              {fmt.format(p.slopedSideWallSurcharge as number)}
+            </dd>
+          </>
+        )}
+        {(p.sidePanelCost ?? 0) > 0 && (
+          <>
+            <dt>Zijpanelen 36 mm (upgrade)</dt>
+            <dd className="text-right">
+              {fmt.format(p.sidePanelCost as number)}
+            </dd>
           </>
         )}
         <dt>Bezorging</dt>

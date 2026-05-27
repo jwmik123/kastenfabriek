@@ -21,6 +21,8 @@ export interface ModuleSlot {
 
 export type PlacementType = 'vrijstaand' | 'ingebouwd'
 
+export type SidePanelThickness = '18mm' | '36mm'
+
 interface ClosetState {
   // Sanity data
   pricingData: FullPricingData | null
@@ -56,6 +58,7 @@ interface ClosetState {
   doorHandleMaterial: HandleMaterial
   doorsExtendToFloor: boolean
   lightStripsEnabled: boolean
+  sidePanelThickness: SidePanelThickness
 
   // View options
   doorsOpen: boolean
@@ -108,6 +111,7 @@ interface ClosetState {
   setDoorHandleMaterial: (material: HandleMaterial) => void
   setDoorsExtendToFloor: (v: boolean) => void
   setLightStripsEnabled: (v: boolean) => void
+  setSidePanelThickness: (v: SidePanelThickness) => void
   toggleDoors: () => void
   toggleMeasurements: () => void
   zoomIn: () => void
@@ -124,12 +128,13 @@ const WALL_M = 0.018
  *  same reference when nothing changed to avoid spurious renders. */
 function resetDiagDoubles(modules: ModuleSlot[], diagParams: DiagParams, moduleCount: number, widthM: number): ModuleSlot[] {
   if (diagParams.diagonalSide === 'none') return modules
-  const slotW = (widthM - WALL_M * 2) / moduleCount
+  const sideWallM = diagParams.sideWallThickness
+  const slotW = (widthM - sideWallM * 2) / moduleCount
   let changed = false
   const next = modules.map((m) => {
     if (m.span !== 2) return m
-    const leftX  = WALL_M + m.slotIndex * slotW
-    const rightX = WALL_M + (m.slotIndex + m.span) * slotW
+    const leftX  = sideWallM + m.slotIndex * slotW
+    const rightX = sideWallM + (m.slotIndex + m.span) * slotW
     if (!isFullHeight(leftX, rightX, diagParams)) {
       changed = true
       return { ...m, span: 1 as const }
@@ -148,6 +153,7 @@ function diagParamsFromState(s: {
   rightDiagTopWidth: number
   width: number
   mainHeight: () => number
+  sidePanelThickness: SidePanelThickness
 }): DiagParams {
   const mainH = s.mainHeight()
   return {
@@ -164,6 +170,7 @@ function diagParamsFromState(s: {
     backDiagFlatSectionDepth: 0,
     outerDepth: s.width / 100,
     moduleCapY: mainH / 100,
+    sideWallThickness: s.sidePanelThickness === '36mm' ? 0.036 : 0.018,
   }
 }
 
@@ -211,6 +218,7 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
   doorHandleMaterial: 'chrome' as const,
   doorsExtendToFloor: false,
   lightStripsEnabled: false,
+  sidePanelThickness: '18mm',
   doorsOpen: true,
   showMeasurements: false,
   userZoom: 0.5,
@@ -259,6 +267,12 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
       set({ backDiagonal: false })
     }
 
+    // Force 18mm side panels when any side diagonal is active — 36mm upgrade
+    // is incompatible with the diagonal panel geometry.
+    if (diagonalSide !== 'none' && s.sidePanelThickness === '36mm') {
+      set({ sidePanelThickness: '18mm' })
+    }
+
     // Compute visual widths (reach at full closet height) for constraint checks
     const leftAmp  = diagAmplification(s.leftDiagStartHeight,  mainH, s.height)
     const rightAmp = diagAmplification(s.rightDiagStartHeight, mainH, s.height)
@@ -286,6 +300,7 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
       backDiagFlatSectionDepth: 0,
       outerDepth: s.width / 100,
       moduleCapY: mainH / 100,
+      sideWallThickness: s.sidePanelThickness === '36mm' ? 0.036 : 0.018,
     }
     set({
       diagonalSide,
@@ -326,6 +341,7 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
       backDiagFlatSectionDepth: 0,
       outerDepth: s.width / 100,
       moduleCapY: mainH / 100,
+      sideWallThickness: s.sidePanelThickness === '36mm' ? 0.036 : 0.018,
     }
     set({ leftDiagStartHeight: clamped, leftDiagTopWidth: newInternal, modules: resetDiagDoubles(s.modules, diagParams, s.moduleCount, s.width / 100) })
   },
@@ -361,6 +377,7 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
       backDiagFlatSectionDepth: 0,
       outerDepth: s.width / 100,
       moduleCapY: mainH / 100,
+      sideWallThickness: s.sidePanelThickness === '36mm' ? 0.036 : 0.018,
     }
     set({ rightDiagStartHeight: clamped, rightDiagTopWidth: newInternal, modules: resetDiagDoubles(s.modules, diagParams, s.moduleCount, s.width / 100) })
   },
@@ -390,6 +407,7 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
       backDiagFlatSectionDepth: 0,
       outerDepth: s.width / 100,
       moduleCapY: mainH / 100,
+      sideWallThickness: s.sidePanelThickness === '36mm' ? 0.036 : 0.018,
     }
     set({ leftDiagTopWidth: clamped, modules: resetDiagDoubles(s.modules, diagParams, s.moduleCount, s.width / 100) })
   },
@@ -419,6 +437,7 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
       backDiagFlatSectionDepth: 0,
       outerDepth: s.width / 100,
       moduleCapY: mainH / 100,
+      sideWallThickness: s.sidePanelThickness === '36mm' ? 0.036 : 0.018,
     }
     set({ rightDiagTopWidth: clamped, modules: resetDiagDoubles(s.modules, diagParams, s.moduleCount, s.width / 100) })
   },
@@ -655,6 +674,14 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
   },
   setDoorsExtendToFloor: (doorsExtendToFloor) => set({ doorsExtendToFloor }),
   setLightStripsEnabled: (lightStripsEnabled) => set({ lightStripsEnabled }),
+  setSidePanelThickness: (sidePanelThickness) => {
+    // 36mm is incompatible with side diagonals — clamp to 18mm in that case.
+    if (sidePanelThickness === '36mm' && get().diagonalSide !== 'none') {
+      set({ sidePanelThickness: '18mm' })
+      return
+    }
+    set({ sidePanelThickness })
+  },
   toggleDoors: () => set((s) => ({ doorsOpen: !s.doorsOpen })),
   toggleMeasurements: () => set((s) => ({ showMeasurements: !s.showMeasurements })),
   zoomIn: () => set((s) => ({ userZoom: Math.max(0, s.userZoom - 0.1) })),
@@ -697,13 +724,14 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
       doorHandleMaterial: config.doorHandleMaterial ?? 'chrome',
       doorsExtendToFloor: config.doorsExtendToFloor ?? false,
       lightStripsEnabled: config.lightStripsEnabled ?? false,
+      sidePanelThickness: config.sidePanelThickness ?? '18mm',
       step: 1,
       selectedSlot: null,
       lastClickPoint: null,
     })
   },
   randomFill: () => {
-    const { moduleCount, modules: existingModules, width, diagonalSide, leftDiagStartHeight, rightDiagStartHeight, leftDiagTopWidth, rightDiagTopWidth } = get()
+    const { moduleCount, modules: existingModules, width, diagonalSide, leftDiagStartHeight, rightDiagStartHeight, leftDiagTopWidth, rightDiagTopWidth, sidePanelThickness } = get()
     // Reset every slot before refill so stale span/layout state can't leak
     // into the new layout (e.g. an orphan span=2 carried over from a slot
     // whose neighbour is now under a diagonal).
@@ -711,7 +739,8 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
     const widthM = width / 100
     const mainHeightM = get().mainHeight() / 100
     const MODULE_FLOOR_Y = 0.118 // ONDERSTEL_HEIGHT (0.108) + ONDERSTEL_GAP (0.010)
-    const slotW = (widthM - WALL_M * 2) / moduleCount
+    const sideWallM = sidePanelThickness === '36mm' ? 0.036 : 0.018
+    const slotW = (widthM - sideWallM * 2) / moduleCount
     const diagParams = {
       diagonalSide,
       leftDiagStartHeight:  leftDiagStartHeight  / 100,
@@ -726,11 +755,12 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
       backDiagFlatSectionDepth: 0,
       outerDepth: widthM,  // dummy, not used when backDiagonal=false
       moduleCapY: mainHeightM,
+      sideWallThickness: sideWallM,
     }
 
     const getEffectiveHeight = (slotIndex: number, span: 1 | 2 = 1) => {
-      const leftX  = WALL_M + slotIndex * slotW
-      const rightX = WALL_M + (slotIndex + span) * slotW
+      const leftX  = sideWallM + slotIndex * slotW
+      const rightX = sideWallM + (slotIndex + span) * slotW
       const leftH  = Math.max(0, getDiagHeightAt(leftX,  diagParams) - MODULE_FLOOR_Y - WALL_M)
       const rightH = Math.max(0, getDiagHeightAt(rightX, diagParams) - MODULE_FLOOR_Y - WALL_M)
       return Math.min(leftH, rightH)
@@ -742,7 +772,7 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
       const effectiveHeight = getEffectiveHeight(i)
       const isUnderDiag = effectiveHeight < mainHeightM - 0.01
 
-      const canDouble = i + 1 < moduleCount && !isUnderDiag && isFullHeight(WALL_M + i * slotW, WALL_M + (i + 2) * slotW, diagParams)
+      const canDouble = i + 1 < moduleCount && !isUnderDiag && isFullHeight(sideWallM + i * slotW, sideWallM + (i + 2) * slotW, diagParams)
       const isDouble = canDouble && Math.random() < 0.3
       const span: 1 | 2 = isDouble ? 2 : 1
 

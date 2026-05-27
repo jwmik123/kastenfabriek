@@ -18,6 +18,8 @@ export interface DiagParams {
   // Equals mainHeight in most cases; reduced to fillerBottomY when back-diag is active without TC
   // and flatSec is below the filler threshold.
   moduleCapY: number
+  // Outer side-wall thickness in metres. 0.018 standard, 0.036 when upgraded (issue 072).
+  sideWallThickness: number
 }
 
 // Filler depth from front face of closet (matches the corpus filler back-face offset).
@@ -50,8 +52,8 @@ export function getDiagHeightAt(xFromOuterLeft: number, p: DiagParams): number {
   let h = p.mainHeight
 
   if (p.diagonalSide === 'left' || p.diagonalSide === 'both') {
-    if (p.leftDiagTopWidth > 0 && xFromOuterLeft < CORPUS_WALL + p.leftDiagTopWidth) {
-      const xFromInner = xFromOuterLeft - CORPUS_WALL
+    if (p.leftDiagTopWidth > 0 && xFromOuterLeft < p.sideWallThickness + p.leftDiagTopWidth) {
+      const xFromInner = xFromOuterLeft - p.sideWallThickness
       const t = Math.max(0, xFromInner) / p.leftDiagTopWidth
       h = Math.min(h, p.leftDiagStartHeight + (p.mainHeight - p.leftDiagStartHeight) * t)
     }
@@ -59,8 +61,8 @@ export function getDiagHeightAt(xFromOuterLeft: number, p: DiagParams): number {
 
   if (p.diagonalSide === 'right' || p.diagonalSide === 'both') {
     const xFromRight = p.outerWidth - xFromOuterLeft
-    if (p.rightDiagTopWidth > 0 && xFromRight < CORPUS_WALL + p.rightDiagTopWidth) {
-      const xFromInner = xFromRight - CORPUS_WALL
+    if (p.rightDiagTopWidth > 0 && xFromRight < p.sideWallThickness + p.rightDiagTopWidth) {
+      const xFromInner = xFromRight - p.sideWallThickness
       const t = Math.max(0, xFromInner) / p.rightDiagTopWidth
       h = Math.min(h, p.rightDiagStartHeight + (p.mainHeight - p.rightDiagStartHeight) * t)
     }

@@ -349,7 +349,7 @@ export default function DimensionsStep() {
           {/* Zijwand row */}
           <div className="space-y-3">
             <div className="flex items-center gap-3">
-              <span className="text-sm font-medium w-24 shrink-0">Zijwand</span>
+              <span className="text-sm font-medium w-24 shrink-0">Schuine wand</span>
               <SegmentedControl
                 options={DIAGONAL_OPTIONS}
                 value={diagonalSide}
@@ -412,7 +412,7 @@ export default function DimensionsStep() {
           {/* Achterwand row */}
           <div className={cn('space-y-3 border-t pt-3 transition-opacity', backDiagDisabled && 'opacity-45')}>
             <div className="flex items-center gap-3">
-              <span className="text-sm font-medium w-24 shrink-0">Achterwand</span>
+              <span className="text-sm font-medium w-24 shrink-0">Schuine achterwand</span>
               <SegmentedControl
                 options={[{ value: 'geen', label: 'Geen' }, { value: 'aan', label: 'Aan' }]}
                 value={backDiagonal && !backDiagDisabled ? 'aan' : 'geen'}

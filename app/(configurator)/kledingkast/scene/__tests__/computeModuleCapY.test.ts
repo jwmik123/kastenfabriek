@@ -17,6 +17,7 @@ function makeParams(overrides: Partial<DiagParams> = {}): DiagParams {
     backDiagFlatSectionDepth: 0,
     outerDepth: 0.6,
     moduleCapY: 2.4,
+    sideWallThickness: 0.018,
     ...overrides,
   }
 }

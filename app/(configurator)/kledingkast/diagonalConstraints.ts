@@ -25,7 +25,7 @@ export function diagAmplification(
  * For TC closets mainHeight = 225cm, so the max stored start height is 205cm.
  */
 export function getStartHeightRange(mainHeightCm: number): { min: number; max: number } {
-  return { min: 100, max: Math.floor(mainHeightCm - 20) }
+  return { min: 30, max: Math.floor(mainHeightCm - 20) }
 }
 
 /**

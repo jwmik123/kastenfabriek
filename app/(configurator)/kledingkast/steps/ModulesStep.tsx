@@ -43,6 +43,7 @@ export default function ModulesStep() {
   const mainHeightM           = mainHeightCm / 100
   const closetHeightCm        = useClosetStore((s) => s.height)
   const backDiagonal          = useClosetStore((s) => s.backDiagonal)
+  const sidePanelThickness    = useClosetStore((s) => s.sidePanelThickness)
   const backDiagKinkHeight    = useClosetStore((s) => s.backDiagKinkHeight)
   const backDiagFlatSectionDepth = useClosetStore((s) => s.backDiagFlatSectionDepth)
   const depthCm               = useClosetStore((s) => s.depth)
@@ -61,7 +62,8 @@ export default function ModulesStep() {
     backDiagFlatSectionDepth: backDiagFlatSectionDepth / 100,
     outerDepth:               depthCm                  / 100,
     moduleCapY:               mainHeightM,
-  }), [diagonalSide, leftDiagStartHeight, rightDiagStartHeight, leftDiagTopWidth, rightDiagTopWidth, widthCm, mainHeightCm, mainHeightM, closetHeightCm, backDiagonal, backDiagKinkHeight, backDiagFlatSectionDepth, depthCm])
+    sideWallThickness:        sidePanelThickness === '36mm' ? 0.036 : 0.018,
+  }), [diagonalSide, leftDiagStartHeight, rightDiagStartHeight, leftDiagTopWidth, rightDiagTopWidth, widthCm, mainHeightCm, mainHeightM, closetHeightCm, backDiagonal, backDiagKinkHeight, backDiagFlatSectionDepth, depthCm, sidePanelThickness])
 
   // Retained for ModulePopover parity; not consumed in this panel after the
   // config card was lifted into the canvas popover (issue 031).

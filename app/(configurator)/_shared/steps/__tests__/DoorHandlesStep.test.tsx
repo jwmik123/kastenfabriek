@@ -22,6 +22,10 @@ let mockState = {
   doorHandleId: '23',
   doorHandleMaterial: 'chrome' as HandleMaterial,
   pricingData: fakePricingData as any,
+  mainHeight: () => 240,
+  diagonalSide: 'none' as const,
+  leftDiagStartHeight: 180,
+  rightDiagStartHeight: 180,
   setDoorHandleId: vi.fn(),
   setDoorHandleMaterial: vi.fn(),
 }
@@ -35,6 +39,10 @@ beforeEach(() => {
     doorHandleId: '23',
     doorHandleMaterial: 'chrome',
     pricingData: fakePricingData,
+    mainHeight: () => 240,
+    diagonalSide: 'none' as const,
+    leftDiagStartHeight: 180,
+    rightDiagStartHeight: 180,
     setDoorHandleId: vi.fn(),
     setDoorHandleMaterial: vi.fn(),
   }

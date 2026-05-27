@@ -50,15 +50,16 @@ function ModuleSlotInteraction({ slotIndex, span, diagParams }: { slotIndex: num
 
   const [hovered, setHovered] = useState(false)
 
-  const innerW = width - WALL * 2
+  const sideWallM = diagParams.sideWallThickness
+  const innerW = width - sideWallM * 2
   const slotW = innerW / moduleCount
   const moduleDepth = depth - WALL - CLOSET_INSIDE_INSET
 
   const isSelected = selectedSlot === slotIndex
   const totalW = span * slotW
 
-  const leftXOuter  = WALL + slotIndex * slotW
-  const rightXOuter = WALL + (slotIndex + span) * slotW
+  const leftXOuter  = sideWallM + slotIndex * slotW
+  const rightXOuter = sideWallM + (slotIndex + span) * slotW
 
   const profile = useMemo(
     () => slotCeilingProfile(leftXOuter, rightXOuter, diagParams),
@@ -174,6 +175,8 @@ export default function ClosetScene() {
   const binnenkantMaterialId   = useClosetStore((s) => s.binnenkantMaterialId)
   const lightStripsEnabled     = useClosetStore((s) => s.lightStripsEnabled)
   const doorsOpen              = useClosetStore((s) => s.doorsOpen)
+  const sidePanelThickness     = useClosetStore((s) => s.sidePanelThickness)
+  const sideWallThicknessM     = sidePanelThickness === '36mm' ? 0.036 : 0.018
 
   const diagParams = useMemo<DiagParams>(() => {
     const depthM    = outerDepthCm / 100
@@ -196,9 +199,10 @@ export default function ClosetScene() {
       backDiagFlatSectionDepth:  flatSecM,
       outerDepth:                depthM,
       moduleCapY:                mainHM,
+      sideWallThickness:         sideWallThicknessM,
     }
     return { ...base, moduleCapY: computeModuleCapY(base, needsTop) }
-  }, [diagonalSide, leftDiagStartHeight, rightDiagStartHeight, leftDiagTopWidth, rightDiagTopWidth, outerWidth, mainHeightCm, closetHeightCm, backDiagonal, backDiagKinkHeight, backDiagFlatSectionDepth, outerDepthCm, needsTop])
+  }, [diagonalSide, leftDiagStartHeight, rightDiagStartHeight, leftDiagTopWidth, rightDiagTopWidth, outerWidth, mainHeightCm, closetHeightCm, backDiagonal, backDiagKinkHeight, backDiagFlatSectionDepth, outerDepthCm, needsTop, sideWallThicknessM])
 
   return (
     <ClosetMaterialProvider buitenkantMaterialId={buitenkantMaterialId} binnenkantMaterialId={binnenkantMaterialId} lightStripsEnabled={lightStripsEnabled}>
@@ -244,10 +248,11 @@ export default function ClosetScene() {
           />
         )
       })}
-      {/* Structural side kink shelves — per module, per active side diagonal. */}
+      {/* Structural side kink shelves — per module, per active side diagonal. Empty slots skipped. */}
       {(diagonalSide === 'left' || diagonalSide === 'both') && modules.map((m, i) => {
         const isConsumed = i > 0 && modules[i - 1].span === 2
         if (isConsumed) return null
+        if (m.layoutId === null) return null
         return (
           <StructuralSideKinkShelf
             key={`side-kink-left-${m.slotIndex}`}
@@ -265,6 +270,7 @@ export default function ClosetScene() {
       {(diagonalSide === 'right' || diagonalSide === 'both') && modules.map((m, i) => {
         const isConsumed = i > 0 && modules[i - 1].span === 2
         if (isConsumed) return null
+        if (m.layoutId === null) return null
         return (
           <StructuralSideKinkShelf
             key={`side-kink-right-${m.slotIndex}`}

@@ -32,6 +32,7 @@ export function useCartPrice() {
   const binnenkantMaterialId = useClosetStore((s) => s.binnenkantMaterialId)
   const doorHandleId = useClosetStore((s) => s.doorHandleId)
   const lightStripsEnabled = useClosetStore((s) => s.lightStripsEnabled)
+  const sidePanelThickness = useClosetStore((s) => s.sidePanelThickness)
   const width = useClosetStore((s) => s.width)
   const height = useClosetStore((s) => s.height)
   const depth = useClosetStore((s) => s.depth)
@@ -95,18 +96,47 @@ export function useCartPrice() {
 
   // --- Power holes (per module) ---
   const powerHoleCount = modules.filter((m) => m.hasPowerHole).length
-  const powerHoleCost = powerHoleCount > 0 && engine ? powerHoleCount * engine.getAccessoryPrice('power-cable-holes') : 0
+  const powerHoleCost = powerHoleCount > 0 && engine ? powerHoleCount * engine.getAccessoryPrice('power-outlet') : 0
+
+  // --- Side panels upgrade (issue 072) — 18mm = standard, 36mm = paid upgrade ---
+  const sidePanelCost = sidePanelThickness === '36mm' && engine
+    ? engine.getAccessoryPrice('side-panels-36mm')
+    : 0
+
+  // --- Sloped-wall surcharges (issue 069) ---
+  const surcharges = engine
+    ? engine.calculateSurchargesFromSnapshot({ backDiagonal, diagonalSide })
+    : { slopedBackWallSurcharge: 0, slopedSideWallSurcharge: 0, total: 0 }
+  const slopedBackWallSurcharge = surcharges.slopedBackWallSurcharge
+  const slopedSideWallSurcharge = surcharges.slopedSideWallSurcharge
 
   // --- Delivery & Installation ---
   const deliveryCost = engine?.deliveryPrice ?? 95
-  const subtotal = moduleCost + doorCost + mechanismCost + ledCost + powerHoleCost + deliveryCost
+  const subtotal =
+    moduleCost +
+    doorCost +
+    mechanismCost +
+    ledCost +
+    powerHoleCost +
+    sidePanelCost +
+    slopedBackWallSurcharge +
+    slopedSideWallSurcharge +
+    deliveryCost
   const installationTier = engine?.getInstallationTier(subtotal) ?? null
   const freeMontage = pricingData?.config.freeMontage ?? false
   const { effectiveInstallationCost, freeMontageDiscount, freeMontageApplied, originalPrice, grandTotal } =
     computeFreeMontage({ subtotal, installationTier, freeMontage })
   const installationCost = effectiveInstallationCost
 
-  const totalPrice = moduleCost + doorCost + mechanismCost + ledCost + powerHoleCost
+  const totalPrice =
+    moduleCost +
+    doorCost +
+    mechanismCost +
+    ledCost +
+    powerHoleCost +
+    sidePanelCost +
+    slopedBackWallSurcharge +
+    slopedSideWallSurcharge
 
   const handleAddToCart = async () => {
     if (!pricingData || isCapturing) return
@@ -152,6 +182,7 @@ export function useCartPrice() {
       doorHandleMaterial,
       doorsExtendToFloor,
       lightStripsEnabled,
+      sidePanelThickness,
       hasTopCabinet,
       topCabinetHeightCm,
     }
@@ -167,6 +198,9 @@ export function useCartPrice() {
       subtotal,
       installationTierName: installationTier?.name ?? null,
       installationCost,
+      slopedBackWallSurcharge,
+      slopedSideWallSurcharge,
+      sidePanelCost,
       freeMontageApplied,
       freeMontageDiscount,
       total: grandTotal,

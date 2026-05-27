@@ -1,8 +1,9 @@
 'use client'
 
-import { Plug } from 'lucide-react'
+import { Plug, Zap } from 'lucide-react'
 import { useClosetStore } from '../store'
 import { Toggle } from '@/components/ui/Toggle'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { cn } from '@/lib/utils'
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
@@ -18,6 +19,12 @@ export default function AccessoiresStep() {
   const setLightStripsEnabled = useClosetStore((s) => s.setLightStripsEnabled)
   const modules = useClosetStore((s) => s.modules)
   const setHasPowerHole = useClosetStore((s) => s.setHasPowerHole)
+  const sidePanelThickness = useClosetStore((s) => s.sidePanelThickness)
+  const setSidePanelThickness = useClosetStore((s) => s.setSidePanelThickness)
+  const diagonalSide = useClosetStore((s) => s.diagonalSide)
+  const sidePanels36mmLocked = diagonalSide !== 'none'
+  const mainsNotice = useClosetStore((s) => s.pricingData?.mainsElectricityNotice)
+  const anyPrado = modules.some((m) => m.hasPowerHole)
 
   return (
     <div className="space-y-10">
@@ -40,14 +47,47 @@ export default function AccessoiresStep() {
           </div>
           <Toggle checked={lightStripsEnabled} onCheckedChange={setLightStripsEnabled} />
         </div>
+        {lightStripsEnabled && mainsNotice && (
+          <div className="flex items-start gap-2 rounded-md bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800">
+            <Zap className="w-4 h-4 shrink-0 mt-0.5" />
+            <span>{mainsNotice}</span>
+          </div>
+        )}
       </section>
 
-      {/* ── Stekkerdoos gaten ── */}
+      {/* ── Zijpanelen dikte ── */}
       <section className="space-y-5">
         <div>
-          <SectionHeading>Stekkerdoos gaten</SectionHeading>
+          <h2 className="text-base font-semibold">Zijpanelen</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            Standaard 18 mm. Upgrade naar 36 mm voor extra stevigheid.
+          </p>
+        </div>
+
+        <div className="p-4 rounded-md border space-y-2">
+          <SegmentedControl<'18mm' | '36mm'>
+            options={[
+              { value: '18mm', label: '18 mm' },
+              { value: '36mm', label: '36 mm' },
+            ]}
+            value={sidePanelThickness}
+            onChange={(v) => setSidePanelThickness(v)}
+            disabledValues={sidePanels36mmLocked ? ['36mm'] : []}
+          />
+          {sidePanels36mmLocked && (
+            <p className="text-xs text-muted-foreground">
+              36 mm zijpanelen zijn niet beschikbaar met schuine wand.
+            </p>
+          )}
+        </div>
+      </section>
+
+      {/* ── Prado 2.0 ── */}
+      <section className="space-y-5">
+        <div>
+          <SectionHeading>Prado 2.0</SectionHeading>
           <p className="text-xs text-muted-foreground/60 mt-1">
-            Selecteer een vak om een stekkerdoos gat toe te voegen
+            Selecteer een vak om Prado 2.0 toe te voegen
           </p>
         </div>
 
@@ -71,6 +111,12 @@ export default function AccessoiresStep() {
             )
           })}
         </div>
+        {anyPrado && mainsNotice && (
+          <div className="flex items-start gap-2 rounded-md bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800">
+            <Zap className="w-4 h-4 shrink-0 mt-0.5" />
+            <span>{mainsNotice}</span>
+          </div>
+        )}
       </section>
 
     </div>

@@ -8,8 +8,53 @@ import type {
   HandleType,
 } from "@/types/configurator-pricing";
 
+export type DiagonalSideValue = "none" | "left" | "right" | "both";
+
+export interface SlopeSnapshot {
+  backDiagonal?: boolean | null;
+  diagonalSide?: DiagonalSideValue | null;
+}
+
+export interface SurchargeBreakdown {
+  slopedBackWallSurcharge: number;
+  slopedSideWallSurcharge: number;
+  total: number;
+}
+
+export const DEFAULT_SLOPED_BACK_WALL_SURCHARGE = 1100;
+export const DEFAULT_SLOPED_SIDE_WALL_SURCHARGE_PER_SIDE = 1100;
+
 export class PricingEngine {
   constructor(private data: FullPricingData) {}
+
+  get slopedBackWallSurcharge(): number {
+    return (
+      this.data.config.slopedBackWallSurcharge ??
+      DEFAULT_SLOPED_BACK_WALL_SURCHARGE
+    );
+  }
+
+  get slopedSideWallSurchargePerSide(): number {
+    return (
+      this.data.config.slopedSideWallSurchargePerSide ??
+      DEFAULT_SLOPED_SIDE_WALL_SURCHARGE_PER_SIDE
+    );
+  }
+
+  calculateSurchargesFromSnapshot(snapshot: SlopeSnapshot): SurchargeBreakdown {
+    const slopedBackWallSurcharge = snapshot.backDiagonal
+      ? this.slopedBackWallSurcharge
+      : 0;
+    const side = snapshot.diagonalSide ?? "none";
+    const sideCount = side === "both" ? 2 : side === "left" || side === "right" ? 1 : 0;
+    const slopedSideWallSurcharge =
+      sideCount * this.slopedSideWallSurchargePerSide;
+    return {
+      slopedBackWallSurcharge,
+      slopedSideWallSurcharge,
+      total: slopedBackWallSurcharge + slopedSideWallSurcharge,
+    };
+  }
 
   getModule(layoutId: number): ModuleLayout | undefined {
     return this.data.modules.find((m) => m.layoutId === layoutId);

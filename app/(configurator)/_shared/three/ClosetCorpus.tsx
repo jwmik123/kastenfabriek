@@ -4,11 +4,11 @@ import { useMemo } from 'react'
 import * as THREE from 'three/webgpu'
 import { useConfiguratorStore } from '../store/context'
 import ClosetMaterial from '../materials/ClosetMaterial'
-import { getDiagHeightAt, getBackDiagHeightAtZ, CORPUS_WALL, FILLER_FLAT_SEC_THRESHOLD } from '../../kledingkast/scene/diagonalUtils'
+import { getDiagHeightAt, getBackDiagHeightAtZ, FILLER_FLAT_SEC_THRESHOLD } from '../../kledingkast/scene/diagonalUtils'
 import type { DiagParams } from '../../kledingkast/scene/diagonalUtils'
 import { trapShape, trapGeo, trapNaN } from '@/utils/debugGeometry'
 
-const WALL = 0.018
+const WALL = 0.018 // back wall + top panel thickness (always 18mm)
 const SIDE_WALL_EXTRA = 0.005
 const CLOSET_INSIDE_INSET = 0.025
 
@@ -36,9 +36,9 @@ function BackWall({ width, mainH, depth, p }: {
 
     const shape = new THREE.Shape()
     const leftStartH  = trapNaN(getDiagHeightAt(0, p), 'BackWall-leftStartH')
-    const leftTopX    = (p.diagonalSide === 'left'  || p.diagonalSide === 'both') ? CORPUS_WALL + p.leftDiagTopWidth  : 0
+    const leftTopX    = (p.diagonalSide === 'left'  || p.diagonalSide === 'both') ? p.sideWallThickness + p.leftDiagTopWidth  : 0
     const rightStartH = trapNaN(getDiagHeightAt(width, p), 'BackWall-rightStartH')
-    const rightTopX   = (p.diagonalSide === 'right' || p.diagonalSide === 'both') ? width - CORPUS_WALL - p.rightDiagTopWidth : width
+    const rightTopX   = (p.diagonalSide === 'right' || p.diagonalSide === 'both') ? width - p.sideWallThickness - p.rightDiagTopWidth : width
 
     shape.moveTo(-width / 2, 0)
     shape.lineTo( width / 2, 0)
@@ -84,7 +84,8 @@ function SideWallAssembly({ side, width, mainH, height, depth, p, needsTop }: {
 }) {
   const isLeft = side === 'left'
   const hasDiag = p.diagonalSide === side || p.diagonalSide === 'both'
-  const outerX = isLeft ? -width / 2 + WALL / 2 : width / 2 - WALL / 2
+  const sideWallT = p.sideWallThickness
+  const outerX = isLeft ? -width / 2 + sideWallT / 2 : width / 2 - sideWallT / 2
 
   // ---- Back diagonal case ----
   const backDiagGeo = useMemo(() => {
@@ -103,7 +104,7 @@ function SideWallAssembly({ side, width, mainH, height, depth, p, needsTop }: {
     shape.lineTo(depth / 2, kinkH)
     shape.closePath()
 
-    const geo = new THREE.ExtrudeGeometry(trapShape(shape, `SideWall-${side}-backDiag`), { depth: WALL, bevelEnabled: false })
+    const geo = new THREE.ExtrudeGeometry(trapShape(shape, `SideWall-${side}-backDiag`), { depth: sideWallT, bevelEnabled: false })
     geo.rotateY(Math.PI / 2)
     return trapGeo(geo, `SideWall-${side}-backDiag-geo`)
   }, [p, depth, mainH, height, needsTop, side])
@@ -119,7 +120,7 @@ function SideWallAssembly({ side, width, mainH, height, depth, p, needsTop }: {
     if (p.backDiagonal) return null
     if (!hasDiag) return null
     const topY = needsTop ? height + SIDE_WALL_EXTRA : mainH
-    const fullRun = CORPUS_WALL + (isLeft ? p.leftDiagTopWidth : p.rightDiagTopWidth)
+    const fullRun = p.sideWallThickness + (isLeft ? p.leftDiagTopWidth : p.rightDiagTopWidth)
     const topX = mainH > diagStartH
       ? fullRun * (topY - diagStartH) / (mainH - diagStartH)
       : fullRun
@@ -134,22 +135,22 @@ function SideWallAssembly({ side, width, mainH, height, depth, p, needsTop }: {
       const xR = -width / 2 + topX
       shape.moveTo(xL, diagStartH)
       shape.lineTo(xR, topY)
-      shape.lineTo(xR + WALL * sinT, topY - WALL * cosT)
-      shape.lineTo(xL + WALL * sinT, diagStartH - WALL * cosT)
+      shape.lineTo(xR + sideWallT * sinT, topY - sideWallT * cosT)
+      shape.lineTo(xL + sideWallT * sinT, diagStartH - sideWallT * cosT)
     } else {
       const xL = width / 2 - topX
       const xR = width / 2
       shape.moveTo(xL, topY)
       shape.lineTo(xR, diagStartH)
-      shape.lineTo(xR - WALL * sinT, diagStartH - WALL * cosT)
-      shape.lineTo(xL - WALL * sinT, topY - WALL * cosT)
+      shape.lineTo(xR - sideWallT * sinT, diagStartH - sideWallT * cosT)
+      shape.lineTo(xL - sideWallT * sinT, topY - sideWallT * cosT)
     }
     shape.closePath()
     return trapGeo(new THREE.ExtrudeGeometry(trapShape(shape, `SideWall-${side}-diagExtrude`), { depth, bevelEnabled: false }), `SideWall-${side}-diagExtrude-geo`)
-  }, [hasDiag, isLeft, width, p.leftDiagTopWidth, p.rightDiagTopWidth, diagStartH, mainH, height, needsTop, depth])
+  }, [hasDiag, isLeft, width, p.leftDiagTopWidth, p.rightDiagTopWidth, diagStartH, mainH, height, needsTop, depth, sideWallT])
 
   if (p.backDiagonal && backDiagGeo) {
-    const meshX = isLeft ? -width / 2 : width / 2 - WALL
+    const meshX = isLeft ? -width / 2 : width / 2 - sideWallT
     return (
       <group key={needsTop ? 'back-diagonal-tc' : 'back-diagonal'}>
         <mesh position={[meshX, 0, 0]} geometry={backDiagGeo} castShadow receiveShadow>
@@ -162,7 +163,7 @@ function SideWallAssembly({ side, width, mainH, height, depth, p, needsTop }: {
   return (
     <group key="side-diagonal">
       <mesh position={[outerX, straightH / 2, 0]} castShadow receiveShadow>
-        <boxGeometry args={[WALL, straightH, depth]} />
+        <boxGeometry args={[sideWallT, straightH, depth]} />
         <ClosetMaterial />
       </mesh>
 
@@ -262,11 +263,11 @@ export default function ClosetCorpus({ diagParams: p }: { diagParams: DiagParams
 
   const topPanelWorldY = topPanelY + WALL / 2
   const topRunLeft  = hasLeft  && mainH > p.leftDiagStartHeight
-    ? (CORPUS_WALL + p.leftDiagTopWidth) * (topPanelWorldY - p.leftDiagStartHeight) / (mainH - p.leftDiagStartHeight)
-    : (CORPUS_WALL + p.leftDiagTopWidth)
+    ? (p.sideWallThickness + p.leftDiagTopWidth) * (topPanelWorldY - p.leftDiagStartHeight) / (mainH - p.leftDiagStartHeight)
+    : (p.sideWallThickness + p.leftDiagTopWidth)
   const topRunRight = hasRight && mainH > p.rightDiagStartHeight
-    ? (CORPUS_WALL + p.rightDiagTopWidth) * (topPanelWorldY - p.rightDiagStartHeight) / (mainH - p.rightDiagStartHeight)
-    : (CORPUS_WALL + p.rightDiagTopWidth)
+    ? (p.sideWallThickness + p.rightDiagTopWidth) * (topPanelWorldY - p.rightDiagStartHeight) / (mainH - p.rightDiagStartHeight)
+    : (p.sideWallThickness + p.rightDiagTopWidth)
   const topOffsetLeft   = hasLeft  ? topRunLeft  : 0
   const topOffsetRight  = hasRight ? topRunRight : 0
   const topPanelW       = width - topOffsetLeft - topOffsetRight

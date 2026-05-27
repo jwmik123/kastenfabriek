@@ -38,6 +38,7 @@ export default function ModulePopover() {
   const mainHeightCm          = useClosetStore((s) => s.mainHeight())
   const closetHeightCm        = useClosetStore((s) => s.height)
   const backDiagonal          = useClosetStore((s) => s.backDiagonal)
+  const sidePanelThickness    = useClosetStore((s) => s.sidePanelThickness)
   const backDiagKinkHeight    = useClosetStore((s) => s.backDiagKinkHeight)
   const backDiagFlatSectionDepth = useClosetStore((s) => s.backDiagFlatSectionDepth)
   const depthCm               = useClosetStore((s) => s.depth)
@@ -107,7 +108,8 @@ export default function ModulePopover() {
     backDiagFlatSectionDepth: backDiagFlatSectionDepth / 100,
     outerDepth:               depthCm                  / 100,
     moduleCapY:               mainHeightM,
-  }), [diagonalSide, leftDiagStartHeight, rightDiagStartHeight, leftDiagTopWidth, rightDiagTopWidth, widthM, mainHeightCm, mainHeightM, closetHeightCm, backDiagonal, backDiagKinkHeight, backDiagFlatSectionDepth, depthCm])
+    sideWallThickness:        sidePanelThickness === '36mm' ? 0.036 : 0.018,
+  }), [diagonalSide, leftDiagStartHeight, rightDiagStartHeight, leftDiagTopWidth, rightDiagTopWidth, widthM, mainHeightCm, mainHeightM, closetHeightCm, backDiagonal, backDiagKinkHeight, backDiagFlatSectionDepth, depthCm, sidePanelThickness])
 
   if (!isActive || selectedSlot === null) return null
 

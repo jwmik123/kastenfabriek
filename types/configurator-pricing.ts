@@ -79,6 +79,8 @@ export interface PricingConfig {
   deliveryPrice: number;
   constraints: PricingConstraints;
   freeMontage?: boolean;
+  slopedBackWallSurcharge?: number;
+  slopedSideWallSurchargePerSide?: number;
 }
 
 import type { HandleMaterial, LeatherColor } from "@/app/(configurator)/_shared/constants/handleMaterials";
@@ -90,6 +92,7 @@ export interface HandleType {
   productCode: string;
   imageUrl?: string;
   price: number;
+  heightCm?: number;
   allowedMaterials?: HandleMaterial[];
   bodyColor?: LeatherColor;
   meshId?: string;
@@ -102,6 +105,7 @@ export interface FullPricingData {
   doors: DoorType[];
   installation: InstallationTier[];
   handles: HandleType[];
+  mainsElectricityNotice?: string;
 }
 
 export type CorpusType = "single" | "double";

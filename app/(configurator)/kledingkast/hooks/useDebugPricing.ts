@@ -48,6 +48,9 @@ export interface DebugPricingGlobal {
   deliveryCost: number
   installationTierName: string | null
   installationCost: number
+  slopedBackWallSurcharge: number
+  slopedSideWallSurcharge: number
+  sidePanelCost: number
   subtotal: number
   grandTotal: number
 }
@@ -93,8 +96,11 @@ export function computeDebugGlobal(params: {
   doorHandleId: string
   lightStripsEnabled: boolean
   hasTopCabinet: boolean
+  backDiagonal?: boolean
+  diagonalSide?: 'none' | 'left' | 'right' | 'both'
+  sidePanelThickness?: '18mm' | '36mm'
 }): DebugPricingGlobal {
-  const { pricingData, modules, moduleCount, buitenkantMaterialId, doorHandleId, lightStripsEnabled, hasTopCabinet } = params
+  const { pricingData, modules, moduleCount, buitenkantMaterialId, doorHandleId, lightStripsEnabled, hasTopCabinet, backDiagonal, diagonalSide, sidePanelThickness } = params
   const engine = new PricingEngine(pricingData)
 
   const moduleCost = modules.reduce((sum, m) => {
@@ -127,10 +133,20 @@ export function computeDebugGlobal(params: {
   const ledCost = lightStripsEnabled ? engine.calculateLedPrice(moduleCount) : 0
 
   const powerHoleCount = modules.filter((m) => m.hasPowerHole).length
-  const powerHoleCost = powerHoleCount > 0 ? powerHoleCount * engine.getAccessoryPrice('power-cable-holes') : 0
+  const powerHoleCost = powerHoleCount > 0 ? powerHoleCount * engine.getAccessoryPrice('power-outlet') : 0
+
+  const surcharges = engine.calculateSurchargesFromSnapshot({ backDiagonal, diagonalSide })
+  const slopedBackWallSurcharge = surcharges.slopedBackWallSurcharge
+  const slopedSideWallSurcharge = surcharges.slopedSideWallSurcharge
+
+  const sidePanelCost = sidePanelThickness === '36mm'
+    ? engine.getAccessoryPrice('side-panels-36mm')
+    : 0
 
   const deliveryCost = engine.deliveryPrice
-  const subtotal = moduleCost + doorCost + mechanismCost + ledCost + powerHoleCost + deliveryCost
+  const subtotal =
+    moduleCost + doorCost + mechanismCost + ledCost + powerHoleCost +
+    slopedBackWallSurcharge + slopedSideWallSurcharge + sidePanelCost + deliveryCost
   const installationTier = engine.getInstallationTier(subtotal) ?? null
   const installationCost = installationTier?.price ?? 0
   const grandTotal = subtotal + installationCost
@@ -141,6 +157,9 @@ export function computeDebugGlobal(params: {
     deliveryCost,
     installationTierName: installationTier?.name ?? null,
     installationCost,
+    slopedBackWallSurcharge,
+    slopedSideWallSurcharge,
+    sidePanelCost,
     subtotal,
     grandTotal,
   }
@@ -168,7 +187,7 @@ export function computeDebugSlots(params: {
   const { pricingData, modules, moduleCount, buitenkantMaterialId, binnenkantMaterialId, doorHandleId, moduleLayouts, hasTopCabinet, totalWidthM, mainHeightM, depthM } = params
   const engine = new PricingEngine(pricingData)
   const handlePrice = engine.getHandlePrice(doorHandleId)
-  const powerHolePrice = engine.getAccessoryPrice('power-cable-holes')
+  const powerHolePrice = engine.getAccessoryPrice('power-outlet')
 
   const slots: DebugSlotRow[] = modules.map((m) => {
     const dimensions = moduleDebugDimensions({ totalWidthM, mainHeightM, depthM, moduleCount, span: m.span ?? 1 })
@@ -267,6 +286,9 @@ export function useDebugPricing(): DebugPricingResult | null {
   const lightStripsEnabled = useClosetStore((s) => s.lightStripsEnabled)
   const needsTopCabinet = useClosetStore((s) => s.needsTopCabinet)
   const moduleLayouts = useClosetStore((s) => s.moduleLayouts)
+  const backDiagonal = useClosetStore((s) => s.backDiagonal)
+  const diagonalSide = useClosetStore((s) => s.diagonalSide)
+  const sidePanelThickness = useClosetStore((s) => s.sidePanelThickness)
   const totalWidthM = useClosetStore((s) => s.width) / 100
   const mainHeightM = useClosetStore((s) => s.mainHeight()) / 100
   const depthM = useClosetStore((s) => s.depth) / 100
@@ -283,6 +305,9 @@ export function useDebugPricing(): DebugPricingResult | null {
     doorHandleId,
     lightStripsEnabled,
     hasTopCabinet,
+    backDiagonal,
+    diagonalSide,
+    sidePanelThickness,
   })
 
   const { slots, topCabinet } = computeDebugSlots({

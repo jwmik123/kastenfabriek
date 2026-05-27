@@ -44,6 +44,14 @@ export const handle = defineType({
       validation: (Rule) => Rule.required().min(0),
     }),
     defineField({
+      name: "heightCm",
+      title: "Height (cm)",
+      type: "number",
+      description:
+        "Vertical extent of physical handle in cm (from Hafele/Prodinter spec). Optional for now; will gate handle availability on sloped doors once populated.",
+      validation: (Rule) => Rule.min(1).max(100),
+    }),
+    defineField({
       name: "allowedMaterials",
       title: "Allowed Materials",
       type: "array",
@@ -95,12 +103,14 @@ export const handle = defineType({
       title: "name",
       price: "price",
       productCode: "productCode",
+      heightCm: "heightCm",
       media: "image",
     },
-    prepare({ title, price, productCode, media }) {
+    prepare({ title, price, productCode, heightCm, media }) {
+      const heightPart = typeof heightCm === "number" ? ` — H ${heightCm}cm` : "";
       return {
         title: title ?? productCode,
-        subtitle: `€${price} — ${productCode}`,
+        subtitle: `€${price} — ${productCode}${heightPart}`,
         media,
       };
     },

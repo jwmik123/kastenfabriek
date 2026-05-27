@@ -219,7 +219,9 @@ export default function OrderConfirmation({
             const outerMaterial = getMaterialName(c.buitenkantMaterialId);
             const innerMaterial = getMaterialName(c.binnenkantMaterialId);
             const powerHoleCount = c.modules.filter((m) => m.hasPowerHole).length
-            const hasExtras = c.lightStripsEnabled || powerHoleCount > 0 || c.hasTopCabinet || c.diagonalSide !== "none" || c.backDiagonal;
+            const sidePanelThickness = c.sidePanelThickness ?? "18mm"
+            const sidePanelsUpgraded = sidePanelThickness === "36mm"
+            const hasExtras = c.lightStripsEnabled || powerHoleCount > 0 || c.hasTopCabinet || c.diagonalSide !== "none" || c.backDiagonal || sidePanelsUpgraded;
 
             return (
               <Section key={i} style={itemSection}>
@@ -293,6 +295,7 @@ export default function OrderConfirmation({
                       <td>
                         {c.lightStripsEnabled && <Text style={value}>LED-strips</Text>}
                         {powerHoleCount > 0 && <Text style={featureText}>Kabeldoorvoer ({powerHoleCount}×)</Text>}
+                        {sidePanelsUpgraded && <Text style={featureText}>Zijpanelen 36 mm (upgrade)</Text>}
                         {c.hasTopCabinet && <Text style={featureText}>Bovenkast ({c.topCabinetHeightCm} cm)</Text>}
                         {c.diagonalSide !== "none" && <Text style={featureText}>Schuine wand {c.diagonalSide === "left" ? "links" : c.diagonalSide === "right" ? "rechts" : c.diagonalSide}</Text>}
                         {c.backDiagonal && <Text style={featureText}>Schuine achterwand</Text>}
@@ -309,6 +312,18 @@ export default function OrderConfirmation({
                     p.doorCost > 0 && { label: "Deuren", amount: p.doorCost },
                     p.mechanismCost > 0 && { label: "Handgrepen", amount: p.mechanismCost },
                     p.ledCost > 0 && { label: "LED-strips", amount: p.ledCost },
+                    (p.slopedBackWallSurcharge ?? 0) > 0 && {
+                      label: "Schuine achterwand",
+                      amount: p.slopedBackWallSurcharge as number,
+                    },
+                    (p.slopedSideWallSurcharge ?? 0) > 0 && {
+                      label: `Schuine zijwand${c.diagonalSide === "both" ? " (×2)" : ""}`,
+                      amount: p.slopedSideWallSurcharge as number,
+                    },
+                    (p.sidePanelCost ?? 0) > 0 && {
+                      label: "Zijpanelen 36 mm (upgrade)",
+                      amount: p.sidePanelCost as number,
+                    },
                     p.discountAmount && p.discountAmount > 0 && p.discountCode
                       ? { label: `Korting (${p.discountCode})`, amount: -(p.discountAmount / 100) }
                       : false,

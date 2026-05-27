@@ -131,6 +131,7 @@ export function ClosetMaterialProvider({
     envMapIntensity: 2,
     clearcoat: 1,
     clearcoatRoughness: 0,
+    side: THREE.DoubleSide,
   }), [])
 
   const glassMaterial = useMemo(() => new THREE.MeshPhysicalMaterial({

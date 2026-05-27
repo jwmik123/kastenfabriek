@@ -60,6 +60,9 @@ export interface ClosetConfigSnapshot {
   // Lighting & extras
   lightStripsEnabled: boolean;
 
+  // Side panels thickness (issue 072). 18mm = default, 36mm = paid upgrade.
+  sidePanelThickness?: '18mm' | '36mm';
+
   // Derived (snapshotted for display)
   hasTopCabinet: boolean;
   topCabinetHeightCm: number;
@@ -95,6 +98,13 @@ export interface PriceSnapshot {
 
   installationTierName: string | null; // e.g. "Groot project"
   installationCost: number; // €720 | €1440 | €2160
+
+  // Sloped-wall surcharges (issue 069). Optional for back-compat with old cart entries.
+  slopedBackWallSurcharge?: number;
+  slopedSideWallSurcharge?: number; // already multiplied: left/right = ×1, both = ×2
+
+  // Side panels accessory cost (issue 072). Optional for back-compat.
+  sidePanelCost?: number;
 
   freeMontageApplied?: boolean;
   freeMontageDiscount?: number;

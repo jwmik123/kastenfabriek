@@ -60,6 +60,22 @@ export const pricingConfig = defineType({
       initialValue: 95,
     }),
     defineField({
+      name: "slopedBackWallSurcharge",
+      title: "Sloped Back Wall Surcharge (€)",
+      type: "number",
+      description:
+        "Toeslag voor schuine achterwand (eenmalig per kast).",
+      initialValue: 1100,
+    }),
+    defineField({
+      name: "slopedSideWallSurchargePerSide",
+      title: "Sloped Side Wall Surcharge per Side (€)",
+      type: "number",
+      description:
+        "Toeslag per schuine zijwand. Bij 'beide' zijden geldt het bedrag dubbel.",
+      initialValue: 1100,
+    }),
+    defineField({
       name: "constraints",
       title: "Dimension Constraints",
       type: "object",

@@ -1,6 +1,6 @@
 'use client'
 
-import { Plug } from 'lucide-react'
+import { Plug, Zap } from 'lucide-react'
 import { useWasmachinekastStore } from '../store'
 import { Toggle } from '@/components/ui/Toggle'
 import { cn } from '@/lib/utils'
@@ -16,17 +16,19 @@ function SectionHeading({ children }: { children: React.ReactNode }) {
 export default function AccessoiresStep() {
   const modules = useWasmachinekastStore((s) => s.modules)
   const setHasPowerHole = useWasmachinekastStore((s) => s.setHasPowerHole)
+  const mainsNotice = useWasmachinekastStore((s) => s.pricingData?.mainsElectricityNotice)
+  const anyPrado = modules.some((m) => m.hasPowerHole)
 
   return (
     <div className="space-y-10">
 
-      {/* ── Stekkerdoos gaten ── */}
+      {/* ── Prado 2.0 ── */}
       <section className="space-y-5">
         <div>
           <h2 className="text-base font-semibold">Accessoires</h2>
-          <SectionHeading>Stekkerdoos gaten</SectionHeading>
+          <SectionHeading>Prado 2.0</SectionHeading>
           <p className="text-xs text-muted-foreground/60 mt-1">
-            Selecteer een vak om een stekkerdoos gat toe te voegen
+            Selecteer een vak om Prado 2.0 toe te voegen
           </p>
         </div>
 
@@ -50,6 +52,12 @@ export default function AccessoiresStep() {
             )
           })}
         </div>
+        {anyPrado && mainsNotice && (
+          <div className="flex items-start gap-2 rounded-md bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800">
+            <Zap className="w-4 h-4 shrink-0 mt-0.5" />
+            <span>{mainsNotice}</span>
+          </div>
+        )}
       </section>
 
     </div>

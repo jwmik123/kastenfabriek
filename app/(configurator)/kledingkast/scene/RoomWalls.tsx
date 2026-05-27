@@ -3,7 +3,7 @@
 import { useMemo } from 'react'
 import * as THREE from 'three/webgpu'
 import { useClosetStore } from '../store'
-import { getDiagHeightAt, CORPUS_WALL } from './diagonalUtils'
+import { getDiagHeightAt } from './diagonalUtils'
 import type { DiagParams } from './diagonalUtils'
 
 export const ROOM_WALL_THICKNESS = 0.01
@@ -198,6 +198,7 @@ export default function RoomWalls() {
   const rightDiagTopWidthCm    = useClosetStore(s => s.rightDiagTopWidth)
   const placementType          = useClosetStore(s => s.placementType)
   const backDiagonal           = useClosetStore(s => s.backDiagonal)
+  const sidePanelThickness     = useClosetStore(s => s.sidePanelThickness)
   const backDiagKinkHeightCm   = useClosetStore(s => s.backDiagKinkHeight)
   const backDiagFlatSecCm      = useClosetStore(s => s.backDiagFlatSectionDepth)
 
@@ -224,11 +225,12 @@ export default function RoomWalls() {
     backDiagFlatSectionDepth:  backDiagFlatSecCm    / 100,
     outerDepth:                D,
     moduleCapY:                mainH,
+    sideWallThickness:         sidePanelThickness === '36mm' ? 0.036 : 0.018,
   }), [
     diagonalSide, leftDiagStartHeightCm, rightDiagStartHeightCm,
     leftDiagTopWidthCm, rightDiagTopWidthCm,
     mainHCm, W, H, D, mainH,
-    backDiagonal, backDiagKinkHeightCm, backDiagFlatSecCm,
+    backDiagonal, backDiagKinkHeightCm, backDiagFlatSecCm, sidePanelThickness,
   ])
 
   const isVrijstaand = placementType === 'vrijstaand'
@@ -254,14 +256,14 @@ export default function RoomWalls() {
   const leftSlopeTopX = useMemo(() => {
     if (!hasLeft || backDiagonal) return 0
     const dSH = p.leftDiagStartHeight
-    const fullRun = CORPUS_WALL + p.leftDiagTopWidth
+    const fullRun = p.sideWallThickness + p.leftDiagTopWidth
     return mainH > dSH ? fullRun * (H - dSH) / (mainH - dSH) : fullRun
   }, [hasLeft, backDiagonal, p.leftDiagStartHeight, p.leftDiagTopWidth, H, mainH])
 
   const rightSlopeTopX = useMemo(() => {
     if (!hasRight || backDiagonal) return 0
     const dSH = p.rightDiagStartHeight
-    const fullRun = CORPUS_WALL + p.rightDiagTopWidth
+    const fullRun = p.sideWallThickness + p.rightDiagTopWidth
     return mainH > dSH ? fullRun * (H - dSH) / (mainH - dSH) : fullRun
   }, [hasRight, backDiagonal, p.rightDiagStartHeight, p.rightDiagTopWidth, H, mainH])
 
@@ -338,8 +340,8 @@ export default function RoomWalls() {
     // Mirror corpus BackWall shape exactly (same logic as ClosetCorpus BackWall).
     const leftStartH  = getDiagHeightAt(0, p)
     const rightStartH = getDiagHeightAt(W, p)
-    const leftTopX    = hasLeft  ? CORPUS_WALL + p.leftDiagTopWidth  : 0
-    const rightTopX   = hasRight ? W - CORPUS_WALL - p.rightDiagTopWidth : W
+    const leftTopX    = hasLeft  ? p.sideWallThickness + p.leftDiagTopWidth  : 0
+    const rightTopX   = hasRight ? W - p.sideWallThickness - p.rightDiagTopWidth : W
 
     const pts: [number, number][] = [[-W / 2, 0], [W / 2, 0], [W / 2, rightStartH]]
     if (hasRight) {

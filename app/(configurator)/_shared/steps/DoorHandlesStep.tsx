@@ -6,7 +6,12 @@ import { useConfiguratorStore } from '../store/context'
 import { computeHandlePages } from '../components/computeHandlePages'
 import { cn } from '@/lib/utils'
 import type { HandleType } from '@/types/configurator-pricing'
+import type { DiagonalSlice } from '../store/types'
 import { METALS } from '../constants/handleMaterials'
+import { canMountHandle, minDoorHandleEdgeHeightM } from '../handleFit'
+
+// Matches Module.tsx: ONDERSTEL_HEIGHT (0.108) + ONDERSTEL_GAP (0.010) + top wall (0.018).
+const FLOOR_AND_TOP_M = 0.136
 
 type HandleItem =
   | HandleType
@@ -27,9 +32,49 @@ export default function DoorHandlesStep() {
   const doorHandleMaterial    = useConfiguratorStore((s) => s.doorHandleMaterial)
   const setDoorHandleMaterial = useConfiguratorStore((s) => s.setDoorHandleMaterial)
   const pricingData           = useConfiguratorStore((s) => s.pricingData)
+  const mainHeightCm          = useConfiguratorStore((s) => s.mainHeight())
+  // Wasmachinekast has no slope; these selectors fall back to 'none'/0.
+  const diagonalSide          = useConfiguratorStore(
+    (s) => (s as Partial<DiagonalSlice>).diagonalSide ?? 'none',
+  )
+  const leftDiagStartHeightCm = useConfiguratorStore(
+    (s) => (s as Partial<DiagonalSlice>).leftDiagStartHeight ?? 0,
+  )
+  const rightDiagStartHeightCm = useConfiguratorStore(
+    (s) => (s as Partial<DiagonalSlice>).rightDiagStartHeight ?? 0,
+  )
 
   const pushToOpenPrice = pricingData?.accessories.find((a) => a.id === 'push-to-open')?.price ?? 0
   const handles = pricingData?.handles ?? []
+
+  const minEdgeHeightM = useMemo(
+    () =>
+      minDoorHandleEdgeHeightM({
+        diagonalSide,
+        leftDiagStartHeightM: leftDiagStartHeightCm / 100,
+        rightDiagStartHeightM: rightDiagStartHeightCm / 100,
+        mainHeightM: mainHeightCm / 100,
+        floorAndTopM: FLOOR_AND_TOP_M,
+      }),
+    [diagonalSide, leftDiagStartHeightCm, rightDiagStartHeightCm, mainHeightCm],
+  )
+
+  const disabledHandleIds = useMemo(() => {
+    const set = new Set<string>()
+    for (const h of handles) {
+      if (!canMountHandle({ heightCm: h.heightCm }, { doorHeightAtHandle: minEdgeHeightM })) {
+        set.add(h.id)
+      }
+    }
+    return set
+  }, [handles, minEdgeHeightM])
+
+  // Invalidate selection if the currently-chosen handle no longer fits any door.
+  useEffect(() => {
+    if (doorHandleId !== 'none' && disabledHandleIds.has(doorHandleId)) {
+      setDoorHandleId('none')
+    }
+  }, [doorHandleId, disabledHandleIds, setDoorHandleId])
 
   const allItems: HandleItem[] = useMemo(() => {
     const sorted = [...handles].sort((a, b) =>
@@ -66,15 +111,25 @@ export default function DoorHandlesStep() {
         <div className="grid grid-cols-3 gap-2">
           {currentPage.map((item) => {
             const isActive = item.id === doorHandleId
+            const isDisabled = disabledHandleIds.has(item.id)
+            const disabledTitle = isDisabled
+              ? 'Greep past niet op de schuine deur in deze configuratie.'
+              : undefined
             return (
               <button
                 key={item.id}
-                onClick={() => setDoorHandleId(item.id)}
+                onClick={() => !isDisabled && setDoorHandleId(item.id)}
+                disabled={isDisabled}
+                title={disabledTitle}
+                aria-disabled={isDisabled}
+                data-disabled={isDisabled ? 'true' : 'false'}
                 className={cn(
                   'flex flex-col aspect-square rounded-md border-2 overflow-hidden transition-all',
-                  isActive
-                    ? 'border-foreground bg-primary text-primary-foreground'
-                    : 'border-border bg-background text-foreground hover:border-foreground/40 hover:bg-muted',
+                  isDisabled
+                    ? 'border-border bg-muted text-muted-foreground opacity-40 cursor-not-allowed'
+                    : isActive
+                      ? 'border-foreground bg-primary text-primary-foreground'
+                      : 'border-border bg-background text-foreground hover:border-foreground/40 hover:bg-muted',
                 )}
               >
                 <div className="relative flex-1 min-h-0 w-full bg-muted">

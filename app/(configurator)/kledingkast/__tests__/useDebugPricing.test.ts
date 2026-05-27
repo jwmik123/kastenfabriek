@@ -27,7 +27,7 @@ const basePricingData: FullPricingData = {
   ],
   accessories: [
     { id: 'push-to-open', name: 'Push-to-open', price: 15, category: 'mechanism', perUnit: true },
-    { id: 'power-cable-holes', name: 'Power hole', price: 25, category: 'electrical', perUnit: true },
+    { id: 'power-outlet', name: 'Power hole', price: 25, category: 'electrical', perUnit: true },
   ],
   handles: [
     { id: 'h1', name: 'Bar handle', productCode: 'H1', price: 10 },

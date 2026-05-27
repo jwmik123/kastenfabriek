@@ -40,7 +40,8 @@ export default function InstancedLightStrips({ diagParams: p }: Props) {
   const strips = useMemo<StripInstance[]>(() => {
     const width = widthCm / 100
     const depth = depthCm / 100
-    const innerW = width - WALL * 2
+    const sideWallM = p.sideWallThickness
+    const innerW = width - sideWallM * 2
     const slotW = innerW / moduleCount
     const moduleDepth = depth - WALL - CLOSET_INSIDE_INSET
     const stripZ = WALL + moduleDepth - STRIP_DEPTH_FROM_FRONT
@@ -54,8 +55,8 @@ export default function InstancedLightStrips({ diagParams: p }: Props) {
       const moduleWidth = m.span * slotW
       const x = -innerW / 2 + m.slotIndex * slotW
 
-      const leftXOuter  = WALL + m.slotIndex * slotW
-      const rightXOuter = WALL + (m.slotIndex + m.span) * slotW
+      const leftXOuter  = sideWallM + m.slotIndex * slotW
+      const rightXOuter = sideWallM + (m.slotIndex + m.span) * slotW
 
       let leftH: number
       let rightH: number

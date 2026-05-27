@@ -120,6 +120,23 @@ describe('restoreConfig — hasPowerHole', () => {
     expect(useClosetStore.getState().doorHandleMaterial).toBe('chrome')
   })
 
+  it('defaults sidePanelThickness to "18mm" for old snapshots missing the field', () => {
+    useClosetStore.getState().restoreConfig(baseSnapshot)
+    expect(useClosetStore.getState().sidePanelThickness).toBe('18mm')
+  })
+
+  it('restores sidePanelThickness "18mm" from snapshot', () => {
+    const snapshot: ClosetConfigSnapshot = { ...baseSnapshot, sidePanelThickness: '18mm' }
+    useClosetStore.getState().restoreConfig(snapshot)
+    expect(useClosetStore.getState().sidePanelThickness).toBe('18mm')
+  })
+
+  it('restores sidePanelThickness "36mm" upgrade from snapshot', () => {
+    const snapshot: ClosetConfigSnapshot = { ...baseSnapshot, sidePanelThickness: '36mm' }
+    useClosetStore.getState().restoreConfig(snapshot)
+    expect(useClosetStore.getState().sidePanelThickness).toBe('36mm')
+  })
+
   it('restores doorsExtendToFloor from snapshot', () => {
     const snapshot: ClosetConfigSnapshot = { ...baseSnapshot, doorsExtendToFloor: true }
     useClosetStore.getState().restoreConfig(snapshot)

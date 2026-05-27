@@ -6,7 +6,7 @@ import gsap from 'gsap'
 import { useClosetStore } from '../store'
 import ClosetMaterial from '../../_shared/materials/ClosetMaterial'
 import { Model as HingeModel } from '../../_shared/objects/Hinge'
-import { CORPUS_WALL, FILLER_FLAT_SEC_THRESHOLD, getBackDiagHeightAtZ } from './diagonalUtils'
+import { FILLER_FLAT_SEC_THRESHOLD, getBackDiagHeightAtZ } from './diagonalUtils'
 import type { DiagParams } from './diagonalUtils'
 import { trapShape, trapGeo, trapNaN } from '@/utils/debugGeometry'
 
@@ -28,7 +28,7 @@ function getFullDiagHeightAt(x: number, p: DiagParams, closetH: number): number 
 
   if (p.diagonalSide === 'left' || p.diagonalSide === 'both') {
     if (p.leftDiagTopWidth > 0 && p.mainHeight > p.leftDiagStartHeight) {
-      const fullRun = CORPUS_WALL + p.leftDiagTopWidth   // outer face runs from x=0 to fullRun at mainH
+      const fullRun = p.sideWallThickness + p.leftDiagTopWidth   // outer face runs from x=0 to fullRun at mainH
       const t = x / fullRun
       const hDiag = p.leftDiagStartHeight + (p.mainHeight - p.leftDiagStartHeight) * Math.max(0, t)
       if (hDiag < closetH) h = Math.min(h, hDiag)
@@ -38,7 +38,7 @@ function getFullDiagHeightAt(x: number, p: DiagParams, closetH: number): number 
   if (p.diagonalSide === 'right' || p.diagonalSide === 'both') {
     if (p.rightDiagTopWidth > 0 && p.mainHeight > p.rightDiagStartHeight) {
       const xFromRight = p.outerWidth - x
-      const fullRun = CORPUS_WALL + p.rightDiagTopWidth
+      const fullRun = p.sideWallThickness + p.rightDiagTopWidth
       const t = xFromRight / fullRun
       const hDiag = p.rightDiagStartHeight + (p.mainHeight - p.rightDiagStartHeight) * Math.max(0, t)
       if (hDiag < closetH) h = Math.min(h, hDiag)
@@ -75,14 +75,14 @@ function computeTCRoofProfile(
   if ((p.diagonalSide === 'left' || p.diagonalSide === 'both') &&
       p.leftDiagTopWidth > 0 && p.mainHeight > p.leftDiagStartHeight) {
     const scale = (closetH - p.leftDiagStartHeight) / (p.mainHeight - p.leftDiagStartHeight)
-    const kx = (CORPUS_WALL + p.leftDiagTopWidth) * scale   // matches ClosetCorpus topRunLeft
+    const kx = (p.sideWallThickness + p.leftDiagTopWidth) * scale   // matches ClosetCorpus topRunLeft
     if (kx > lx && kx < rx) kinks.push({ x: kx, y: flatH })
   }
 
   if ((p.diagonalSide === 'right' || p.diagonalSide === 'both') &&
       p.rightDiagTopWidth > 0 && p.mainHeight > p.rightDiagStartHeight) {
     const scale = (closetH - p.rightDiagStartHeight) / (p.mainHeight - p.rightDiagStartHeight)
-    const kx = p.outerWidth - (CORPUS_WALL + p.rightDiagTopWidth) * scale   // matches ClosetCorpus topRunRight
+    const kx = p.outerWidth - (p.sideWallThickness + p.rightDiagTopWidth) * scale   // matches ClosetCorpus topRunRight
     if (kx > lx && kx < rx) kinks.push({ x: kx, y: flatH })
   }
 
@@ -445,7 +445,11 @@ function TopCabinetSlot({
 
       {/* Hinges */}
       {hasDoor && hingeYs.map((y, i) => (
-        <HingeModel key={i} position={[hingeX, y, moduleDepth - 0.03]} doorsOpen={doorsOpen} />
+        <HingeModel
+          key={i}
+          position={[hingeX, y, moduleDepth - 0.03]}
+          doorsOpen={doorsOpen}
+        />
       ))}
     </>
   )
@@ -576,7 +580,11 @@ function BackDiagTCSlot({
 
       {/* Hinges */}
       {hasDoor && hingeYs.map((y, i) => (
-        <HingeModel key={i} position={[hingeX, y, z_front - 0.03]} doorsOpen={doorsOpen} />
+        <HingeModel
+          key={i}
+          position={[hingeX, y, z_front - 0.03]}
+          doorsOpen={doorsOpen}
+        />
       ))}
     </>
   )
@@ -633,7 +641,7 @@ function TCLightStrips({
         if (tcSlotDepth < STRIP_DEPTH_FROM_FRONT + 0.01) continue
         leftH = rightH = doorCeilH
       } else {
-        const lx = CORPUS_WALL + i * slotW
+        const lx = p.sideWallThickness + i * slotW
         const rx = lx + slotW
         leftH  = tcWallHeightAt(lx, p, mainH, ceilH)
         rightH = tcWallHeightAt(rx, p, mainH, ceilH)
@@ -701,6 +709,8 @@ export default function TopCabinet() {
   const moduleCount = useClosetStore((s) => s.moduleCount)
   const doorsOpen   = useClosetStore((s) => s.doorsOpen)
 
+  const sidePanelThickness      = useClosetStore((s) => s.sidePanelThickness)
+  const sideWallThicknessM      = sidePanelThickness === '36mm' ? 0.036 : 0.018
   const diagonalSide            = useClosetStore((s) => s.diagonalSide)
   const leftDiagStartHeightCm   = useClosetStore((s) => s.leftDiagStartHeight)
   const rightDiagStartHeightCm  = useClosetStore((s) => s.rightDiagStartHeight)
@@ -725,12 +735,13 @@ export default function TopCabinet() {
     backDiagFlatSectionDepth:  backDiagFlatSectionDepthCm  / 100,
     outerDepth:                depth,
     moduleCapY:                mainH,
-  }), [diagonalSide, leftDiagStartHeightCm, rightDiagStartHeightCm, leftDiagTopWidthCm, rightDiagTopWidthCm, width, mainHCm, mainH, height, backDiagonal, backDiagKinkHeightCm, backDiagFlatSectionDepthCm, depth])
+    sideWallThickness:         sideWallThicknessM,
+  }), [diagonalSide, leftDiagStartHeightCm, rightDiagStartHeightCm, leftDiagTopWidthCm, rightDiagTopWidthCm, width, mainHCm, mainH, height, backDiagonal, backDiagKinkHeightCm, backDiagFlatSectionDepthCm, depth, sideWallThicknessM])
 
   // ---------------------------------------------------------------------------
   // All derived values and hooks must be declared BEFORE any early return
   // ---------------------------------------------------------------------------
-  const innerW      = width - WALL * 2
+  const innerW      = width - sideWallThicknessM * 2
   const slotW       = innerW / moduleCount
   const moduleDepth = depth - WALL - CLOSET_INSIDE_INSET
 
@@ -873,12 +884,12 @@ export default function TopCabinet() {
     let delta = 0
     if ((p.diagonalSide === 'left' || p.diagonalSide === 'both') &&
         p.leftDiagTopWidth > 0 && mainH > p.leftDiagStartHeight) {
-      const slope = (mainH - p.leftDiagStartHeight) / (CORPUS_WALL + p.leftDiagTopWidth)
+      const slope = (mainH - p.leftDiagStartHeight) / (p.sideWallThickness + p.leftDiagTopWidth)
       delta = Math.max(delta, WALL * (Math.sqrt(1 + slope * slope) - 1))
     }
     if ((p.diagonalSide === 'right' || p.diagonalSide === 'both') &&
         p.rightDiagTopWidth > 0 && mainH > p.rightDiagStartHeight) {
-      const slope = (mainH - p.rightDiagStartHeight) / (CORPUS_WALL + p.rightDiagTopWidth)
+      const slope = (mainH - p.rightDiagStartHeight) / (p.sideWallThickness + p.rightDiagTopWidth)
       delta = Math.max(delta, WALL * (Math.sqrt(1 + slope * slope) - 1))
     }
     return delta
@@ -937,7 +948,7 @@ export default function TopCabinet() {
         }
 
         // ── Side diagonal / flat path (existing logic) ──
-        const lx = CORPUS_WALL + i * slotW
+        const lx = p.sideWallThickness + i * slotW
         const rx = lx + slotW
 
         const leftH  = tcWallHeightAt(lx, p, mainH, ceilH)
@@ -950,9 +961,9 @@ export default function TopCabinet() {
             ? rawProfile.map(pt => ({ x: pt.x, y: Math.max(0, pt.y - fillerWallPerpDelta) }))
             : rawProfile
           const leftFullRun  = (p.diagonalSide === 'left'  || p.diagonalSide === 'both')
-            ? CORPUS_WALL + p.leftDiagTopWidth : 0
+            ? p.sideWallThickness + p.leftDiagTopWidth : 0
           const rightFullRun = (p.diagonalSide === 'right' || p.diagonalSide === 'both')
-            ? p.outerWidth - (CORPUS_WALL + p.rightDiagTopWidth) : p.outerWidth
+            ? p.outerWidth - (p.sideWallThickness + p.rightDiagTopWidth) : p.outerWidth
           const diagCutLeft  = Math.max(0, leftFullRun - lx)
           const diagCutRight = Math.min(slotW, rightFullRun - lx)
           return (

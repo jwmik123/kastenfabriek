@@ -43,21 +43,17 @@ export default function StructuralSideKinkShelf({
 
   if (diagonalSide !== side && diagonalSide !== 'both') return null
 
-  const innerW      = width - WALL * 2
+  const sideWallM   = diagParams.sideWallThickness
+  const innerW      = width - sideWallM * 2
   const slotW       = innerW / moduleCount
   const moduleWidth = span * slotW
 
-  // Module is fully inside zone when its far edge (away from the wall) is still within the diagonal.
-  // Left zone: far edge = right edge. Right zone: far edge = left edge.
-  const farEdgeX = side === 'left'
-    ? WALL + (slotIndex + span) * slotW
-    : WALL + slotIndex * slotW
-  if (getDiagHeightAt(farEdgeX, diagParams) >= mainHeight) return null
-
   // Shelf height = diagonal height at the wall-side edge of this module (lowest point within module).
+  // Render whenever the wall-side edge sits under the slope — including modules that straddle the
+  // slope→flat transition, which produces a stair-step shelf line across adjacent modules.
   const wallEdgeX = side === 'left'
-    ? WALL + slotIndex * slotW
-    : WALL + (slotIndex + span) * slotW
+    ? sideWallM + slotIndex * slotW
+    : sideWallM + (slotIndex + span) * slotW
   const kinkH = getDiagHeightAt(wallEdgeX, diagParams)
 
   if (kinkH <= 0 || kinkH >= mainHeight) return null

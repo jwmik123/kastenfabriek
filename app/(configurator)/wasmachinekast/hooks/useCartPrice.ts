@@ -78,7 +78,7 @@ export function useCartPrice() {
   const ledCost = lightStripsEnabled && engine ? engine.calculateLedPrice(moduleCount) : 0
 
   const powerHoleCount = modules.filter((m) => m.hasPowerHole).length
-  const powerHoleCost = powerHoleCount > 0 && engine ? powerHoleCount * engine.getAccessoryPrice('power-cable-holes') : 0
+  const powerHoleCost = powerHoleCount > 0 && engine ? powerHoleCount * engine.getAccessoryPrice('power-outlet') : 0
 
   const deliveryCost = engine?.deliveryPrice ?? 95
   const subtotal = moduleCost + doorCost + mechanismCost + ledCost + powerHoleCost + deliveryCost
@@ -148,6 +148,8 @@ export function useCartPrice() {
       subtotal,
       installationTierName: installationTier?.name ?? null,
       installationCost,
+      slopedBackWallSurcharge: 0,
+      slopedSideWallSurcharge: 0,
       freeMontageApplied,
       freeMontageDiscount,
       total: grandTotal,

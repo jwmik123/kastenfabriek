@@ -11,6 +11,8 @@ let mockState = {
     { slotIndex: 2, layoutId: null, hasDoor: true, span: 1, hasPowerHole: false },
   ],
   setHasPowerHole: vi.fn(),
+  sidePanelThickness: '18mm' as '18mm' | '36mm',
+  setSidePanelThickness: vi.fn(),
 }
 
 vi.mock('../store', () => ({
@@ -27,6 +29,8 @@ beforeEach(() => {
       { slotIndex: 2, layoutId: null, hasDoor: true, span: 1, hasPowerHole: false },
     ],
     setHasPowerHole: vi.fn(),
+    sidePanelThickness: '18mm',
+    setSidePanelThickness: vi.fn(),
   }
 })
 
@@ -52,9 +56,17 @@ describe('AccessoiresStep', () => {
     expect(html).toContain('data-plug="1"')
   })
 
-  it('renders the Stekkerdoos gaten section heading', async () => {
+  it('renders the Prado 2.0 section heading', async () => {
     const { default: AccessoiresStep } = await import('../steps/AccessoiresStep')
     const html = renderToStaticMarkup(<AccessoiresStep />)
-    expect(html).toContain('Stekkerdoos gaten')
+    expect(html).toContain('Prado 2.0')
+  })
+
+  it('renders Zijpanelen section with always-visible 18/36mm picker', async () => {
+    const { default: AccessoiresStep } = await import('../steps/AccessoiresStep')
+    const html = renderToStaticMarkup(<AccessoiresStep />)
+    expect(html).toContain('Zijpanelen')
+    expect(html).toMatch(/<button[^>]*>18 mm<\/button>/)
+    expect(html).toMatch(/<button[^>]*>36 mm<\/button>/)
   })
 })

@@ -7,6 +7,7 @@ import ClosetMaterial from '../materials/ClosetMaterial'
 import { Model as HingeModel } from './Hinge'
 import { HandleByType } from './Handles'
 import type { HandleMaterial, LeatherColor } from '../constants/handleMaterials'
+import { computeHandleY } from '../handleFit'
 import { trapShape, trapGeo } from '@/utils/debugGeometry'
 
 const DOOR_DEPTH = 0.018
@@ -26,6 +27,7 @@ interface DoorProps {
   doorHandleMaterial?: HandleMaterial
   doorHandleBodyColor?: LeatherColor
   doorHandleMeshId?: string
+  doorHandleHeightCm?: number
   mirror?: boolean
   extendToFloor?: boolean
   /**
@@ -68,6 +70,7 @@ export default function Door({
   doorHandleMaterial = 'chrome',
   doorHandleBodyColor,
   doorHandleMeshId,
+  doorHandleHeightCm,
   mirror = false,
   extendToFloor = false,
   topProfile,
@@ -96,24 +99,33 @@ export default function Door({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slotW, topProfile, bottomY])
 
-  // Hinge Y positions — clamped to the height at the hinge's edge (left hinges → leftH, right → rightH)
+  // Hinge Y positions — clamped to the height at the hinge's edge (left hinges → leftH, right → rightH).
+  // Layout: bottom + top pair always; inner pair only when there's real vertical room between them,
+  // otherwise short doors (e.g. 80 cm) produce overlapping/out-of-order hinges.
   const hingeEdgeH = mirror ? rightH : leftH
   const hingeYs = useMemo(() => {
     const maxH = hingeEdgeH - SPACE
-    const candidates = [
-      HINGE_EDGE_OFFSET,
-      HINGE_EDGE_OFFSET + HINGE_PAIR_SPACING,
-      hingeEdgeH - HINGE_EDGE_OFFSET - HINGE_PAIR_SPACING,
-      hingeEdgeH - HINGE_EDGE_OFFSET,
-    ]
-    return candidates.filter((y) => y > 0 && y < maxH)
-  }, [hingeEdgeH])
+    const doorSpan = hingeEdgeH - bottomY
+    const edgeOffset = Math.min(HINGE_EDGE_OFFSET, doorSpan * 0.15)
+    const bottom = Math.max(SPACE, bottomY + edgeOffset)
+    const top = hingeEdgeH - edgeOffset
+    const upperBottom = bottom + HINGE_PAIR_SPACING
+    const lowerTop = top - HINGE_PAIR_SPACING
+    const positions = lowerTop > upperBottom
+      ? [bottom, upperBottom, lowerTop, top]
+      : [bottom, top]
+    return positions.filter((y) => y > 0 && y < maxH)
+  }, [hingeEdgeH, bottomY])
 
   const pivotX  = mirror ? slotW : 0
   const panelX  = mirror ? -slotW / 2 : slotW / 2
   const handleX = mirror ? 0.055 - slotW : slotW - 0.055
   const hingeX  = mirror ? slotW - MODULE_WALL - 0.01 : MODULE_WALL + 0.01
-  const handleY = 0.9
+  const doorHeightAtHandle = mirror ? leftH : rightH
+  const handleY = computeHandleY(
+    { doorHeightAtHandle },
+    { heightCm: doorHandleHeightCm },
+  )
 
   useEffect(() => {
     if (!pivotRef.current || !posRef.current) return
@@ -154,7 +166,12 @@ export default function Door({
 
       {/* Hinges */}
       {hingeYs.map((y, i) => (
-        <HingeModel key={i} position={[hingeX, y, moduleDepth - 0.03]} rotation={[0, 0, 0]} doorsOpen={doorsOpen} />
+        <HingeModel
+          key={i}
+          position={[hingeX, y, moduleDepth - 0.03]}
+          scale={[mirror ? -1 : 1, 1, 1]}
+          doorsOpen={doorsOpen}
+        />
       ))}
     </>
   )

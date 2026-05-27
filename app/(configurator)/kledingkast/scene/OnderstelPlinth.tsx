@@ -12,10 +12,12 @@ const ONDERSTEL_FRONT_INSET = 0.089
 export default function OnderstelPlinth() {
   const width = useClosetStore((s) => s.width) / 100
   const depth = useClosetStore((s) => s.depth) / 100
+  const sidePanelThickness = useClosetStore((s) => s.sidePanelThickness)
+  const sideWallM = sidePanelThickness === '36mm' ? 0.036 : 0.018
   const { scene } = useGLTF('/objects/onderstel.glb')
   const material = useClosetMaterialInstance()
 
-  const innerW = width - WALL * 2
+  const innerW = width - sideWallM * 2
   const innerD = depth - WALL - ONDERSTEL_FRONT_INSET
 
   const [{ clone, originalBox }] = useState(() => {

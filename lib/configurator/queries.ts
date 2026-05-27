@@ -7,8 +7,11 @@ export const pricingDataQuery = groq`{
     led,
     deliveryPrice,
     constraints,
-    freeMontage
+    freeMontage,
+    slopedBackWallSurcharge,
+    slopedSideWallSurchargePerSide
   },
+  "mainsElectricityNotice": *[_type == "siteSettings"][0].mainsElectricityNotice,
   "modules": *[_type == "moduleLayout"] | order(layoutId asc) {
     layoutId,
     name,
@@ -49,6 +52,7 @@ export const pricingDataQuery = groq`{
     productCode,
     "imageUrl": image.asset->url,
     price,
+    heightCm,
     allowedMaterials,
     bodyColor,
     meshId
@@ -107,6 +111,8 @@ export const pricingConfigQuery = groq`
     led,
     deliveryPrice,
     constraints,
-    freeMontage
+    freeMontage,
+    slopedBackWallSurcharge,
+    slopedSideWallSurchargePerSide
   }
 `;

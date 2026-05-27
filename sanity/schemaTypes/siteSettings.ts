@@ -91,6 +91,15 @@ export const siteSettings = defineType({
       title: "BTW nummer",
       type: "string",
     }),
+    defineField({
+      name: "mainsElectricityNotice",
+      title: "Netstroom melding",
+      description:
+        "Wordt getoond bij LED-verlichting en Prado 2.0 in de configurator.",
+      type: "string",
+      initialValue:
+        "Let op: er moet netstroom achter de kast aanwezig zijn.",
+    }),
   ],
   preview: {
     select: {

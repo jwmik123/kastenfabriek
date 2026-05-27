@@ -6,7 +6,7 @@ import { useGLTF } from '@react-three/drei'
 import { useConfiguratorStore } from '../store/context'
 import { resolveElementPositions } from '../../kledingkast/scene/moduleLayouts'
 import type { ModuleLayoutConfig, ElementBbox } from '../../kledingkast/scene/moduleLayouts'
-import { getDiagHeightAt, getBackDiagHeightAtZ, isFullHeight, CORPUS_WALL } from '../../kledingkast/scene/diagonalUtils'
+import { getDiagHeightAt, getBackDiagHeightAtZ, isFullHeight } from '../../kledingkast/scene/diagonalUtils'
 import type { DiagParams } from '../../kledingkast/scene/diagonalUtils'
 import FillZone from './FillZone'
 import SpecialElement from './SpecialElement'
@@ -87,11 +87,11 @@ function computeDoorProfile(
   const kinks: Array<{ x: number; y: number }> = []
 
   if ((p.diagonalSide === 'left' || p.diagonalSide === 'both') && p.leftDiagTopWidth > 0) {
-    const kx = CORPUS_WALL + p.leftDiagTopWidth
+    const kx = p.sideWallThickness + p.leftDiagTopWidth
     if (kx > leftXOuter + KINK_EDGE_EPS && kx < rightXOuter - KINK_EDGE_EPS) kinks.push({ x: kx, y: flatH })
   }
   if ((p.diagonalSide === 'right' || p.diagonalSide === 'both') && p.rightDiagTopWidth > 0) {
-    const kx = p.outerWidth - CORPUS_WALL - p.rightDiagTopWidth
+    const kx = p.outerWidth - p.sideWallThickness - p.rightDiagTopWidth
     if (kx > leftXOuter + KINK_EDGE_EPS && kx < rightXOuter - KINK_EDGE_EPS) kinks.push({ x: kx, y: flatH })
   }
 
@@ -114,11 +114,11 @@ function computeRoofProfile(
   const kinks: Array<{ x: number; y: number }> = []
 
   if ((p.diagonalSide === 'left' || p.diagonalSide === 'both') && p.leftDiagTopWidth > 0) {
-    const kx = CORPUS_WALL + p.leftDiagTopWidth
+    const kx = p.sideWallThickness + p.leftDiagTopWidth
     if (kx > leftXOuter + KINK_EDGE_EPS && kx < rightXOuter - KINK_EDGE_EPS) kinks.push({ x: kx, y: flatH })
   }
   if ((p.diagonalSide === 'right' || p.diagonalSide === 'both') && p.rightDiagTopWidth > 0) {
-    const kx = p.outerWidth - CORPUS_WALL - p.rightDiagTopWidth
+    const kx = p.outerWidth - p.sideWallThickness - p.rightDiagTopWidth
     if (kx > leftXOuter + KINK_EDGE_EPS && kx < rightXOuter - KINK_EDGE_EPS) kinks.push({ x: kx, y: flatH })
   }
 
@@ -141,11 +141,13 @@ export default function Module({ index, layout, hasDoor, span, diagParams: p, mi
   const resolvedHandle      = pricingData?.handles.find((h) => h.id === doorHandleId)
   const doorHandleBodyColor = resolvedHandle?.bodyColor
   const doorHandleMeshId    = resolvedHandle?.meshId
+  const doorHandleHeightCm  = resolvedHandle?.heightCm
   const allModules   = useConfiguratorStore((s) => s.modules)
   const moduleSlot   = allModules.find((m) => m.slotIndex === index)
   const needsTop     = useConfiguratorStore((s) => s.needsTopCabinet())
 
-  const innerW       = width - WALL * 2
+  const sideWallM    = p.sideWallThickness
+  const innerW       = width - sideWallM * 2
   const moduleDepth  = depthOverride ?? (depth - WALL - CLOSET_INSIDE_INSET)
   const groupZ       = depthOverride != null ? (depth - CLOSET_INSIDE_INSET - depthOverride) : WALL
   const contentDepth = moduleDepth - MODULE_INSIDE_INSET
@@ -158,8 +160,8 @@ export default function Module({ index, layout, hasDoor, span, diagParams: p, mi
   const nextSlotW    = slotWidthsM[index + 1] ?? thisSlotW
   const centerX      = moduleWidth / 2
 
-  const leftWallXOuter  = WALL + slotOffset
-  const rightWallXOuter = WALL + slotOffset + moduleWidth
+  const leftWallXOuter  = sideWallM + slotOffset
+  const rightWallXOuter = sideWallM + slotOffset + moduleWidth
 
   const isLastModule = index + span === moduleCount
 
@@ -254,8 +256,8 @@ export default function Module({ index, layout, hasDoor, span, diagParams: p, mi
 
   const riseLeft  = p.mainHeight - p.leftDiagStartHeight
   const riseRight = p.mainHeight - p.rightDiagStartHeight
-  const runLeft   = CORPUS_WALL + p.leftDiagTopWidth
-  const runRight  = CORPUS_WALL + p.rightDiagTopWidth
+  const runLeft   = p.sideWallThickness + p.leftDiagTopWidth
+  const runRight  = p.sideWallThickness + p.rightDiagTopWidth
   const lenLeft   = Math.sqrt(riseLeft  * riseLeft  + runLeft  * runLeft)
   const lenRight  = Math.sqrt(riseRight * riseRight + runRight * runRight)
 
@@ -380,12 +382,12 @@ export default function Module({ index, layout, hasDoor, span, diagParams: p, mi
   const hasKinkInRange =
     ((p.diagonalSide === 'left' || p.diagonalSide === 'both') &&
       p.leftDiagTopWidth > 0 &&
-      CORPUS_WALL + p.leftDiagTopWidth > leftWallXOuter &&
-      CORPUS_WALL + p.leftDiagTopWidth < rightWallXOuter) ||
+      p.sideWallThickness + p.leftDiagTopWidth > leftWallXOuter &&
+      p.sideWallThickness + p.leftDiagTopWidth < rightWallXOuter) ||
     ((p.diagonalSide === 'right' || p.diagonalSide === 'both') &&
       p.rightDiagTopWidth > 0 &&
-      p.outerWidth - CORPUS_WALL - p.rightDiagTopWidth > leftWallXOuter &&
-      p.outerWidth - CORPUS_WALL - p.rightDiagTopWidth < rightWallXOuter)
+      p.outerWidth - p.sideWallThickness - p.rightDiagTopWidth > leftWallXOuter &&
+      p.outerWidth - p.sideWallThickness - p.rightDiagTopWidth < rightWallXOuter)
   const fillToTop = moduleHasDiag && !hasKinkInRange
   const mirrorDoor = mirrorProp ?? (isBackDiag
     ? (index % 2 === 1 || isLastModule)
@@ -532,6 +534,7 @@ export default function Module({ index, layout, hasDoor, span, diagParams: p, mi
           doorHandleMaterial={doorHandleMaterial}
           doorHandleBodyColor={doorHandleBodyColor}
           doorHandleMeshId={doorHandleMeshId}
+          doorHandleHeightCm={doorHandleHeightCm}
           mirror={mirrorDoor}
           extendToFloor={doorsExtendToFloor}
           topProfile={isBackDiag ? bdDoorProfile : doorProfile}
@@ -549,6 +552,7 @@ export default function Module({ index, layout, hasDoor, span, diagParams: p, mi
             doorHandleMaterial={doorHandleMaterial}
           doorHandleBodyColor={doorHandleBodyColor}
           doorHandleMeshId={doorHandleMeshId}
+          doorHandleHeightCm={doorHandleHeightCm}
             extendToFloor={doorsExtendToFloor}
             topProfile={isBackDiag ? bdDoorProfile : leftDoorProfile}
           />
@@ -563,6 +567,7 @@ export default function Module({ index, layout, hasDoor, span, diagParams: p, mi
               doorHandleMaterial={doorHandleMaterial}
           doorHandleBodyColor={doorHandleBodyColor}
           doorHandleMeshId={doorHandleMeshId}
+          doorHandleHeightCm={doorHandleHeightCm}
               mirror
               extendToFloor={doorsExtendToFloor}
               topProfile={isBackDiag ? bdDoorProfile : rightDoorProfile}
