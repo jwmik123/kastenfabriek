@@ -83,6 +83,10 @@ interface WasmState extends BaseConfiguratorState {
   layout: WasmLayout
   lowSection: Section | null
   washerSection: WasherSection
+  // Returns true iff placing a washer of `layoutId` at `slotIndex` (in the
+  // section currently used for washers) leaves the remaining non-washer slots
+  // with enough room (>= FALLBACK_MODULE_MIN_WIDTH each).
+  canPlaceWasher: (slotIndex: number, layoutId: number) => boolean
   topPanelThicknessMm: 18 | 36
   countertopMaterialId: string | undefined
   activeModulesSection: 'high' | 'low'
@@ -415,7 +419,46 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
     }
   },
 
+  canPlaceWasher: (slotIndex, layoutId) => {
+    const s = get()
+    const layout = s.moduleLayouts.find((l) => l.layoutId === layoutId)
+    const candidateMin = layout?.minSlotWidth
+    if (!candidateMin) return true
+
+    // Resolve the section that holds washers right now.
+    const target: WasherSection =
+      s.washerSection ?? (s.layout === 'low-only' ? 'low' : 'high')
+    const targetIsTopLevel =
+      (target === 'high' && s.layout !== 'low-only') ||
+      (target === 'low' && s.layout === 'low-only')
+    const sectionWidthCm = targetIsTopLevel ? s.width : s.lowSection?.width ?? 0
+    const sectionModules: BaseModuleSlot[] =
+      targetIsTopLevel ? s.modules : s.lowSection?.modules ?? []
+    if (sectionModules.length === 0 || sectionWidthCm <= 0) return false
+    if (slotIndex < 0 || slotIndex >= sectionModules.length) return false
+
+    // Replace washer slot's fixedWidth with the candidate's; keep others as-is.
+    // (Existing washers in the same section already pin their slots' fixedWidth.)
+    let totalFixed = 0
+    let varCount = 0
+    for (let i = 0; i < sectionModules.length; i++) {
+      const m = sectionModules[i]
+      if (i === slotIndex) {
+        totalFixed += candidateMin
+      } else if (m.fixedWidth) {
+        totalFixed += m.fixedWidth
+      } else {
+        varCount += 1
+      }
+    }
+    if (totalFixed > sectionWidthCm) return false
+    if (varCount === 0) return true
+    const varW = (sectionWidthCm - totalFixed) / varCount
+    return varW >= FALLBACK_MODULE_MIN_WIDTH
+  },
+
   addWasherModule: (slotIndex, layoutId) => {
+    if (!get().canPlaceWasher(slotIndex, layoutId)) return
     const s = get()
     const target: WasherSection =
       s.washerSection ?? (s.layout === 'low-only' ? 'low' : 'high')

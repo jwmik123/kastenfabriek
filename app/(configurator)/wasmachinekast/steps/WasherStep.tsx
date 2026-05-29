@@ -63,6 +63,7 @@ export default function WasherStep() {
   const washerModules = useWasmachinekastStore((s) => s.washerModules)
   const addWasherModule = useWasmachinekastStore((s) => s.addWasherModule)
   const removeWasherModule = useWasmachinekastStore((s) => s.removeWasherModule)
+  const canPlaceWasher = useWasmachinekastStore((s) => s.canPlaceWasher)
   const setHoveredSlot = useWasmachinekastStore((s) => s.setHoveredSlot)
   const washerSection = useWasmachinekastStore((s) => s.washerSection)
   const setWasherSection = useWasmachinekastStore((s) => s.setWasherSection)
@@ -238,16 +239,19 @@ export default function WasherStep() {
               <div className="grid grid-cols-8 gap-1">
                 {editingModules.map((m) => {
                   const taken = washerSlots.has(m.slotIndex)
+                  const fits = !taken && canPlaceWasher(m.slotIndex, selectedLayoutId)
+                  const disabled = taken || !fits
                   return (
                     <button
                       key={m.slotIndex}
-                      disabled={taken}
+                      disabled={disabled}
+                      title={!taken && !fits ? 'Niet genoeg ruimte voor nog een wasmachine in deze sectie' : undefined}
                       onClick={() => handleSelectSlot(m.slotIndex)}
-                      onMouseEnter={() => !taken && setHoveredSlot(m.slotIndex)}
+                      onMouseEnter={() => !disabled && setHoveredSlot(m.slotIndex)}
                       onMouseLeave={() => setHoveredSlot(null)}
                       className={cn(
                         'aspect-square flex items-center justify-center rounded-md text-sm font-medium transition-colors',
-                        taken
+                        disabled
                           ? 'border border-border/30 bg-muted/20 text-muted-foreground opacity-40 cursor-not-allowed'
                           : 'border border-border/50 bg-transparent text-foreground hover:border-primary hover:bg-primary/5',
                       )}
@@ -257,6 +261,11 @@ export default function WasherStep() {
                   )
                 })}
               </div>
+              {selectedLayoutId !== null && editingModules.every((m) => washerSlots.has(m.slotIndex) || !canPlaceWasher(m.slotIndex, selectedLayoutId)) && (
+                <p className="text-xs text-muted-foreground">
+                  Geen vrij vak met genoeg ruimte voor nog een wasmachine.
+                </p>
+              )}
             </div>
           )}
 

@@ -61,7 +61,7 @@ describe('getWasmLayoutConfig — lage kast variants', () => {
     },
     {
       id: 23,
-      glb: '/objects/washermodules/15_WMOpen.glb',
+      glb: '/objects/washermodules/WMWasherOnlyLow.glb',
     },
   ])('lage kast id $id', ({ id, glb }) => {
     it('exposes a single element with the expected GLB', () => {

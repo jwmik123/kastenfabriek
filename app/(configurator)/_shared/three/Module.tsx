@@ -451,7 +451,7 @@ export default function Module({
       binnenkantMaterialId={moduleSlot?.binnenkantMaterialId}
     >
     <group position={[x, groupY, groupZ]}>
-      {!isFloorMount && layout.elements.map((el, i) => (
+      {layout.elements.map((el, i) => (
         <SpecialElement
           key={`${el.glbPath}-${i}`}
           element={el}

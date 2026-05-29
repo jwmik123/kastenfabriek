@@ -98,7 +98,7 @@ function SlotInteraction({
     borderAlphaU.current.value = (isSelected || hovered) ? 0.85 : 0.0
   }, [isSelected, hovered])
 
-  const material = useMemo(() => {
+  const visualMaterial = useMemo(() => {
     const uvCoord = uv()
     const onEdge = uvCoord.x.lessThan(bxU.current)
       .or(float(1.0).sub(uvCoord.x).lessThan(bxU.current))
@@ -119,12 +119,23 @@ function SlotInteraction({
     return mat
   }, [])
 
+  const hitMaterial = useMemo(() => {
+    const mat = new THREE.MeshBasicMaterial()
+    mat.transparent = true
+    mat.opacity = 0
+    mat.depthWrite = false
+    mat.colorWrite = false
+    return mat
+  }, [])
+
+  const showVisual = isSelected || hovered
+
   return (
     <group position={[(-innerW / 2) + slotOffset, MODULE_FLOOR_Y, WALL]}>
       <mesh
         position={[0, 0, moduleDepth + 0.002]}
         geometry={shapeGeo}
-        material={material}
+        material={hitMaterial}
         onPointerOver={(e) => { e.stopPropagation(); setLocalHovered(true); setHoveredSlot(slotIndex); setHoveredSection(sectionKind) }}
         onPointerOut={() => { setLocalHovered(false); setHoveredSlot(null); setHoveredSection(null) }}
         onClick={(e) => {
@@ -137,6 +148,14 @@ function SlotInteraction({
           }
         }}
       />
+      {showVisual && (
+        <mesh
+          position={[0, 0, moduleDepth + 0.003]}
+          geometry={shapeGeo}
+          material={visualMaterial}
+          raycast={() => null}
+        />
+      )}
     </group>
   )
 }

@@ -996,3 +996,85 @@ describe('low-only accessory filter', () => {
     expect(useWasmachinekastStore.getState().lowOnlyAccessoryNotice).toBe(false)
   })
 })
+
+// ─── washer placement capacity gate ──────────────────────────────────────────
+
+describe('canPlaceWasher / addWasherModule — capacity gate', () => {
+  beforeEach(resetStore)
+
+  // Mock layout has layoutId 99, minSlotWidth=75. FALLBACK_MODULE_MIN_WIDTH=15.
+
+  it('allows the first washer when total fits', () => {
+    useWasmachinekastStore.setState({
+      width: 100, moduleCount: 2, layout: 'high-only',
+      modules: [
+        { slotIndex: 0, layoutId: null, hasDoor: true, span: 1 },
+        { slotIndex: 1, layoutId: null, hasDoor: true, span: 1 },
+      ],
+      moduleLayouts: basePricingData.modules,
+    })
+    expect(useWasmachinekastStore.getState().canPlaceWasher(0, 99)).toBe(true)
+  })
+
+  it('rejects a second washer when remaining width per non-washer slot would drop below the minimum', () => {
+    // After one washer (75cm) on slot 0, slot 1 has 25cm — adding a second
+    // washer would leave no non-washer slots but 75+75=150 > 100. Rejected.
+    useWasmachinekastStore.setState({
+      width: 100, moduleCount: 2, layout: 'high-only',
+      washerModules: [{ slotIndex: 0, layoutId: 99 }],
+      modules: [
+        { slotIndex: 0, layoutId: 99, hasDoor: true, span: 1, fixedWidth: 75 },
+        { slotIndex: 1, layoutId: null, hasDoor: true, span: 1 },
+      ],
+      moduleLayouts: basePricingData.modules,
+    })
+    expect(useWasmachinekastStore.getState().canPlaceWasher(1, 99)).toBe(false)
+  })
+
+  it('addWasherModule is a no-op when canPlaceWasher rejects', () => {
+    useWasmachinekastStore.setState({
+      width: 100, moduleCount: 2, layout: 'high-only',
+      washerModules: [{ slotIndex: 0, layoutId: 99 }],
+      modules: [
+        { slotIndex: 0, layoutId: 99, hasDoor: true, span: 1, fixedWidth: 75 },
+        { slotIndex: 1, layoutId: null, hasDoor: true, span: 1 },
+      ],
+      moduleLayouts: basePricingData.modules,
+    })
+    useWasmachinekastStore.getState().addWasherModule(1, 99)
+    expect(useWasmachinekastStore.getState().washerModules).toHaveLength(1)
+    expect(useWasmachinekastStore.getState().modules[1].layoutId).toBeNull()
+  })
+
+  it('allows a second washer when both fit with adequate non-washer remainder', () => {
+    // width=200, 4 slots, 2 washers @75cm => 150cm, remaining 50cm split over
+    // 2 non-washer slots = 25cm each ≥ FALLBACK_MODULE_MIN_WIDTH (15). OK.
+    useWasmachinekastStore.setState({
+      width: 200, moduleCount: 4, layout: 'high-only',
+      washerModules: [{ slotIndex: 0, layoutId: 99 }],
+      modules: [
+        { slotIndex: 0, layoutId: 99, hasDoor: true, span: 1, fixedWidth: 75 },
+        { slotIndex: 1, layoutId: null, hasDoor: true, span: 1 },
+        { slotIndex: 2, layoutId: null, hasDoor: true, span: 1 },
+        { slotIndex: 3, layoutId: null, hasDoor: true, span: 1 },
+      ],
+      moduleLayouts: basePricingData.modules,
+    })
+    expect(useWasmachinekastStore.getState().canPlaceWasher(1, 99)).toBe(true)
+  })
+
+  it('allows replacing an existing washer slot (slot already pinned does not double-count)', () => {
+    // Replacing slot 0's washer with another washer of the same minSlotWidth
+    // must not be rejected by the gate.
+    useWasmachinekastStore.setState({
+      width: 100, moduleCount: 2, layout: 'high-only',
+      washerModules: [{ slotIndex: 0, layoutId: 99 }],
+      modules: [
+        { slotIndex: 0, layoutId: 99, hasDoor: true, span: 1, fixedWidth: 75 },
+        { slotIndex: 1, layoutId: null, hasDoor: true, span: 1 },
+      ],
+      moduleLayouts: basePricingData.modules,
+    })
+    expect(useWasmachinekastStore.getState().canPlaceWasher(0, 99)).toBe(true)
+  })
+})

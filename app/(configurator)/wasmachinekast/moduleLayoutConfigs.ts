@@ -73,12 +73,15 @@ const WASHER_PLANK_CONFIG: ModuleLayoutConfig = {
 const WASHER_WMOPEN_CONFIG: ModuleLayoutConfig = {
   id: 23,
   label: 'Wasmachine (lage kast)',
-  description: 'Open vak voor wasmachine onder werkblad — minimaal 68.6 cm breed',
+  description: 'Wasmachine onder werkblad — minimaal 68.6 cm breed',
   elements: [
     {
-      glbPath: '/objects/washermodules/15_WMOpen.glb',
+      glbPath: '/objects/washermodules/WMWasherOnlyLow.glb',
       anchor: { type: 'fromBottom', d: 0 },
       centered: true,
+      glbMaterialMeshes: ['Plane005_1'],
+      chromeMaterialMeshes: ['Plane005_2'],
+      glassMaterialMeshes: ['Plane005_5'],
     },
   ],
   fillZone: {
