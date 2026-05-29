@@ -38,6 +38,10 @@ export type ModuleLayoutConfig = {
   }
   // Optional metadata: minimum slot height required (used for layout filter UX).
   minSlotHeight?: number
+  // When true, the slot sits directly on the floor (no plinth under it) and
+  // its module corpus (walls/back/roof/floor) is suppressed — the GLB itself
+  // provides the cabinet body. Used by lage kast washer (15_WMOpen).
+  floorMount?: boolean
 }
 
 export type ElementBbox = { minY: number; maxY: number }

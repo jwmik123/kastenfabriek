@@ -14,12 +14,12 @@ import { useClosetMaterialInstance } from '../../_shared/materials/ClosetMateria
 import { trapNaN, trapGeo } from '@/utils/debugGeometry'
 import { computeSlotWidthsM } from '../../_shared/store/slotWidths'
 import { getWasmLayoutConfig } from '../moduleLayoutConfigs'
+import { WASHER_LAYOUT_IDS } from '../moduleLayouts'
 import type { BaseModuleSlot } from '../../_shared/store/types'
 import type { Section } from '../sections/types'
 
 const BORDER_M = 0.015
 const WASHER_REAR_CLEARANCE = 0.10
-const WASHER_LAYOUT_IDS = new Set([11, 13, 14])
 
 interface SectionRender {
   width: number
@@ -36,6 +36,7 @@ function SlotInteraction({
   sectionMainHeightM,
   sectionDepthM,
   modules,
+  sectionKind,
 }: {
   slotIndex: number
   span: 1 | 2
@@ -44,11 +45,14 @@ function SlotInteraction({
   sectionMainHeightM: number
   sectionDepthM: number
   modules: BaseModuleSlot[]
+  sectionKind: 'high' | 'low'
 }) {
   const selectedSlot = useWasmachinekastStore((s) => s.selectedSlot)
   const hoveredSlot = useWasmachinekastStore((s) => s.hoveredSlot)
+  const hoveredSection = useWasmachinekastStore((s) => s.hoveredSection)
   const setSelectedSlot = useWasmachinekastStore((s) => s.setSelectedSlot)
   const setHoveredSlot = useWasmachinekastStore((s) => s.setHoveredSlot)
+  const setHoveredSection = useWasmachinekastStore((s) => s.setHoveredSection)
 
   const [localHovered, setLocalHovered] = useState(false)
 
@@ -73,7 +77,9 @@ function SlotInteraction({
     return trapGeo(geo, `WasmSlotInteraction${slotIndex}-shapeGeo`)
   }, [totalW, overlayHeightM])
 
-  const hovered = localHovered || hoveredSlot === slotIndex
+  const hovered =
+    localHovered ||
+    (hoveredSlot === slotIndex && (hoveredSection === null || hoveredSection === sectionKind))
 
   useEffect(() => {
     document.body.style.cursor = localHovered ? 'pointer' : 'auto'
@@ -119,8 +125,8 @@ function SlotInteraction({
         position={[0, 0, moduleDepth + 0.002]}
         geometry={shapeGeo}
         material={material}
-        onPointerOver={(e) => { e.stopPropagation(); setLocalHovered(true); setHoveredSlot(slotIndex) }}
-        onPointerOut={() => { setLocalHovered(false); setHoveredSlot(null) }}
+        onPointerOver={(e) => { e.stopPropagation(); setLocalHovered(true); setHoveredSlot(slotIndex); setHoveredSection(sectionKind) }}
+        onPointerOut={() => { setLocalHovered(false); setHoveredSlot(null); setHoveredSection(null) }}
         onClick={(e) => {
           e.stopPropagation()
           if (isSelected) {
@@ -135,12 +141,22 @@ function SlotInteraction({
   )
 }
 
-function OnderstelPlinth({ widthM, depthM }: { widthM: number; depthM: number }) {
+// Plinth segment spanning [centerXM] horizontally with given own width `segWidthM`.
+// Caller is responsible for placement: pass the segment's own width (not the
+// section width) and the world X of its center.
+function PlinthSegment({
+  segWidthM,
+  centerXM,
+  depthM,
+}: {
+  segWidthM: number
+  centerXM: number
+  depthM: number
+}) {
   const { scene } = useGLTF('/objects/onderstel.glb')
   const material = useClosetMaterialInstance()
 
   const ONDERSTEL_FRONT_INSET = 0.089
-  const innerW = widthM - WALL * 2
   const innerD = depthM - WALL - ONDERSTEL_FRONT_INSET
 
   const [{ clone, originalBox }] = useState(() => {
@@ -150,7 +166,7 @@ function OnderstelPlinth({ widthM, depthM }: { widthM: number; depthM: number })
   })
 
   const { scaleX, scaleZ, pX, pY, pZ } = useMemo(() => {
-    const sx = innerW / (originalBox.max.x - originalBox.min.x)
+    const sx = segWidthM / (originalBox.max.x - originalBox.min.x)
     const sz = innerD / (originalBox.max.z - originalBox.min.z)
     const cx = (originalBox.min.x + originalBox.max.x) / 2
     return {
@@ -160,7 +176,7 @@ function OnderstelPlinth({ widthM, depthM }: { widthM: number; depthM: number })
       pY: -originalBox.min.y,
       pZ: WALL - originalBox.min.z * sz,
     }
-  }, [originalBox, innerW, innerD])
+  }, [originalBox, segWidthM, innerD])
 
   useEffect(() => {
     clone.traverse((obj) => {
@@ -169,11 +185,71 @@ function OnderstelPlinth({ widthM, depthM }: { widthM: number; depthM: number })
   }, [clone, material])
 
   return (
-    <primitive
-      object={clone}
-      scale={[scaleX, 1, scaleZ]}
-      position={[pX, pY, pZ]}
-    />
+    <group position={[centerXM, 0, 0]}>
+      <primitive
+        object={clone}
+        scale={[scaleX, 1, scaleZ]}
+        position={[pX, pY, pZ]}
+      />
+    </group>
+  )
+}
+
+// Render the section's plinth as a sequence of segments, skipping any slot
+// whose layout has `floorMount: true` (the GLB sits directly on the floor and
+// the plinth must be cut out beneath it).
+function SectionPlinth({
+  widthM,
+  depthM,
+  modules,
+}: {
+  widthM: number
+  depthM: number
+  modules: BaseModuleSlot[]
+}) {
+  const innerW = widthM - WALL * 2
+  const slotWidthsM = useMemo(() => computeSlotWidthsM(modules, innerW), [modules, innerW])
+
+  const segments = useMemo(() => {
+    // Each slot contributes to a "keep" segment unless it's a floor-mount slot.
+    // Walk left→right, accumulating runs of contiguous keep slots.
+    const runs: Array<{ width: number; startX: number }> = []
+    let runStart = 0
+    let runWidth = 0
+    let cursorX = 0
+    for (let i = 0; i < modules.length; i++) {
+      const layoutId = modules[i].layoutId
+      const cfg = layoutId !== null ? getWasmLayoutConfig(layoutId) : undefined
+      const isFloorMount = !!cfg?.floorMount
+      const slotW = slotWidthsM[i] ?? 0
+      if (isFloorMount) {
+        if (runWidth > 0) runs.push({ width: runWidth, startX: runStart })
+        runStart = cursorX + slotW
+        runWidth = 0
+      } else {
+        runWidth += slotW
+      }
+      cursorX += slotW
+    }
+    if (runWidth > 0) runs.push({ width: runWidth, startX: runStart })
+    // Translate runs from inner-x coords (0..innerW) into section coords (centered at 0).
+    return runs.map((r) => ({
+      segWidthM: r.width,
+      centerXM: -innerW / 2 + r.startX + r.width / 2,
+    }))
+  }, [modules, slotWidthsM, innerW])
+
+  return (
+    <>
+      {segments.map((s, i) => (
+        <PlinthSegment
+          key={`plinth-${i}-${s.centerXM.toFixed(4)}`}
+          segWidthM={s.segWidthM}
+          centerXM={s.centerXM}
+          depthM={depthM}
+        />
+      ))}
+    </>
   )
 }
 
@@ -246,7 +322,11 @@ function SectionGroup({
   const SIDE_WALL_EXTRA_M = 0.005
 
   const thicknessM = topPanelThicknessMm / 1000
-  const corpusTopM = isLow ? heightCm / 100 - thicknessM : mainHeightCm / 100
+  // Werkblad design: corpus top is always at heightCm - 18mm (the reference
+  // thickness). 18mm slabs fit inside the 90cm budget; 36mm slabs extend
+  // upward past the 90cm cap (corpus stays the same height in both cases).
+  const REFERENCE_THICKNESS_M = 0.018
+  const corpusTopM = isLow ? heightCm / 100 - REFERENCE_THICKNESS_M : mainHeightCm / 100
   const lowMainH = corpusTopM + WALL_M
   const lowClosetH = corpusTopM - SIDE_WALL_EXTRA_M
 
@@ -275,7 +355,7 @@ function SectionGroup({
   return (
     <group position={[xOffsetM, 0, 0]}>
       <ClosetCorpus diagParams={diagParams} hideTopPanel={isLow} />
-      <OnderstelPlinth widthM={widthM} depthM={depthM} />
+      <SectionPlinth widthM={widthM} depthM={depthM} modules={section.modules} />
       {isLow && (
         <WerkbladSlab
           widthM={widthM}
@@ -305,6 +385,7 @@ function SectionGroup({
               sectionModuleCount={section.moduleCount}
               sectionModules={section.modules}
               sectionNeedsTopCabinet={isLow ? false : section.height > TOP_CABINET_THRESHOLD}
+              sectionKind={kind}
             />
           )
         })}
@@ -322,6 +403,7 @@ function SectionGroup({
               sectionMainHeightM={isLow ? lowMainH : mainHeightCm / 100}
               sectionDepthM={depthM}
               modules={section.modules}
+              sectionKind={kind}
             />
           )
         })}

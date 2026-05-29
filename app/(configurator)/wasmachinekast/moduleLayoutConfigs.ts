@@ -2,6 +2,7 @@ import { getLayoutById } from '../kledingkast/scene/moduleLayouts'
 import type { ModuleLayoutConfig } from '../kledingkast/scene/moduleLayouts'
 
 const WASHER_HEIGHT = 0.90
+const LOW_MODULE_HEIGHT = 0.90
 
 const WASHER_SINGLE_CONFIG: ModuleLayoutConfig = {
   id: 11,
@@ -69,12 +70,89 @@ const WASHER_PLANK_CONFIG: ModuleLayoutConfig = {
   minSlotHeight: WASHER_HEIGHT,
 }
 
-const WASHER_CONFIGS: Record<number, ModuleLayoutConfig> = {
+const WASHER_WMOPEN_CONFIG: ModuleLayoutConfig = {
+  id: 23,
+  label: 'Wasmachine (lage kast)',
+  description: 'Open vak voor wasmachine onder werkblad — minimaal 68.6 cm breed',
+  elements: [
+    {
+      glbPath: '/objects/washermodules/15_WMOpen.glb',
+      anchor: { type: 'fromBottom', d: 0 },
+      centered: true,
+    },
+  ],
+  fillZone: {
+    above: { type: 'open' },
+    below: { type: 'open' },
+  },
+  minSlotHeight: LOW_MODULE_HEIGHT,
+  floorMount: true,
+}
+
+const WASM_LOW_PLANK_CONFIG: ModuleLayoutConfig = {
+  id: 20,
+  label: 'Lage kast — plank',
+  description: 'Lage kast module met plank',
+  elements: [
+    {
+      glbPath: '/objects/washermodules/12_WMPlankLow.glb',
+      anchor: { type: 'fromBottom', d: 0 },
+      centered: true,
+    },
+  ],
+  fillZone: {
+    above: { type: 'open' },
+    below: { type: 'open' },
+  },
+  minSlotHeight: LOW_MODULE_HEIGHT,
+}
+
+const WASM_LOW_SINGLE_CONFIG: ModuleLayoutConfig = {
+  id: 21,
+  label: 'Lage kast — enkel vak',
+  description: 'Lage kast module met één vak',
+  elements: [
+    {
+      glbPath: '/objects/washermodules/13_WMSingleLow.glb',
+      anchor: { type: 'fromBottom', d: 0 },
+      centered: true,
+    },
+  ],
+  fillZone: {
+    above: { type: 'open' },
+    below: { type: 'open' },
+  },
+  minSlotHeight: LOW_MODULE_HEIGHT,
+}
+
+const WASM_LOW_DOUBLE_CONFIG: ModuleLayoutConfig = {
+  id: 22,
+  label: 'Lage kast — dubbel vak',
+  description: 'Lage kast module met twee vakken',
+  elements: [
+    {
+      glbPath: '/objects/washermodules/14_WMDoubleLow.glb',
+      anchor: { type: 'fromBottom', d: 0 },
+      centered: true,
+    },
+  ],
+  fillZone: {
+    above: { type: 'open' },
+    below: { type: 'open' },
+  },
+  minSlotHeight: LOW_MODULE_HEIGHT,
+}
+
+const WASM_HARDCODED_CONFIGS: Record<number, ModuleLayoutConfig> = {
   11: WASHER_SINGLE_CONFIG,
   13: WASHER_DOUBLE_GLB_CONFIG,
   14: WASHER_PLANK_CONFIG,
+  20: WASM_LOW_PLANK_CONFIG,
+  21: WASM_LOW_SINGLE_CONFIG,
+  22: WASM_LOW_DOUBLE_CONFIG,
+  23: WASHER_WMOPEN_CONFIG,
 }
 
 export function getWasmLayoutConfig(layoutId: number): ModuleLayoutConfig | undefined {
-  return WASHER_CONFIGS[layoutId] ?? getLayoutById(layoutId)
+  return WASM_HARDCODED_CONFIGS[layoutId] ?? getLayoutById(layoutId)
 }

@@ -39,11 +39,12 @@ interface ModuleProps {
   sectionModuleCount?: number
   sectionModules?: BaseModuleSlot[]
   sectionNeedsTopCabinet?: boolean
+  sectionKind?: 'high' | 'low'
 }
 
-function wallHeightAt(xOuter: number, p: DiagParams): number {
+function wallHeightAt(xOuter: number, p: DiagParams, floorY: number = MODULE_FLOOR_Y): number {
   const diagH = getDiagHeightAt(xOuter, p)
-  return Math.max(0, diagH - MODULE_FLOOR_Y - WALL)
+  return Math.max(0, diagH - floorY - WALL)
 }
 
 function offsetProfileInward(
@@ -90,8 +91,9 @@ function computeDoorProfile(
   p: DiagParams,
   leftH: number,
   rightH: number,
+  floorY: number = MODULE_FLOOR_Y,
 ): Array<{ x: number; y: number }> {
-  const flatH = p.mainHeight - MODULE_FLOOR_Y - WALL
+  const flatH = p.mainHeight - floorY - WALL
   const kinks: Array<{ x: number; y: number }> = []
 
   if ((p.diagonalSide === 'left' || p.diagonalSide === 'both') && p.leftDiagTopWidth > 0) {
@@ -116,8 +118,9 @@ function computeRoofProfile(
   leftXOuter: number,
   rightXOuter: number,
   p: DiagParams,
+  floorY: number = MODULE_FLOOR_Y,
 ): Array<{ x: number; y: number }> {
-  const flatH = p.mainHeight - MODULE_FLOOR_Y - WALL
+  const flatH = p.mainHeight - floorY - WALL
 
   const kinks: Array<{ x: number; y: number }> = []
 
@@ -130,7 +133,7 @@ function computeRoofProfile(
     if (kx > leftXOuter + KINK_EDGE_EPS && kx < rightXOuter - KINK_EDGE_EPS) kinks.push({ x: kx, y: flatH })
   }
 
-  const edges = [leftXOuter, rightXOuter].map((xOuter) => ({ x: xOuter, y: wallHeightAt(xOuter, p) }))
+  const edges = [leftXOuter, rightXOuter].map((xOuter) => ({ x: xOuter, y: wallHeightAt(xOuter, p, floorY) }))
   return [...edges, ...kinks]
     .sort((a, b) => a.x - b.x)
     .map(({ x, y }) => ({ x: x - leftXOuter, y }))
@@ -148,6 +151,7 @@ export default function Module({
   sectionModuleCount,
   sectionModules,
   sectionNeedsTopCabinet,
+  sectionKind,
 }: ModuleProps) {
   const depth        = useConfiguratorStore((s) => s.depth) / 100
   const storeModuleCount = useConfiguratorStore((s) => s.moduleCount)
@@ -156,6 +160,8 @@ export default function Module({
   const width        = (sectionWidthCm ?? storeWidthCm) / 100
   const doorsOpen           = useConfiguratorStore((s) => s.doorsOpen)
   const hoveredSlot         = useConfiguratorStore((s) => s.hoveredSlot)
+  const hoveredSection      = useConfiguratorStore((s) => (s as unknown as { hoveredSection?: 'high' | 'low' | null }).hoveredSection ?? null)
+  const hoverMatchesSection = sectionKind === undefined || hoveredSection === null || hoveredSection === sectionKind
   const doorHandleId        = useConfiguratorStore((s) => s.doorHandleId)
   const doorHandleMaterial  = useConfiguratorStore((s) => s.doorHandleMaterial)
   const doorsExtendToFloor  = useConfiguratorStore((s) => s.doorsExtendToFloor)
@@ -177,6 +183,14 @@ export default function Module({
   const contentDepth = moduleDepth - MODULE_INSIDE_INSET
   const centerZ      = contentDepth / 2
 
+  // Floor-mount slots (e.g. lage kast washer) sit directly on the floor — the
+  // plinth is removed beneath, the module group origin drops to y=0, and the
+  // wall/back/roof heights extend by MODULE_FLOOR_Y so they still reach the
+  // same world-top as a plinth-mounted module.
+  const isFloorMount = !!layout.floorMount
+  const effectiveFloorY = isFloorMount ? 0 : MODULE_FLOOR_Y
+  const groupY = effectiveFloorY
+
   const slotWidthsM = useMemo(() => computeSlotWidthsM(allModules, innerW), [allModules, innerW])
   const slotOffset   = slotWidthsM.slice(0, index).reduce((a, b) => a + b, 0)
   const moduleWidth  = slotWidthsM.slice(index, index + span).reduce((a, b) => a + b, 0)
@@ -197,14 +211,14 @@ export default function Module({
   // Module group is at worldZ = WALL (inner face of corpus back panel).
   // module-local z=0 → worldZ=WALL (back), z=moduleDepth → worldZ=WALL+moduleDepth (front)
   const hBack = isBackDiag
-    ? Math.max(0, Math.min(trapNaN(getBackDiagHeightAtZ(WALL, p), `Module${index}-hBack-raw`), p.moduleCapY) - MODULE_FLOOR_Y - WALL)
+    ? Math.max(0, Math.min(trapNaN(getBackDiagHeightAtZ(WALL, p), `Module${index}-hBack-raw`), p.moduleCapY) - effectiveFloorY - WALL)
     : 0
   const hFront = isBackDiag
-    ? Math.max(0, Math.min(trapNaN(getBackDiagHeightAtZ(WALL + moduleDepth, p), `Module${index}-hFront-raw`), p.moduleCapY) - MODULE_FLOOR_Y - WALL)
+    ? Math.max(0, Math.min(trapNaN(getBackDiagHeightAtZ(WALL + moduleDepth, p), `Module${index}-hFront-raw`), p.moduleCapY) - effectiveFloorY - WALL)
     : 0
   trapNaN(hBack, `Module${index}-hBack`)
   trapNaN(hFront, `Module${index}-hFront`)
-  const flatH = p.moduleCapY - MODULE_FLOOR_Y - WALL
+  const flatH = p.moduleCapY - effectiveFloorY - WALL
 
   // Back diagonal ceiling profile in Z-Y space (treating z_local as x for offsetProfileInward).
   // Points sorted by z_local (back=0 to front=moduleDepth).
@@ -285,8 +299,8 @@ export default function Module({
   const lenLeft   = Math.sqrt(riseLeft  * riseLeft  + runLeft  * runLeft)
   const lenRight  = Math.sqrt(riseRight * riseRight + runRight * runRight)
 
-  const leftWallH  = wallHeightAt(leftWallXOuter,  p) + (hasLeftDiag  ? WALL * (riseLeft  + runLeft  - lenLeft)  / runLeft  : 0)
-  const rightWallH = wallHeightAt(rightWallXOuter, p) + (hasRightDiag ? WALL * (riseRight + runRight - lenRight) / runRight : 0)
+  const leftWallH  = wallHeightAt(leftWallXOuter,  p, effectiveFloorY) + (hasLeftDiag  ? WALL * (riseLeft  + runLeft  - lenLeft)  / runLeft  : 0)
+  const rightWallH = wallHeightAt(rightWallXOuter, p, effectiveFloorY) + (hasRightDiag ? WALL * (riseRight + runRight - lenRight) / runRight : 0)
 
   // roofY: min ceiling height for content placement
   const roofY = isBackDiag ? hBack : Math.min(leftWallH, rightWallH)
@@ -310,25 +324,25 @@ export default function Module({
 
   const roofProfile = useMemo(() => {
     if (isBackDiag) return []  // not used for back diagonal
-    const profile = computeRoofProfile(leftWallXOuter, rightWallXOuter, p)
+    const profile = computeRoofProfile(leftWallXOuter, rightWallXOuter, p, effectiveFloorY)
     profile[0] = { ...profile[0], y: leftWallH }
     profile[profile.length - 1] = { ...profile[profile.length - 1], y: rightWallH }
     return profile
-  }, [isBackDiag, leftWallXOuter, rightWallXOuter, p, leftWallH, rightWallH])
+  }, [isBackDiag, leftWallXOuter, rightWallXOuter, p, leftWallH, rightWallH, effectiveFloorY])
 
   const midXOuter        = leftWallXOuter + thisSlotW
-  const midH             = wallHeightAt(midXOuter, p)
+  const midH             = wallHeightAt(midXOuter, p, effectiveFloorY)
   const doorProfile      = useMemo(
-    () => computeDoorProfile(leftWallXOuter, rightWallXOuter, p, leftWallH, rightWallH),
-    [leftWallXOuter, rightWallXOuter, p, leftWallH, rightWallH],
+    () => computeDoorProfile(leftWallXOuter, rightWallXOuter, p, leftWallH, rightWallH, effectiveFloorY),
+    [leftWallXOuter, rightWallXOuter, p, leftWallH, rightWallH, effectiveFloorY],
   )
   const leftDoorProfile  = useMemo(
-    () => computeDoorProfile(leftWallXOuter, midXOuter, p, leftWallH, midH),
-    [leftWallXOuter, midXOuter, p, leftWallH, midH],
+    () => computeDoorProfile(leftWallXOuter, midXOuter, p, leftWallH, midH, effectiveFloorY),
+    [leftWallXOuter, midXOuter, p, leftWallH, midH, effectiveFloorY],
   )
   const rightDoorProfile = useMemo(
-    () => computeDoorProfile(midXOuter, rightWallXOuter, p, midH, rightWallH),
-    [midXOuter, rightWallXOuter, p, midH, rightWallH],
+    () => computeDoorProfile(midXOuter, rightWallXOuter, p, midH, rightWallH, effectiveFloorY),
+    [midXOuter, rightWallXOuter, p, midH, rightWallH, effectiveFloorY],
   )
 
   const backWallGeo = useMemo(() => {
@@ -424,9 +438,9 @@ export default function Module({
   const bdDoorProfile = useMemo((): Array<{ x: number; y: number }> => {
     if (!isBackDiag) return []
     const rawH = trapNaN(getBackDiagHeightAtZ(WALL + moduleDepth, p), `Module${index}-bdDoor-raw`)
-    const h = Math.max(0, (needsTop ? Math.min(rawH, p.mainHeight) : rawH) - MODULE_FLOOR_Y - WALL)
+    const h = Math.max(0, (needsTop ? Math.min(rawH, p.mainHeight) : rawH) - effectiveFloorY - WALL)
     return [{ x: 0, y: h }, { x: thisSlotW, y: h }]
-  }, [isBackDiag, moduleDepth, needsTop, p, thisSlotW])
+  }, [isBackDiag, moduleDepth, needsTop, p, thisSlotW, effectiveFloorY])
 
   const startX = -innerW / 2
   const x      = startX + slotOffset
@@ -436,15 +450,15 @@ export default function Module({
       buitenkantMaterialId={moduleSlot?.buitenkantMaterialId}
       binnenkantMaterialId={moduleSlot?.binnenkantMaterialId}
     >
-    <group position={[x, MODULE_FLOOR_Y, groupZ]}>
-      {layout.elements.map((el, i) => (
+    <group position={[x, groupY, groupZ]}>
+      {!isFloorMount && layout.elements.map((el, i) => (
         <SpecialElement
           key={`${el.glbPath}-${i}`}
           element={el}
           targetWidth={moduleWidth - MODULE_WALL * 2}
           targetDepth={contentDepth}
           positionY={elementYs[i]}
-          hovered={hoveredSlot === index}
+          hovered={hoveredSlot === index && hoverMatchesSection}
           hasDoor={hasDoor}
         />
       ))}
@@ -527,11 +541,13 @@ export default function Module({
         )
       )}
 
-      {/* Floor */}
-      <mesh position={[moduleWidth / 2, MODULE_WALL / 2, centerZ]} castShadow receiveShadow>
-        <boxGeometry args={[moduleWidth, MODULE_WALL, moduleDepth]} />
-        <ClosetMaterial variant={hasDoor ? 'binnenkant' : 'buitenkant'} />
-      </mesh>
+      {/* Floor — omitted for floor-mount slots (washer sits on the room floor) */}
+      {!isFloorMount && (
+        <mesh position={[moduleWidth / 2, MODULE_WALL / 2, centerZ]} castShadow receiveShadow>
+          <boxGeometry args={[moduleWidth, MODULE_WALL, moduleDepth]} />
+          <ClosetMaterial variant={hasDoor ? 'binnenkant' : 'buitenkant'} />
+        </mesh>
+      )}
 
       {/* Roof */}
       {isBackDiag ? (

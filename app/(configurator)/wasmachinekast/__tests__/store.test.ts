@@ -865,3 +865,134 @@ describe('handle material invariant', () => {
     expect(useWasmachinekastStore.getState().doorHandleMaterial).toBe('rose-gold')
   })
 })
+
+describe('low-only accessory filter', () => {
+  beforeEach(resetStore)
+
+  function pricingWithPowerOutlet(availableForLowSection: boolean): FullPricingData {
+    return {
+      ...basePricingData,
+      accessories: [
+        {
+          id: 'power-outlet',
+          name: 'Power outlet',
+          price: 25,
+          category: 'electrical',
+          perUnit: true,
+          availableForLowSection,
+        },
+      ],
+    }
+  }
+
+  it('applySectionsState into low-only clears hasPowerHole when power-outlet is filtered', () => {
+    useWasmachinekastStore.getState().hydrate(pricingWithPowerOutlet(false))
+    useWasmachinekastStore.setState({
+      modules: [
+        { slotIndex: 0, layoutId: null, hasDoor: true, span: 1, hasPowerHole: true },
+        { slotIndex: 1, layoutId: null, hasDoor: true, span: 1, hasPowerHole: true },
+      ],
+    })
+    useWasmachinekastStore.getState().applySectionsState({
+      layout: 'low-only',
+      highSection: null,
+      lowSection: {
+        width: 120,
+        height: 90,
+        moduleCount: 2,
+        modules: [
+          { slotIndex: 0, layoutId: null, hasDoor: true, span: 1, hasPowerHole: true },
+          { slotIndex: 1, layoutId: null, hasDoor: true, span: 1, hasPowerHole: true },
+        ],
+        topPanelThicknessMm: 18,
+        countertopMaterialId: 'premium-wit',
+      },
+      washerSection: null,
+    })
+    const s = useWasmachinekastStore.getState()
+    expect(s.modules.every((m) => !m.hasPowerHole)).toBe(true)
+    expect(s.lowSection?.modules.every((m) => !m.hasPowerHole)).toBe(true)
+    expect(s.lowOnlyAccessoryNotice).toBe(true)
+  })
+
+  it('applySectionsState into low-only preserves hasPowerHole when power-outlet is allowed', () => {
+    useWasmachinekastStore.getState().hydrate(pricingWithPowerOutlet(true))
+    useWasmachinekastStore.setState({
+      modules: [
+        { slotIndex: 0, layoutId: null, hasDoor: true, span: 1, hasPowerHole: true },
+      ],
+    })
+    useWasmachinekastStore.getState().applySectionsState({
+      layout: 'low-only',
+      highSection: null,
+      lowSection: {
+        width: 120,
+        height: 90,
+        moduleCount: 1,
+        modules: [
+          { slotIndex: 0, layoutId: null, hasDoor: true, span: 1, hasPowerHole: true },
+        ],
+        topPanelThicknessMm: 18,
+        countertopMaterialId: 'premium-wit',
+      },
+      washerSection: null,
+    })
+    const s = useWasmachinekastStore.getState()
+    expect(s.modules[0].hasPowerHole).toBe(true)
+    expect(s.lowOnlyAccessoryNotice).toBe(false)
+  })
+
+  it('applySectionsState to high-only does not raise notice', () => {
+    useWasmachinekastStore.getState().hydrate(pricingWithPowerOutlet(false))
+    useWasmachinekastStore.setState({
+      modules: [
+        { slotIndex: 0, layoutId: null, hasDoor: true, span: 1, hasPowerHole: true },
+      ],
+    })
+    useWasmachinekastStore.getState().applySectionsState({
+      layout: 'high-only',
+      highSection: {
+        width: 120,
+        height: 240,
+        moduleCount: 1,
+        modules: [
+          { slotIndex: 0, layoutId: null, hasDoor: true, span: 1, hasPowerHole: true },
+        ],
+      },
+      lowSection: null,
+      washerSection: null,
+    })
+    const s = useWasmachinekastStore.getState()
+    expect(s.modules[0].hasPowerHole).toBe(true)
+    expect(s.lowOnlyAccessoryNotice).toBe(false)
+  })
+
+  it('hydrate clears hasPowerHole when current layout is low-only and power-outlet is filtered', () => {
+    useWasmachinekastStore.setState({
+      layout: 'low-only',
+      lowSection: {
+        width: 120,
+        height: 90,
+        moduleCount: 1,
+        modules: [
+          { slotIndex: 0, layoutId: null, hasDoor: true, span: 1, hasPowerHole: true },
+        ],
+        topPanelThicknessMm: 18,
+        countertopMaterialId: 'premium-wit',
+      },
+      modules: [
+        { slotIndex: 0, layoutId: null, hasDoor: true, span: 1, hasPowerHole: true },
+      ],
+    })
+    useWasmachinekastStore.getState().hydrate(pricingWithPowerOutlet(false))
+    const s = useWasmachinekastStore.getState()
+    expect(s.modules[0].hasPowerHole).toBe(false)
+    expect(s.lowOnlyAccessoryNotice).toBe(true)
+  })
+
+  it('dismissLowOnlyAccessoryNotice clears the flag', () => {
+    useWasmachinekastStore.setState({ lowOnlyAccessoryNotice: true })
+    useWasmachinekastStore.getState().dismissLowOnlyAccessoryNotice()
+    expect(useWasmachinekastStore.getState().lowOnlyAccessoryNotice).toBe(false)
+  })
+})

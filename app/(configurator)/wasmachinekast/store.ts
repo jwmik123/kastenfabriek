@@ -3,6 +3,7 @@ import type { FullPricingData } from '@/types/configurator-pricing'
 import type { BaseConfiguratorState, BaseModuleSlot } from '../_shared/store/types'
 import type { ClosetConfigSnapshot } from '@/lib/cart/types'
 import { WASHER_LAYOUTS, WASHER_LAYOUT_IDS } from './moduleLayouts'
+import { filterForSection } from './sections/wasmModuleLayoutFilter'
 import type { PopoverClickPoint } from '../_shared/components/popoverPlacement'
 import { validateHandleMaterial } from '../_shared/components/validateHandleMaterial'
 import { restore as restoreWasmSnapshot } from './sections/wasmSnapshotMigration'
@@ -30,6 +31,29 @@ const TOP_CABINET_THRESHOLD = 275
 const SIDE_WALL_EXTRA_CM = 1.5
 const LOW_SECTION_HEIGHT_CM = 90
 const DEFAULT_HIGH_HEIGHT_CM = 240
+
+const POWER_OUTLET_ACCESSORY_ID = 'power-outlet'
+
+function powerOutletHiddenForLowOnly(
+  pricingData: FullPricingData | null,
+  layout: WasmLayout,
+): boolean {
+  if (layout !== 'low-only') return false
+  const acc = pricingData?.accessories.find((a) => a.id === POWER_OUTLET_ACCESSORY_ID)
+  return acc?.availableForLowSection === false
+}
+
+function clearPowerHoles(modules: BaseModuleSlot[]): { modules: BaseModuleSlot[]; cleared: boolean } {
+  let cleared = false
+  const next = modules.map((m) => {
+    if (m.hasPowerHole) {
+      cleared = true
+      return { ...m, hasPowerHole: false }
+    }
+    return m
+  })
+  return { modules: next, cleared }
+}
 
 function resizeModules(existing: BaseModuleSlot[], count: number): BaseModuleSlot[] {
   return Array.from({ length: count }, (_, i) =>
@@ -63,11 +87,19 @@ interface WasmState extends BaseConfiguratorState {
   countertopMaterialId: string | undefined
   activeModulesSection: 'high' | 'low'
   setActiveModulesSection: (section: 'high' | 'low') => void
+  hoveredSection: 'high' | 'low' | null
+  setHoveredSection: (section: 'high' | 'low' | null) => void
   highSection: () => Section | null
   setWasherSection: (section: WasherSection) => void
   setLowTopPanelThicknessMm: (t: 18 | 36) => void
   setLowCountertopMaterialId: (id: string) => void
   applySectionsState: (next: WasmSectionsState) => void
+
+  // Set when entering low-only forces Prado reset because Sanity marks
+  // power-outlet as not available for the low section. AccessoiresStep clears
+  // it after showing a one-time notice.
+  lowOnlyAccessoryNotice: boolean
+  dismissLowOnlyAccessoryNotice: () => void
 
   // Dual-layout: low-section field setters (top-level holds high in dual).
   setLowSectionWidth: (cm: number) => void
@@ -104,6 +136,10 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
   washerSection: null as WasherSection,
   topPanelThicknessMm: 18 as 18 | 36,
   countertopMaterialId: undefined as string | undefined,
+  lowOnlyAccessoryNotice: false,
+  dismissLowOnlyAccessoryNotice: () => set({ lowOnlyAccessoryNotice: false }),
+  hoveredSection: null as 'high' | 'low' | null,
+  setHoveredSection: (section) => set({ hoveredSection: section }),
   activeModulesSection: 'high' as 'high' | 'low',
   setActiveModulesSection: (section) => {
     const s = get()
@@ -192,6 +228,22 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
       selectedSlot: null,
       lastClickPoint: null,
     })
+    const post = get()
+    if (powerOutletHiddenForLowOnly(post.pricingData, post.layout)) {
+      const top = clearPowerHoles(post.modules)
+      const low = post.lowSection
+        ? clearPowerHoles(post.lowSection.modules)
+        : { modules: [], cleared: false }
+      if (top.cleared || low.cleared) {
+        set({
+          modules: top.modules,
+          lowSection: post.lowSection
+            ? { ...post.lowSection, modules: low.modules }
+            : post.lowSection,
+          lowOnlyAccessoryNotice: true,
+        })
+      }
+    }
   },
 
   setLowSectionWidth: (cm) => {
@@ -345,6 +397,22 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
       moduleLayouts: data.modules,
       doorHandleMaterial: validatedMaterial,
     })
+    const post = get()
+    if (powerOutletHiddenForLowOnly(post.pricingData, post.layout)) {
+      const top = clearPowerHoles(post.modules)
+      const low = post.lowSection
+        ? clearPowerHoles(post.lowSection.modules)
+        : { modules: [], cleared: false }
+      if (top.cleared || low.cleared) {
+        set({
+          modules: top.modules,
+          lowSection: post.lowSection
+            ? { ...post.lowSection, modules: low.modules }
+            : post.lowSection,
+          lowOnlyAccessoryNotice: true,
+        })
+      }
+    }
   },
 
   addWasherModule: (slotIndex, layoutId) => {
@@ -564,10 +632,14 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
   setHoveredSlot: (slot) => set({ hoveredSlot: slot }),
 
   randomFill: () => {
-    const { modules, moduleLayouts, washerModules } = get()
+    const { modules, moduleLayouts, washerModules, layout } = get()
     const washerSlots = new Set(washerModules.map((w) => w.slotIndex))
     const washerLayoutIds = new Set(WASHER_LAYOUTS.map((l) => l.layoutId))
-    const pool = moduleLayouts.filter((l) => !washerLayoutIds.has(l.layoutId))
+    const topLevelSection: 'high' | 'low' = layout === 'low-only' ? 'low' : 'high'
+    const pool = filterForSection(
+      moduleLayouts.filter((l) => !washerLayoutIds.has(l.layoutId)),
+      topLevelSection,
+    )
     const newModules: BaseModuleSlot[] = modules.map((m, i) => {
       if (washerSlots.has(i)) return m
       const layoutId = pool[Math.floor(Math.random() * pool.length)]?.layoutId ?? null
@@ -638,10 +710,27 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
       placementType: (config.placementType ?? 'ingebouwd') as PlacementType,
       washerModules,
       activeModulesSection: migrated.layout === 'low-only' ? 'low' : 'high',
+      lowOnlyAccessoryNotice: false,
       step: 1,
       selectedSlot: null,
       lastClickPoint: null,
     })
+    const post = get()
+    if (powerOutletHiddenForLowOnly(post.pricingData, post.layout)) {
+      const top = clearPowerHoles(post.modules)
+      const low = post.lowSection
+        ? clearPowerHoles(post.lowSection.modules)
+        : { modules: [], cleared: false }
+      if (top.cleared || low.cleared) {
+        set({
+          modules: top.modules,
+          lowSection: post.lowSection
+            ? { ...post.lowSection, modules: low.modules }
+            : post.lowSection,
+          lowOnlyAccessoryNotice: true,
+        })
+      }
+    }
   },
 }))
 
