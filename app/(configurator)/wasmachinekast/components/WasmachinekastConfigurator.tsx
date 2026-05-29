@@ -14,12 +14,13 @@ import StepWizard from './StepWizard'
 import MobileSheet from './MobileSheet'
 
 const TOP_BAR_STEPS = [
-  { label: 'Afmetingen', number: 1 },
-  { label: 'Wasmachine', number: 2 },
-  { label: 'Indeling', number: 3 },
-  { label: 'Materiaal', number: 4 },
-  { label: 'Handgrepen', number: 5 },
-  { label: 'Accessoires', number: 6 },
+  { label: 'Layout', number: 1 },
+  { label: 'Afmetingen', number: 2 },
+  { label: 'Wasmachine', number: 3 },
+  { label: 'Indeling', number: 4 },
+  { label: 'Materiaal', number: 5 },
+  { label: 'Handgrepen', number: 6 },
+  { label: 'Accessoires', number: 7 },
 ]
 import { getDraftConfig, saveDraftConfig } from '@/lib/cart/draft-config'
 import { getCart } from '@/lib/cart/cart-store'
@@ -41,7 +42,7 @@ export default function WasmachinekastConfigurator({ pricingData, editConfig, ed
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   function handleTopBarStep(target: number) {
-    if (target === 2) clearWasherModules()
+    if (target === 3) clearWasherModules()
     setStep(target)
   }
 
@@ -86,6 +87,30 @@ export default function WasmachinekastConfigurator({ pricingData, editConfig, ed
             binnenkantMaterialId: m.binnenkantMaterialId,
             hasPowerHole: m.hasPowerHole ?? false,
           })),
+          ...(state.layout === 'low-only' || state.lowSection
+            ? {
+                lowSection: {
+                  width: state.layout === 'low-only' ? state.width : state.lowSection!.width,
+                  height: 90,
+                  moduleCount:
+                    state.layout === 'low-only' ? state.moduleCount : state.lowSection!.moduleCount,
+                  modules: (state.layout === 'low-only' ? state.modules : state.lowSection!.modules).map((m) => ({
+                    slotIndex: m.slotIndex,
+                    layoutId: m.layoutId,
+                    layoutName:
+                      state.moduleLayouts.find((l) => l.layoutId === m.layoutId)?.name ?? null,
+                    hasDoor: m.hasDoor,
+                    span: m.span,
+                    buitenkantMaterialId: m.buitenkantMaterialId,
+                    binnenkantMaterialId: m.binnenkantMaterialId,
+                    hasPowerHole: m.hasPowerHole ?? false,
+                  })),
+                  topPanelThicknessMm: state.topPanelThicknessMm,
+                  countertopMaterialId:
+                    state.countertopMaterialId ?? state.buitenkantMaterialId,
+                },
+              }
+            : {}),
           buitenkantMaterialId: state.buitenkantMaterialId,
           binnenkantMaterialId: state.binnenkantMaterialId,
           doorHandleId: state.doorHandleId,
@@ -107,6 +132,8 @@ export default function WasmachinekastConfigurator({ pricingData, editConfig, ed
           doorsExtendToFloor: state.doorsExtendToFloor,
           lightStripsEnabled: state.lightStripsEnabled,
           washerModules: state.washerModules,
+          layout: state.layout,
+          washerSection: state.washerSection,
           hasTopCabinet: state.needsTopCabinet(),
           topCabinetHeightCm: state.topCabinetHeight(),
         }

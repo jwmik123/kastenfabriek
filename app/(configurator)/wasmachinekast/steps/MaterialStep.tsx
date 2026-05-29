@@ -6,20 +6,37 @@ import { MATERIALS } from '../../kledingkast/materials'
 import { cn } from '@/lib/utils'
 import MaterialColorWheel from '../../kledingkast/components/MaterialColorWheel'
 
+type MaterialTab = 'buitenkant' | 'binnenkant' | 'werkblad'
+
 export default function MaterialStep() {
   const buitenkantMaterialId = useWasmachinekastStore((s) => s.buitenkantMaterialId)
   const binnenkantMaterialId = useWasmachinekastStore((s) => s.binnenkantMaterialId)
   const setBuitenkantMaterialId = useWasmachinekastStore((s) => s.setBuitenkantMaterialId)
   const setBinnenkantMaterialId = useWasmachinekastStore((s) => s.setBinnenkantMaterialId)
+  const layout = useWasmachinekastStore((s) => s.layout)
+  const lowSection = useWasmachinekastStore((s) => s.lowSection)
+  const countertopMaterialId = useWasmachinekastStore((s) => s.countertopMaterialId)
+  const setLowCountertopMaterialId = useWasmachinekastStore((s) => s.setLowCountertopMaterialId)
+  const hasLow = layout === 'low-only' || lowSection !== null
 
-  const [activeTab, setActiveTab] = useState<'buitenkant' | 'binnenkant'>('buitenkant')
+  const [activeTab, setActiveTab] = useState<MaterialTab>('buitenkant')
 
   useEffect(() => {
     useWasmachinekastStore.setState({ doorsOpen: activeTab === 'binnenkant' })
   }, [activeTab])
 
-  const materialId = activeTab === 'buitenkant' ? buitenkantMaterialId : binnenkantMaterialId
-  const setMaterialId = activeTab === 'buitenkant' ? setBuitenkantMaterialId : setBinnenkantMaterialId
+  const materialId =
+    activeTab === 'buitenkant'
+      ? buitenkantMaterialId
+      : activeTab === 'binnenkant'
+        ? binnenkantMaterialId
+        : countertopMaterialId ?? buitenkantMaterialId
+  const setMaterialId =
+    activeTab === 'buitenkant'
+      ? setBuitenkantMaterialId
+      : activeTab === 'binnenkant'
+        ? setBinnenkantMaterialId
+        : setLowCountertopMaterialId
 
   const selectedMaterial = MATERIALS.find((m) => m.id === materialId)
 
@@ -52,6 +69,17 @@ export default function MaterialStep() {
         >
           Binnenkant
         </button>
+        {hasLow && (
+          <button
+            onClick={() => setActiveTab('werkblad')}
+            className={cn(
+              'flex-1 py-2 transition-colors border-l border-border',
+              activeTab === 'werkblad' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted',
+            )}
+          >
+            Werkblad
+          </button>
+        )}
       </div>
 
       <div className="flex flex-col items-center gap-3">

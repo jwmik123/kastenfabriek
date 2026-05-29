@@ -110,9 +110,9 @@ describe('restoreConfig — hasPowerHole', () => {
   })
 
   it('restores doorHandleMaterial from snapshot', () => {
-    const snapshot: ClosetConfigSnapshot = { ...baseSnapshot, doorHandleMaterial: 'gold' }
+    const snapshot: ClosetConfigSnapshot = { ...baseSnapshot, doorHandleMaterial: 'brass' }
     useClosetStore.getState().restoreConfig(snapshot)
-    expect(useClosetStore.getState().doorHandleMaterial).toBe('gold')
+    expect(useClosetStore.getState().doorHandleMaterial).toBe('brass')
   })
 
   it('defaults doorHandleMaterial to chrome for old snapshots', () => {
@@ -207,7 +207,7 @@ describe('handle material invariant', () => {
 
   const handlesWithGating = [
     { id: '23', name: 'W7845', productCode: 'W7845', price: 12, allowedMaterials: ['chrome', 'black'] as const },
-    { id: '42', name: 'WGold', productCode: 'WGold', price: 15, allowedMaterials: ['gold'] as const },
+    { id: '42', name: 'WGold', productCode: 'WGold', price: 15, allowedMaterials: ['brass'] as const },
     { id: '99', name: 'WAny', productCode: 'WAny', price: 10 },
   ]
 
@@ -215,7 +215,7 @@ describe('handle material invariant', () => {
     useClosetStore.getState().hydrate(makePricingData(handlesWithGating as any))
     useClosetStore.getState().setDoorHandleMaterial('chrome')
     useClosetStore.getState().setDoorHandleId('42') // gold-only
-    expect(useClosetStore.getState().doorHandleMaterial).toBe('gold')
+    expect(useClosetStore.getState().doorHandleMaterial).toBe('brass')
   })
 
   it('setDoorHandleId preserves material when allowed by new handle', () => {
@@ -229,7 +229,7 @@ describe('handle material invariant', () => {
     useClosetStore.getState().hydrate(makePricingData(handlesWithGating as any))
     useClosetStore.getState().setDoorHandleId('42') // gold-only
     useClosetStore.getState().setDoorHandleMaterial('chrome')
-    expect(useClosetStore.getState().doorHandleMaterial).toBe('gold')
+    expect(useClosetStore.getState().doorHandleMaterial).toBe('brass')
   })
 
   it('empty/missing allowedMaterials means all metals allowed', () => {
@@ -243,7 +243,7 @@ describe('handle material invariant', () => {
     // simulate a snapshot-restored state with chrome on a gold-only handle, then hydrate
     useClosetStore.setState({ doorHandleId: '42', doorHandleMaterial: 'chrome' })
     useClosetStore.getState().hydrate(makePricingData(handlesWithGating as any))
-    expect(useClosetStore.getState().doorHandleMaterial).toBe('gold')
+    expect(useClosetStore.getState().doorHandleMaterial).toBe('brass')
   })
 
   it('push-to-open does not interfere with material validation', () => {

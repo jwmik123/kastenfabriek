@@ -4,6 +4,7 @@ import type { DiagonalSide, DiagParams } from './scene/diagonalUtils'
 import { getDiagHeightAt, isFullHeight } from './scene/diagonalUtils'
 import { getWidthRange, getStartHeightRange, clamp, diagAmplification } from './diagonalConstraints'
 import { MODULE_LAYOUTS } from './scene/moduleLayouts'
+import { defaultLayoutFor } from './defaultLayoutFor'
 import type { ClosetConfigSnapshot } from '@/lib/cart/types'
 import type { PopoverClickPoint } from '../_shared/components/popoverPlacement'
 import type { HandleMaterial } from '../_shared/constants/handleMaterials'
@@ -476,7 +477,32 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
   },
 
   setStep: (step) => set({ step, selectedSlot: null, lastClickPoint: null }),
-  nextStep: () => set((s) => ({ step: Math.min(s.step + 1, 5), selectedSlot: null, lastClickPoint: null })),
+  nextStep: () => {
+    const s = get()
+    const hasEmpty = s.step === 1 && s.modules.some((m) => m.layoutId === null)
+    if (hasEmpty) {
+      const widthM = s.width / 100
+      const MODULE_FLOOR_Y = 0.118
+      const sideWallM = s.sidePanelThickness === '36mm' ? 0.036 : 0.018
+      const slotW = (widthM - sideWallM * 2) / s.moduleCount
+      const diagParams = diagParamsFromState(s)
+
+      const modules = s.modules.map((m) => {
+        if (m.layoutId !== null) return m
+        const leftX = sideWallM + m.slotIndex * slotW
+        const rightX = sideWallM + (m.slotIndex + m.span) * slotW
+        const leftH = Math.max(0, getDiagHeightAt(leftX, diagParams) - MODULE_FLOOR_Y - WALL_M)
+        const rightH = Math.max(0, getDiagHeightAt(rightX, diagParams) - MODULE_FLOOR_Y - WALL_M)
+        const effectiveHeightM = Math.min(leftH, rightH)
+        const slotWidthCm = slotW * 100
+        const layoutId = defaultLayoutFor(m.slotIndex, slotWidthCm, effectiveHeightM * 100, s.moduleCount)
+        return { ...m, layoutId }
+      })
+      set({ step: 2, selectedSlot: null, lastClickPoint: null, modules })
+    } else {
+      set((s) => ({ step: Math.min(s.step + 1, 5), selectedSlot: null, lastClickPoint: null }))
+    }
+  },
   prevStep: () => set((s) => ({ step: Math.max(s.step - 1, 1), selectedSlot: null, lastClickPoint: null })),
 
   setWidth: (width) => {
@@ -493,6 +519,16 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
     if (state.moduleCount < min || state.moduleCount > max) {
       const newCount = Math.max(min, Math.min(max, state.moduleCount))
       state.setModuleCount(newCount)
+    }
+
+    // Auto-reduce module count to keep slots ~50cm wide
+    const TARGET_SLOT_WIDTH = 50
+    const s2 = get()
+    if (s2.width / s2.moduleCount < TARGET_SLOT_WIDTH) {
+      const idealCount = Math.max(s2.minModules(), Math.floor(s2.width / TARGET_SLOT_WIDTH))
+      if (idealCount < s2.moduleCount) {
+        s2.setModuleCount(idealCount)
+      }
     }
 
     // Re-clamp diagonal widths against the new closet width (constraint in visual space)

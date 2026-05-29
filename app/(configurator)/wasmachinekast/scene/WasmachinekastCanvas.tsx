@@ -66,8 +66,12 @@ function CameraSystem() {
   const heightCm = useWasmachinekastStore((s) => s.height)
   const depthCm = useWasmachinekastStore((s) => s.depth)
   const userZoom = useWasmachinekastStore((s) => s.userZoom)
+  const layout = useWasmachinekastStore((s) => s.layout)
+  const lowSection = useWasmachinekastStore((s) => s.lowSection)
 
-  const W = widthCm / 100
+  const isDual = layout === 'low-left' || layout === 'low-right'
+  const totalWidthCm = isDual && lowSection ? widthCm + lowSection.width : widthCm
+  const W = totalWidthCm / 100
   const H = heightCm / 100
   const D = depthCm / 100
 

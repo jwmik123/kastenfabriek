@@ -1,6 +1,6 @@
 'use client'
 
-import { ShoppingCart, Heart } from 'lucide-react'
+import { Heart } from 'lucide-react'
 import { getDeliveryWindow } from '@/lib/delivery-window'
 
 export const formatter = new Intl.NumberFormat('nl-NL', {
@@ -13,20 +13,12 @@ export const formatter = new Intl.NumberFormat('nl-NL', {
 export interface CanvasPricePanelProps {
   totalPrice: number
   originalPrice?: number
-  pricingData: unknown | null
-  editItemId: string | null
-  handleAddToCart: () => void
-  isCapturing: boolean
   stepSummary?: { label: string; value: string }
 }
 
 export default function CanvasPricePanel({
   totalPrice,
   originalPrice,
-  pricingData,
-  editItemId,
-  handleAddToCart,
-  isCapturing,
   stepSummary,
 }: CanvasPricePanelProps) {
   const deliveryWindow = getDeliveryWindow(new Date())
@@ -73,15 +65,6 @@ export default function CanvasPricePanel({
       >
         <Heart className="size-4 shrink-0" />
         Bewaar
-      </button>
-
-      <button
-        onClick={handleAddToCart}
-        disabled={!pricingData || isCapturing}
-        className="flex items-center gap-2 px-4 h-11 bg-primary text-background rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors cursor-pointer whitespace-nowrap disabled:opacity-50"
-      >
-        <ShoppingCart className="size-4 shrink-0" />
-        {isCapturing ? 'Bezig...' : editItemId ? 'Wijzigingen opslaan' : 'Voeg toe aan winkelwagen'}
       </button>
     </div>
   )

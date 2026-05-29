@@ -8,6 +8,7 @@ export const WASHER_SINGLE: ModuleLayout = {
   priceDouble: 0,
   priceSingle: 0,
   availableForTopCabinet: false,
+  sectionType: 'both',
   minSlotWidth: 68.6,
 }
 
@@ -19,6 +20,7 @@ export const WASHER_DOUBLE_GLB: ModuleLayout = {
   priceDouble: 0,
   priceSingle: 0,
   availableForTopCabinet: false,
+  sectionType: 'both',
   minSlotWidth: 68.6,
 }
 
@@ -30,10 +32,15 @@ export const WASHER_PLANK: ModuleLayout = {
   priceDouble: 0,
   priceSingle: 0,
   availableForTopCabinet: false,
+  sectionType: 'high',
   minSlotWidth: 68.6,
 }
 
 export const WASHER_LAYOUTS: ModuleLayout[] = [WASHER_SINGLE, WASHER_DOUBLE_GLB, WASHER_PLANK]
+
+export const WASHER_LAYOUT_IDS: ReadonlySet<number> = new Set(
+  WASHER_LAYOUTS.map((l) => l.layoutId),
+)
 
 export function isLayoutAvailable(layout: ModuleLayout, moduleWidthCm: number): boolean {
   if (!layout.minSlotWidth) return true

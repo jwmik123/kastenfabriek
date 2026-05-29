@@ -5,7 +5,7 @@ Single-context repo. Wardrobe configurator. Terms below are canonical — use ex
 ## Glossary
 
 ### Corpus
-The **outer shell** of one wardrobe — back wall, side walls, roof, plinth. One wardrobe = one corpus. Rendered by [`ClosetCorpus.tsx`](app/(configurator)/_shared/three/ClosetCorpus.tsx). Sloped side/back walls (brief §3.3, §3.4) and side-panel thickness (brief §3.2) are corpus-level concerns.
+The **outer shell** of one wardrobe — back wall, side walls, roof, plinth. One kledingkast = one corpus. **Wasmachinekast exception:** a wasmachinekast may have one or two corpuses, one per **section** (see below). Rendered by [`ClosetCorpus.tsx`](app/(configurator)/_shared/three/ClosetCorpus.tsx). Sloped side/back walls (brief §3.3, §3.4) and side-panel thickness (brief §3.2) are corpus-level concerns.
 
 The client brief uses "corpus" to mean what this codebase calls **module** (see below). When translating the brief, mentally substitute: client "corpus" → codebase "module".
 
@@ -29,6 +29,8 @@ Three slope variants exist:
 
 "Start height" = the vertical position where the slope begins cutting into the rectangular envelope (cm from floor).
 
+**Slope is kledingkast-only.** Wasmachinekast does not support slopes (no schuinte UI, no surcharges, no diagonalSide state).
+
 ### Handle (greep / handgreep)
 A physical door pull. Defined in Sanity `handle` documents. Customer picks one `handleId` per wardrobe today (global, not per-door). A handle has an `allowedMaterials` list (chrome, zwart, goud, …) that restricts which metal finish the customer can pair with it.
 
@@ -48,3 +50,28 @@ Conditional price additions tied to wardrobe configuration, **not** customer-tog
 
 ### WCD / Prado 2.0
 Electrical wall socket option. Customer-facing name is **Prado 2.0** (renamed from WCD). Internally still `hasPowerHole` on a slot. When enabled, the cabinet needs mains electricity behind it (same constraint applies to LED).
+
+## Wasmachinekast-only terms
+
+These terms apply to the wasmachinekast configurator only. Kledingkast does not have sections — its existing single-corpus model is unchanged.
+
+### Section
+A vertically distinct part of a wasmachinekast, with its own **corpus** (back wall, side walls, roof, plinth). Two section types exist:
+- **Hoge kast** (high section) — full-height closet, same dimensional constraints as today's wasmachinekast (200–275cm + top cabinet).
+- **Lage kast** (low section) — fixed 90cm tall, topped by a **werkblad** (countertop), interior tall enough to host an under-counter washer/dryer.
+
+Sections are arranged left-to-right per the **layout**. Each section has its own `width`, `moduleCount`, and `modules[]`. **Depth is shared** across sections (`depth ≥ 85cm` for wasmachinekast). Code shape: `highSection: Section | null` and `lowSection: Section | null` on the store.
+
+### Layout
+The arrangement of sections in a wasmachinekast. Four values: `'high-only'`, `'low-only'`, `'low-left'`, `'low-right'`. Picked in step 1 of the wizard. Determines which sections exist and their X-order. Default for new configs: `'high-only'` (preserves today's UX).
+
+Mirror swaps (`low-left ↔ low-right`) preserve both sections; adding a section creates defaults; removing a section requires a confirm dialog.
+
+### Werkblad (countertop)
+The top panel of a **lage kast**. **The countertop IS the roof** — not a separate slab on top of a roof. Thickness is customer-pickable: **18mm or 36mm** (no price difference). Material is picked separately in the Materiaal step (`countertopMaterialId`), drawn from the same Sanity material catalogue as buitenkant. Flush with the corpus on all sides (no overhang). Always present on a lage kast.
+
+### Washer section
+The wasmachinekast as a whole picks **one** section to host the washer/dryer GLBs: `washerSection: 'high' | 'low' | null`. Washers cannot be split across sections. `washerModules[]` slot indices are interpreted against `washerSection`.
+
+### Module layout `sectionType`
+New Sanity `moduleLayout` field. Values: `'high' | 'low' | 'both'`. Filters which GLBs are pickable in which section. Existing kledingkast and shared layouts are `'both'` by default.

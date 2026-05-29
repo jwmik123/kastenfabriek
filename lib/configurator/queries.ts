@@ -19,7 +19,8 @@ export const pricingDataQuery = groq`{
     contents,
     priceDouble,
     priceSingle,
-    availableForTopCabinet
+    availableForTopCabinet,
+    sectionType
   },
   "accessories": *[_type == "accessory"] {
     "id": accessoryId.current,
@@ -28,7 +29,8 @@ export const pricingDataQuery = groq`{
     price,
     category,
     perUnit,
-    maxPerCorpus
+    maxPerCorpus,
+    availableForLowSection
   },
   "doors": *[_type == "doorType"] {
     "id": doorId.current,
@@ -67,7 +69,8 @@ export const moduleLayoutsQuery = groq`
     contents,
     priceDouble,
     priceSingle,
-    availableForTopCabinet
+    availableForTopCabinet,
+    sectionType
   }
 `;
 
@@ -79,7 +82,8 @@ export const accessoriesQuery = groq`
     price,
     category,
     perUnit,
-    maxPerCorpus
+    maxPerCorpus,
+    availableForLowSection
   }
 `;
 

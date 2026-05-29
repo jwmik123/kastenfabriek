@@ -5,6 +5,7 @@ import * as THREE from 'three/webgpu'
 import { useWasmachinekastStore } from '../store'
 
 const T  = 0.01  // wall thickness (m)
+const LOW_ONLY_ROOM_HEIGHT_M = 2.6  // typical NL plafond ~260cm
 
 function buildSideWallGeo(
   ptsZY: [number, number][],
@@ -49,9 +50,13 @@ export default function WasmRoomWalls() {
   const heightCm    = useWasmachinekastStore((s) => s.height)
   const depthCm     = useWasmachinekastStore((s) => s.depth)
   const placementType = useWasmachinekastStore((s) => s.placementType)
+  const layout      = useWasmachinekastStore((s) => s.layout)
+  const lowSection  = useWasmachinekastStore((s) => s.lowSection)
 
-  const W = widthCm  / 100
-  const H = heightCm / 100
+  const isDual = layout === 'low-left' || layout === 'low-right'
+  const totalWidthCm = isDual && lowSection ? widthCm + lowSection.width : widthCm
+  const W = totalWidthCm  / 100
+  const H = layout === 'low-only' ? LOW_ONLY_ROOM_HEIGHT_M : heightCm / 100
   const D = depthCm  / 100
   const RF = W * 4
 

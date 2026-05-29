@@ -4,32 +4,60 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { X } from 'lucide-react'
 import { useWasmachinekastStore } from '../store'
 import { WASHER_LAYOUTS, isLayoutAvailable } from '../moduleLayouts'
+import { filterForSection } from '../sections/wasmModuleLayoutFilter'
 import { LAYOUT_SVGS } from '../../kledingkast/components/LayoutSvgs'
 import { Toggle } from '@/components/ui/Toggle'
 import { cn } from '@/lib/utils'
 import { computePopoverPlacement, type PopoverPlacement } from '../../_shared/components/popoverPlacement'
 
-const MODULES_STEP = 3
+const MODULES_STEP = 4
 const POPOVER_WIDTH_PX = 320
 
 export default function ModulePopover() {
   const step             = useWasmachinekastStore((s) => s.step)
   const selectedSlot     = useWasmachinekastStore((s) => s.selectedSlot)
   const setSelectedSlot  = useWasmachinekastStore((s) => s.setSelectedSlot)
-  const setModuleLayout  = useWasmachinekastStore((s) => s.setModuleLayout)
-  const setModuleSpan    = useWasmachinekastStore((s) => s.setModuleSpan)
-  const toggleModuleDoor = useWasmachinekastStore((s) => s.toggleModuleDoor)
-  const modules          = useWasmachinekastStore((s) => s.modules)
-  const moduleCount      = useWasmachinekastStore((s) => s.moduleCount)
-  const moduleWidthCm    = useWasmachinekastStore((s) => s.moduleWidthCm())
+  const setModuleLayoutTop = useWasmachinekastStore((s) => s.setModuleLayout)
+  const setModuleSpanTop   = useWasmachinekastStore((s) => s.setModuleSpan)
+  const toggleModuleDoorTop = useWasmachinekastStore((s) => s.toggleModuleDoor)
+  const setLowSectionModuleLayout = useWasmachinekastStore((s) => s.setLowSectionModuleLayout)
+  const setLowSectionModuleSpan = useWasmachinekastStore((s) => s.setLowSectionModuleSpan)
+  const toggleLowSectionModuleDoor = useWasmachinekastStore((s) => s.toggleLowSectionModuleDoor)
+  const topModules       = useWasmachinekastStore((s) => s.modules)
+  const topModuleCount   = useWasmachinekastStore((s) => s.moduleCount)
+  const topModuleWidthCm = useWasmachinekastStore((s) => s.moduleWidthCm())
+  const lowSection       = useWasmachinekastStore((s) => s.lowSection)
+  const activeModulesSection = useWasmachinekastStore((s) => s.activeModulesSection)
   const moduleLayouts    = useWasmachinekastStore((s) => s.moduleLayouts)
   const washerModules    = useWasmachinekastStore((s) => s.washerModules)
+  const washerSection    = useWasmachinekastStore((s) => s.washerSection)
   const lastClickPoint   = useWasmachinekastStore((s) => s.lastClickPoint)
+  const layout           = useWasmachinekastStore((s) => s.layout)
+
+  const isDual = layout === 'low-left' || layout === 'low-right'
+  const editingLow = isDual && activeModulesSection === 'low' && lowSection !== null
+  const modules = editingLow ? lowSection!.modules : topModules
+  const moduleCount = editingLow ? lowSection!.moduleCount : topModuleCount
+  const moduleWidthCm = editingLow
+    ? (lowSection!.moduleCount > 0 ? lowSection!.width / lowSection!.moduleCount : lowSection!.width)
+    : topModuleWidthCm
+  const setModuleLayout = editingLow ? setLowSectionModuleLayout : setModuleLayoutTop
+  const setModuleSpan = editingLow ? setLowSectionModuleSpan : setModuleSpanTop
+  const toggleModuleDoor = editingLow ? toggleLowSectionModuleDoor : toggleModuleDoorTop
 
   const ref = useRef<HTMLDivElement>(null)
   const [placement, setPlacement] = useState<PopoverPlacement | null>(null)
 
-  const washerSlots = new Set(washerModules.map((w) => w.slotIndex))
+  // Only treat slots as washer-locked when we're viewing the section that
+  // actually hosts the washer placements. In dual layouts a washer in high
+  // slot N must not also lock low slot N (different section, same index).
+  const editingSection: 'high' | 'low' =
+    layout === 'low-only' ? 'low' : editingLow ? 'low' : 'high'
+  const washerLocksThisSection =
+    washerSection !== null && washerSection === editingSection
+  const washerSlots = new Set(
+    washerLocksThisSection ? washerModules.map((w) => w.slotIndex) : [],
+  )
   const washerIds   = new Set(WASHER_LAYOUTS.map((l) => l.layoutId))
 
   const isWasherSlot = selectedSlot !== null && washerSlots.has(selectedSlot)
@@ -87,7 +115,12 @@ export default function ModulePopover() {
   const nextIsWasher = washerSlots.has(selectedSlot + 1)
   const canBeDouble = selectedSlot < modules.length - 1 && !nextIsWasher
 
-  const availableLayouts = moduleLayouts.filter((l) => !washerIds.has(l.layoutId))
+  const activeSection: 'high' | 'low' =
+    layout === 'low-only' ? 'low' : editingLow ? 'low' : 'high'
+  const availableLayouts = filterForSection(
+    moduleLayouts.filter((l) => !washerIds.has(l.layoutId)),
+    activeSection,
+  )
 
   const activeLayoutId = modules[selectedSlot]?.layoutId
 

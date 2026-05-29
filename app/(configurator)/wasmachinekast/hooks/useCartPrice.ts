@@ -40,13 +40,21 @@ export function useCartPrice() {
   const needsTopCabinet = useWasmachinekastStore((s) => s.needsTopCabinet)
   const topCabinetHeight = useWasmachinekastStore((s) => s.topCabinetHeight)
   const moduleLayouts = useWasmachinekastStore((s) => s.moduleLayouts)
+  const layout = useWasmachinekastStore((s) => s.layout)
+  const washerSection = useWasmachinekastStore((s) => s.washerSection)
+  const lowSection = useWasmachinekastStore((s) => s.lowSection)
+  const topPanelThicknessMm = useWasmachinekastStore((s) => s.topPanelThicknessMm)
+  const countertopMaterialId = useWasmachinekastStore((s) => s.countertopMaterialId)
 
   const hasTopCabinet = needsTopCabinet()
   const topCabinetHeightCm = topCabinetHeight()
 
   const engine = pricingData ? new PricingEngine(pricingData) : null
 
-  const moduleCost = modules.reduce((sum, module) => {
+  const allModules = lowSection ? [...modules, ...lowSection.modules] : modules
+  const allModuleCount = lowSection ? moduleCount + lowSection.moduleCount : moduleCount
+
+  const moduleCost = allModules.reduce((sum, module) => {
     if (module.layoutId === null || !engine) return sum
     try {
       const type = module.span === 2 ? 'double' : 'single'
@@ -59,7 +67,7 @@ export function useCartPrice() {
   let moduleDoorCost = 0
   let moduleDoorCount = 0
 
-  for (const module of modules) {
+  for (const module of allModules) {
     if (!module.hasDoor || module.layoutId === null || !engine) continue
     const effectiveMaterialId = module.buitenkantMaterialId ?? buitenkantMaterialId
     const material = MATERIALS.find((m) => m.id === effectiveMaterialId)
@@ -75,9 +83,9 @@ export function useCartPrice() {
   const totalDoorCount = moduleDoorCount + topCabinetDoorCount
 
   const mechanismCost = engine ? totalDoorCount * engine.getHandlePrice(doorHandleId) : 0
-  const ledCost = lightStripsEnabled && engine ? engine.calculateLedPrice(moduleCount) : 0
+  const ledCost = lightStripsEnabled && engine ? engine.calculateLedPrice(allModuleCount) : 0
 
-  const powerHoleCount = modules.filter((m) => m.hasPowerHole).length
+  const powerHoleCount = allModules.filter((m) => m.hasPowerHole).length
   const powerHoleCost = powerHoleCount > 0 && engine ? powerHoleCount * engine.getAccessoryPrice('power-outlet') : 0
 
   const deliveryCost = engine?.deliveryPrice ?? 95
@@ -127,6 +135,32 @@ export function useCartPrice() {
       leftDiagTopWidth: 0,
       rightDiagTopWidth: 0,
       placementType: 'ingebouwd',
+      layout,
+      washerSection,
+      ...(layout === 'low-only' || lowSection
+        ? {
+            lowSection: {
+              width: layout === 'low-only' ? width : lowSection!.width,
+              height: 90,
+              moduleCount: layout === 'low-only' ? moduleCount : lowSection!.moduleCount,
+              modules: (layout === 'low-only' ? modules : lowSection!.modules).map((m) => ({
+                slotIndex: m.slotIndex,
+                layoutId: m.layoutId,
+                layoutName:
+                  m.layoutId != null
+                    ? moduleLayouts.find((l) => l.layoutId === m.layoutId)?.name ?? null
+                    : null,
+                hasDoor: m.hasDoor,
+                span: m.span,
+                buitenkantMaterialId: m.buitenkantMaterialId,
+                binnenkantMaterialId: m.binnenkantMaterialId,
+                hasPowerHole: m.hasPowerHole ?? false,
+              })),
+              topPanelThicknessMm,
+              countertopMaterialId: countertopMaterialId ?? buitenkantMaterialId,
+            },
+          }
+        : {}),
       backDiagonal: false,
       backDiagKinkHeight: 0,
       backDiagFlatSectionDepth: 0,

@@ -235,7 +235,13 @@ function TopFillerWedge({
 // ---------------------------------------------------------------------------
 // Main corpus
 // ---------------------------------------------------------------------------
-export default function ClosetCorpus({ diagParams: p }: { diagParams: DiagParams }) {
+export default function ClosetCorpus({
+  diagParams: p,
+  hideTopPanel = false,
+}: {
+  diagParams: DiagParams
+  hideTopPanel?: boolean
+}) {
   const needsTop = useConfiguratorStore((s) => s.needsTopCabinet())
 
   // Dimensions are sourced from diagParams (already in metres, pre-clamped by scene compositor)
@@ -301,7 +307,7 @@ export default function ClosetCorpus({ diagParams: p }: { diagParams: DiagParams
       />
 
       {/* Top panels */}
-      {p.backDiagonal ? (
+      {hideTopPanel ? null : p.backDiagonal ? (
         <>
           {/* Flat top panel: covers from crossingWorldZ to depth at Y=mainH.
               For non-TC closets this is approximately the flat section only.

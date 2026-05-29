@@ -57,6 +57,14 @@ export const accessory = defineType({
       type: "number",
       description: "Maximum quantity allowed per corpus (optional)",
     }),
+    defineField({
+      name: "availableForLowSection",
+      title: "Available for Low Section (wasmachinekast 90cm)",
+      type: "boolean",
+      description:
+        "Whether this accessory physically fits the 90cm low section of a wasmachinekast. Set false for items that need a full-height cabinet (pull-out hanging rail, full-height side panels, etc.).",
+      initialValue: true,
+    }),
   ],
   preview: {
     select: {

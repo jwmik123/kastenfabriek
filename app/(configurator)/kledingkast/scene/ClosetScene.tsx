@@ -44,6 +44,8 @@ function ModuleSlotInteraction({ slotIndex, span, diagParams }: { slotIndex: num
   const depth = useClosetStore((s) => s.depth) / 100
   const moduleCount = useClosetStore((s) => s.moduleCount)
   const width = useClosetStore((s) => s.width) / 100
+  const step = useClosetStore((s) => s.step)
+  const nextStep = useClosetStore((s) => s.nextStep)
   const selectedSlot = useClosetStore((s) => s.selectedSlot)
   const setSelectedSlot = useClosetStore((s) => s.setSelectedSlot)
   const setHoveredSlot = useClosetStore((s) => s.setHoveredSlot)
@@ -144,6 +146,12 @@ function ModuleSlotInteraction({ slotIndex, span, diagParams }: { slotIndex: num
         onPointerOut={() => { setHovered(false); setHoveredSlot(null) }}
         onClick={(e) => {
           e.stopPropagation()
+          if (step === 1) {
+            nextStep()
+            const ne = e.nativeEvent as MouseEvent
+            setSelectedSlot(slotIndex, { x: ne.clientX, y: ne.clientY })
+            return
+          }
           if (isSelected) {
             setSelectedSlot(null)
           } else {

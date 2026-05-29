@@ -3,8 +3,15 @@
 import { useState, useEffect } from 'react'
 import { useWasmachinekastStore } from '../store'
 import { WASHER_LAYOUTS } from '../moduleLayouts'
+import { filterForSection } from '../sections/wasmModuleLayoutFilter'
 import { WashingMachine, Trash2, Plus } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
@@ -14,17 +21,75 @@ function SectionHeading({ children }: { children: React.ReactNode }) {
   )
 }
 
+function ConfirmDialog({
+  open,
+  onCancel,
+  onConfirm,
+}: {
+  open: boolean
+  onCancel: () => void
+  onConfirm: () => void
+}) {
+  if (!open) return null
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-sm w-full p-5 space-y-4">
+        <h3 className="text-base font-semibold">Wasmachine sectie wijzigen?</h3>
+        <p className="text-sm text-muted-foreground">
+          Dit verwijdert je huidige wasmachine plaatsingen. Doorgaan?
+        </p>
+        <div className="flex justify-end gap-2 pt-2">
+          <button
+            onClick={onCancel}
+            className="px-3 py-2 text-sm rounded-md border border-border hover:bg-muted"
+          >
+            Annuleren
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-3 py-2 text-sm rounded-md bg-primary text-primary-foreground hover:bg-primary/90"
+          >
+            Doorgaan
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function WasherStep() {
-  const modules = useWasmachinekastStore((s) => s.modules)
+  const topModules = useWasmachinekastStore((s) => s.modules)
+  const lowSection = useWasmachinekastStore((s) => s.lowSection)
   const washerModules = useWasmachinekastStore((s) => s.washerModules)
   const addWasherModule = useWasmachinekastStore((s) => s.addWasherModule)
   const removeWasherModule = useWasmachinekastStore((s) => s.removeWasherModule)
   const setHoveredSlot = useWasmachinekastStore((s) => s.setHoveredSlot)
+  const washerSection = useWasmachinekastStore((s) => s.washerSection)
+  const setWasherSection = useWasmachinekastStore((s) => s.setWasherSection)
+  const layout = useWasmachinekastStore((s) => s.layout)
+  const isLowOnly = layout === 'low-only'
+  const isDual = layout === 'low-left' || layout === 'low-right'
+  const lowDisabled = !isLowOnly && lowSection === null
+  const activeSection: 'high' | 'low' =
+    isLowOnly || washerSection === 'low' ? 'low' : 'high'
+
+  // In dual layout with washerSection='low', the slot grid binds to lowSection.
+  // In low-only the top-level already IS the low section.
+  const editingFromLowSection = isDual && activeSection === 'low'
+  const editingModules = editingFromLowSection ? lowSection?.modules ?? [] : topModules
+
+  useEffect(() => {
+    if (isLowOnly && washerSection !== 'low') setWasherSection('low')
+  }, [isLowOnly, washerSection, setWasherSection])
+
+  const availableWasherLayouts = filterForSection(WASHER_LAYOUTS, activeSection)
+  const hasUsableWasher = availableWasherLayouts.length > 0
 
   useEffect(() => () => { setHoveredSlot(null) }, [setHoveredSlot])
 
   const [adding, setAdding] = useState(false)
   const [selectedLayoutId, setSelectedLayoutId] = useState<number | null>(null)
+  const [pendingSection, setPendingSection] = useState<'high' | 'low' | null>(null)
 
   const washerSlots = new Set(washerModules.map((w) => w.slotIndex))
 
@@ -42,12 +107,65 @@ export default function WasherStep() {
     setHoveredSlot(null)
   }
 
-  const availableSlots = modules.filter((m) => !washerSlots.has(m.slotIndex))
+  function requestSection(target: 'high' | 'low') {
+    if (target === activeSection) return
+    if (washerModules.length > 0) {
+      setPendingSection(target)
+    } else {
+      setWasherSection(target)
+    }
+  }
+
+  const availableSlots = editingModules.filter((m) => !washerSlots.has(m.slotIndex))
 
   return (
     <div className="space-y-8">
 
-      {/* Placed washers list */}
+      <section className="space-y-3">
+        <SectionHeading>Wasmachine in hoge of lage kast?</SectionHeading>
+        <div className="flex rounded-md border border-border overflow-hidden text-sm font-medium">
+          <button
+            type="button"
+            disabled={isLowOnly}
+            onClick={() => !isLowOnly && requestSection('high')}
+            className={cn(
+              'flex-1 py-2 transition-colors',
+              activeSection === 'high'
+                ? 'bg-primary text-primary-foreground'
+                : 'hover:bg-muted',
+              isLowOnly && 'opacity-40 cursor-not-allowed hover:bg-transparent',
+            )}
+          >
+            Hoge kast
+          </button>
+          <TooltipProvider delayDuration={150}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="flex-1">
+                  <button
+                    type="button"
+                    disabled={lowDisabled}
+                    onClick={() => requestSection('low')}
+                    className={cn(
+                      'w-full py-2 transition-colors border-l border-border',
+                      activeSection === 'low'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'hover:bg-muted',
+                      lowDisabled && 'opacity-40 cursor-not-allowed hover:bg-transparent',
+                    )}
+                  >
+                    Lage kast
+                  </button>
+                </span>
+              </TooltipTrigger>
+              {lowDisabled && (
+                <TooltipContent>Geen lage kast in deze layout</TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+      </section>
+
       {washerModules.length > 0 && (
         <section className="space-y-3">
           <SectionHeading>Geplaatste wasmachine modules</SectionHeading>
@@ -79,15 +197,18 @@ export default function WasherStep() {
         </section>
       )}
 
-      {/* Add flow */}
-      {adding ? (
-        <section className="space-y-6">
+      {!hasUsableWasher && (
+        <div className="text-sm text-muted-foreground p-3 border border-border/60 rounded-md">
+          Geen wasmachine-GLB beschikbaar voor deze sectie
+        </div>
+      )}
 
-          {/* Type picker */}
+      {hasUsableWasher && adding ? (
+        <section className="space-y-6">
           <div className="space-y-3">
             <SectionHeading>Kies een type</SectionHeading>
             <div className="flex flex-col gap-3">
-              {WASHER_LAYOUTS.map((layout) => {
+              {availableWasherLayouts.map((layout) => {
                 const isSelected = selectedLayoutId === layout.layoutId
                 return (
                   <button
@@ -111,12 +232,11 @@ export default function WasherStep() {
             </div>
           </div>
 
-          {/* Slot picker */}
           {selectedLayoutId !== null && (
             <div className="space-y-3">
               <SectionHeading>Kies een vak</SectionHeading>
               <div className="grid grid-cols-8 gap-1">
-                {modules.map((m) => {
+                {editingModules.map((m) => {
                   const taken = washerSlots.has(m.slotIndex)
                   return (
                     <button
@@ -147,7 +267,7 @@ export default function WasherStep() {
             Annuleren
           </button>
         </section>
-      ) : (
+      ) : hasUsableWasher ? (
         <button
           disabled={availableSlots.length === 0}
           onClick={() => setAdding(true)}
@@ -161,7 +281,16 @@ export default function WasherStep() {
           <Plus className="w-4 h-4" />
           Voeg nog een machine module toe
         </button>
-      )}
+      ) : null}
+
+      <ConfirmDialog
+        open={pendingSection !== null}
+        onCancel={() => setPendingSection(null)}
+        onConfirm={() => {
+          if (pendingSection) setWasherSection(pendingSection)
+          setPendingSection(null)
+        }}
+      />
     </div>
   )
 }

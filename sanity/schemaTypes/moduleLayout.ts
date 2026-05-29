@@ -84,6 +84,23 @@ export const moduleLayout = defineType({
       description: "Can this layout be used for small top cabinets?",
       initialValue: false,
     }),
+    defineField({
+      name: "sectionType",
+      title: "Section Type (wasmachinekast)",
+      type: "string",
+      description:
+        "Which wasmachinekast section can use this layout. 'both' fits high and low (90cm) sections; 'high' fits high only; 'low' fits low only.",
+      options: {
+        list: [
+          { title: "Both (high + low / 90cm)", value: "both" },
+          { title: "High only", value: "high" },
+          { title: "Low only (90cm)", value: "low" },
+        ],
+        layout: "radio",
+      },
+      initialValue: "both",
+      validation: (Rule) => Rule.required(),
+    }),
   ],
   preview: {
     select: {

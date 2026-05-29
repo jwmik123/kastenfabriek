@@ -5,7 +5,7 @@ import { useCartPrice } from '../hooks/useCartPrice'
 import { useClosetStore } from '../store'
 
 export default function CanvasPricePanel() {
-  const { totalPrice, originalPrice, pricingData, editItemId, handleAddToCart, isCapturing } = useCartPrice()
+  const { totalPrice, originalPrice } = useCartPrice()
 
   const step = useClosetStore((s) => s.step)
   const moduleCount = useClosetStore((s) => s.moduleCount)
@@ -29,10 +29,6 @@ export default function CanvasPricePanel() {
     <SharedCanvasPricePanel
       totalPrice={totalPrice}
       originalPrice={originalPrice}
-      pricingData={pricingData}
-      editItemId={editItemId}
-      handleAddToCart={handleAddToCart}
-      isCapturing={isCapturing}
       stepSummary={stepSummary}
     />
   )

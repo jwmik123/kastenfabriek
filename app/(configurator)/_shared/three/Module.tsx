@@ -14,6 +14,7 @@ import Door from '../objects/Door'
 import ClosetMaterial, { ModuleMaterialOverrideProvider } from '../materials/ClosetMaterial'
 import { trapShape, trapGeo, trapNaN } from '@/utils/debugGeometry'
 import { computeSlotWidthsM } from '../store/slotWidths'
+import type { BaseModuleSlot } from '../store/types'
 
 const WALL = 0.018
 const MODULE_WALL = 0.018
@@ -31,6 +32,13 @@ interface ModuleProps {
   diagParams: DiagParams
   mirror?: boolean
   depthOverride?: number
+  // Section overrides — required when this Module is part of a section other
+  // than the one held in the store's top-level fields (e.g. low section in
+  // wasmachinekast dual layouts). When undefined, store top-level wins.
+  sectionWidthCm?: number
+  sectionModuleCount?: number
+  sectionModules?: BaseModuleSlot[]
+  sectionNeedsTopCabinet?: boolean
 }
 
 function wallHeightAt(xOuter: number, p: DiagParams): number {
@@ -128,10 +136,24 @@ function computeRoofProfile(
     .map(({ x, y }) => ({ x: x - leftXOuter, y }))
 }
 
-export default function Module({ index, layout, hasDoor, span, diagParams: p, mirror: mirrorProp, depthOverride }: ModuleProps) {
+export default function Module({
+  index,
+  layout,
+  hasDoor,
+  span,
+  diagParams: p,
+  mirror: mirrorProp,
+  depthOverride,
+  sectionWidthCm,
+  sectionModuleCount,
+  sectionModules,
+  sectionNeedsTopCabinet,
+}: ModuleProps) {
   const depth        = useConfiguratorStore((s) => s.depth) / 100
-  const moduleCount  = useConfiguratorStore((s) => s.moduleCount)
-  const width        = useConfiguratorStore((s) => s.width) / 100
+  const storeModuleCount = useConfiguratorStore((s) => s.moduleCount)
+  const storeWidthCm     = useConfiguratorStore((s) => s.width)
+  const moduleCount  = sectionModuleCount ?? storeModuleCount
+  const width        = (sectionWidthCm ?? storeWidthCm) / 100
   const doorsOpen           = useConfiguratorStore((s) => s.doorsOpen)
   const hoveredSlot         = useConfiguratorStore((s) => s.hoveredSlot)
   const doorHandleId        = useConfiguratorStore((s) => s.doorHandleId)
@@ -142,9 +164,11 @@ export default function Module({ index, layout, hasDoor, span, diagParams: p, mi
   const doorHandleBodyColor = resolvedHandle?.bodyColor
   const doorHandleMeshId    = resolvedHandle?.meshId
   const doorHandleHeightCm  = resolvedHandle?.heightCm
-  const allModules   = useConfiguratorStore((s) => s.modules)
+  const storeModules = useConfiguratorStore((s) => s.modules)
+  const allModules   = sectionModules ?? storeModules
   const moduleSlot   = allModules.find((m) => m.slotIndex === index)
-  const needsTop     = useConfiguratorStore((s) => s.needsTopCabinet())
+  const storeNeedsTop = useConfiguratorStore((s) => s.needsTopCabinet())
+  const needsTop     = sectionNeedsTopCabinet ?? storeNeedsTop
 
   const sideWallM    = p.sideWallThickness
   const innerW       = width - sideWallM * 2

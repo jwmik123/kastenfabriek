@@ -14,17 +14,20 @@ import {
 const EXPECTED_IDS: HandleMaterial[] = [
   'chrome',
   'black',
-  'gold',
+  'brass',
+  'copper',
   'rose-gold',
   'silver',
   'old-silver',
+  'stainless',
+  'aluminium',
   'gray-blue',
   'gray',
   'white',
 ]
 
 describe('METALS registry', () => {
-  it('exposes all 9 metals in declared order', () => {
+  it('exposes all 12 metals in declared order', () => {
     expect(METALS.map((m) => m.id)).toEqual(EXPECTED_IDS)
     expect(HANDLE_MATERIAL_IDS).toEqual(EXPECTED_IDS)
   })
@@ -48,7 +51,7 @@ describe('METALS registry', () => {
   })
 
   it('getMetal returns matching entry; falls back to first on unknown', () => {
-    expect(getMetal('gold').id).toBe('gold')
+    expect(getMetal('brass').id).toBe('brass')
     expect(getMetal('white').label).toBe('Wit')
     // @ts-expect-error — defensive fallback for an out-of-band id
     expect(getMetal('not-a-metal').id).toBe('chrome')

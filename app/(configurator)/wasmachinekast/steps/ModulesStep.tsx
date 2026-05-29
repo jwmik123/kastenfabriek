@@ -14,22 +14,76 @@ function SectionHeading({ children }: { children: React.ReactNode }) {
 }
 
 export default function ModulesStep() {
+  const layout = useWasmachinekastStore((s) => s.layout)
+  const isDual = layout === 'low-left' || layout === 'low-right'
+  const activeModulesSection = useWasmachinekastStore((s) => s.activeModulesSection)
+  const setActiveModulesSection = useWasmachinekastStore((s) => s.setActiveModulesSection)
+
+  // Top-level (= high in dual, low in low-only, single section otherwise)
   const moduleCount = useWasmachinekastStore((s) => s.moduleCount)
   const modules = useWasmachinekastStore((s) => s.modules)
   const setModuleCount = useWasmachinekastStore((s) => s.setModuleCount)
   const minModules = useWasmachinekastStore((s) => s.minModules())
   const maxModules = useWasmachinekastStore((s) => s.maxModules())
+
+  const lowSection = useWasmachinekastStore((s) => s.lowSection)
+  const setLowSectionModuleCount = useWasmachinekastStore((s) => s.setLowSectionModuleCount)
+  const constraints = useWasmachinekastStore((s) => s.constraints)
+  const sc = constraints?.singleCorpus
+  const lowMinModules = lowSection
+    ? Math.max(1, Math.ceil(lowSection.width / (sc?.maxWidth ?? 65)))
+    : 1
+  const lowMaxModules = lowSection ? Math.floor(lowSection.width / (sc?.minWidth ?? 15)) : 1
+
   const selectedSlot = useWasmachinekastStore((s) => s.selectedSlot)
   const setSelectedSlot = useWasmachinekastStore((s) => s.setSelectedSlot)
   const doorsExtendToFloor = useWasmachinekastStore((s) => s.doorsExtendToFloor)
   const setDoorsExtendToFloor = useWasmachinekastStore((s) => s.setDoorsExtendToFloor)
   const washerModules = useWasmachinekastStore((s) => s.washerModules)
-  const washerSlots = new Set(washerModules.map((w) => w.slotIndex))
+  const washerSection = useWasmachinekastStore((s) => s.washerSection)
+
+  // Resolve the section we're editing
+  const editingLow = isDual && activeModulesSection === 'low'
+  const editingModules = editingLow ? lowSection?.modules ?? [] : modules
+  const editingModuleCount = editingLow ? lowSection?.moduleCount ?? 0 : moduleCount
+  const editingMin = editingLow ? lowMinModules : minModules
+  const editingMax = editingLow ? lowMaxModules : maxModules
+  const editingSetCount = editingLow ? setLowSectionModuleCount : setModuleCount
+
+  // Washer slots only apply in the section that hosts them
+  const washerLocksThisSection =
+    washerSection === 'high' && !editingLow ||
+    washerSection === 'low' && editingLow ||
+    (layout === 'low-only' && washerSection === 'low')
+  const washerSlots = new Set(washerLocksThisSection ? washerModules.map((w) => w.slotIndex) : [])
 
   return (
     <div className="space-y-10">
+      {isDual && (
+        <section className="space-y-3">
+          <div className="flex rounded-md border border-border overflow-hidden text-sm font-medium">
+            <button
+              onClick={() => setActiveModulesSection('high')}
+              className={cn(
+                'flex-1 py-2 transition-colors',
+                activeModulesSection === 'high' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted',
+              )}
+            >
+              Hoge kast
+            </button>
+            <button
+              onClick={() => setActiveModulesSection('low')}
+              className={cn(
+                'flex-1 py-2 transition-colors border-l border-border',
+                activeModulesSection === 'low' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted',
+              )}
+            >
+              Lage kast
+            </button>
+          </div>
+        </section>
+      )}
 
-      {/* ── Aantal modules ── */}
       <section className="space-y-5">
         <div className="flex items-center justify-between">
           <SectionHeading>Aantal modules</SectionHeading>
@@ -37,8 +91,8 @@ export default function ModulesStep() {
 
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setModuleCount(moduleCount - 1)}
-            disabled={moduleCount <= minModules}
+            onClick={() => editingSetCount(editingModuleCount - 1)}
+            disabled={editingModuleCount <= editingMin}
             className={cn(
               'h-11 w-11 shrink-0 flex items-center justify-center rounded-md border border-border/50 bg-transparent transition-colors',
               'hover:bg-muted/60 hover:border-border',
@@ -49,12 +103,12 @@ export default function ModulesStep() {
           </button>
 
           <div className="flex-1 h-11 flex items-center justify-center rounded-md bg-muted/40">
-            <span className="text-xl font-medium tabular-nums">{moduleCount}</span>
+            <span className="text-xl font-medium tabular-nums">{editingModuleCount}</span>
           </div>
 
           <button
-            onClick={() => setModuleCount(moduleCount + 1)}
-            disabled={moduleCount >= maxModules}
+            onClick={() => editingSetCount(editingModuleCount + 1)}
+            disabled={editingModuleCount >= editingMax}
             className={cn(
               'h-11 w-11 shrink-0 flex items-center justify-center rounded-md border border-border/50 bg-transparent transition-colors',
               'hover:bg-muted/60 hover:border-border',
@@ -66,7 +120,6 @@ export default function ModulesStep() {
         </div>
       </section>
 
-      {/* ── Vak instellen ── */}
       <section className="space-y-5">
         <div>
           <p className="text-xs text-muted-foreground/60 mt-1">
@@ -75,10 +128,10 @@ export default function ModulesStep() {
         </div>
 
         <div className="grid grid-cols-8 gap-1">
-          {modules.map((m) => {
+          {editingModules.map((m) => {
             const isSelected = selectedSlot === m.slotIndex
             const isWasherSlot = washerSlots.has(m.slotIndex)
-            const isPartOfDouble = m.span === 2 || (m.slotIndex > 0 && modules[m.slotIndex - 1]?.span === 2)
+            const isPartOfDouble = m.span === 2 || (m.slotIndex > 0 && editingModules[m.slotIndex - 1]?.span === 2)
             return (
               <button
                 key={m.slotIndex}
@@ -104,7 +157,6 @@ export default function ModulesStep() {
         </div>
       </section>
 
-      {/* ── Deuren tot de vloer ── */}
       <section className="space-y-5">
         <SectionHeading>Deuren tot de vloer</SectionHeading>
         <div className="flex items-center justify-between">
@@ -117,7 +169,6 @@ export default function ModulesStep() {
           />
         </div>
       </section>
-
     </div>
   )
 }

@@ -62,7 +62,7 @@ function MobileStepIndicator() {
 }
 
 function MobilePriceBar() {
-  const { totalPrice, pricingData, editItemId, handleAddToCart, isCapturing } = useCartPrice()
+  const { totalPrice } = useCartPrice()
 
   return (
     <div className="flex items-center gap-3 px-4 py-3">
@@ -73,14 +73,7 @@ function MobilePriceBar() {
         <span className="text-lg font-medium leading-tight">{formatter.format(totalPrice)}</span>
       </div>
 
-      <button
-        onClick={handleAddToCart}
-        disabled={!pricingData || isCapturing}
-        className="flex-1 flex items-center justify-center gap-2 h-11 bg-primary text-background rounded-md text-sm font-medium hover:bg-primary/90 transition-colors cursor-pointer disabled:opacity-50 whitespace-nowrap"
-      >
-        <ShoppingCart className="size-4 shrink-0" />
-        {isCapturing ? 'Bezig...' : editItemId ? 'Wijzigingen opslaan' : 'Voeg toe aan winkelwagen'}
-      </button>
+      <div className="flex-1" />
 
       <button className="flex items-center justify-center w-11 h-11 rounded-md border border-border/50 hover:bg-muted transition-colors cursor-pointer shrink-0">
         <Heart className="size-5" />
@@ -106,6 +99,8 @@ export default function MobileSheet() {
   const step = useWasmachinekastStore((s) => s.step)
   const nextStep = useWasmachinekastStore((s) => s.nextStep)
   const prevStep = useWasmachinekastStore((s) => s.prevStep)
+  const { pricingData, editItemId, handleAddToCart, isCapturing } = useCartPrice()
+  const isLastStep = step === STEPS.length
 
   return (
     <Drawer.Root
@@ -145,15 +140,27 @@ export default function MobileSheet() {
             >
               Vorige
             </button>
-            <button
-              id="kf-tour-next-mobile"
-              data-tour="next-button"
-              onClick={nextStep}
-              disabled={step === STEPS.length}
-              className="flex-1 min-w-[140px] h-11 rounded-md bg-primary text-background text-sm font-medium transition-colors hover:bg-primary/90 disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
-            >
-              {step === STEPS.length ? 'Voltooien' : 'Volgende'}
-            </button>
+            {isLastStep ? (
+              <button
+                id="kf-tour-next-mobile"
+                data-tour="next-button"
+                onClick={handleAddToCart}
+                disabled={!pricingData || isCapturing}
+                className="flex-1 min-w-[140px] h-11 rounded-md bg-primary text-background text-sm font-medium transition-colors hover:bg-primary/90 disabled:opacity-50 disabled:pointer-events-none cursor-pointer flex items-center justify-center gap-2"
+              >
+                <ShoppingCart className="size-4 shrink-0" />
+                {isCapturing ? 'Bezig...' : editItemId ? 'Wijzigingen opslaan' : 'Voeg toe aan winkelwagen'}
+              </button>
+            ) : (
+              <button
+                id="kf-tour-next-mobile"
+                data-tour="next-button"
+                onClick={nextStep}
+                className="flex-1 min-w-[140px] h-11 rounded-md bg-primary text-background text-sm font-medium transition-colors hover:bg-primary/90 disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
+              >
+                Volgende
+              </button>
+            )}
           </div>
         </Drawer.Content>
       </Drawer.Portal>

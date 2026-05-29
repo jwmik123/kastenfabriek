@@ -1,10 +1,13 @@
 export type HandleMaterial =
   | 'chrome'
   | 'black'
-  | 'gold'
+  | 'brass'
+  | 'copper'
   | 'rose-gold'
   | 'silver'
   | 'old-silver'
+  | 'stainless'
+  | 'aluminium'
   | 'gray-blue'
   | 'gray'
   | 'white'
@@ -51,11 +54,22 @@ export const METALS: readonly MetalEntry[] = [
     },
   },
   {
-    id: 'gold',
-    label: 'Goud',
+    id: 'brass',
+    label: 'Messing',
     swatch: '#c9a84c',
     pbr: {
       color: 0xc9a84c,
+      metalness: 0.9,
+      roughness: 0.3,
+      envMapIntensity: 2,
+    },
+  },
+  {
+    id: 'copper',
+    label: 'Koper',
+    swatch: '#b87333',
+    pbr: {
+      color: 0xb87333,
       metalness: 0.9,
       roughness: 0.3,
       envMapIntensity: 2,
@@ -93,6 +107,28 @@ export const METALS: readonly MetalEntry[] = [
       color: 0x9a9690,
       metalness: 0.85,
       roughness: 0.55,
+      envMapIntensity: 1.5,
+    },
+  },
+  {
+    id: 'stainless',
+    label: 'RVS look',
+    swatch: '#c8ccd0',
+    pbr: {
+      color: 0xc8ccd0,
+      metalness: 0.9,
+      roughness: 0.35,
+      envMapIntensity: 1.8,
+    },
+  },
+  {
+    id: 'aluminium',
+    label: 'Aluminium',
+    swatch: '#a8adb3',
+    pbr: {
+      color: 0xa8adb3,
+      metalness: 0.7,
+      roughness: 0.4,
       envMapIntensity: 1.5,
     },
   },

@@ -13,6 +13,20 @@ export interface ModuleSlotSnapshot {
   hasPowerHole?: boolean;
 }
 
+// Wasmachinekast sections (issue 075/076).
+// Kledingkast snapshots leave these undefined; wasmachinekast writes them.
+export type WasmLayout = 'high-only' | 'low-only' | 'low-left' | 'low-right';
+export type WasherSection = 'high' | 'low' | null;
+
+export interface LowSectionSnapshot {
+  width: number;
+  height: number;
+  moduleCount: number;
+  modules: ModuleSlotSnapshot[];
+  topPanelThicknessMm: 18 | 36;
+  countertopMaterialId: string;
+}
+
 // Serialized closet configuration — mirrors relevant Zustand store state
 export interface ClosetConfigSnapshot {
   id: string; // uuid generated at cart time
@@ -56,6 +70,13 @@ export interface ClosetConfigSnapshot {
 
   // Washer modules
   washerModules?: { slotIndex: number; layoutId: number }[];
+
+  // Wasmachinekast sections (issue 076). Optional — kledingkast ignores.
+  // When `layout` is absent, top-level width/height/moduleCount/modules are
+  // interpreted as the high section and layout defaults to 'high-only'.
+  layout?: WasmLayout;
+  lowSection?: LowSectionSnapshot;
+  washerSection?: WasherSection;
 
   // Lighting & extras
   lightStripsEnabled: boolean;

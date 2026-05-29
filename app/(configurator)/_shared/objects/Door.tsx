@@ -7,7 +7,7 @@ import ClosetMaterial from '../materials/ClosetMaterial'
 import { Model as HingeModel } from './Hinge'
 import { HandleByType } from './Handles'
 import type { HandleMaterial, LeatherColor } from '../constants/handleMaterials'
-import { computeHandleY } from '../handleFit'
+import { computeHandleY, DEFAULT_HANDLE_Y } from '../handleFit'
 import { trapShape, trapGeo } from '@/utils/debugGeometry'
 
 const DOOR_DEPTH = 0.018
@@ -151,7 +151,7 @@ export default function Door({
             <ClosetMaterial />
           </mesh>
 
-          {doorHandleId !== 'none' && (
+          {doorHandleId !== 'none' && handleY >= DEFAULT_HANDLE_Y && (
             <HandleByType
               id={doorHandleId}
               meshId={doorHandleMeshId}

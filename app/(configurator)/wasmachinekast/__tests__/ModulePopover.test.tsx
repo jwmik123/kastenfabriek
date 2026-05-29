@@ -12,16 +12,23 @@ type Mod = {
 
 interface MockState {
   step: number
+  layout: 'high-only' | 'low-only' | 'low-left' | 'low-right'
   selectedSlot: number | null
   setSelectedSlot: (n: number | null) => void
   setModuleLayout: (slot: number, id: number) => void
   setModuleSpan: (slot: number, span: 1 | 2) => void
   toggleModuleDoor: (slot: number) => void
+  setLowSectionModuleLayout: (slot: number, id: number) => void
+  setLowSectionModuleSpan: (slot: number, span: 1 | 2) => void
+  toggleLowSectionModuleDoor: (slot: number) => void
   modules: Mod[]
   moduleCount: number
   moduleWidthCm: () => number
   moduleLayouts: Array<{ layoutId: number; name: string; minSlotWidth?: number }>
   washerModules: Array<{ slotIndex: number; layoutId: number }>
+  washerSection: 'high' | 'low' | null
+  activeModulesSection: 'high' | 'low'
+  lowSection: null
   lastClickPoint: { x: number; y: number } | null
 }
 
@@ -46,23 +53,30 @@ vi.mock('../store', () => ({
 
 beforeEach(() => {
   mockState = {
-    step: 3,
+    step: 4,
     selectedSlot: 1,
+    layout: 'high-only',
     setSelectedSlot: vi.fn(),
     setModuleLayout: vi.fn(),
     setModuleSpan: vi.fn(),
     toggleModuleDoor: vi.fn(),
+    setLowSectionModuleLayout: vi.fn(),
+    setLowSectionModuleSpan: vi.fn(),
+    toggleLowSectionModuleDoor: vi.fn(),
     modules: baseModules.map((m) => ({ ...m })),
     moduleCount: 4,
     moduleWidthCm: () => 70,
     moduleLayouts: baseLayouts,
     washerModules: [{ slotIndex: 0, layoutId: 11 }],
+    washerSection: 'high',
+    activeModulesSection: 'high',
+    lowSection: null,
     lastClickPoint: null,
   }
 })
 
 describe('ModulePopover (wasmachinekast)', () => {
-  it('renders nothing when step is not 3', async () => {
+  it('renders nothing when step is not the modules step', async () => {
     mockState.step = 2
     const { default: ModulePopover } = await import('../components/ModulePopover')
     const html = renderToStaticMarkup(<ModulePopover />)

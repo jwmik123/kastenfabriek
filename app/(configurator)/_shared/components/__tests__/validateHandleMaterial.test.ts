@@ -6,15 +6,15 @@ import {
 
 describe('validateHandleMaterial', () => {
   it('current is in allowed → pass-through', () => {
-    expect(validateHandleMaterial('gold', ['chrome', 'gold'])).toBe('gold')
+    expect(validateHandleMaterial('brass', ['chrome', 'brass'])).toBe('brass')
   })
 
   it('current not in allowed → returns first allowed', () => {
-    expect(validateHandleMaterial('gold', ['chrome', 'black'])).toBe('chrome')
+    expect(validateHandleMaterial('brass', ['chrome', 'black'])).toBe('chrome')
   })
 
   it('current not in allowed → returns first allowed (single-entry list)', () => {
-    expect(validateHandleMaterial('chrome', ['gold'])).toBe('gold')
+    expect(validateHandleMaterial('chrome', ['brass'])).toBe('brass')
   })
 
   it('allowed undefined → pass-through current', () => {
@@ -27,7 +27,7 @@ describe('validateHandleMaterial', () => {
 
   it('current outside known metal union with allowed list → returns first allowed', () => {
     const bogus = 'bronze' as unknown as HandleMaterial
-    expect(validateHandleMaterial(bogus, ['gold', 'chrome'])).toBe('gold')
+    expect(validateHandleMaterial(bogus, ['brass', 'chrome'])).toBe('brass')
   })
 
   it('current outside known metal union with allowed undefined → defensive default chrome', () => {

@@ -25,7 +25,7 @@ export default function AccessoiresStep() {
       {/* ── Prado 2.0 ── */}
       <section className="space-y-5">
         <div>
-          <h2 className="text-base font-semibold">Accessoires</h2>
+          
           <SectionHeading>Prado 2.0</SectionHeading>
           <p className="text-xs text-muted-foreground/60 mt-1">
             Selecteer een vak om Prado 2.0 toe te voegen

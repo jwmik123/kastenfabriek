@@ -10,14 +10,23 @@ export default function ModuleMaterialPanel() {
   const step = useWasmachinekastStore((s) => s.step)
   const selectedSlot = useWasmachinekastStore((s) => s.selectedSlot)
   const setSelectedSlot = useWasmachinekastStore((s) => s.setSelectedSlot)
-  const modules = useWasmachinekastStore((s) => s.modules)
+  const topModules = useWasmachinekastStore((s) => s.modules)
+  const lowSection = useWasmachinekastStore((s) => s.lowSection)
+  const layout = useWasmachinekastStore((s) => s.layout)
+  const activeModulesSection = useWasmachinekastStore((s) => s.activeModulesSection)
   const buitenkantMaterialId = useWasmachinekastStore((s) => s.buitenkantMaterialId)
   const binnenkantMaterialId = useWasmachinekastStore((s) => s.binnenkantMaterialId)
-  const setModuleMaterial = useWasmachinekastStore((s) => s.setModuleMaterial)
+  const setModuleMaterialTop = useWasmachinekastStore((s) => s.setModuleMaterial)
+  const setLowSectionModuleMaterial = useWasmachinekastStore((s) => s.setLowSectionModuleMaterial)
+
+  const isDual = layout === 'low-left' || layout === 'low-right'
+  const editingLow = isDual && activeModulesSection === 'low' && lowSection !== null
+  const modules = editingLow ? lowSection!.modules : topModules
+  const setModuleMaterial = editingLow ? setLowSectionModuleMaterial : setModuleMaterialTop
 
   const [activeTab, setActiveTab] = useState<'buitenkant' | 'binnenkant'>('buitenkant')
 
-  if (step !== 4 || selectedSlot === null) return null
+  if (step !== 5 || selectedSlot === null) return null
 
   const moduleSlot = modules.find((m) => m.slotIndex === selectedSlot)
   if (!moduleSlot) return null

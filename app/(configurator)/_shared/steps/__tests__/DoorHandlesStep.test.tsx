@@ -63,15 +63,18 @@ describe('DoorHandlesStep (shared)', () => {
     const { default: DoorHandlesStep } = await import('../DoorHandlesStep')
     const html = renderToStaticMarkup(<DoorHandlesStep />)
     const swatches = html.match(/data-testid="handle-material-swatch"/g) ?? []
-    expect(swatches).toHaveLength(9)
-    // Dutch labels for all 9 metals carried via aria-label
+    expect(swatches).toHaveLength(12)
+    // Dutch labels for all 12 metals carried via aria-label
     for (const label of [
       'Chrome',
       'Zwart',
-      'Goud',
+      'Messing',
+      'Koper',
       'Rosé goud',
       'Zilver',
       'Oud zilver',
+      'RVS look',
+      'Aluminium',
       'Grijsblauw',
       'Grijs',
       'Wit',
@@ -82,13 +85,13 @@ describe('DoorHandlesStep (shared)', () => {
 
   it('marks the active swatch and reflects it in the aria-live label', async () => {
     mockState.doorHandleId = '23'
-    mockState.doorHandleMaterial = 'gold'
+    mockState.doorHandleMaterial = 'brass'
     const { default: DoorHandlesStep } = await import('../DoorHandlesStep')
     const html = renderToStaticMarkup(<DoorHandlesStep />)
     const active = html.match(/data-testid="handle-material-swatch"[^>]*data-active="true"/g) ?? []
     expect(active).toHaveLength(1)
-    expect(html).toContain('data-material="gold"')
-    expect(html).toMatch(/handle-material-active-label[^>]*>Goud</)
+    expect(html).toContain('data-material="brass"')
+    expect(html).toMatch(/handle-material-active-label[^>]*>Messing</)
   })
 
   it('hides material control when push-to-open is selected', async () => {
@@ -151,21 +154,21 @@ describe('DoorHandlesStep (shared)', () => {
     expect(swatches).toHaveLength(2)
     expect(html).toContain('data-material="chrome"')
     expect(html).toContain('data-material="black"')
-    expect(html).not.toContain('data-material="gold"')
+    expect(html).not.toContain('data-material="brass"')
   })
 
   it('renders a single swatch when allowedMaterials has exactly one entry', async () => {
     const handlesWithGating = [
-      { id: '1', name: 'WGoldOnly', nameNl: 'Goud only', productCode: 'WGold', price: 10, allowedMaterials: ['gold'] },
+      { id: '1', name: 'WGoldOnly', nameNl: 'Goud only', productCode: 'WGold', price: 10, allowedMaterials: ['brass'] },
     ]
     mockState.pricingData = { ...fakePricingData, handles: handlesWithGating } as any
     mockState.doorHandleId = '1'
-    mockState.doorHandleMaterial = 'gold'
+    mockState.doorHandleMaterial = 'brass'
     const { default: DoorHandlesStep } = await import('../DoorHandlesStep')
     const html = renderToStaticMarkup(<DoorHandlesStep />)
     const swatches = html.match(/data-testid="handle-material-swatch"/g) ?? []
     expect(swatches).toHaveLength(1)
-    expect(html).toContain('data-material="gold"')
+    expect(html).toContain('data-material="brass"')
     const active = html.match(/data-testid="handle-material-swatch"[^>]*data-active="true"/g) ?? []
     expect(active).toHaveLength(1)
   })

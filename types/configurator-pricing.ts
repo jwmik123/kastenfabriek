@@ -6,6 +6,8 @@ export interface ModuleLayoutContents {
   hasDesk?: boolean;
 }
 
+export type SectionType = "high" | "low" | "both";
+
 export interface ModuleLayout {
   layoutId: number;
   name: string;
@@ -14,6 +16,7 @@ export interface ModuleLayout {
   priceDouble: number;
   priceSingle: number;
   availableForTopCabinet: boolean;
+  sectionType?: SectionType;
   minSlotWidth?: number; // cm — if set, setModuleLayout rejects slots narrower than this
 }
 
@@ -27,6 +30,7 @@ export interface Accessory {
   category: AccessoryCategory;
   perUnit: boolean;
   maxPerCorpus?: number;
+  availableForLowSection?: boolean;
 }
 
 export type DoorVariant = "standard" | "small" | "veneer";

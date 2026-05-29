@@ -14,25 +14,37 @@ import { useClosetMaterialInstance } from '../../_shared/materials/ClosetMateria
 import { trapNaN, trapGeo } from '@/utils/debugGeometry'
 import { computeSlotWidthsM } from '../../_shared/store/slotWidths'
 import { getWasmLayoutConfig } from '../moduleLayoutConfigs'
+import type { BaseModuleSlot } from '../../_shared/store/types'
+import type { Section } from '../sections/types'
 
 const BORDER_M = 0.015
 const WASHER_REAR_CLEARANCE = 0.10
 const WASHER_LAYOUT_IDS = new Set([11, 13, 14])
 
-// Simplified slot interaction — no diagonal ceiling shape needed
-function WasmModuleSlotInteraction({
+interface SectionRender {
+  width: number
+  height: number
+  moduleCount: number
+  modules: BaseModuleSlot[]
+}
+
+function SlotInteraction({
   slotIndex,
   span,
   diagParams,
+  sectionWidthM,
+  sectionMainHeightM,
+  sectionDepthM,
+  modules,
 }: {
   slotIndex: number
   span: 1 | 2
   diagParams: DiagParams
+  sectionWidthM: number
+  sectionMainHeightM: number
+  sectionDepthM: number
+  modules: BaseModuleSlot[]
 }) {
-  const depth = useWasmachinekastStore((s) => s.depth) / 100
-  const allModules = useWasmachinekastStore((s) => s.modules)
-  const width = useWasmachinekastStore((s) => s.width) / 100
-  const mainHeightCm = useWasmachinekastStore((s) => s.mainHeight())
   const selectedSlot = useWasmachinekastStore((s) => s.selectedSlot)
   const hoveredSlot = useWasmachinekastStore((s) => s.hoveredSlot)
   const setSelectedSlot = useWasmachinekastStore((s) => s.setSelectedSlot)
@@ -40,11 +52,14 @@ function WasmModuleSlotInteraction({
 
   const [localHovered, setLocalHovered] = useState(false)
 
-  const innerW = width - WALL * 2
-  const moduleDepth = depth - WALL - CLOSET_INSIDE_INSET
-  const mainHeightM = mainHeightCm / 100
+  const innerW = sectionWidthM - WALL * 2
+  const moduleDepth = sectionDepthM - WALL - CLOSET_INSIDE_INSET
+  // Group sits at y=MODULE_FLOOR_Y (top of plinth). Plane should reach the
+  // module-interior cap at y=sectionMainHeightM in world space, so cap to that
+  // delta — otherwise it overhangs the corpus by the plinth height.
+  const overlayHeightM = Math.max(0, sectionMainHeightM - MODULE_FLOOR_Y)
 
-  const slotWidthsM = useMemo(() => computeSlotWidthsM(allModules, innerW), [allModules, innerW])
+  const slotWidthsM = useMemo(() => computeSlotWidthsM(modules, innerW), [modules, innerW])
   const slotOffset = slotWidthsM.slice(0, slotIndex).reduce((a, b) => a + b, 0)
   const totalW = slotWidthsM.slice(slotIndex, slotIndex + span).reduce((a, b) => a + b, 0)
 
@@ -52,11 +67,11 @@ function WasmModuleSlotInteraction({
 
   const shapeGeo = useMemo(() => {
     trapNaN(totalW, `WasmSlotInteraction${slotIndex}-totalW`)
-    trapNaN(mainHeightM, `WasmSlotInteraction${slotIndex}-mainHeightM`)
-    const geo = new THREE.PlaneGeometry(totalW, mainHeightM)
-    geo.translate(totalW / 2, mainHeightM / 2, 0)
+    trapNaN(overlayHeightM, `WasmSlotInteraction${slotIndex}-overlayHeightM`)
+    const geo = new THREE.PlaneGeometry(totalW, overlayHeightM)
+    geo.translate(totalW / 2, overlayHeightM / 2, 0)
     return trapGeo(geo, `WasmSlotInteraction${slotIndex}-shapeGeo`)
-  }, [totalW, mainHeightM])
+  }, [totalW, overlayHeightM])
 
   const hovered = localHovered || hoveredSlot === slotIndex
 
@@ -66,12 +81,12 @@ function WasmModuleSlotInteraction({
   }, [localHovered])
 
   const bxU = useRef(uniform(BORDER_M / totalW))
-  const byU = useRef(uniform(BORDER_M / mainHeightM))
+  const byU = useRef(uniform(BORDER_M / overlayHeightM))
   const fillAlphaU = useRef(uniform(0.0))
   const borderAlphaU = useRef(uniform(0.0))
 
   useEffect(() => { bxU.current.value = BORDER_M / totalW }, [totalW])
-  useEffect(() => { byU.current.value = BORDER_M / mainHeightM }, [mainHeightM])
+  useEffect(() => { byU.current.value = BORDER_M / overlayHeightM }, [overlayHeightM])
   useEffect(() => {
     fillAlphaU.current.value = isSelected ? 0.05 : hovered ? 0.10 : 0.0
     borderAlphaU.current.value = (isSelected || hovered) ? 0.85 : 0.0
@@ -120,15 +135,13 @@ function WasmModuleSlotInteraction({
   )
 }
 
-function WasmOnderstelPlinth() {
-  const width = useWasmachinekastStore((s) => s.width) / 100
-  const depth = useWasmachinekastStore((s) => s.depth) / 100
+function OnderstelPlinth({ widthM, depthM }: { widthM: number; depthM: number }) {
   const { scene } = useGLTF('/objects/onderstel.glb')
   const material = useClosetMaterialInstance()
 
   const ONDERSTEL_FRONT_INSET = 0.089
-  const innerW = width - WALL * 2
-  const innerD = depth - WALL - ONDERSTEL_FRONT_INSET
+  const innerW = widthM - WALL * 2
+  const innerD = depthM - WALL - ONDERSTEL_FRONT_INSET
 
   const [{ clone, originalBox }] = useState(() => {
     const c = scene.clone(true)
@@ -164,15 +177,78 @@ function WasmOnderstelPlinth() {
   )
 }
 
-export default function WasmachinekastScene() {
-  const modules = useWasmachinekastStore((s) => s.modules)
-  const outerWidth = useWasmachinekastStore((s) => s.width)
-  const closetHeightCm = useWasmachinekastStore((s) => s.height)
-  const mainHeightCm = useWasmachinekastStore((s) => s.mainHeight())
-  const outerDepthCm = useWasmachinekastStore((s) => s.depth)
+function WerkbladSlab({
+  widthM,
+  depthM,
+  thicknessM,
+  y,
+  materialId,
+  binnenkantMaterialId,
+}: {
+  widthM: number
+  depthM: number
+  thicknessM: number
+  y: number
+  materialId: string
+  binnenkantMaterialId: string
+}) {
+  return (
+    <ClosetMaterialProvider buitenkantMaterialId={materialId} binnenkantMaterialId={binnenkantMaterialId}>
+      <WerkbladSlabMesh widthM={widthM} depthM={depthM} thicknessM={thicknessM} y={y} />
+    </ClosetMaterialProvider>
+  )
+}
 
-  const buitenkantMaterialId = useWasmachinekastStore((s) => s.buitenkantMaterialId)
-  const binnenkantMaterialId = useWasmachinekastStore((s) => s.binnenkantMaterialId)
+function WerkbladSlabMesh({ widthM, depthM, thicknessM, y }: { widthM: number; depthM: number; thicknessM: number; y: number }) {
+  const material = useClosetMaterialInstance()
+  return (
+    <mesh position={[0, y, depthM / 2]} castShadow receiveShadow>
+      <boxGeometry args={[widthM, thicknessM, depthM]} />
+      <primitive object={material} attach="material" />
+    </mesh>
+  )
+}
+
+interface SectionGroupProps {
+  section: SectionRender
+  kind: 'high' | 'low'
+  depthCm: number
+  xOffsetM: number
+  topPanelThicknessMm: number
+  countertopMaterialId: string | undefined
+  buitenkantMaterialId: string
+  binnenkantMaterialId: string
+  enableSlotInteraction: boolean
+}
+
+function SectionGroup({
+  section,
+  kind,
+  depthCm,
+  xOffsetM,
+  topPanelThicknessMm,
+  countertopMaterialId,
+  buitenkantMaterialId,
+  binnenkantMaterialId,
+  enableSlotInteraction,
+}: SectionGroupProps) {
+  const widthM = section.width / 100
+  const depthM = depthCm / 100
+  const heightCm = section.height
+  const isLow = kind === 'low'
+
+  const SIDE_WALL_EXTRA_CM = 1.5
+  const TOP_CABINET_THRESHOLD = 275
+  const needsTop = heightCm > TOP_CABINET_THRESHOLD
+  const topCabinetHeight = needsTop ? heightCm - 225 - SIDE_WALL_EXTRA_CM : 0
+  const mainHeightCm = needsTop ? 225 : heightCm - SIDE_WALL_EXTRA_CM
+  const WALL_M = 0.018
+  const SIDE_WALL_EXTRA_M = 0.005
+
+  const thicknessM = topPanelThicknessMm / 1000
+  const corpusTopM = isLow ? heightCm / 100 - thicknessM : mainHeightCm / 100
+  const lowMainH = corpusTopM + WALL_M
+  const lowClosetH = corpusTopM - SIDE_WALL_EXTRA_M
 
   const diagParams = useMemo<DiagParams>(
     () => ({
@@ -181,24 +257,36 @@ export default function WasmachinekastScene() {
       rightDiagStartHeight: 0,
       leftDiagTopWidth: 0,
       rightDiagTopWidth: 0,
-      outerWidth: outerWidth / 100,
-      mainHeight: mainHeightCm / 100,
-      closetHeight: closetHeightCm / 100,
+      outerWidth: widthM,
+      mainHeight: isLow ? lowMainH : mainHeightCm / 100,
+      closetHeight: isLow ? lowClosetH : heightCm / 100,
       backDiagonal: false,
       backDiagKinkHeight: 0,
       backDiagFlatSectionDepth: 0,
-      outerDepth: outerDepthCm / 100,
-      moduleCapY: mainHeightCm / 100,
+      outerDepth: depthM,
+      moduleCapY: isLow ? lowMainH : mainHeightCm / 100,
       sideWallThickness: 0.018,
     }),
-    [outerWidth, mainHeightCm, closetHeightCm, outerDepthCm],
+    [widthM, mainHeightCm, heightCm, depthM, isLow, lowMainH, lowClosetH],
   )
 
+  const werkbladMaterialId = countertopMaterialId ?? buitenkantMaterialId
+
   return (
-    <ClosetMaterialProvider buitenkantMaterialId={buitenkantMaterialId} binnenkantMaterialId={binnenkantMaterialId}>
-      <ClosetCorpus diagParams={diagParams} />
-      <WasmOnderstelPlinth />
-      {modules
+    <group position={[xOffsetM, 0, 0]}>
+      <ClosetCorpus diagParams={diagParams} hideTopPanel={isLow} />
+      <OnderstelPlinth widthM={widthM} depthM={depthM} />
+      {isLow && (
+        <WerkbladSlab
+          widthM={widthM}
+          depthM={depthM}
+          thicknessM={thicknessM}
+          y={corpusTopM + thicknessM / 2}
+          materialId={werkbladMaterialId}
+          binnenkantMaterialId={binnenkantMaterialId}
+        />
+      )}
+      {section.modules
         .filter((m) => m.layoutId !== null)
         .map((m) => {
           const layout = getWasmLayoutConfig(m.layoutId!)
@@ -212,22 +300,124 @@ export default function WasmachinekastScene() {
               hasDoor={isWasher ? false : m.hasDoor}
               span={m.span}
               diagParams={diagParams}
-              depthOverride={isWasher ? outerDepthCm / 100 - WASHER_REAR_CLEARANCE : undefined}
+              depthOverride={isWasher ? depthM - WASHER_REAR_CLEARANCE : undefined}
+              sectionWidthCm={section.width}
+              sectionModuleCount={section.moduleCount}
+              sectionModules={section.modules}
+              sectionNeedsTopCabinet={isLow ? false : section.height > TOP_CABINET_THRESHOLD}
             />
           )
         })}
-      {modules.map((m, i) => {
-        const isConsumed = i > 0 && modules[i - 1].span === 2
-        if (isConsumed) return null
-        return (
-          <WasmModuleSlotInteraction
-            key={`hit-${m.slotIndex}`}
-            slotIndex={m.slotIndex}
-            span={m.span}
-            diagParams={diagParams}
+      {enableSlotInteraction &&
+        section.modules.map((m, i) => {
+          const isConsumed = i > 0 && section.modules[i - 1].span === 2
+          if (isConsumed) return null
+          return (
+            <SlotInteraction
+              key={`hit-${m.slotIndex}`}
+              slotIndex={m.slotIndex}
+              span={m.span}
+              diagParams={diagParams}
+              sectionWidthM={widthM}
+              sectionMainHeightM={isLow ? lowMainH : mainHeightCm / 100}
+              sectionDepthM={depthM}
+              modules={section.modules}
+            />
+          )
+        })}
+    </group>
+  )
+}
+
+export default function WasmachinekastScene() {
+  const layout = useWasmachinekastStore((s) => s.layout)
+  const topWidth = useWasmachinekastStore((s) => s.width)
+  const topHeight = useWasmachinekastStore((s) => s.height)
+  const topModuleCount = useWasmachinekastStore((s) => s.moduleCount)
+  const topModules = useWasmachinekastStore((s) => s.modules)
+  const depthCm = useWasmachinekastStore((s) => s.depth)
+  const lowSection = useWasmachinekastStore((s) => s.lowSection)
+  const buitenkantMaterialId = useWasmachinekastStore((s) => s.buitenkantMaterialId)
+  const binnenkantMaterialId = useWasmachinekastStore((s) => s.binnenkantMaterialId)
+  const topPanelThicknessMm = useWasmachinekastStore((s) => s.topPanelThicknessMm)
+  const countertopMaterialId = useWasmachinekastStore((s) => s.countertopMaterialId)
+  const activeModulesSection = useWasmachinekastStore((s) => s.activeModulesSection)
+
+  const isLowOnly = layout === 'low-only'
+  const isDual = layout === 'low-left' || layout === 'low-right'
+
+  // Resolve sections
+  const highSection: SectionRender | null = isLowOnly
+    ? null
+    : { width: topWidth, height: topHeight, moduleCount: topModuleCount, modules: topModules }
+  const lowSectionRender: SectionRender | null =
+    isLowOnly
+      ? { width: topWidth, height: topHeight, moduleCount: topModuleCount, modules: topModules }
+      : lowSection
+        ? { width: lowSection.width, height: lowSection.height, moduleCount: lowSection.moduleCount, modules: lowSection.modules }
+        : null
+
+  // X offsets
+  const highW = highSection ? highSection.width / 100 : 0
+  const lowW = lowSectionRender ? lowSectionRender.width / 100 : 0
+  const totalW = highW + (isDual ? lowW : 0) || (isLowOnly ? lowW : highW)
+
+  let highX = 0
+  let lowX = 0
+  if (layout === 'low-left') {
+    lowX = -totalW / 2 + lowW / 2
+    highX = -totalW / 2 + lowW + highW / 2
+  } else if (layout === 'low-right') {
+    highX = -totalW / 2 + highW / 2
+    lowX = -totalW / 2 + highW + lowW / 2
+  } else {
+    highX = 0
+    lowX = 0
+  }
+
+  return (
+    <ClosetMaterialProvider buitenkantMaterialId={buitenkantMaterialId} binnenkantMaterialId={binnenkantMaterialId}>
+      <group>
+        {highSection && (
+          <SectionGroup
+            section={highSection}
+            kind="high"
+            depthCm={depthCm}
+            xOffsetM={highX}
+            topPanelThicknessMm={topPanelThicknessMm}
+            countertopMaterialId={countertopMaterialId}
+            buitenkantMaterialId={buitenkantMaterialId}
+            binnenkantMaterialId={binnenkantMaterialId}
+            enableSlotInteraction={!isDual || activeModulesSection === 'high'}
           />
-        )
-      })}
+        )}
+        {lowSectionRender && !isLowOnly && (
+          <SectionGroup
+            section={lowSectionRender}
+            kind="low"
+            depthCm={depthCm}
+            xOffsetM={lowX}
+            topPanelThicknessMm={topPanelThicknessMm}
+            countertopMaterialId={countertopMaterialId}
+            buitenkantMaterialId={buitenkantMaterialId}
+            binnenkantMaterialId={binnenkantMaterialId}
+            enableSlotInteraction={isDual && activeModulesSection === 'low'}
+          />
+        )}
+        {isLowOnly && lowSectionRender && (
+          <SectionGroup
+            section={lowSectionRender}
+            kind="low"
+            depthCm={depthCm}
+            xOffsetM={0}
+            topPanelThicknessMm={topPanelThicknessMm}
+            countertopMaterialId={countertopMaterialId}
+            buitenkantMaterialId={buitenkantMaterialId}
+            binnenkantMaterialId={binnenkantMaterialId}
+            enableSlotInteraction={true}
+          />
+        )}
+      </group>
     </ClosetMaterialProvider>
   )
 }

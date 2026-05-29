@@ -1,6 +1,8 @@
 'use client'
 
+import { ShoppingCart } from 'lucide-react'
 import { useClosetStore } from '../store'
+import { useCartPrice } from '../hooks/useCartPrice'
 import DimensionsStep from '../steps/DimensionsStep'
 import ModulesStep from '../steps/ModulesStep'
 import MaterialStep from '../steps/MaterialStep'
@@ -60,8 +62,10 @@ export default function StepWizard() {
   const nextStep = useClosetStore((s) => s.nextStep)
   const prevStep = useClosetStore((s) => s.prevStep)
   const selectedSlot = useClosetStore((s) => s.selectedSlot)
+  const { pricingData, editItemId, handleAddToCart, isCapturing } = useCartPrice()
   const isPanelOpen = step === 3 && selectedSlot !== null
   const meta = STEP_META[step]
+  const isLastStep = step === STEP_COUNT
 
   const blurClass = 'transition-[filter] duration-200 blur-sm pointer-events-none select-none'
 
@@ -83,14 +87,25 @@ export default function StepWizard() {
         <Button variant="outline" onClick={prevStep} disabled={step === 1}>
           Vorige
         </Button>
-        <Button
-          id="kf-tour-next-desktop"
-          data-tour="next-button"
-          onClick={nextStep}
-          disabled={step === STEP_COUNT}
-        >
-          {step === STEP_COUNT ? 'Voltooien' : 'Volgende'}
-        </Button>
+        {isLastStep ? (
+          <Button
+            id="kf-tour-next-desktop"
+            data-tour="next-button"
+            onClick={handleAddToCart}
+            disabled={!pricingData || isCapturing}
+          >
+            <ShoppingCart className="size-4" />
+            {isCapturing ? 'Bezig...' : editItemId ? 'Wijzigingen opslaan' : 'Voeg toe aan winkelwagen'}
+          </Button>
+        ) : (
+          <Button
+            id="kf-tour-next-desktop"
+            data-tour="next-button"
+            onClick={nextStep}
+          >
+            Volgende
+          </Button>
+        )}
       </div>
     </div>
   )

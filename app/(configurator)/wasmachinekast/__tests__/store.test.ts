@@ -77,7 +77,7 @@ const baseSnapshot: ClosetConfigSnapshot = {
   capturedAt: '2026-01-01T00:00:00.000Z',
   widthCm: 120,
   heightCm: 240,
-  depthCm: 65,
+  depthCm: 85,
   moduleCount: 2,
   modules: [
     { slotIndex: 0, layoutId: null, layoutName: null, hasDoor: true, span: 1 },
@@ -101,25 +101,35 @@ const baseSnapshot: ClosetConfigSnapshot = {
 describe('setDepth', () => {
   beforeEach(resetStore)
 
-  it('clamps depth to minimum 65cm', () => {
+  it('clamps depth to minimum 85cm', () => {
     useWasmachinekastStore.getState().setDepth(40)
-    expect(useWasmachinekastStore.getState().depth).toBe(65)
+    expect(useWasmachinekastStore.getState().depth).toBe(85)
   })
 
-  it('accepts depth exactly at 65cm', () => {
-    useWasmachinekastStore.getState().setDepth(65)
-    expect(useWasmachinekastStore.getState().depth).toBe(65)
+  it('accepts depth exactly at 85cm', () => {
+    useWasmachinekastStore.getState().setDepth(85)
+    expect(useWasmachinekastStore.getState().depth).toBe(85)
   })
 
-  it('accepts depth above 65cm', () => {
-    useWasmachinekastStore.getState().setDepth(70)
-    expect(useWasmachinekastStore.getState().depth).toBe(70)
+  it('accepts depth above 85cm', () => {
+    useWasmachinekastStore.getState().setDepth(90)
+    expect(useWasmachinekastStore.getState().depth).toBe(90)
   })
 
   it('respects Sanity maxDepth when hydrated', () => {
-    useWasmachinekastStore.getState().hydrate(basePricingData)
+    const pd = {
+      ...basePricingData,
+      config: {
+        ...basePricingData.config,
+        constraints: {
+          ...baseConstraints,
+          singleCorpus: { ...baseConstraints.singleCorpus, maxDepth: 100 },
+        },
+      },
+    }
+    useWasmachinekastStore.getState().hydrate(pd)
     useWasmachinekastStore.getState().setDepth(999)
-    expect(useWasmachinekastStore.getState().depth).toBe(80)
+    expect(useWasmachinekastStore.getState().depth).toBe(100)
   })
 })
 
@@ -197,8 +207,20 @@ describe('restoreConfig', () => {
     const s = useWasmachinekastStore.getState()
     expect(s.width).toBe(120)
     expect(s.height).toBe(240)
-    expect(s.depth).toBe(65)
+    expect(s.depth).toBe(85)
     expect(s.moduleCount).toBe(2)
+  })
+
+  it('legacy snapshot (no layout, depth 65) loads as high-only with depth clamped to 85', () => {
+    const legacy: ClosetConfigSnapshot = { ...baseSnapshot, depthCm: 65 }
+    useWasmachinekastStore.getState().restoreConfig(legacy)
+    const s = useWasmachinekastStore.getState()
+    expect(s.layout).toBe('high-only')
+    expect(s.depth).toBe(85)
+    expect(s.width).toBe(120)
+    expect(s.height).toBe(240)
+    expect(s.moduleCount).toBe(2)
+    expect(s.lowSection).toBeNull()
   })
 
   it('restores modules array', () => {
@@ -222,7 +244,7 @@ describe('restoreConfig', () => {
       buitenkantMaterialId: 'antraciet',
       binnenkantMaterialId: 'eiken',
       doorHandleId: '42',
-      doorHandleMaterial: 'gold',
+      doorHandleMaterial: 'brass',
       doorsExtendToFloor: true,
       lightStripsEnabled: true,
     }
@@ -231,7 +253,7 @@ describe('restoreConfig', () => {
     expect(s.buitenkantMaterialId).toBe('antraciet')
     expect(s.binnenkantMaterialId).toBe('eiken')
     expect(s.doorHandleId).toBe('42')
-    expect(s.doorHandleMaterial).toBe('gold')
+    expect(s.doorHandleMaterial).toBe('brass')
     expect(s.doorsExtendToFloor).toBe(true)
     expect(s.lightStripsEnabled).toBe(true)
   })
@@ -641,6 +663,151 @@ describe('restoreConfig — washer fields', () => {
   })
 })
 
+// ─── dual layout: restore + low-section setters ─────────────────────────────
+
+describe('restoreConfig — dual layout (low-left / low-right)', () => {
+  beforeEach(resetStore)
+
+  it('low-left snapshot loads high into top-level and low into lowSection', () => {
+    useWasmachinekastStore.getState().hydrate(basePricingData)
+    const snap: ClosetConfigSnapshot = {
+      ...baseSnapshot,
+      widthCm: 200,
+      heightCm: 240,
+      moduleCount: 3,
+      modules: [
+        { slotIndex: 0, layoutId: 1, layoutName: 'P', hasDoor: true, span: 1 },
+        { slotIndex: 1, layoutId: null, layoutName: null, hasDoor: true, span: 1 },
+        { slotIndex: 2, layoutId: null, layoutName: null, hasDoor: false, span: 1 },
+      ],
+      layout: 'low-left',
+      lowSection: {
+        width: 120,
+        height: 90,
+        moduleCount: 2,
+        modules: [
+          { slotIndex: 0, layoutId: null, layoutName: null, hasDoor: true, span: 1 },
+          { slotIndex: 1, layoutId: null, layoutName: null, hasDoor: true, span: 1 },
+        ],
+        topPanelThicknessMm: 36,
+        countertopMaterialId: 'eiken',
+      },
+    }
+    useWasmachinekastStore.getState().restoreConfig(snap)
+    const s = useWasmachinekastStore.getState()
+    expect(s.layout).toBe('low-left')
+    expect(s.width).toBe(200)
+    expect(s.height).toBe(240)
+    expect(s.moduleCount).toBe(3)
+    expect(s.modules[0].layoutId).toBe(1)
+    expect(s.modules[2].hasDoor).toBe(false)
+    expect(s.lowSection?.width).toBe(120)
+    expect(s.lowSection?.moduleCount).toBe(2)
+    expect(s.topPanelThicknessMm).toBe(36)
+    expect(s.countertopMaterialId).toBe('eiken')
+    expect(s.activeModulesSection).toBe('high')
+  })
+
+  it('low-right snapshot round-trips both sections', () => {
+    useWasmachinekastStore.getState().hydrate(basePricingData)
+    const snap: ClosetConfigSnapshot = {
+      ...baseSnapshot,
+      widthCm: 150,
+      moduleCount: 2,
+      layout: 'low-right',
+      lowSection: {
+        width: 90,
+        height: 90,
+        moduleCount: 1,
+        modules: [
+          { slotIndex: 0, layoutId: null, layoutName: null, hasDoor: true, span: 1 },
+        ],
+        topPanelThicknessMm: 18,
+        countertopMaterialId: 'premium-wit',
+      },
+    }
+    useWasmachinekastStore.getState().restoreConfig(snap)
+    const s = useWasmachinekastStore.getState()
+    expect(s.layout).toBe('low-right')
+    expect(s.width).toBe(150)
+    expect(s.lowSection?.width).toBe(90)
+    expect(s.lowSection?.moduleCount).toBe(1)
+  })
+})
+
+describe('low-section setters', () => {
+  beforeEach(resetStore)
+
+  function bootstrapDual() {
+    useWasmachinekastStore.getState().hydrate(basePricingData)
+    useWasmachinekastStore.getState().applySectionsState({
+      layout: 'low-left',
+      highSection: {
+        width: 180,
+        height: 240,
+        moduleCount: 3,
+        modules: [
+          { slotIndex: 0, layoutId: null, hasDoor: true, span: 1 },
+          { slotIndex: 1, layoutId: null, hasDoor: true, span: 1 },
+          { slotIndex: 2, layoutId: null, hasDoor: true, span: 1 },
+        ],
+      },
+      lowSection: {
+        width: 120,
+        height: 90,
+        moduleCount: 2,
+        modules: [
+          { slotIndex: 0, layoutId: null, hasDoor: true, span: 1 },
+          { slotIndex: 1, layoutId: null, hasDoor: true, span: 1 },
+        ],
+        topPanelThicknessMm: 18,
+        countertopMaterialId: 'premium-wit',
+      },
+      washerSection: null,
+    })
+  }
+
+  it('setLowSectionWidth clamps to single-corpus bounds', () => {
+    bootstrapDual()
+    useWasmachinekastStore.getState().setLowSectionWidth(5)
+    expect(useWasmachinekastStore.getState().lowSection?.width).toBe(15) // minWidth
+  })
+
+  it('setLowSectionModuleCount resizes lowSection.modules', () => {
+    bootstrapDual()
+    useWasmachinekastStore.getState().setLowSectionModuleCount(3)
+    const ls = useWasmachinekastStore.getState().lowSection
+    expect(ls?.moduleCount).toBe(3)
+    expect(ls?.modules).toHaveLength(3)
+  })
+
+  it('setLowSectionModuleLayout writes to lowSection.modules only', () => {
+    bootstrapDual()
+    useWasmachinekastStore.getState().setLowSectionModuleLayout(0, 1)
+    const s = useWasmachinekastStore.getState()
+    expect(s.lowSection?.modules[0].layoutId).toBe(1)
+    expect(s.modules[0].layoutId).toBeNull()
+  })
+
+  it('setWasherSection discards existing washers when switching', () => {
+    bootstrapDual()
+    useWasmachinekastStore.setState({
+      washerSection: 'high',
+      washerModules: [{ slotIndex: 0, layoutId: 11 }],
+      modules: [
+        { slotIndex: 0, layoutId: 11, hasDoor: true, span: 1, fixedWidth: 68.6 },
+        { slotIndex: 1, layoutId: null, hasDoor: true, span: 1 },
+        { slotIndex: 2, layoutId: null, hasDoor: true, span: 1 },
+      ],
+    })
+    useWasmachinekastStore.getState().setWasherSection('low')
+    const s = useWasmachinekastStore.getState()
+    expect(s.washerSection).toBe('low')
+    expect(s.washerModules).toHaveLength(0)
+    expect(s.modules[0].layoutId).toBeNull()
+  })
+})
+
 // ─── handle material invariant ───────────────────────────────────────────────
 
 describe('handle material invariant', () => {
@@ -648,7 +815,7 @@ describe('handle material invariant', () => {
 
   const handlesWithGating = [
     { id: '23', name: 'W7845', productCode: 'W7845', price: 12, allowedMaterials: ['chrome', 'black'] as const },
-    { id: '42', name: 'WGold', productCode: 'WGold', price: 15, allowedMaterials: ['gold'] as const },
+    { id: '42', name: 'WGold', productCode: 'WGold', price: 15, allowedMaterials: ['brass'] as const },
     { id: '99', name: 'WAny', productCode: 'WAny', price: 10 },
   ]
 
@@ -660,7 +827,7 @@ describe('handle material invariant', () => {
     useWasmachinekastStore.getState().hydrate(pricingWithHandles())
     useWasmachinekastStore.getState().setDoorHandleMaterial('chrome')
     useWasmachinekastStore.getState().setDoorHandleId('42')
-    expect(useWasmachinekastStore.getState().doorHandleMaterial).toBe('gold')
+    expect(useWasmachinekastStore.getState().doorHandleMaterial).toBe('brass')
   })
 
   it('setDoorHandleId preserves material when allowed by new handle', () => {
@@ -674,7 +841,7 @@ describe('handle material invariant', () => {
     useWasmachinekastStore.getState().hydrate(pricingWithHandles())
     useWasmachinekastStore.getState().setDoorHandleId('42')
     useWasmachinekastStore.getState().setDoorHandleMaterial('chrome')
-    expect(useWasmachinekastStore.getState().doorHandleMaterial).toBe('gold')
+    expect(useWasmachinekastStore.getState().doorHandleMaterial).toBe('brass')
   })
 
   it('empty/missing allowedMaterials means all metals allowed', () => {
@@ -687,7 +854,7 @@ describe('handle material invariant', () => {
   it('hydrate corrects material when invalid combination is loaded', () => {
     useWasmachinekastStore.setState({ doorHandleId: '42', doorHandleMaterial: 'chrome' })
     useWasmachinekastStore.getState().hydrate(pricingWithHandles())
-    expect(useWasmachinekastStore.getState().doorHandleMaterial).toBe('gold')
+    expect(useWasmachinekastStore.getState().doorHandleMaterial).toBe('brass')
   })
 
   it('push-to-open does not interfere with material validation', () => {
