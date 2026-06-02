@@ -79,6 +79,7 @@ export default function Home() {
           title: 'Wasmachinekast',
           description: 'Functionele kast voor je wasmachine en droger',
           image: '/images/wasmachinekast.png',
+          href: '/wasmachinekast',
         },
         {
           id: 'ikea-pax',

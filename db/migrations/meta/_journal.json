@@ -22,6 +22,13 @@
       "when": 1778232000363,
       "tag": "0002_add_kind_to_cart_and_order",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1780401152376,
+      "tag": "0003_striped_swarm",
+      "breakpoints": true
     }
   ]
 }

@@ -5,7 +5,7 @@ import type { PortableTextBlock } from "@portabletext/react";
 
 import { client } from "./client";
 
-export type ProductType = "pax-doors";
+export type ProductType = "pax-doors" | "samples";
 
 export interface SanityImageRef {
   asset: { _ref: string; _type: "reference" };
@@ -33,13 +33,21 @@ export interface PaxConfig {
   hingeSide?: "left" | "right";
 }
 
+export interface SampleConfig {
+  maxSelections: number;
+}
+
 export interface ProductListItem {
   _id: string;
   title: string;
   slug: string;
   productType: ProductType;
   shortDescription: string;
-  heroImage: SanityImageRef;
+  heroImage?: SanityImageRef;
+  /** Lowest variant price for pax-doors; null for samples (free). */
+  fromPrice: number | null;
+  /** True when only one price exists, so no "vanaf" prefix is needed. */
+  singlePrice: boolean;
 }
 
 export interface Product {
@@ -53,8 +61,9 @@ export interface Product {
   heroImage: SanityImageRef;
   gallery?: SanityImageRef[];
   productInfo?: PortableTextBlock[];
-  deliveryFee: number;
+  deliveryFee?: number;
   paxConfig?: PaxConfig;
+  sampleConfig?: SampleConfig;
 }
 
 const productListProjection = groq`
@@ -63,7 +72,10 @@ const productListProjection = groq`
   "slug": slug.current,
   productType,
   shortDescription,
-  heroImage
+  heroImage,
+  "fromPrice": math::min(paxConfig.variants[].priceEur),
+  "singlePrice": count(paxConfig.variants[].priceEur) == 1 ||
+    math::min(paxConfig.variants[].priceEur) == math::max(paxConfig.variants[].priceEur)
 `;
 
 const productProjection = groq`
@@ -78,7 +90,8 @@ const productProjection = groq`
   gallery,
   productInfo,
   deliveryFee,
-  paxConfig
+  paxConfig,
+  sampleConfig
 `;
 
 export const activeProductsQuery = groq`

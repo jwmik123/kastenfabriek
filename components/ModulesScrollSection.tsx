@@ -142,7 +142,7 @@ export default function ModulesScrollSection() {
     <div className="md:hidden w-full">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src="/images/ModulesH.webp"
+        src="/images/Modules_High4.webp"
         alt="Alle modules"
         className="w-full h-auto select-none"
         draggable={false}
@@ -158,7 +158,7 @@ export default function ModulesScrollSection() {
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/images/ModulesH.webp"
+            src="/images/Modules_High4.webp"
             alt="Alle modules"
             className="h-full w-full object-cover select-none"
             draggable={false}

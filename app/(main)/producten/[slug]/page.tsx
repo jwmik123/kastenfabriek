@@ -6,6 +6,7 @@ import { ChevronRight } from "lucide-react";
 import { getProductBySlug } from "@/sanity/lib/products";
 import { urlFor } from "@/sanity/lib/image";
 import PaxDoorConfigurator from "@/components/products/PaxDoorConfigurator";
+import SampleConfigurator from "@/components/products/SampleConfigurator";
 import ProductImageGallery from "@/components/products/ProductImageGallery";
 import { getServerSession } from "@/lib/actions/auth";
 import { getDbCartItemById } from "@/lib/actions/cart";
@@ -39,6 +40,7 @@ export default async function ProductPage({
   if (!product) notFound();
 
   const isPax = product.productType === "pax-doors";
+  const isSamples = product.productType === "samples";
 
   // If editing, fetch existing line server-side for authed users.
   let editItem: ProductCartItem | null = null;
@@ -71,7 +73,9 @@ export default async function ProductPage({
         <span className="text-foreground">{product.title}</span>
       </nav>
 
-      {isPax ? (
+      {isSamples ? (
+        <SampleConfigurator product={product} />
+      ) : isPax ? (
         <PaxDoorConfigurator
           product={product}
           editItemId={edit ?? null}

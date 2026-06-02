@@ -8,7 +8,6 @@ import gsap from 'gsap'
 
 const NAV_LINKS = [
   { href: '/', label: 'Home' },
-  { href: '/projects', label: 'Materialen' },
   { href: '/producten', label: 'Producten' },
   { href: '/contact', label: 'Blog' },
 ]
@@ -125,6 +124,12 @@ const Navigation = () => {
             </Link>
           ))}
           <div className="w-px h-5 bg-gray-300/70 mx-1" />
+          <Link
+            href="/producten/materiaalstalen"
+            className="relative z-10 px-5 py-2 text-sm font-semibold text-white bg-primary rounded-md hover:opacity-80 transition-opacity duration-150 shadow-sm"
+          >
+            Bestel kleurstalen
+          </Link>
           <Link
             href="/kledingkast"
             className="relative z-10 px-5 py-2 text-sm font-semibold text-white bg-amber-500 rounded-md hover:opacity-80 transition-opacity duration-150 shadow-sm"

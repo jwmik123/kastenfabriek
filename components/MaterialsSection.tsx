@@ -1,4 +1,6 @@
 import Image from 'next/image'
+import Link from 'next/link'
+import { ArrowRight } from 'lucide-react'
 import { MATERIALS, ColorMaterial, TextureMaterial } from '@/app/(configurator)/kledingkast/materials'
 
 const colors = MATERIALS.filter((m): m is ColorMaterial => m.type === 'color')
@@ -12,16 +14,24 @@ export default function MaterialsSection() {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:justify-between items-center gap-8 mb-16">
           <div>
-          
             <h2 className="font-poppins text-5xl md:text-6xl font-bold leading-[1.05]">
               {colors.length} kleuren.<br />
               <span className="text-[var(--color-secondary)]">{textures.length} fineers.</span><br />
             </h2>
           </div>
-          <p className="md:max-w-[480px] text-gray-600 text-base leading-relaxed  self-start">
-            Al onze materialen zijn op voorraad. Bestel tot vijf gratis stalen en voel zelf —
-            een textuur zegt meer dan een schermweergave. Wij sturen binnen drie werkdagen.
-          </p>
+          <div className="md:max-w-[480px] self-start">
+            <p className="text-gray-600 text-base leading-relaxed">
+              Al onze materialen zijn op voorraad. Bestel tot drie gratis stalen en voel zelf —
+              een textuur zegt meer dan een schermweergave. Wij sturen binnen drie werkdagen.
+            </p>
+            <Link
+              href="/producten/materiaalstalen"
+              className="group mt-6 inline-flex items-center gap-2 rounded-full bg-[var(--color-secondary)] px-6 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90"
+            >
+              Bestel gratis materiaalstalen
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+            </Link>
+          </div>
         </div>
 
         {/* Card */}
@@ -35,17 +45,17 @@ export default function MaterialsSection() {
             </div>
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3 sm:gap-5 flex-1">
               {textures.map((texture) => (
-                <div key={texture.id} className="flex flex-col gap-2">
-                  <div className="w-full aspect-square rounded-sm overflow-hidden relative">
+                <div key={texture.id} className="group flex flex-col gap-2">
+                  <div className="w-full aspect-square rounded-sm overflow-hidden relative transition-shadow duration-300 group-hover:shadow-lg">
                     <Image
                       src={texture.preview.replace(/\.webp$/, '.jpg')}
                       alt={texture.name}
                       fill
-                      className="object-cover"
+                      className="object-cover transition-transform duration-500 ease-out group-hover:scale-125"
                       sizes="(max-width: 640px) 30vw, 160px"
                     />
                   </div>
-                  <span className="text-sm font-medium text-gray-800 leading-tight">{texture.name}</span>
+                  <span className="text-sm font-medium text-gray-800 leading-tight transition-colors group-hover:text-[var(--color-secondary)]">{texture.name}</span>
                 </div>
               ))}
             </div>
@@ -61,12 +71,12 @@ export default function MaterialsSection() {
             </div>
             <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-7 lg:grid-cols-10 gap-3 sm:gap-5 flex-1">
               {colors.map((color) => (
-                <div key={color.id} className="flex flex-col gap-2">
+                <div key={color.id} className="group flex flex-col gap-2">
                   <div
-                    className="w-full aspect-square rounded-sm border border-black/5"
+                    className="w-full aspect-square rounded-sm border border-black/5 transition-transform duration-300 ease-out group-hover:scale-110 group-hover:shadow-lg"
                     style={{ backgroundColor: color.color }}
                   />
-                  <span className="text-xs font-medium text-gray-700 leading-tight">{color.name}</span>
+                  <span className="text-xs font-medium text-gray-700 leading-tight transition-colors group-hover:text-[var(--color-secondary)]">{color.name}</span>
                 </div>
               ))}
             </div>

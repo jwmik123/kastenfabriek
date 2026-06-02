@@ -81,6 +81,23 @@ const paxMaterialSurcharge = defineType({
   },
 });
 
+const sampleConfig = defineType({
+  name: "sampleConfig",
+  title: "Stalen Configuratie",
+  type: "object",
+  fields: [
+    defineField({
+      name: "maxSelections",
+      title: "Max aantal stalen",
+      type: "number",
+      initialValue: 3,
+      description:
+        "Maximum aantal materialen dat een klant gratis kan aanvragen.",
+      validation: (Rule) => Rule.required().integer().min(1).max(10),
+    }),
+  ],
+});
+
 const paxConfig = defineType({
   name: "paxConfig",
   title: "PAX Configuratie",
@@ -188,7 +205,10 @@ export const product = defineType({
       title: "Producttype",
       type: "string",
       options: {
-        list: [{ title: "PAX Deuren", value: "pax-doors" }],
+        list: [
+          { title: "PAX Deuren", value: "pax-doors" },
+          { title: "Materiaalstalen", value: "samples" },
+        ],
         layout: "radio",
       },
       validation: (Rule) => Rule.required(),
@@ -219,7 +239,16 @@ export const product = defineType({
       title: "Hero afbeelding",
       type: "image",
       options: { hotspot: true },
-      validation: (Rule) => Rule.required(),
+      description: "Vereist, behalve voor materiaalstalen.",
+      validation: (Rule) =>
+        Rule.custom((value, context) => {
+          const productType = (context.document as { productType?: string } | undefined)
+            ?.productType;
+          if (productType !== "samples" && !value) {
+            return "Hero afbeelding is vereist.";
+          }
+          return true;
+        }),
     }),
     defineField({
       name: "gallery",
@@ -238,7 +267,23 @@ export const product = defineType({
       name: "deliveryFee",
       title: "Bezorgkosten (€)",
       type: "number",
-      validation: (Rule) => Rule.required().min(0),
+      hidden: ({ document }) => document?.productType === "samples",
+      description: "Niet van toepassing op materiaalstalen (altijd gratis).",
+      validation: (Rule) =>
+        Rule.min(0).custom((value, context) => {
+          const productType = (context.document as { productType?: string } | undefined)
+            ?.productType;
+          if (productType !== "samples" && (value === undefined || value === null)) {
+            return "Bezorgkosten zijn vereist.";
+          }
+          return true;
+        }),
+    }),
+    defineField({
+      name: "sampleConfig",
+      title: "Stalen Configuratie",
+      type: "sampleConfig",
+      hidden: ({ document }) => document?.productType !== "samples",
     }),
     defineField({
       name: "paxConfig",
@@ -273,4 +318,10 @@ export const product = defineType({
   },
 });
 
-export const productSchemaTypes = [paxVariant, paxMaterialSurcharge, paxConfig, product];
+export const productSchemaTypes = [
+  paxVariant,
+  paxMaterialSurcharge,
+  paxConfig,
+  sampleConfig,
+  product,
+];
