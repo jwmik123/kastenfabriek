@@ -7,7 +7,7 @@ import ClosetMaterial from '../materials/ClosetMaterial'
 import { Model as HingeModel } from './Hinge'
 import { HandleByType } from './Handles'
 import type { HandleMaterial, LeatherColor } from '../constants/handleMaterials'
-import { computeHandleY, DEFAULT_HANDLE_Y } from '../handleFit'
+import { computeHandleY, DEFAULT_HANDLE_Y, SAFETY, FALLBACK_HEIGHT_CM } from '../handleFit'
 import { trapShape, trapGeo } from '@/utils/debugGeometry'
 
 const DOOR_DEPTH = 0.018
@@ -30,6 +30,14 @@ interface DoorProps {
   doorHandleHeightCm?: number
   mirror?: boolean
   extendToFloor?: boolean
+  /**
+   * Override for the door's bottom edge (door-local y). Used for doors that
+   * sit ABOVE something (e.g. the open space above a washer) rather than
+   * resting on the module floor. When set, `extendToFloor` is ignored and the
+   * handle is placed near the bottom of the (upper) door instead of at the
+   * standard reach height.
+   */
+  bottomYOverride?: number
   /**
    * Ceiling profile in door-local coordinates: x runs 0..slotW, y is the
    * ceiling height at that x. Must include both endpoints; may include kink
@@ -73,6 +81,7 @@ export default function Door({
   doorHandleHeightCm,
   mirror = false,
   extendToFloor = false,
+  bottomYOverride,
   topProfile,
 }: DoorProps) {
   const pivotRef = useRef<any>(null)
@@ -85,7 +94,9 @@ export default function Door({
   // panel). Default door bottom ends at the bottom of the panel (door-local
   // y = SPACE). extendToFloor drops the bottom to world y = 0.02 (2 cm above
   // the scene floor) → door-local 0.02 - MODULE_FLOOR_Y.
-  const bottomY = extendToFloor ? 0.02 - MODULE_FLOOR_Y : SPACE
+  const bottomY = bottomYOverride != null
+    ? bottomYOverride
+    : extendToFloor ? 0.02 - MODULE_FLOOR_Y : SPACE
 
   const doorGeometry = useMemo(() => {
     const shape = buildDoorShape(slotW, topProfile, bottomY)
@@ -122,10 +133,14 @@ export default function Door({
   const handleX = mirror ? 0.055 - slotW : slotW - 0.055
   const hingeX  = mirror ? slotW - MODULE_WALL - 0.01 : MODULE_WALL + 0.01
   const doorHeightAtHandle = mirror ? leftH : rightH
-  const handleY = computeHandleY(
-    { doorHeightAtHandle },
-    { heightCm: doorHandleHeightCm },
-  )
+  // Upper doors (bottomYOverride) carry the handle near their lower edge — the
+  // natural reach point — instead of the standard full-door height.
+  const handleY = bottomYOverride != null
+    ? bottomY + SAFETY + (doorHandleHeightCm ?? FALLBACK_HEIGHT_CM) / 200
+    : computeHandleY(
+        { doorHeightAtHandle },
+        { heightCm: doorHandleHeightCm },
+      )
 
   useEffect(() => {
     if (!pivotRef.current || !posRef.current) return
@@ -151,7 +166,7 @@ export default function Door({
             <ClosetMaterial />
           </mesh>
 
-          {doorHandleId !== 'none' && handleY >= DEFAULT_HANDLE_Y && (
+          {doorHandleId !== 'none' && (handleY >= DEFAULT_HANDLE_Y || bottomYOverride != null) && (
             <HandleByType
               id={doorHandleId}
               meshId={doorHandleMeshId}

@@ -405,6 +405,7 @@ function SectionGroup({
               sectionModules={section.modules}
               sectionNeedsTopCabinet={isLow ? false : section.height > TOP_CABINET_THRESHOLD}
               sectionKind={kind}
+              washerDoorAbove={isWasher && !isLow}
             />
           )
         })}

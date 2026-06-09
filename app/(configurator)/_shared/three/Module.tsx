@@ -4,7 +4,7 @@ import { useMemo } from 'react'
 import * as THREE from 'three/webgpu'
 import { useGLTF } from '@react-three/drei'
 import { useConfiguratorStore } from '../store/context'
-import { resolveElementPositions } from '../../kledingkast/scene/moduleLayouts'
+import { resolveElementPositions, SHELF_THICKNESS } from '../../kledingkast/scene/moduleLayouts'
 import type { ModuleLayoutConfig, ElementBbox } from '../../kledingkast/scene/moduleLayouts'
 import { getDiagHeightAt, getBackDiagHeightAtZ, isFullHeight } from '../../kledingkast/scene/diagonalUtils'
 import type { DiagParams } from '../../kledingkast/scene/diagonalUtils'
@@ -40,6 +40,10 @@ interface ModuleProps {
   sectionModules?: BaseModuleSlot[]
   sectionNeedsTopCabinet?: boolean
   sectionKind?: 'high' | 'low'
+  // When true, render door(s) covering only the open space ABOVE the module's
+  // content (e.g. above a washer), flush with normal module doors. Independent
+  // of `hasDoor` — washer bodies have no full-height door of their own.
+  washerDoorAbove?: boolean
 }
 
 function wallHeightAt(xOuter: number, p: DiagParams, floorY: number = MODULE_FLOOR_Y): number {
@@ -152,6 +156,7 @@ export default function Module({
   sectionModules,
   sectionNeedsTopCabinet,
   sectionKind,
+  washerDoorAbove,
 }: ModuleProps) {
   const depth        = useConfiguratorStore((s) => s.depth) / 100
   const storeModuleCount = useConfiguratorStore((s) => s.moduleCount)
@@ -611,6 +616,77 @@ export default function Module({
               mirror
               extendToFloor={doorsExtendToFloor}
               topProfile={isBackDiag ? bdDoorProfile : rightDoorProfile}
+            />
+          </group>
+        </>
+      )}
+
+      {/* Shelf centered in the open zone above the content (e.g. above a
+          washer), midway between the content top and the ceiling. */}
+      {washerDoorAbove && roofY > fillAbove.start && (
+        <FillZone
+          config={{ type: 'fixedShelves', positions: [(fillAbove.start + roofY) / 2 + SHELF_THICKNESS / 2] }}
+          startY={fillAbove.start}
+          endY={roofY}
+          width={moduleWidth}
+          depth={contentDepth}
+          centerX={centerX}
+          centerZ={centerZ}
+          hasDoor={true}
+        />
+      )}
+
+      {/* Door(s) above the content (e.g. above a washer) — flush with normal
+          module doors, covering only the open zone from the content top to the
+          ceiling. Washers sit in a flat (non-diagonal) section. */}
+      {washerDoorAbove && span === 1 && (
+        <Door
+          key="door-above"
+          moduleHeight={roofY}
+          slotW={thisSlotW}
+          moduleDepth={moduleDepth}
+          doorsOpen={doorsOpen}
+          doorHandleId={doorHandleId}
+          doorHandleMaterial={doorHandleMaterial}
+          doorHandleBodyColor={doorHandleBodyColor}
+          doorHandleMeshId={doorHandleMeshId}
+          doorHandleHeightCm={doorHandleHeightCm}
+          mirror={mirrorDoor}
+          bottomYOverride={fillAbove.start}
+          topProfile={doorProfile}
+        />
+      )}
+      {washerDoorAbove && span === 2 && (
+        <>
+          <Door
+            key="door-above-L"
+            moduleHeight={roofY}
+            slotW={thisSlotW}
+            moduleDepth={moduleDepth}
+            doorsOpen={doorsOpen}
+            doorHandleId={doorHandleId}
+            doorHandleMaterial={doorHandleMaterial}
+            doorHandleBodyColor={doorHandleBodyColor}
+            doorHandleMeshId={doorHandleMeshId}
+            doorHandleHeightCm={doorHandleHeightCm}
+            bottomYOverride={fillAbove.start}
+            topProfile={leftDoorProfile}
+          />
+          <group position={[thisSlotW, 0, 0]}>
+            <Door
+              key="door-above-R"
+              moduleHeight={roofY}
+              slotW={nextSlotW}
+              moduleDepth={moduleDepth}
+              doorsOpen={doorsOpen}
+              doorHandleId={doorHandleId}
+              doorHandleMaterial={doorHandleMaterial}
+              doorHandleBodyColor={doorHandleBodyColor}
+              doorHandleMeshId={doorHandleMeshId}
+              doorHandleHeightCm={doorHandleHeightCm}
+              mirror
+              bottomYOverride={fillAbove.start}
+              topProfile={rightDoorProfile}
             />
           </group>
         </>
