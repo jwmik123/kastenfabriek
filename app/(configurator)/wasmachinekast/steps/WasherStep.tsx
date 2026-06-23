@@ -5,6 +5,7 @@ import { useWasmachinekastStore } from '../store'
 import { WASHER_LAYOUTS } from '../moduleLayouts'
 import { filterForSection } from '../sections/wasmModuleLayoutFilter'
 import { WashingMachine, Trash2, Plus } from 'lucide-react'
+import { WASHER_LAYOUT_SVGS } from '../components/WasherLayoutSvgs'
 import { cn } from '@/lib/utils'
 import {
   Tooltip,
@@ -173,13 +174,18 @@ export default function WasherStep() {
           <div className="flex flex-col gap-2">
             {washerModules.map((w) => {
               const layout = WASHER_LAYOUTS.find((l) => l.layoutId === w.layoutId)
+              const PlacedSvg = WASHER_LAYOUT_SVGS[w.layoutId]
               return (
                 <div
                   key={w.slotIndex}
                   className="flex items-center justify-between gap-3 p-3 rounded-lg border border-border/50 bg-muted/20"
                 >
                   <div className="flex items-center gap-3">
-                    <WashingMachine className="w-5 h-5 shrink-0 text-muted-foreground" />
+                    {PlacedSvg ? (
+                      <PlacedSvg className="w-6 h-6 shrink-0 text-muted-foreground" />
+                    ) : (
+                      <WashingMachine className="w-5 h-5 shrink-0 text-muted-foreground" />
+                    )}
                     <div>
                       <div className="text-sm font-medium">{layout?.name ?? `Layout ${w.layoutId}`}</div>
                       <div className="text-xs text-muted-foreground">Vak {w.slotIndex + 1}</div>
@@ -211,6 +217,7 @@ export default function WasherStep() {
             <div className="flex flex-col gap-3">
               {availableWasherLayouts.map((layout) => {
                 const isSelected = selectedLayoutId === layout.layoutId
+                const LayoutSvg = WASHER_LAYOUT_SVGS[layout.layoutId]
                 return (
                   <button
                     key={layout.layoutId}
@@ -222,7 +229,11 @@ export default function WasherStep() {
                         : 'border-border hover:border-primary/50',
                     )}
                   >
-                    <WashingMachine className="w-8 h-8 shrink-0 text-muted-foreground" />
+                    {LayoutSvg ? (
+                      <LayoutSvg className="w-10 h-10 shrink-0 text-muted-foreground" />
+                    ) : (
+                      <WashingMachine className="w-8 h-8 shrink-0 text-muted-foreground" />
+                    )}
                     <div>
                       <div className="text-sm font-medium">{layout.name}</div>
                       <div className="text-xs text-muted-foreground mt-0.5">{layout.description}</div>

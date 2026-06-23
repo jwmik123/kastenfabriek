@@ -7,6 +7,7 @@ import { useWasmachinekastStore } from '../store'
 import { ClosetMaterialProvider } from '../../_shared/materials/ClosetMaterial'
 import ClosetCorpus from '../../_shared/three/ClosetCorpus'
 import Module from '../../_shared/three/Module'
+import { TopCabinetSlot } from '../../kledingkast/scene/TopCabinet'
 import type { DiagParams } from '../../kledingkast/scene/diagonalUtils'
 import { WALL, ONDERSTEL_HEIGHT, ONDERSTEL_GAP, CLOSET_INSIDE_INSET, MODULE_FLOOR_Y } from '../../kledingkast/scene/closetConstants'
 import { useGLTF } from '@react-three/drei'
@@ -304,6 +305,69 @@ function WerkbladSlabMesh({ widthM, depthM, thicknessM, y }: { widthM: number; d
   )
 }
 
+// Top cabinet interior for a high section taller than 275cm. Mirrors the
+// kledingkast flat-case TopCabinet: a divider floor at mainHeight, per-slot
+// dividers, doors, middle shelf and ceiling. High sections are always flat
+// (no diagonals), so the flat TopCabinetSlot is reused directly.
+function WasmTopCabinet({
+  widthM,
+  heightCm,
+  mainHeightM,
+  depthM,
+  modules,
+}: {
+  widthM: number
+  heightCm: number
+  mainHeightM: number
+  depthM: number
+  modules: BaseModuleSlot[]
+}) {
+  const doorsOpen = useWasmachinekastStore((s) => s.doorsOpen)
+
+  const SIDE_WALL_EXTRA_M = 0.005
+  const innerW = widthM - WALL * 2
+  const moduleDepth = depthM - WALL - CLOSET_INSIDE_INSET
+  const ceilH = heightCm / 100 - SIDE_WALL_EXTRA_M
+  const flatH = ceilH - mainHeightM - WALL
+
+  const slotWidthsM = useMemo(() => computeSlotWidthsM(modules, innerW), [modules, innerW])
+
+  if (flatH <= WALL * 2) return null
+
+  const startX = -innerW / 2
+  let offset = 0
+
+  return (
+    <group position={[0, mainHeightM, WALL]}>
+      {modules.map((m, i) => {
+        const slotW = slotWidthsM[i] ?? 0
+        const x = startX + offset
+        offset += slotW
+        if (slotW <= WALL * 2) return null
+        const mirror = i % 2 === 1 || i === modules.length - 1
+        const roofProfile = [
+          { x: 0, y: flatH },
+          { x: slotW, y: flatH },
+        ]
+        return (
+          <group key={i} position={[x, 0, 0]}>
+            <TopCabinetSlot
+              slotW={slotW}
+              moduleDepth={moduleDepth}
+              roofProfile={roofProfile}
+              leftH={flatH}
+              rightH={flatH}
+              flatH={flatH}
+              doorsOpen={doorsOpen}
+              mirror={mirror}
+            />
+          </group>
+        )
+      })}
+    </group>
+  )
+}
+
 interface SectionGroupProps {
   section: SectionRender
   kind: 'high' | 'low'
@@ -409,6 +473,15 @@ function SectionGroup({
             />
           )
         })}
+      {!isLow && needsTop && (
+        <WasmTopCabinet
+          widthM={widthM}
+          heightCm={heightCm}
+          mainHeightM={mainHeightCm / 100}
+          depthM={depthM}
+          modules={section.modules}
+        />
+      )}
       {enableSlotInteraction &&
         section.modules.map((m, i) => {
           const isConsumed = i > 0 && section.modules[i - 1].span === 2

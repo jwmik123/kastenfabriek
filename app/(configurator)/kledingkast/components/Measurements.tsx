@@ -1,280 +1,213 @@
 'use client'
 
-import { useRef, useEffect, useMemo } from 'react'
-import { useFrame, useThree } from '@react-three/fiber'
-import * as THREE from 'three/webgpu'
+import { useMemo } from 'react'
 import { useClosetStore } from '../store'
 import { getLayoutById } from '../scene/moduleLayouts'
-
+import {
+  getDiagHeightAt,
+  getBackDiagHeightAtZ,
+  computeModuleCapY,
+  type DiagParams,
+} from '../scene/diagonalUtils'
 import { WALL, MODULE_WALL, MODULE_FLOOR_Y } from '../scene/closetConstants'
+import {
+  MeasurementProjector,
+  MeasurementsOverlay,
+  type ProjectedMap,
+} from '../../_shared/measurements/MeasurementShell'
+import type { MeasurementSpec } from '../../_shared/measurements/types'
+import { resolveRodMeasurements } from '../../_shared/measurements/rodMeasurements'
+import { diagonalSegments } from '../../_shared/measurements/diagonalSegments'
 
-// --- Types ---
+export type { ProjectedMap }
 
-interface MeasurementSpec {
-  id: string
-  p1: THREE.Vector3
-  p2: THREE.Vector3
-  offsetDir: THREE.Vector3
-  offsetDist: number
-  labelCm: any
+interface BuilderInput {
+  widthM: number
+  heightM: number
+  depthM: number
+  widthCm: number
+  heightCm: number
+  depthCm: number
+  moduleCount: number
+  modules: { slotIndex: number; layoutId: number | null; span: 1 | 2 }[]
+  diag: DiagParams
+  sideWallM: number
 }
 
-interface ProjectedLine {
-  x1: number; y1: number
-  x2: number; y2: number
-  mx: number; my: number
-  tx: number; ty: number  // perpendicular unit vector in screen space (for ticks)
-  visible: boolean
+/** Per-module interior roof height (module space, 0 = floor), mirroring Module.tsx. */
+function moduleRoofY(diag: DiagParams, leftXOuter: number, rightXOuter: number): number {
+  if (diag.backDiagonal) {
+    const hBack = Math.min(getBackDiagHeightAtZ(WALL, diag), diag.moduleCapY) - MODULE_FLOOR_Y - WALL
+    return Math.max(0, hBack)
+  }
+  const lh = getDiagHeightAt(leftXOuter, diag) - MODULE_FLOOR_Y - WALL
+  const rh = getDiagHeightAt(rightXOuter, diag) - MODULE_FLOOR_Y - WALL
+  return Math.max(0, Math.min(lh, rh))
 }
 
-export type ProjectedMap = Record<string, ProjectedLine>
+/** Pure: build the full kledingkast measurement spec list. */
+export function buildKledingkastSpecs(input: BuilderInput): MeasurementSpec[] {
+  const { widthM, heightM, depthM, widthCm, heightCm, depthCm, moduleCount, modules, diag, sideWallM } = input
+  const innerW = widthM - sideWallM * 2
+  const slotW = moduleCount > 0 ? innerW / moduleCount : innerW
+  const frontZ = depthM + 0.02
 
-// --- Build measurement specs from store ---
+  const specs: MeasurementSpec[] = []
 
-function useMeasurementSpecs(): MeasurementSpec[] {
-  const widthM      = useClosetStore(s => s.width)  / 100
-  const heightM     = useClosetStore(s => s.height) / 100
-  const depthM      = useClosetStore(s => s.depth)  / 100
-  const moduleCount = useClosetStore(s => s.moduleCount)
-  const modules     = useClosetStore(s => s.modules)
-  const widthCm     = useClosetStore(s => s.width)
-  const heightCm    = useClosetStore(s => s.height)
-
-  return useMemo(() => {
-    const innerW = widthM - WALL * 2
-    const slotW  = innerW / moduleCount
-    const frontZ = depthM + 0.02
-
-    const specs: MeasurementSpec[] = []
-
-    // 1. Total width — horizontal, below the closet floor
-    specs.push({
-      id: 'total-width',
-      p1: new THREE.Vector3(-widthM / 2, 0, frontZ),
-      p2: new THREE.Vector3( widthM / 2, 0, frontZ),
-      offsetDir: new THREE.Vector3(0, -1, 0),
-      offsetDist: 0.14,
-      labelCm: widthCm,
-    })
-
-    // 2. Total height — vertical, left of the closet
-    specs.push({
-      id: 'total-height',
-      p1: new THREE.Vector3(-widthM / 2, 0,       frontZ),
-      p2: new THREE.Vector3(-widthM / 2, heightM, frontZ),
-      offsetDir: new THREE.Vector3(-1, 0, 0),
-      offsetDist: 0.22,
-      labelCm: heightCm,
-    })
-
-    // 3. Per-module inner clear widths — horizontal, at MODULE_FLOOR_Y height
-    //    Spans from inner left face to inner right face of each slot
-    for (let i = 0; i < moduleCount; i++) {
-      const x1 = -innerW / 2 + i * slotW + MODULE_WALL
-      const x2 = -innerW / 2 + (i + 1) * slotW - MODULE_WALL
-      specs.push({
-        id: `module-width-${i}`,
-        p1: new THREE.Vector3(x1, MODULE_FLOOR_Y, frontZ),
-        p2: new THREE.Vector3(x2, MODULE_FLOOR_Y, frontZ),
-        offsetDir: new THREE.Vector3(0, -1, 0),
-        offsetDist: 0.06,
-        labelCm:((x2 - x1) * 100).toFixed(1),
-      })
-    }
-
-    // 4. Special element heights — vertical marker per module, sized from layout metadata.
-    //    Driven by minSlotHeight for now; runtime bbox-driven measurements land in slice 3.
-    for (const mod of modules) {
-      if (mod.layoutId === null) continue
-      const layout = getLayoutById(mod.layoutId)
-      const h = layout?.minSlotHeight ?? 0
-      if (!layout || h <= 0) continue
-
-      const x = -innerW / 2 + mod.slotIndex * slotW + MODULE_WALL + 0.02
-
-      specs.push({
-        id: `special-height-${mod.slotIndex}`,
-        p1: new THREE.Vector3(x, MODULE_FLOOR_Y,     frontZ),
-        p2: new THREE.Vector3(x, MODULE_FLOOR_Y + h, frontZ),
-        offsetDir: new THREE.Vector3(1, 0, 0),
-        offsetDist: 0,
-        labelCm: Math.round(h * 100),
-      })
-    }
-
-    return specs
-  }, [widthM, heightM, depthM, moduleCount, modules, widthCm, heightCm])
-}
-
-// --- MeasurementProjector: lives inside <Canvas> ---
-
-interface ProjectorProps {
-  projectedRef: React.MutableRefObject<ProjectedMap>
-  specs: MeasurementSpec[]
-}
-
-export function MeasurementProjector({ projectedRef, specs }: ProjectorProps) {
-  const { camera, size } = useThree()
-
-  useFrame(() => {
-    
-    for (const spec of specs) {
-      const offset = spec.offsetDir.clone().multiplyScalar(spec.offsetDist)
-      const s3 = spec.p1.clone().add(offset)
-      const e3 = spec.p2.clone().add(offset)
-
-      const sv = s3.clone().project(camera)
-      const ev = e3.clone().project(camera)
-
-      if (sv.z > 1 || ev.z > 1) {
-        const existing = projectedRef.current[spec.id]
-        if (existing) existing.visible = false
-        continue
-      }
-
-      const sx = (sv.x + 1) / 2 * size.width
-      const sy = (1 - sv.y) / 2 * size.height
-      const ex = (ev.x + 1) / 2 * size.width
-      const ey = (1 - ev.y) / 2 * size.height
-
-      const dx = ex - sx
-      const dy = ey - sy
-      const len = Math.sqrt(dx * dx + dy * dy)
-
-      projectedRef.current[spec.id] = {
-        x1: sx, y1: sy,
-        x2: ex, y2: ey,
-        mx: (sx + ex) / 2,
-        my: (sy + ey) / 2,
-        tx: len > 0 ? -dy / len : 0,
-        ty: len > 0 ?  dx / len : 0,
-        visible: true,
-      }
-    }
+  // 1. Total width — below the floor.
+  specs.push({
+    id: 'total-width',
+    p1: { x: -widthM / 2, y: 0, z: frontZ },
+    p2: { x: widthM / 2, y: 0, z: frontZ },
+    offsetDir: { x: 0, y: -1, z: 0 },
+    offsetDist: 0.14,
+    label: widthCm,
   })
 
-  return null
-}
+  // 2. Total height — left of the closet.
+  specs.push({
+    id: 'total-height',
+    p1: { x: -widthM / 2, y: 0, z: frontZ },
+    p2: { x: -widthM / 2, y: heightM, z: frontZ },
+    offsetDir: { x: -1, y: 0, z: 0 },
+    offsetDist: 0.22,
+    label: heightCm,
+  })
 
-// --- MeasurementsOverlay: lives outside <Canvas> ---
+  // 3. Depth — along Z on the right side, at the floor.
+  specs.push({
+    id: 'total-depth',
+    p1: { x: widthM / 2, y: 0, z: 0 },
+    p2: { x: widthM / 2, y: 0, z: depthM },
+    offsetDir: { x: 1, y: 0, z: 0 },
+    offsetDist: 0.06,
+    label: depthCm,
+  })
 
-const TICK_PX = 8
+  // 4. Per-module inner clear widths — at MODULE_FLOOR_Y.
+  for (let i = 0; i < moduleCount; i++) {
+    const x1 = -innerW / 2 + i * slotW + MODULE_WALL
+    const x2 = -innerW / 2 + (i + 1) * slotW - MODULE_WALL
+    specs.push({
+      id: `module-width-${i}`,
+      p1: { x: x1, y: MODULE_FLOOR_Y, z: frontZ },
+      p2: { x: x2, y: MODULE_FLOOR_Y, z: frontZ },
+      offsetDir: { x: 0, y: -1, z: 0 },
+      offsetDist: 0.06,
+      label: ((x2 - x1) * 100).toFixed(1),
+    })
+  }
 
-interface OverlayProps {
-  projectedRef: React.MutableRefObject<ProjectedMap>
-  specs: MeasurementSpec[]
-}
+  // 5. Rail (roede) measurements — per module that hosts a rail.
+  for (const mod of modules) {
+    if (mod.layoutId === null) continue
+    const layout = getLayoutById(mod.layoutId)
+    if (!layout) continue
 
-function MeasurementsOverlay({ projectedRef, specs }: OverlayProps) {
-  const containerRef = useRef<HTMLDivElement>(null)
+    const leftXOuter = sideWallM + mod.slotIndex * slotW
+    const moduleWidth = mod.span * slotW
+    const rightXOuter = leftXOuter + moduleWidth
+    const roofY = moduleRoofY(diag, leftXOuter, rightXOuter)
+    if (roofY <= 0) continue
 
-  const elCacheRef = useRef<Map<string, {
-    line:  SVGLineElement | null
-    tickL: SVGLineElement | null
-    tickR: SVGLineElement | null
-    label: HTMLDivElement | null
-  }>>(new Map())
+    const rods = resolveRodMeasurements(layout, roofY)
+    if (rods.length === 0) continue
 
-  // Re-cache DOM elements whenever specs change (e.g. module count changes)
-  useEffect(() => {
-    const root = containerRef.current
-    if (!root) return
-    const cache = new Map<string, { line: SVGLineElement | null; tickL: SVGLineElement | null; tickR: SVGLineElement | null; label: HTMLDivElement | null }>()
-    for (const spec of specs) {
-      cache.set(spec.id, {
-        line:  root.querySelector(`[data-line="${spec.id}"]`),
-        tickL: root.querySelector(`[data-tickl="${spec.id}"]`),
-        tickR: root.querySelector(`[data-tickr="${spec.id}"]`),
-        label: root.querySelector(`[data-label="${spec.id}"]`),
-      })
-    }
-    elCacheRef.current = cache
-  }, [specs])
+    const cx = -innerW / 2 + mod.slotIndex * slotW + moduleWidth / 2
+    const roofWorldY = MODULE_FLOOR_Y + roofY
 
-  // RAF loop — direct DOM mutation, zero React re-renders
-  useEffect(() => {
-    let rafId: number
-
-    const update = () => {
-      const map = projectedRef.current
-
-      for (const [id, els] of elCacheRef.current) {
-        if (!els) continue
-        const p = map[id]
-        const show = p?.visible ? '' : 'none'
-
-        if (els.line)  els.line.style.display  = show
-        if (els.tickL) els.tickL.style.display = show
-        if (els.tickR) els.tickR.style.display = show
-        if (els.label) els.label.style.display = p?.visible ? 'block' : 'none'
-
-        if (!p?.visible) continue
-
-        if (els.line) {
-          els.line.setAttribute('x1', String(p.x1))
-          els.line.setAttribute('y1', String(p.y1))
-          els.line.setAttribute('x2', String(p.x2))
-          els.line.setAttribute('y2', String(p.y2))
-        }
-        if (els.tickL) {
-          els.tickL.setAttribute('x1', String(p.x1 - p.tx * TICK_PX))
-          els.tickL.setAttribute('y1', String(p.y1 - p.ty * TICK_PX))
-          els.tickL.setAttribute('x2', String(p.x1 + p.tx * TICK_PX))
-          els.tickL.setAttribute('y2', String(p.y1 + p.ty * TICK_PX))
-        }
-        if (els.tickR) {
-          els.tickR.setAttribute('x1', String(p.x2 - p.tx * TICK_PX))
-          els.tickR.setAttribute('y1', String(p.y2 - p.ty * TICK_PX))
-          els.tickR.setAttribute('x2', String(p.x2 + p.tx * TICK_PX))
-          els.tickR.setAttribute('y2', String(p.y2 + p.ty * TICK_PX))
-        }
-        if (els.label) {
-          els.label.style.left = `${p.mx}px`
-          els.label.style.top  = `${p.my}px`
-        }
+    for (const rod of rods) {
+      const railWorldY = MODULE_FLOOR_Y + rod.topY
+      if (rod.half === 'upper') {
+        // Roof → rail (hanging clearance).
+        specs.push({
+          id: `rod-${mod.slotIndex}-${rod.elementIndex}`,
+          p1: { x: cx, y: roofWorldY, z: frontZ },
+          p2: { x: cx, y: railWorldY, z: frontZ },
+          offsetDir: { x: 0, y: 0, z: 0 },
+          offsetDist: 0,
+          label: Math.round((roofY - rod.topY) * 100),
+        })
+      } else {
+        // Floor → rail top side.
+        specs.push({
+          id: `rod-${mod.slotIndex}-${rod.elementIndex}`,
+          p1: { x: cx, y: MODULE_FLOOR_Y, z: frontZ },
+          p2: { x: cx, y: railWorldY, z: frontZ },
+          offsetDir: { x: 0, y: 0, z: 0 },
+          offsetDist: 0,
+          label: Math.round(rod.topY * 100),
+        })
       }
-
-      rafId = requestAnimationFrame(update)
     }
+  }
 
-    rafId = requestAnimationFrame(update)
-    return () => cancelAnimationFrame(rafId)
-  }, [projectedRef])
+  // 6. Slope (schuinte) edges.
+  specs.push(...diagonalSegments(diag, frontZ))
 
-  return (
-    <div ref={containerRef} className="absolute inset-0 pointer-events-none overflow-hidden">
-      <svg className="absolute inset-0 w-full h-full" overflow="visible">
-        {specs.map(s => (
-          <g key={s.id}>
-            <line data-line={s.id}  stroke="currentColor" strokeWidth="1" className="text-white" />
-            <line data-tickl={s.id} stroke="currentColor" strokeWidth="1" className="text-white" />
-            <line data-tickr={s.id} stroke="currentColor" strokeWidth="1" className="text-white" />
-          </g>
-        ))}
-      </svg>
-
-      {specs.map(s => (
-        <div
-          key={s.id}
-          data-label={s.id}
-          className="measurement-label bg-background text-foreground text-xs font-medium px-1 rounded"
-          style={{ position: 'absolute', transform: 'translate(-50%, -50%)' }}
-        >
-          {s.labelCm} cm
-        </div>
-      ))}
-    </div>
-  )
+  return specs
 }
 
-// --- Public exports: gated on showMeasurements ---
+function useMeasurementSpecs(): MeasurementSpec[] {
+  const widthCm = useClosetStore((s) => s.width)
+  const heightCm = useClosetStore((s) => s.height)
+  const depthCm = useClosetStore((s) => s.depth)
+  const moduleCount = useClosetStore((s) => s.moduleCount)
+  const modules = useClosetStore((s) => s.modules)
+  const diagonalSide = useClosetStore((s) => s.diagonalSide)
+  const leftDiagStartHeight = useClosetStore((s) => s.leftDiagStartHeight)
+  const rightDiagStartHeight = useClosetStore((s) => s.rightDiagStartHeight)
+  const leftDiagTopWidth = useClosetStore((s) => s.leftDiagTopWidth)
+  const rightDiagTopWidth = useClosetStore((s) => s.rightDiagTopWidth)
+  const backDiagonal = useClosetStore((s) => s.backDiagonal)
+  const backDiagKinkHeight = useClosetStore((s) => s.backDiagKinkHeight)
+  const backDiagFlatSectionDepth = useClosetStore((s) => s.backDiagFlatSectionDepth)
+  const sidePanelThickness = useClosetStore((s) => s.sidePanelThickness)
+  const mainHeightCm = useClosetStore((s) => s.mainHeight())
+  const needsTop = useClosetStore((s) => s.needsTopCabinet())
+
+  return useMemo(() => {
+    const widthM = widthCm / 100
+    const heightM = heightCm / 100
+    const depthM = depthCm / 100
+    const sideWallM = sidePanelThickness === '36mm' ? 0.036 : 0.018
+
+    const base: DiagParams = {
+      diagonalSide,
+      leftDiagStartHeight: Math.min(leftDiagStartHeight, mainHeightCm - 20) / 100,
+      rightDiagStartHeight: Math.min(rightDiagStartHeight, mainHeightCm - 20) / 100,
+      leftDiagTopWidth: leftDiagTopWidth / 100,
+      rightDiagTopWidth: rightDiagTopWidth / 100,
+      outerWidth: widthM,
+      mainHeight: mainHeightCm / 100,
+      closetHeight: heightM,
+      backDiagonal,
+      backDiagKinkHeight: backDiagKinkHeight / 100,
+      backDiagFlatSectionDepth: backDiagFlatSectionDepth / 100,
+      outerDepth: depthM,
+      moduleCapY: mainHeightCm / 100,
+      sideWallThickness: sideWallM,
+    }
+    const diag: DiagParams = { ...base, moduleCapY: computeModuleCapY(base, needsTop) }
+
+    return buildKledingkastSpecs({
+      widthM, heightM, depthM, widthCm, heightCm, depthCm,
+      moduleCount, modules, diag, sideWallM,
+    })
+  }, [
+    widthCm, heightCm, depthCm, moduleCount, modules, diagonalSide,
+    leftDiagStartHeight, rightDiagStartHeight, leftDiagTopWidth, rightDiagTopWidth,
+    backDiagonal, backDiagKinkHeight, backDiagFlatSectionDepth, sidePanelThickness,
+    mainHeightCm, needsTop,
+  ])
+}
 
 export function MeasurementProjectorLayer({
   projectedRef,
 }: {
   projectedRef: React.MutableRefObject<ProjectedMap>
 }) {
-  const show  = useClosetStore(s => s.showMeasurements)
+  const show = useClosetStore((s) => s.showMeasurements)
   const specs = useMeasurementSpecs()
   if (!show) return null
   return <MeasurementProjector projectedRef={projectedRef} specs={specs} />
@@ -285,7 +218,7 @@ export function MeasurementsOverlayLayer({
 }: {
   projectedRef: React.MutableRefObject<ProjectedMap>
 }) {
-  const show  = useClosetStore(s => s.showMeasurements)
+  const show = useClosetStore((s) => s.showMeasurements)
   const specs = useMeasurementSpecs()
   if (!show) return null
   return <MeasurementsOverlay projectedRef={projectedRef} specs={specs} />

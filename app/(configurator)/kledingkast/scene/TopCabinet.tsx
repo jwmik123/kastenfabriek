@@ -274,7 +274,7 @@ interface SlotProps {
   mirror: boolean
 }
 
-function TopCabinetSlot({
+export function TopCabinetSlot({
   slotW, moduleDepth, roofProfile, leftH, rightH, flatH, doorsOpen, mirror,
 }: SlotProps) {
   const pivotRef = useRef<any>(null)

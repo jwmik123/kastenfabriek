@@ -6,6 +6,7 @@ import { WASHER_LAYOUTS } from '../moduleLayouts'
 import { canFitFixedWidth } from '../../_shared/store/slotWidths'
 import { filterForSection } from '../sections/wasmModuleLayoutFilter'
 import { LAYOUT_SVGS } from '../../kledingkast/components/LayoutSvgs'
+import { WASHER_LAYOUT_SVGS } from './WasherLayoutSvgs'
 import { Toggle } from '@/components/ui/Toggle'
 import { cn } from '@/lib/utils'
 
@@ -135,7 +136,7 @@ export default function ModuleConfigCard({ className }: { className?: string }) 
             className="grid grid-cols-4 gap-2"
           >
             {availableLayouts.map((layoutItem) => {
-              const LayoutSvg = LAYOUT_SVGS[layoutItem.layoutId]
+              const LayoutSvg = LAYOUT_SVGS[layoutItem.layoutId] ?? WASHER_LAYOUT_SVGS[layoutItem.layoutId]
               const active = activeLayoutId === layoutItem.layoutId
               // Fixed-width modules (minSlotWidth) shrink their variable
               // neighbours, so availability depends on total section space,

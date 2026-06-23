@@ -1,224 +1,141 @@
 'use client'
 
-import { useRef, useEffect, useMemo } from 'react'
-import { useFrame, useThree } from '@react-three/fiber'
-import * as THREE from 'three/webgpu'
+import { useMemo } from 'react'
 import { useWasmachinekastStore } from '../store'
 import { WALL, MODULE_WALL, MODULE_FLOOR_Y } from '../../kledingkast/scene/closetConstants'
 import { computeSlotWidthsM } from '../../_shared/store/slotWidths'
+import {
+  MeasurementProjector,
+  MeasurementsOverlay,
+  type ProjectedMap,
+} from '../../_shared/measurements/MeasurementShell'
+import type { MeasurementSpec } from '../../_shared/measurements/types'
+import type { BaseModuleSlot } from '../../_shared/store/types'
 
-interface MeasurementSpec {
-  id: string
-  p1: THREE.Vector3
-  p2: THREE.Vector3
-  offsetDir: THREE.Vector3
-  offsetDist: number
-  labelCm: string | number
+export type { ProjectedMap }
+
+interface SectionInput {
+  kind: 'high' | 'low'
+  widthCm: number
+  heightCm: number
+  modules: BaseModuleSlot[]
+  xOffsetM: number
 }
 
-interface ProjectedLine {
-  x1: number; y1: number
-  x2: number; y2: number
-  mx: number; my: number
-  tx: number; ty: number
-  visible: boolean
-}
+/**
+ * Pure: build wasmachinekast measurement specs. Walks the resolved sections in
+ * the same X-order and offsets the scene uses, so module-width lines land on the
+ * actual modules in every layout (high-only, low-only, low-left, low-right).
+ */
+export function buildWasmSpecs(sections: SectionInput[], depthCm: number): MeasurementSpec[] {
+  const depthM = depthCm / 100
+  const frontZ = depthM + 0.02
+  const specs: MeasurementSpec[] = []
+  let rightMostX = -Infinity
 
-export type ProjectedMap = Record<string, ProjectedLine>
-
-function useWasmMeasurementSpecs(): MeasurementSpec[] {
-  const widthM = useWasmachinekastStore((s) => s.width) / 100
-  const heightM = useWasmachinekastStore((s) => s.height) / 100
-  const depthM = useWasmachinekastStore((s) => s.depth) / 100
-  const allModules = useWasmachinekastStore((s) => s.modules)
-  const widthCm = useWasmachinekastStore((s) => s.width)
-  const heightCm = useWasmachinekastStore((s) => s.height)
-
-  return useMemo(() => {
+  for (const section of sections) {
+    const widthM = section.widthCm / 100
+    const heightM = section.heightCm / 100
     const innerW = widthM - WALL * 2
-    const slotWidthsM = computeSlotWidthsM(allModules, innerW)
-    const frontZ = depthM + 0.02
-    const specs: MeasurementSpec[] = []
+    const leftEdge = section.xOffsetM - widthM / 2
+    rightMostX = Math.max(rightMostX, section.xOffsetM + widthM / 2)
 
+    // Section total width — below the floor.
     specs.push({
-      id: 'total-width',
-      p1: new THREE.Vector3(-widthM / 2, 0, frontZ),
-      p2: new THREE.Vector3(widthM / 2, 0, frontZ),
-      offsetDir: new THREE.Vector3(0, -1, 0),
+      id: `section-width-${section.kind}`,
+      p1: { x: leftEdge, y: 0, z: frontZ },
+      p2: { x: section.xOffsetM + widthM / 2, y: 0, z: frontZ },
+      offsetDir: { x: 0, y: -1, z: 0 },
       offsetDist: 0.14,
-      labelCm: widthCm,
+      label: section.widthCm,
     })
 
+    // Section height — left edge.
     specs.push({
-      id: 'total-height',
-      p1: new THREE.Vector3(-widthM / 2, 0, frontZ),
-      p2: new THREE.Vector3(-widthM / 2, heightM, frontZ),
-      offsetDir: new THREE.Vector3(-1, 0, 0),
-      offsetDist: 0.22,
-      labelCm: heightCm,
+      id: `section-height-${section.kind}`,
+      p1: { x: leftEdge, y: 0, z: frontZ },
+      p2: { x: leftEdge, y: heightM, z: frontZ },
+      offsetDir: { x: -1, y: 0, z: 0 },
+      offsetDist: 0.18,
+      label: section.heightCm,
     })
 
+    // Per-module clear widths.
+    const slotWidthsM = computeSlotWidthsM(section.modules, innerW)
     let xOffset = 0
-    for (let i = 0; i < allModules.length; i++) {
+    for (let i = 0; i < section.modules.length; i++) {
       const slotW = slotWidthsM[i]
-      const x1 = -innerW / 2 + xOffset + MODULE_WALL
-      const x2 = -innerW / 2 + xOffset + slotW - MODULE_WALL
+      const slotLeft = section.xOffsetM - innerW / 2 + xOffset
+      const x1 = slotLeft + MODULE_WALL
+      const x2 = slotLeft + slotW - MODULE_WALL
       specs.push({
-        id: `module-width-${i}`,
-        p1: new THREE.Vector3(x1, MODULE_FLOOR_Y, frontZ),
-        p2: new THREE.Vector3(x2, MODULE_FLOOR_Y, frontZ),
-        offsetDir: new THREE.Vector3(0, -1, 0),
+        id: `module-width-${section.kind}-${i}`,
+        p1: { x: x1, y: MODULE_FLOOR_Y, z: frontZ },
+        p2: { x: x2, y: MODULE_FLOOR_Y, z: frontZ },
+        offsetDir: { x: 0, y: -1, z: 0 },
         offsetDist: 0.06,
-        labelCm: ((x2 - x1) * 100).toFixed(1),
+        label: ((x2 - x1) * 100).toFixed(1),
       })
       xOffset += slotW
     }
+  }
 
-    return specs
-  }, [widthM, heightM, depthM, allModules, widthCm, heightCm])
+  // Shared depth — along Z on the right of the whole assembly, at the floor.
+  if (Number.isFinite(rightMostX)) {
+    specs.push({
+      id: 'total-depth',
+      p1: { x: rightMostX, y: 0, z: 0 },
+      p2: { x: rightMostX, y: 0, z: depthM },
+      offsetDir: { x: 1, y: 0, z: 0 },
+      offsetDist: 0.06,
+      label: depthCm,
+    })
+  }
+
+  return specs
 }
 
-function WasmMeasurementProjector({
-  projectedRef,
-  specs,
-}: {
-  projectedRef: React.MutableRefObject<ProjectedMap>
-  specs: MeasurementSpec[]
-}) {
-  const { camera, size } = useThree()
+function useWasmMeasurementSpecs(): MeasurementSpec[] {
+  const layout = useWasmachinekastStore((s) => s.layout)
+  const topWidth = useWasmachinekastStore((s) => s.width)
+  const topHeight = useWasmachinekastStore((s) => s.height)
+  const topModules = useWasmachinekastStore((s) => s.modules)
+  const depthCm = useWasmachinekastStore((s) => s.depth)
+  const lowSection = useWasmachinekastStore((s) => s.lowSection)
 
-  useFrame(() => {
-    for (const spec of specs) {
-      const offset = spec.offsetDir.clone().multiplyScalar(spec.offsetDist)
-      const s3 = spec.p1.clone().add(offset)
-      const e3 = spec.p2.clone().add(offset)
-      const sv = s3.clone().project(camera)
-      const ev = e3.clone().project(camera)
+  return useMemo(() => {
+    const isLowOnly = layout === 'low-only'
+    const isDual = layout === 'low-left' || layout === 'low-right'
 
-      if (sv.z > 1 || ev.z > 1) {
-        const existing = projectedRef.current[spec.id]
-        if (existing) existing.visible = false
-        continue
-      }
+    // Resolve sections (mirrors WasmachinekastScene).
+    const highSection: SectionInput | null = isLowOnly
+      ? null
+      : { kind: 'high', widthCm: topWidth, heightCm: topHeight, modules: topModules, xOffsetM: 0 }
+    const lowSectionInput: SectionInput | null = isLowOnly
+      ? { kind: 'low', widthCm: topWidth, heightCm: topHeight, modules: topModules, xOffsetM: 0 }
+      : lowSection
+        ? { kind: 'low', widthCm: lowSection.width, heightCm: lowSection.height, modules: lowSection.modules, xOffsetM: 0 }
+        : null
 
-      const sx = (sv.x + 1) / 2 * size.width
-      const sy = (1 - sv.y) / 2 * size.height
-      const ex = (ev.x + 1) / 2 * size.width
-      const ey = (1 - ev.y) / 2 * size.height
-      const dx = ex - sx
-      const dy = ey - sy
-      const len = Math.sqrt(dx * dx + dy * dy)
+    const highW = highSection ? highSection.widthCm / 100 : 0
+    const lowW = lowSectionInput ? lowSectionInput.widthCm / 100 : 0
+    const totalW = isDual ? highW + lowW : isLowOnly ? lowW : highW
 
-      projectedRef.current[spec.id] = {
-        x1: sx, y1: sy, x2: ex, y2: ey,
-        mx: (sx + ex) / 2, my: (sy + ey) / 2,
-        tx: len > 0 ? -dy / len : 0,
-        ty: len > 0 ? dx / len : 0,
-        visible: true,
-      }
+    if (layout === 'low-left' && highSection && lowSectionInput) {
+      lowSectionInput.xOffsetM = -totalW / 2 + lowW / 2
+      highSection.xOffsetM = -totalW / 2 + lowW + highW / 2
+    } else if (layout === 'low-right' && highSection && lowSectionInput) {
+      highSection.xOffsetM = -totalW / 2 + highW / 2
+      lowSectionInput.xOffsetM = -totalW / 2 + highW + lowW / 2
     }
-  })
 
-  return null
-}
+    const sections: SectionInput[] = []
+    if (highSection) sections.push(highSection)
+    if (lowSectionInput && !isLowOnly) sections.push(lowSectionInput)
+    if (isLowOnly && lowSectionInput) sections.push(lowSectionInput)
 
-const TICK_PX = 8
-
-function WasmMeasurementsOverlay({
-  projectedRef,
-  specs,
-}: {
-  projectedRef: React.MutableRefObject<ProjectedMap>
-  specs: MeasurementSpec[]
-}) {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const elCacheRef = useRef<Map<string, {
-    line: SVGLineElement | null
-    tickL: SVGLineElement | null
-    tickR: SVGLineElement | null
-    label: HTMLDivElement | null
-  }>>(new Map())
-
-  useEffect(() => {
-    const root = containerRef.current
-    if (!root) return
-    const cache = new Map<string, { line: SVGLineElement | null; tickL: SVGLineElement | null; tickR: SVGLineElement | null; label: HTMLDivElement | null }>()
-    for (const spec of specs) {
-      cache.set(spec.id, {
-        line: root.querySelector(`[data-line="${spec.id}"]`),
-        tickL: root.querySelector(`[data-tickl="${spec.id}"]`),
-        tickR: root.querySelector(`[data-tickr="${spec.id}"]`),
-        label: root.querySelector(`[data-label="${spec.id}"]`),
-      })
-    }
-    elCacheRef.current = cache
-  }, [specs])
-
-  useEffect(() => {
-    let rafId: number
-    const update = () => {
-      const map = projectedRef.current
-      for (const [id, els] of elCacheRef.current) {
-        if (!els) continue
-        const p = map[id]
-        const show = p?.visible ? '' : 'none'
-        if (els.line) els.line.style.display = show
-        if (els.tickL) els.tickL.style.display = show
-        if (els.tickR) els.tickR.style.display = show
-        if (els.label) els.label.style.display = p?.visible ? 'block' : 'none'
-        if (!p?.visible) continue
-        if (els.line) {
-          els.line.setAttribute('x1', String(p.x1))
-          els.line.setAttribute('y1', String(p.y1))
-          els.line.setAttribute('x2', String(p.x2))
-          els.line.setAttribute('y2', String(p.y2))
-        }
-        if (els.tickL) {
-          els.tickL.setAttribute('x1', String(p.x1 - p.tx * TICK_PX))
-          els.tickL.setAttribute('y1', String(p.y1 - p.ty * TICK_PX))
-          els.tickL.setAttribute('x2', String(p.x1 + p.tx * TICK_PX))
-          els.tickL.setAttribute('y2', String(p.y1 + p.ty * TICK_PX))
-        }
-        if (els.tickR) {
-          els.tickR.setAttribute('x1', String(p.x2 - p.tx * TICK_PX))
-          els.tickR.setAttribute('y1', String(p.y2 - p.ty * TICK_PX))
-          els.tickR.setAttribute('x2', String(p.x2 + p.tx * TICK_PX))
-          els.tickR.setAttribute('y2', String(p.y2 + p.ty * TICK_PX))
-        }
-        if (els.label) {
-          els.label.style.left = `${p.mx}px`
-          els.label.style.top = `${p.my}px`
-        }
-      }
-      rafId = requestAnimationFrame(update)
-    }
-    rafId = requestAnimationFrame(update)
-    return () => cancelAnimationFrame(rafId)
-  }, [projectedRef])
-
-  return (
-    <div ref={containerRef} className="absolute inset-0 pointer-events-none overflow-hidden">
-      <svg className="absolute inset-0 w-full h-full" overflow="visible">
-        {specs.map((s) => (
-          <g key={s.id}>
-            <line data-line={s.id} stroke="currentColor" strokeWidth="1" className="text-white" />
-            <line data-tickl={s.id} stroke="currentColor" strokeWidth="1" className="text-white" />
-            <line data-tickr={s.id} stroke="currentColor" strokeWidth="1" className="text-white" />
-          </g>
-        ))}
-      </svg>
-      {specs.map((s) => (
-        <div
-          key={s.id}
-          data-label={s.id}
-          className="measurement-label bg-background text-foreground text-xs font-medium px-1 rounded"
-          style={{ position: 'absolute', transform: 'translate(-50%, -50%)' }}
-        >
-          {s.labelCm} cm
-        </div>
-      ))}
-    </div>
-  )
+    return buildWasmSpecs(sections, depthCm)
+  }, [layout, topWidth, topHeight, topModules, depthCm, lowSection])
 }
 
 export function WasmMeasurementProjectorLayer({
@@ -229,7 +146,7 @@ export function WasmMeasurementProjectorLayer({
   const show = useWasmachinekastStore((s) => s.showMeasurements)
   const specs = useWasmMeasurementSpecs()
   if (!show) return null
-  return <WasmMeasurementProjector projectedRef={projectedRef} specs={specs} />
+  return <MeasurementProjector projectedRef={projectedRef} specs={specs} />
 }
 
 export function WasmMeasurementsOverlayLayer({
@@ -240,5 +157,5 @@ export function WasmMeasurementsOverlayLayer({
   const show = useWasmachinekastStore((s) => s.showMeasurements)
   const specs = useWasmMeasurementSpecs()
   if (!show) return null
-  return <WasmMeasurementsOverlay projectedRef={projectedRef} specs={specs} />
+  return <MeasurementsOverlay projectedRef={projectedRef} specs={specs} />
 }
