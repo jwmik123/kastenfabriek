@@ -138,15 +138,38 @@ export default function ModulesScrollSection() {
 
   return (
     <>
-    {/* Mobile: full-width image, no scroll/text */}
-    <div className="md:hidden w-full">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src="/images/Modules_High4.webp"
-        alt="Alle modules"
-        className="w-full h-auto select-none"
-        draggable={false}
-      />
+    {/* Mobile: native horizontal-scroll strip (image keeps its panorama ratio) */}
+    <div className="md:hidden relative">
+      <div className="px-4 pt-8 pb-4">
+        <p className="text-foreground/60 text-sm font-poppins mb-1 tracking-wide">
+          Ontdek onze collectie
+        </p>
+        <h2 className="text-foreground text-3xl font-bold font-poppins leading-tight">
+          Bekijk al onze modules
+        </h2>
+      </div>
+      <div className="w-full overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/images/Modules_High4.webp"
+          alt="Alle modules"
+          className="h-[60vh] w-auto max-w-none select-none"
+          draggable={false}
+        />
+      </div>
+      {/* Swipe hint */}
+      <div className="absolute right-4 bottom-4 flex items-center gap-2 text-foreground/50 pointer-events-none">
+        <span className="text-[10px] font-poppins tracking-[0.2em] uppercase">Swipe</span>
+        <svg width="28" height="10" viewBox="0 0 36 12" fill="none" aria-hidden>
+          <path
+            d="M0 6H34M29 1L34 6L29 11"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </div>
     </div>
     <div ref={outerRef} className="hidden md:block">
       <div className="sticky top-0 h-screen overflow-hidden">

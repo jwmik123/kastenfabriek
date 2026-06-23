@@ -14,9 +14,9 @@ export default function Home() {
     <>
       {/* Promo Strip */}
       
-    <div className="relative w-full h-[90vh] -mt-6 font-poppins" data-nav-theme="dark">
+    <div className="relative w-full h-[85svh] md:h-[90vh] -mt-6 font-poppins" data-nav-theme="dark">
       {/* <Image src="/homeplaceholder.png" alt="Home" fill className="object-cover" /> */}
-       
+
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <HeroBackgroundVideo
           playbackId={process.env.NEXT_PUBLIC_MUX_HERO_PLAYBACK_ID!}
@@ -25,15 +25,15 @@ export default function Home() {
       </div>
       <div className="absolute inset-0 bg-black/10 z-10" />
 
-      <div className="relative z-10 flex flex-col justify-end pb-24 h-full text-white px-4 max-w-7xl mx-auto">
-        <h1 className="text-5xl md:text-6xl font-bold mb-6 text-left">
+      <div className="relative z-10 flex flex-col justify-end pb-16 md:pb-24 h-full text-white px-4 sm:px-6 max-w-7xl mx-auto">
+        <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold mb-4 md:mb-6 text-left">
           Kasten die <span className="italic">precies</span> passen.
         </h1>
-        <div className="flex items-end justify-between gap-8">
-          <p className="text-xl md:text-xl max-w-2xl text-left">
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-5 md:gap-8">
+          <p className="text-base sm:text-lg md:text-xl max-w-2xl text-left">
             Ontwerp zelf. Op maat gemaakte kledingkasten. Volledig afgestemd op jouw wensen.
           </p>
-          <button className="hero-btn flex-shrink-0 flex items-center gap-3 bg-primary text-white px-8 py-4 rounded-sm text-lg font-semibold relative overflow-hidden cursor-pointer">
+          <button className="hero-btn w-full md:w-auto flex-shrink-0 flex items-center justify-center md:justify-start gap-3 bg-primary text-white px-6 md:px-8 py-3.5 md:py-4 rounded-sm text-base md:text-lg font-semibold relative overflow-hidden cursor-pointer">
             <div className="relative z-10 overflow-hidden pb-[0.2em] -mb-[0.2em]">
               <span className="btn-anim hero-btn__text block leading-none">
                 Start configurator
