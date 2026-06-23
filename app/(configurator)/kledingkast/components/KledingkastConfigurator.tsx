@@ -7,10 +7,11 @@ import type { ClosetConfigSnapshot } from '@/lib/cart/types'
 import { useClosetStore } from '../store'
 import { ConfiguratorStoreContext } from '../../_shared/store/context'
 import ConfiguratorTopBar from '../../_shared/components/ConfiguratorTopBar'
+import ConfiguratorMobileHeader from '../../_shared/components/ConfiguratorMobileHeader'
 import ConfiguratorTourProvider from '../../_shared/tour/ConfiguratorTourProvider'
 import { kledingkastTourSteps } from '../../_shared/tour/tourSteps'
+import { useCartPrice } from '../hooks/useCartPrice'
 import StepWizard from './StepWizard'
-import MobileSheet from './MobileSheet'
 
 const TOP_BAR_STEPS = [
   { label: 'Afmetingen', number: 1 },
@@ -35,6 +36,7 @@ export default function KledingkastConfigurator({ pricingData, editConfig, editI
   const restoreConfig = useClosetStore((s) => s.restoreConfig)
   const step = useClosetStore((s) => s.step)
   const setStep = useClosetStore((s) => s.setStep)
+  const { totalPrice } = useCartPrice()
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // 1. Hydrate pricing data, then restore config (priority: URL cart item > localStorage draft)
@@ -115,23 +117,25 @@ export default function KledingkastConfigurator({ pricingData, editConfig, editI
   return (
     <ConfiguratorStoreContext.Provider value={useClosetStore}>
       <ConfiguratorTourProvider steps={kledingkastTourSteps}>
-        <div className="w-full h-[95vh] flex flex-col">
-          <ConfiguratorTopBar
-            steps={TOP_BAR_STEPS}
-            currentStep={step}
-            onStep={setStep}
-            productName="Kledingkast"
-          />
+        <div className="w-full h-[100svh] md:h-[95vh] flex flex-col">
+          <ConfiguratorMobileHeader price={totalPrice} productName="Kledingkast" />
+          <div className="hidden md:block">
+            <ConfiguratorTopBar
+              steps={TOP_BAR_STEPS}
+              currentStep={step}
+              onStep={setStep}
+              productName="Kledingkast"
+            />
+          </div>
           <div className="flex flex-1 min-h-0 flex-col lg:flex-row">
-            <div className="w-full h-full md:h-[50vh] lg:h-full flex-1 min-w-0">
+            <div className="w-full h-[40svh] shrink-0 md:h-[50vh] lg:h-full lg:flex-1 lg:shrink min-w-0">
               <ThreeCanvas />
             </div>
-            <div className="hidden md:block relative w-full lg:w-[420px] lg:max-w-[420px] shrink-0 h-full bg-white overflow-y-auto">
+            <div className="relative w-full bg-white flex-1 min-h-0 lg:flex-none lg:w-[420px] lg:max-w-[420px] lg:h-full">
               <StepWizard />
             </div>
           </div>
         </div>
-        <MobileSheet />
       </ConfiguratorTourProvider>
     </ConfiguratorStoreContext.Provider>
   )

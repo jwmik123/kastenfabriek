@@ -31,6 +31,12 @@ function getMaterialName(id: string): string {
   return MATERIALS.find((m) => m.id === id)?.name ?? id;
 }
 
+const DOOR_TYPE_LABELS: Record<string, string> = {
+  deuren: "Deuren",
+  hoekdeuren: "Hoekdeuren",
+  afwerkpaneel: "Afwerkpaneel",
+};
+
 export default function OrderLineItem({ item }: { item: OrderLineSnapshot }) {
   if (item.kind === "product") return <ProductLine item={item} />;
   return <ClosetLine item={item} />;
@@ -50,7 +56,9 @@ function ProductLine({
         <div>
           <h3 className="font-semibold text-gray-900">{cfg.productName}</h3>
           <p className="text-sm text-gray-500 mt-0.5">
-            {cfg.widthCm} × {cfg.heightCm} cm · {cfg.materialName} ·{" "}
+            {DOOR_TYPE_LABELS[cfg.doorType ?? "deuren"]} ·{" "}
+            {cfg.widthLabel ?? `${cfg.widthCm} cm`} × {cfg.heightCm} cm
+            {cfg.isVerlengd ? " (verlengd)" : ""} · {cfg.materialName} ·{" "}
             {item.quantity} {item.quantity === 1 ? "stuk" : "stuks"}
           </p>
         </div>

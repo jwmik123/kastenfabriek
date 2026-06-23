@@ -6,6 +6,7 @@ import { WASHER_LAYOUTS, WASHER_LAYOUT_IDS } from './moduleLayouts'
 import { filterForSection } from './sections/wasmModuleLayoutFilter'
 import type { PopoverClickPoint } from '../_shared/components/popoverPlacement'
 import { validateHandleMaterial } from '../_shared/components/validateHandleMaterial'
+import { canFitFixedWidth } from '../_shared/store/slotWidths'
 import { restore as restoreWasmSnapshot } from './sections/wasmSnapshotMigration'
 import type {
   Section,
@@ -434,27 +435,13 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
     const sectionWidthCm = targetIsTopLevel ? s.width : s.lowSection?.width ?? 0
     const sectionModules: BaseModuleSlot[] =
       targetIsTopLevel ? s.modules : s.lowSection?.modules ?? []
-    if (sectionModules.length === 0 || sectionWidthCm <= 0) return false
-    if (slotIndex < 0 || slotIndex >= sectionModules.length) return false
-
-    // Replace washer slot's fixedWidth with the candidate's; keep others as-is.
-    // (Existing washers in the same section already pin their slots' fixedWidth.)
-    let totalFixed = 0
-    let varCount = 0
-    for (let i = 0; i < sectionModules.length; i++) {
-      const m = sectionModules[i]
-      if (i === slotIndex) {
-        totalFixed += candidateMin
-      } else if (m.fixedWidth) {
-        totalFixed += m.fixedWidth
-      } else {
-        varCount += 1
-      }
-    }
-    if (totalFixed > sectionWidthCm) return false
-    if (varCount === 0) return true
-    const varW = (sectionWidthCm - totalFixed) / varCount
-    return varW >= FALLBACK_MODULE_MIN_WIDTH
+    return canFitFixedWidth(
+      sectionModules,
+      sectionWidthCm,
+      slotIndex,
+      candidateMin,
+      FALLBACK_MODULE_MIN_WIDTH,
+    )
   },
 
   addWasherModule: (slotIndex, layoutId) => {

@@ -7,11 +7,12 @@ import type { ClosetConfigSnapshot } from '@/lib/cart/types'
 import { useWasmachinekastStore } from '../store'
 import { ConfiguratorStoreContext } from '../../_shared/store/context'
 import ConfiguratorTopBar from '../../_shared/components/ConfiguratorTopBar'
+import ConfiguratorMobileHeader from '../../_shared/components/ConfiguratorMobileHeader'
 import ConfiguratorTourProvider from '../../_shared/tour/ConfiguratorTourProvider'
 import { wasmachinekastTourSteps } from '../../_shared/tour/tourSteps'
 import { getWasmModuleLayouts } from '../moduleLayouts'
+import { useCartPrice } from '../hooks/useCartPrice'
 import StepWizard from './StepWizard'
-import MobileSheet from './MobileSheet'
 
 const TOP_BAR_STEPS = [
   { label: 'Layout', number: 1 },
@@ -39,6 +40,7 @@ export default function WasmachinekastConfigurator({ pricingData, editConfig, ed
   const step = useWasmachinekastStore((s) => s.step)
   const setStep = useWasmachinekastStore((s) => s.setStep)
   const clearWasherModules = useWasmachinekastStore((s) => s.clearWasherModules)
+  const { totalPrice } = useCartPrice()
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   function handleTopBarStep(target: number) {
@@ -150,23 +152,25 @@ export default function WasmachinekastConfigurator({ pricingData, editConfig, ed
   return (
     <ConfiguratorStoreContext.Provider value={useWasmachinekastStore}>
       <ConfiguratorTourProvider steps={wasmachinekastTourSteps}>
-        <div className="w-full h-[95vh] flex flex-col">
-          <ConfiguratorTopBar
-            steps={TOP_BAR_STEPS}
-            currentStep={step}
-            onStep={handleTopBarStep}
-            productName="Wasmachinekast"
-          />
+        <div className="w-full h-[100svh] md:h-[95vh] flex flex-col">
+          <ConfiguratorMobileHeader price={totalPrice} productName="Wasmachinekast" />
+          <div className="hidden md:block">
+            <ConfiguratorTopBar
+              steps={TOP_BAR_STEPS}
+              currentStep={step}
+              onStep={handleTopBarStep}
+              productName="Wasmachinekast"
+            />
+          </div>
           <div className="flex flex-1 min-h-0 flex-col lg:flex-row">
-            <div className="w-full h-full md:h-[50vh] lg:h-full flex-1 min-w-0">
+            <div className="w-full h-[40svh] shrink-0 md:h-[50vh] lg:h-full lg:flex-1 lg:shrink min-w-0">
               <ThreeCanvas />
             </div>
-            <div className="hidden md:block relative w-full lg:w-[420px] lg:max-w-[420px] shrink-0 h-full bg-white overflow-y-auto">
+            <div className="relative w-full bg-white flex-1 min-h-0 lg:flex-none lg:w-[420px] lg:max-w-[420px] lg:h-full">
               <StepWizard />
             </div>
           </div>
         </div>
-        <MobileSheet />
       </ConfiguratorTourProvider>
     </ConfiguratorStoreContext.Provider>
   )

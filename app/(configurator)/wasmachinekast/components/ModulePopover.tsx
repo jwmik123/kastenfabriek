@@ -3,7 +3,8 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { X } from 'lucide-react'
 import { useWasmachinekastStore } from '../store'
-import { WASHER_LAYOUTS, isLayoutAvailable } from '../moduleLayouts'
+import { WASHER_LAYOUTS } from '../moduleLayouts'
+import { canFitFixedWidth } from '../../_shared/store/slotWidths'
 import { filterForSection } from '../sections/wasmModuleLayoutFilter'
 import { LAYOUT_SVGS } from '../../kledingkast/components/LayoutSvgs'
 import { Toggle } from '@/components/ui/Toggle'
@@ -25,7 +26,7 @@ export default function ModulePopover() {
   const toggleLowSectionModuleDoor = useWasmachinekastStore((s) => s.toggleLowSectionModuleDoor)
   const topModules       = useWasmachinekastStore((s) => s.modules)
   const topModuleCount   = useWasmachinekastStore((s) => s.moduleCount)
-  const topModuleWidthCm = useWasmachinekastStore((s) => s.moduleWidthCm())
+  const topWidth         = useWasmachinekastStore((s) => s.width)
   const lowSection       = useWasmachinekastStore((s) => s.lowSection)
   const activeModulesSection = useWasmachinekastStore((s) => s.activeModulesSection)
   const moduleLayouts    = useWasmachinekastStore((s) => s.moduleLayouts)
@@ -38,9 +39,7 @@ export default function ModulePopover() {
   const editingLow = isDual && activeModulesSection === 'low' && lowSection !== null
   const modules = editingLow ? lowSection!.modules : topModules
   const moduleCount = editingLow ? lowSection!.moduleCount : topModuleCount
-  const moduleWidthCm = editingLow
-    ? (lowSection!.moduleCount > 0 ? lowSection!.width / lowSection!.moduleCount : lowSection!.width)
-    : topModuleWidthCm
+  const sectionWidthCm = editingLow ? lowSection!.width : topWidth
   const setModuleLayout = editingLow ? setLowSectionModuleLayout : setModuleLayoutTop
   const setModuleSpan = editingLow ? setLowSectionModuleSpan : setModuleSpanTop
   const toggleModuleDoor = editingLow ? toggleLowSectionModuleDoor : toggleModuleDoorTop
@@ -188,7 +187,15 @@ export default function ModulePopover() {
             {availableLayouts.map((layout) => {
               const LayoutSvg = LAYOUT_SVGS[layout.layoutId]
               const active = activeLayoutId === layout.layoutId
-              const available = isLayoutAvailable(layout, moduleWidthCm)
+              // Fixed-width modules (minSlotWidth) shrink their variable
+              // neighbours, so availability depends on total section space,
+              // not on this single slot's current width.
+              const available = canFitFixedWidth(
+                modules,
+                sectionWidthCm,
+                selectedSlot,
+                layout.minSlotWidth,
+              )
               return (
                 <button
                   key={layout.layoutId}

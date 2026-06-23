@@ -1,23 +1,28 @@
 'use client'
 
+import { Fragment } from 'react'
 import { useConfiguratorStore } from '../store/context'
 import { Separator } from '@/components/ui/separator'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { ZoomIn, ZoomOut, Ruler, DoorOpen, DoorClosed, Dices } from 'lucide-react'
 import HelpButton from '../tour/HelpButton'
+import { useIsMobile } from './useIsMobile'
+import { getToolbarLayout, type ToolbarItem } from './toolbarLayout'
 
 function ToolBtn({
   onClick,
   disabled,
   active,
   tooltip,
+  tooltipSide,
   children,
 }: {
   onClick: () => void
   disabled?: boolean
   active?: boolean
   tooltip: string
+  tooltipSide: 'right' | 'bottom'
   children: React.ReactNode
 }) {
   return (
@@ -36,7 +41,7 @@ function ToolBtn({
           {children}
         </button>
       </TooltipTrigger>
-      <TooltipContent side="right" sideOffset={8}>
+      <TooltipContent side={tooltipSide} sideOffset={8}>
         {tooltip}
       </TooltipContent>
     </Tooltip>
@@ -53,44 +58,79 @@ export default function CanvasToolbar({ showRandomize = true }: { showRandomize?
   const zoomOut = useConfiguratorStore((s) => s.zoomOut)
   const randomFill = useConfiguratorStore((s) => s.randomFill)
 
-  return (
-    <div data-tour="canvas-toolbar" className="absolute left-4 top-1/3 flex flex-col items-center gap-0.5 bg-background/90 backdrop-blur-sm border border-border rounded-xl p-1.5 shadow-lg">
-      <ToolBtn onClick={zoomIn} disabled={userZoom <= 0} tooltip="Inzoomen">
-        <ZoomIn className="size-5" />
-      </ToolBtn>
-      <ToolBtn onClick={zoomOut} disabled={userZoom >= 1} tooltip="Uitzoomen">
-        <ZoomOut className="size-5" />
-      </ToolBtn>
+  const isMobile = useIsMobile()
+  const { orientation, items } = getToolbarLayout({ isMobile, showRandomize })
 
-      <Separator orientation="horizontal" className="w-6 my-1" />
+  const isHorizontal = orientation === 'horizontal'
+  const tooltipSide = isHorizontal ? 'bottom' : 'right'
 
-      <ToolBtn onClick={toggleMeasurements} active={showMeasurements} tooltip="Afmetingen tonen">
-        <Ruler className="size-5" />
-      </ToolBtn>
-
-      <Separator orientation="horizontal" className="w-6 my-1" />
-
-      <ToolBtn
-        onClick={toggleDoors}
-        active={doorsOpen}
-        tooltip={doorsOpen ? 'Deuren sluiten' : 'Deuren openen'}
-      >
-        {doorsOpen ? <DoorOpen className="size-5" /> : <DoorClosed className="size-5" />}
-      </ToolBtn>
-
-      <Separator orientation="horizontal" className="w-6 my-1" />
-
-      {showRandomize && (
-        <>
-          <ToolBtn onClick={randomFill} tooltip="Willekeurige indeling">
+  const renderItem = (item: ToolbarItem) => {
+    switch (item) {
+      case 'zoomIn':
+        return (
+          <ToolBtn key="zoomIn" onClick={zoomIn} disabled={userZoom <= 0} tooltip="Inzoomen" tooltipSide={tooltipSide}>
+            <ZoomIn className="size-5" />
+          </ToolBtn>
+        )
+      case 'zoomOut':
+        return (
+          <ToolBtn key="zoomOut" onClick={zoomOut} disabled={userZoom >= 1} tooltip="Uitzoomen" tooltipSide={tooltipSide}>
+            <ZoomOut className="size-5" />
+          </ToolBtn>
+        )
+      case 'measurements':
+        return (
+          <ToolBtn key="measurements" onClick={toggleMeasurements} active={showMeasurements} tooltip="Afmetingen tonen" tooltipSide={tooltipSide}>
+            <Ruler className="size-5" />
+          </ToolBtn>
+        )
+      case 'doors':
+        return (
+          <ToolBtn
+            key="doors"
+            onClick={toggleDoors}
+            active={doorsOpen}
+            tooltip={doorsOpen ? 'Deuren sluiten' : 'Deuren openen'}
+            tooltipSide={tooltipSide}
+          >
+            {doorsOpen ? <DoorOpen className="size-5" /> : <DoorClosed className="size-5" />}
+          </ToolBtn>
+        )
+      case 'randomize':
+        return (
+          <ToolBtn key="randomize" onClick={randomFill} tooltip="Willekeurige indeling" tooltipSide={tooltipSide}>
             <Dices className="size-5" />
           </ToolBtn>
+        )
+      case 'help':
+        return <HelpButton key="help" />
+      default:
+        return null
+    }
+  }
 
-          <Separator orientation="horizontal" className="w-6 my-1" />
-        </>
+  return (
+    <div
+      data-tour="canvas-toolbar"
+      data-orientation={orientation}
+      className={cn(
+        'absolute z-10 flex items-center gap-0.5 bg-background/90 backdrop-blur-sm border border-border rounded-xl p-1.5 shadow-lg',
+        isHorizontal
+          ? 'flex-row top-2 left-1/2 -translate-x-1/2'
+          : 'flex-col left-4 top-1/3',
       )}
-
-      <HelpButton />
+    >
+      {items.map((item, i) => (
+        <Fragment key={item}>
+          {i > 0 && (
+            <Separator
+              orientation={isHorizontal ? 'vertical' : 'horizontal'}
+              className={isHorizontal ? 'h-6 mx-1' : 'w-6 my-1'}
+            />
+          )}
+          {renderItem(item)}
+        </Fragment>
+      ))}
     </div>
   )
 }

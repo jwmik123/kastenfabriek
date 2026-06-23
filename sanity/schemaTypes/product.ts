@@ -54,6 +54,40 @@ const paxVariant = defineType({
   },
 });
 
+const paxHoekVariant = defineType({
+  name: "paxHoekVariant",
+  title: "Hoekdeur variant",
+  type: "object",
+  fields: [
+    defineField({
+      name: "widthLabel",
+      title: "Breedte (label)",
+      type: "string",
+      description:
+        "Vrije tekst, bv. \"27cm & 50cm\". Hoekdeuren bestaan uit twee panelen.",
+      validation: (Rule) => Rule.required(),
+    }),
+    defineField({
+      name: "heightCm",
+      title: "Hoogte (cm)",
+      type: "number",
+      validation: (Rule) => Rule.required().positive(),
+    }),
+    defineField({
+      name: "priceEur",
+      title: "Prijs (€)",
+      type: "number",
+      validation: (Rule) => Rule.required().min(0),
+    }),
+  ],
+  preview: {
+    select: { w: "widthLabel", h: "heightCm", p: "priceEur" },
+    prepare({ w, h, p }) {
+      return { title: `${w} — ${h} cm`, subtitle: p != null ? `€${p}` : undefined };
+    },
+  },
+});
+
 const paxMaterialSurcharge = defineType({
   name: "paxMaterialSurcharge",
   title: "Materiaaltoeslag",
@@ -81,6 +115,32 @@ const paxMaterialSurcharge = defineType({
   },
 });
 
+const paxVerlengdePrice = defineType({
+  name: "paxVerlengdePrice",
+  title: "Verlengde-deur prijs",
+  type: "object",
+  fields: [
+    defineField({
+      name: "widthCm",
+      title: "Breedte (cm)",
+      type: "number",
+      validation: (Rule) => Rule.required().positive(),
+    }),
+    defineField({
+      name: "priceEur",
+      title: "Prijs (€)",
+      type: "number",
+      validation: (Rule) => Rule.required().min(0),
+    }),
+  ],
+  preview: {
+    select: { w: "widthCm", p: "priceEur" },
+    prepare({ w, p }) {
+      return { title: `${w} cm`, subtitle: p != null ? `€${p}` : undefined };
+    },
+  },
+});
+
 const sampleConfig = defineType({
   name: "sampleConfig",
   title: "Stalen Configuratie",
@@ -104,51 +164,29 @@ const paxConfig = defineType({
   type: "object",
   fields: [
     defineField({
-      name: "widths",
-      title: "Beschikbare breedtes (cm)",
-      type: "array",
-      of: [{ type: "number" }],
-      validation: (Rule) => Rule.required().min(1).unique(),
-    }),
-    defineField({
-      name: "heights",
-      title: "Beschikbare hoogtes (cm)",
-      type: "array",
-      of: [{ type: "number" }],
-      validation: (Rule) => Rule.required().min(1).unique(),
-    }),
-    defineField({
       name: "variants",
-      title: "Varianten (prijsmatrix)",
+      title: "Varianten — Deuren (prijsmatrix)",
       type: "array",
       of: [{ type: "paxVariant" }],
       description:
-        "Eén entry per (breedte × hoogte) combinatie. Een waarschuwing verschijnt als niet alle combinaties zijn gedekt.",
-      validation: (Rule) =>
-        Rule.required()
-          .min(1)
-          .custom((variants, context) => {
-            const v = (variants ?? []) as { widthCm?: number; heightCm?: number }[];
-            const parent = context.parent as
-              | { widths?: number[]; heights?: number[] }
-              | undefined;
-            const widths = parent?.widths ?? [];
-            const heights = parent?.heights ?? [];
-            if (!widths.length || !heights.length) return true;
-            const seen = new Set(
-              v.map((x) => `${x.widthCm}x${x.heightCm}`),
-            );
-            const missing: string[] = [];
-            for (const w of widths) {
-              for (const h of heights) {
-                if (!seen.has(`${w}x${h}`)) missing.push(`${w}×${h}`);
-              }
-            }
-            if (missing.length) {
-              return `Mist varianten voor: ${missing.join(", ")}`;
-            }
-            return true;
-          }),
+        "Prijsmatrix voor type 'Deuren' (standaard). Eén entry per (breedte × hoogte) combinatie. De beschikbare breedtes/hoogtes worden hieruit afgeleid — voeg alleen combinaties toe die echt bestaan.",
+      validation: (Rule) => Rule.required().min(1),
+    }),
+    defineField({
+      name: "hoekVariants",
+      title: "Varianten — Hoekdeuren",
+      type: "array",
+      of: [{ type: "paxHoekVariant" }],
+      description:
+        "Prijsmatrix voor type 'Hoekdeuren'. Leeg laten = type niet beschikbaar. Breedte is een vrij label (bv. \"27cm & 50cm\").",
+    }),
+    defineField({
+      name: "afwerkVariants",
+      title: "Varianten — Afwerkpaneel",
+      type: "array",
+      of: [{ type: "paxVariant" }],
+      description:
+        "Prijsmatrix voor type 'Afwerkpaneel'. Leeg laten = type niet beschikbaar. Eigen breedtes/hoogtes — hoeft niet gelijk te zijn aan Deuren.",
     }),
     defineField({
       name: "allowedMaterialIds",
@@ -166,6 +204,45 @@ const paxConfig = defineType({
       type: "array",
       of: [{ type: "paxMaterialSurcharge" }],
       description: "Optionele toeslag per materiaal bovenop de variant prijs.",
+    }),
+    defineField({
+      name: "verlengdePrices",
+      title: "Verlengde deuren — prijs per breedte",
+      type: "array",
+      of: [{ type: "paxVerlengdePrice" }],
+      description:
+        "Schakelt de optie 'Verlengde deuren' in (geldt voor alle types). De klant voert dan een eigen hoogte in; de stuksprijs komt uit deze lijst, op basis van de gekozen breedte. Leeg laten = optie verborgen. Eén entry per breedte.",
+      validation: (Rule) =>
+        Rule.custom((prices) => {
+          const list = (prices ?? []) as { widthCm?: number }[];
+          const widths = list.map((p) => p.widthCm);
+          const dup = widths.filter((w, i) => widths.indexOf(w) !== i);
+          return dup.length
+            ? `Dubbele breedte(s): ${[...new Set(dup)].join(", ")} cm`
+            : true;
+        }),
+    }),
+    defineField({
+      name: "verlengdeHoekPrice",
+      title: "Verlengde deuren — prijs Hoekdeuren (vast)",
+      type: "number",
+      description:
+        "Vaste verlengde-prijs voor Hoekdeuren (ongeacht breedte). Leeg laten = optie verborgen voor Hoekdeuren.",
+      validation: (Rule) => Rule.min(0),
+    }),
+    defineField({
+      name: "verlengdeMinHeightCm",
+      title: "Verlengde deuren — min. hoogte (cm)",
+      type: "number",
+      description: "Ondergrens voor het hoogte-invoerveld. Standaard 200.",
+      validation: (Rule) => Rule.positive(),
+    }),
+    defineField({
+      name: "verlengdeMaxHeightCm",
+      title: "Verlengde deuren — max. hoogte (cm)",
+      type: "number",
+      description: "Bovengrens voor het hoogte-invoerveld. Standaard 300.",
+      validation: (Rule) => Rule.positive(),
     }),
     defineField({
       name: "hingeSide",
@@ -320,7 +397,9 @@ export const product = defineType({
 
 export const productSchemaTypes = [
   paxVariant,
+  paxHoekVariant,
   paxMaterialSurcharge,
+  paxVerlengdePrice,
   paxConfig,
   sampleConfig,
   product,

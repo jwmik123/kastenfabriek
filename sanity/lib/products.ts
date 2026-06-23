@@ -19,15 +19,40 @@ export interface PaxVariant {
   priceEur: number;
 }
 
+export interface PaxHoekVariant {
+  widthLabel: string;
+  heightCm: number;
+  priceEur: number;
+}
+
 export interface PaxMaterialSurcharge {
   materialId: string;
   surchargeEur: number;
 }
 
+export type PaxDoorType = "deuren" | "hoekdeuren" | "afwerkpaneel";
+
+export interface PaxVerlengdePrice {
+  widthCm: number;
+  priceEur: number;
+}
+
 export interface PaxConfig {
-  widths: number[];
-  heights: number[];
+  /** @deprecated UI now derives widths/heights from each type's variants. */
+  widths?: number[];
+  /** @deprecated UI now derives widths/heights from each type's variants. */
+  heights?: number[];
   variants: PaxVariant[];
+  /** Price matrix for the "hoekdeuren" type (width is a free label). Absent/empty = type unavailable. */
+  hoekVariants?: PaxHoekVariant[];
+  /** Price matrix for the "afwerkpaneel" type. Absent/empty = type unavailable. */
+  afwerkVariants?: PaxVariant[];
+  /** Per-width price for custom-height ("verlengde") deuren/afwerk. Absent/empty = option hidden. */
+  verlengdePrices?: PaxVerlengdePrice[];
+  /** Flat custom-height price for hoekdeuren (width-independent). Absent = option hidden for hoek. */
+  verlengdeHoekPrice?: number;
+  verlengdeMinHeightCm?: number;
+  verlengdeMaxHeightCm?: number;
   allowedMaterialIds?: string[];
   materialSurcharges?: PaxMaterialSurcharge[];
   hingeSide?: "left" | "right";

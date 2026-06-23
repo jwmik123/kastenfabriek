@@ -103,6 +103,13 @@ export interface ProductConfigSnapshot {
   heightCm: number;
   materialId: string;
   materialName: string;
+
+  // PAX door type (issue: pax extra options). Absent on old cart entries → treat as 'deuren'.
+  doorType?: "deuren" | "hoekdeuren" | "afwerkpaneel";
+  // Hoekdeuren use a free-text width label (e.g. "27cm & 50cm") instead of a numeric width.
+  widthLabel?: string;
+  // True when heightCm is a custom ("verlengde") height entered by the user.
+  isVerlengd?: boolean;
 }
 
 // Price calculated at "Add to Cart" time for a closet

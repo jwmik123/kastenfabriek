@@ -8,8 +8,8 @@ import { PortableText } from '@portabletext/react'
 import { MATERIALS, type Material } from '@/app/(configurator)/kledingkast/materials'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import type { Product } from '@/sanity/lib/products'
-import { calcProductPrice } from '@/lib/products/pricing'
+import type { PaxDoorType, Product } from '@/sanity/lib/products'
+import { calcProductPrice, numericVariantsForType } from '@/lib/products/pricing'
 import {
   addItem as addLocalCartItem,
   replaceItem as replaceLocalCartItem,
@@ -33,6 +33,20 @@ const COLORWAY_SLUGS: Record<string, string> = {
 
 function slugFor(id: string) {
   return COLORWAY_SLUGS[id] ?? id
+}
+
+function sortedUnique(nums: number[]): number[] {
+  return [...new Set(nums)].sort((a, b) => a - b)
+}
+
+function uniqueStrings(arr: string[]): string[] {
+  return [...new Set(arr)]
+}
+
+const TYPE_LABELS: Record<PaxDoorType, string> = {
+  deuren: 'Deuren',
+  hoekdeuren: 'Hoekdeuren',
+  afwerkpaneel: 'Afwerkpaneel',
 }
 
 function formatEuro(amount: number) {
@@ -119,9 +133,16 @@ export default function PaxDoorConfigurator({
   const session = useSession()
   const [isAdding, startAddTransition] = useTransition()
   const cfg = product.paxConfig
-  const widths = cfg?.widths ?? []
-  const heights = cfg?.heights ?? []
-  const variants = cfg?.variants ?? []
+
+  const availableTypes = useMemo<PaxDoorType[]>(() => {
+    const types: PaxDoorType[] = ['deuren']
+    if ((cfg?.hoekVariants?.length ?? 0) > 0) types.push('hoekdeuren')
+    if ((cfg?.afwerkVariants?.length ?? 0) > 0) types.push('afwerkpaneel')
+    return types
+  }, [cfg?.hoekVariants, cfg?.afwerkVariants])
+
+  const verlengdeMinHeight = cfg?.verlengdeMinHeightCm ?? 200
+  const verlengdeMaxHeight = cfg?.verlengdeMaxHeightCm ?? 300
 
   const allowedMaterials = useMemo<Material[]>(() => {
     if (cfg?.allowedMaterialIds && cfg.allowedMaterialIds.length > 0) {
@@ -131,19 +152,79 @@ export default function PaxDoorConfigurator({
     return MATERIALS
   }, [cfg?.allowedMaterialIds])
 
-  const variantHas = (w: number, h: number) =>
-    variants.some((v) => v.widthCm === w && v.heightCm === h)
-
   // Server-fetched edit (authed) seeds initial state synchronously.
   const seed = editItem
-  const [widthCm, setWidthCm] = useState<number>(
-    seed?.configuration.widthCm ?? widths[0] ?? 0,
+  const [doorType, setDoorType] = useState<PaxDoorType>(
+    seed?.configuration.doorType ?? 'deuren',
   )
+  const [isVerlengd, setIsVerlengd] = useState<boolean>(
+    seed?.configuration.isVerlengd ?? false,
+  )
+
+  const isHoek = doorType === 'hoekdeuren'
+  const hoekVariants = useMemo(() => cfg?.hoekVariants ?? [], [cfg?.hoekVariants])
+
+  // Verlengde is per-width for numeric types, a flat price for hoekdeuren.
+  const verlengdeAvailable = isHoek
+    ? cfg?.verlengdeHoekPrice != null
+    : (cfg?.verlengdePrices?.length ?? 0) > 0
+
+  // Numeric matrix for deuren/afwerk. Hoekdeuren use hoekVariants (label-keyed).
+  const numericVariants = useMemo(
+    () => (cfg ? numericVariantsForType(cfg, doorType) : []),
+    [cfg, doorType],
+  )
+
+  // Width options for the current selection. `key` is a number for numeric
+  // types, a label string for hoekdeuren.
+  const widthOptions = useMemo<{ key: string | number; label: string }[]>(() => {
+    if (isHoek) {
+      return uniqueStrings(hoekVariants.map((v) => v.widthLabel)).map((l) => ({
+        key: l,
+        label: l,
+      }))
+    }
+    const nums = isVerlengd
+      ? (cfg?.verlengdePrices ?? []).map((p) => p.widthCm)
+      : numericVariants.map((v) => v.widthCm)
+    return sortedUnique(nums).map((n) => ({ key: n, label: `${n} cm` }))
+  }, [isHoek, isVerlengd, hoekVariants, cfg?.verlengdePrices, numericVariants])
+
+  // Heights available for a given width key (standard matrix only).
+  const heightsForWidth = (key: string | number) =>
+    isHoek
+      ? sortedUnique(
+          hoekVariants
+            .filter((v) => v.widthLabel === key)
+            .map((v) => v.heightCm),
+        )
+      : sortedUnique(
+          numericVariants
+            .filter((v) => v.widthCm === key)
+            .map((v) => v.heightCm),
+        )
+
+  const [widthKey, setWidthKey] = useState<string | number>(() => {
+    if (seed)
+      return seed.configuration.widthLabel ?? seed.configuration.widthCm
+    const deuren = cfg?.variants ?? []
+    return sortedUnique(deuren.map((v) => v.widthCm))[0] ?? 0
+  })
   const [heightCm, setHeightCm] = useState<number>(() => {
     if (seed) return seed.configuration.heightCm
-    const firstHeight = heights.find((h) => variantHas(widths[0], h))
-    return firstHeight ?? heights[0] ?? 0
+    const deuren = cfg?.variants ?? []
+    const w = sortedUnique(deuren.map((v) => v.widthCm))[0] ?? 0
+    return (
+      sortedUnique(
+        deuren.filter((v) => v.widthCm === w).map((v) => v.heightCm),
+      )[0] ?? 0
+    )
   })
+
+  // Numeric width / label split derived from the unified key.
+  const widthCm = typeof widthKey === 'number' ? widthKey : 0
+  const widthLabel = typeof widthKey === 'string' ? widthKey : undefined
+
   const [materialId, setMaterialId] = useState<string>(
     seed?.configuration.materialId ?? allowedMaterials[0]?.id ?? MATERIALS[0].id,
   )
@@ -161,7 +242,11 @@ export default function PaxDoorConfigurator({
     if (!editItemId || seed) return
     const found = getCart().items.find((i) => i.id === editItemId)
     if (found && found.kind === 'product') {
-      setWidthCm(found.configuration.widthCm)
+      setDoorType(found.configuration.doorType ?? 'deuren')
+      setIsVerlengd(found.configuration.isVerlengd ?? false)
+      setWidthKey(
+        found.configuration.widthLabel ?? found.configuration.widthCm,
+      )
       setHeightCm(found.configuration.heightCm)
       setMaterialId(found.configuration.materialId)
       setQty(found.quantity)
@@ -171,22 +256,56 @@ export default function PaxDoorConfigurator({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Snap height to a valid one when width changes
+  // Snap to a valid selection when width, type, or verlengd toggle changes.
   useEffect(() => {
-    if (!variantHas(widthCm, heightCm)) {
-      const next = heights.find((h) => variantHas(widthCm, h))
+    // Verlengde may not be offered for the current type.
+    if (isVerlengd && !verlengdeAvailable) {
+      setIsVerlengd(false)
+      return
+    }
+    // Width must exist in the current option set.
+    if (widthOptions.length && !widthOptions.some((o) => o.key === widthKey)) {
+      setWidthKey(widthOptions[0].key)
+      return
+    }
+    if (isVerlengd) {
+      // Custom height: clamp into bounds on first switch.
+      if (heightCm < verlengdeMinHeight || heightCm > verlengdeMaxHeight) {
+        setHeightCm(verlengdeMinHeight)
+      }
+      return
+    }
+    // Standard matrix: snap height to a valid one for the active type/width.
+    if (!heightsForWidth(widthKey).includes(heightCm)) {
+      const next = heightsForWidth(widthKey)[0]
       if (next != null) setHeightCm(next)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [widthCm])
+  }, [widthKey, doorType, isVerlengd, widthOptions, verlengdeAvailable])
 
   const priceSnapshot = useMemo(() => {
     try {
-      return calcProductPrice({ product, widthCm, heightCm, materialId, qty })
+      return calcProductPrice({
+        product,
+        widthCm,
+        widthLabel,
+        heightCm,
+        materialId,
+        qty,
+        doorType,
+        isVerlengd,
+      })
     } catch {
       return null
     }
-  }, [product, widthCm, heightCm, materialId, qty])
+  }, [product, widthCm, widthLabel, heightCm, materialId, qty, doorType, isVerlengd])
+
+  const verlengdHeightValid =
+    !isVerlengd ||
+    (Number.isFinite(heightCm) &&
+      heightCm >= verlengdeMinHeight &&
+      heightCm <= verlengdeMaxHeight)
+  const canAdd = !!priceSnapshot && verlengdHeightValid
 
   const lineTotal = priceSnapshot ? priceSnapshot.total * qty : 0
 
@@ -195,7 +314,7 @@ export default function PaxDoorConfigurator({
   const slug = activeMaterial ? slugFor(activeMaterial.id) : null
 
   const handleAddToCart = () => {
-    if (!priceSnapshot || !activeMaterial) return
+    if (!canAdd || !activeMaterial) return
     const isEditing = activeEditId !== null
     const itemId =
       activeEditId ??
@@ -215,9 +334,12 @@ export default function PaxDoorConfigurator({
         productSlug: product.slug,
         productName: product.title,
         widthCm,
+        widthLabel,
         heightCm,
         materialId: activeMaterial.id,
         materialName: activeMaterial.name,
+        doorType,
+        isVerlengd,
       },
       priceSnapshot,
       quantity: qty,
@@ -297,41 +419,23 @@ export default function PaxDoorConfigurator({
         </div>
 
         <div className="space-y-8">
-          {/* Width */}
-          <div>
-            <h3 className="text-sm font-medium mb-2">Breedte</h3>
-            <div className="flex flex-wrap gap-2">
-              {cfg.widths.map((w) => (
-                <PillButton
-                  key={w}
-                  active={w === widthCm}
-                  onClick={() => setWidthCm(w)}
-                >
-                  {w} cm
-                </PillButton>
-              ))}
-            </div>
-          </div>
-
-          {/* Height */}
-          <div>
-            <h3 className="text-sm font-medium mb-2">Hoogte</h3>
-            <div className="flex flex-wrap gap-2">
-              {cfg.heights.map((h) => {
-                const enabled = variantHas(widthCm, h)
-                return (
+          {/* Type */}
+          {availableTypes.length > 1 && (
+            <div>
+              <h3 className="text-sm font-medium mb-2">Type</h3>
+              <div className="flex flex-wrap gap-2">
+                {availableTypes.map((t) => (
                   <PillButton
-                    key={h}
-                    active={h === heightCm}
-                    disabled={!enabled}
-                    onClick={() => enabled && setHeightCm(h)}
+                    key={t}
+                    active={t === doorType}
+                    onClick={() => setDoorType(t)}
                   >
-                    {h} cm
+                    {TYPE_LABELS[t]}
                   </PillButton>
-                )
-              })}
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Material */}
           <div>
@@ -352,6 +456,76 @@ export default function PaxDoorConfigurator({
               ))}
             </div>
           </div>
+
+          {/* Width */}
+          <div>
+            <h3 className="text-sm font-medium mb-2">Breedte</h3>
+            <div className="flex flex-wrap gap-2">
+              {widthOptions.map((o) => (
+                <PillButton
+                  key={o.key}
+                  active={o.key === widthKey}
+                  onClick={() => setWidthKey(o.key)}
+                >
+                  {o.label}
+                </PillButton>
+              ))}
+            </div>
+          </div>
+
+          {/* Height */}
+          <div>
+            <h3 className="text-sm font-medium mb-2">Hoogte</h3>
+            {isVerlengd ? (
+              <div>
+                <div className="inline-flex items-center gap-2">
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    min={verlengdeMinHeight}
+                    max={verlengdeMaxHeight}
+                    value={heightCm || ''}
+                    onChange={(e) => setHeightCm(Number(e.target.value))}
+                    className="h-10 w-28 rounded-md border border-border bg-background px-3 text-sm"
+                  />
+                  <span className="text-sm text-muted-foreground">cm</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Tussen {verlengdeMinHeight} en {verlengdeMaxHeight} cm.
+                </p>
+              </div>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {heightsForWidth(widthKey).map((h) => (
+                  <PillButton
+                    key={h}
+                    active={h === heightCm}
+                    onClick={() => setHeightCm(h)}
+                  >
+                    {h} cm
+                  </PillButton>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Verlengde deuren */}
+          {verlengdeAvailable && (
+            <label className="flex items-center gap-3 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                className="h-4 w-4 accent-primary"
+                checked={isVerlengd}
+                onChange={(e) => setIsVerlengd(e.target.checked)}
+              />
+              <span className="text-sm font-medium">
+                Verlengde deuren{' '}
+                <span className="text-muted-foreground font-normal">
+                  — eigen hoogte invoeren
+                </span>
+              </span>
+            </label>
+          )}
 
           {/* Qty */}
           <div>
@@ -396,7 +570,7 @@ export default function PaxDoorConfigurator({
               type="button"
               size="lg"
               onClick={handleAddToCart}
-              disabled={!priceSnapshot || isAdding}
+              disabled={!canAdd || isAdding}
             >
               {isAdding
                 ? 'Bezig…'
