@@ -91,46 +91,12 @@ export default function Home() {
       ]}
       additionalOptions={[
         {
-          id: 'kleding-roede',
-          title: 'Kleding Roede',
-          description: 'Hoogwaardige kledingstangen voor in je kast',
-          icon: (
-            <svg className="w-10 h-10 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 8h16M4 16h16" />
-            </svg>
-          ),
-        },
-        {
-          id: 'lade-organizers',
-          title: 'Lade Organizers',
-          description: 'Op maat gemaakte organisatie voor je laden',
-          icon: (
-            <svg className="w-10 h-10 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h4a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM14 13a1 1 0 011-1h4a1 1 0 011 1v6a1 1 0 01-1 1h-4a1 1 0 01-1-1v-6z" />
-            </svg>
-          ),
-        },
-        {
-          id: 'tv-meubel',
-          title: 'TV Meubel',
-          description: 'Stijlvol maatwerk TV-meubel voor je woonkamer',
-          comingSoon: true,
-          icon: (
-            <svg className="w-10 h-10 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-            </svg>
-          ),
-        },
-        {
-          id: 'badkamermeubel',
-          title: 'Badkamermeubel',
-          description: 'Op maat gemaakte badkamermeubels voor elke ruimte',
-          comingSoon: true,
-          icon: (
-            <svg className="w-10 h-10 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-            </svg>
-          ),
+          id: 'alle-producten',
+          title: 'Bekijk al onze producten',
+          description: 'Ontdek het volledige assortiment maatwerk en accessoires',
+          image: '/images/Modules_High4.webp',
+          href: '/producten',
+          ctaLabel: 'Bekijk producten',
         },
       ]}
     />

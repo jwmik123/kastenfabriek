@@ -1,7 +1,8 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useClosetStore } from '../store'
+import { useIsMobile } from '../../_shared/components/useIsMobile'
 import { getDiagHeightAt, getBackDiagHeightAtZ } from '../scene/diagonalUtils'
 import { Toggle } from '@/components/ui/Toggle'
 import { cn } from '@/lib/utils'
@@ -30,6 +31,8 @@ export default function ModulesStep() {
   const moduleWidthCm  = useClosetStore((s) => s.moduleWidthCm())
   const selectedSlot        = useClosetStore((s) => s.selectedSlot)
   const setSelectedSlot     = useClosetStore((s) => s.setSelectedSlot)
+  const isMobile            = useIsMobile()
+  const configCardRef       = useRef<HTMLDivElement>(null)
   const doorsExtendToFloor  = useClosetStore((s) => s.doorsExtendToFloor)
   const setDoorsExtendToFloor = useClosetStore((s) => s.setDoorsExtendToFloor)
 
@@ -87,6 +90,12 @@ export default function ModulesStep() {
   const isUnderDiagonal = selectedSlotEffectiveHeightM < mainHeightM - 0.01
   const canBeDouble = selectedSlot !== null && selectedSlot < modules.length - 1 &&
     (diagParams.backDiagonal || !isUnderDiagonal)
+
+  // Mobile: the inline config card sits below the fold, so reveal it on select.
+  useEffect(() => {
+    if (!isMobile || selectedSlot === null) return
+    configCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }, [isMobile, selectedSlot])
 
   return (
     <div className="space-y-10">
@@ -165,7 +174,7 @@ export default function ModulesStep() {
 
         {/* Mobile: configure the selected slot inline (desktop uses the canvas popover) */}
         {selectedSlot !== null && (
-          <div className="md:hidden">
+          <div ref={configCardRef} className="md:hidden scroll-mt-4">
             <ModuleConfigCard />
           </div>
         )}

@@ -7,7 +7,7 @@ export default function ConfiguratorLayout({
 }) {
   return (
     <>
-      {children}
+      <main className="flex-1">{children}</main>
       <Footer />
     </>
   )

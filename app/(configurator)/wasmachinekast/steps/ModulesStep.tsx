@@ -1,10 +1,12 @@
 'use client'
 
+import { useEffect, useRef } from 'react'
 import { useWasmachinekastStore } from '../store'
 import { Toggle } from '@/components/ui/Toggle'
 import { cn } from '@/lib/utils'
 import { Lock, Minus, Plus } from 'lucide-react'
 import ModuleConfigCard from '../components/ModuleConfigCard'
+import { useIsMobile } from '../../_shared/components/useIsMobile'
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
@@ -38,6 +40,8 @@ export default function ModulesStep() {
 
   const selectedSlot = useWasmachinekastStore((s) => s.selectedSlot)
   const setSelectedSlot = useWasmachinekastStore((s) => s.setSelectedSlot)
+  const isMobile = useIsMobile()
+  const configCardRef = useRef<HTMLDivElement>(null)
   const doorsExtendToFloor = useWasmachinekastStore((s) => s.doorsExtendToFloor)
   const setDoorsExtendToFloor = useWasmachinekastStore((s) => s.setDoorsExtendToFloor)
   const washerModules = useWasmachinekastStore((s) => s.washerModules)
@@ -57,6 +61,12 @@ export default function ModulesStep() {
     washerSection === 'low' && editingLow ||
     (layout === 'low-only' && washerSection === 'low')
   const washerSlots = new Set(washerLocksThisSection ? washerModules.map((w) => w.slotIndex) : [])
+
+  // Mobile: the inline config card sits below the fold, so reveal it on select.
+  useEffect(() => {
+    if (!isMobile || selectedSlot === null) return
+    configCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }, [isMobile, selectedSlot])
 
   return (
     <div className="space-y-10">
@@ -159,7 +169,7 @@ export default function ModulesStep() {
 
         {/* Mobile: configure the selected slot inline (desktop uses the canvas popover) */}
         {selectedSlot !== null && (
-          <div className="md:hidden">
+          <div ref={configCardRef} className="md:hidden scroll-mt-4">
             <ModuleConfigCard />
           </div>
         )}

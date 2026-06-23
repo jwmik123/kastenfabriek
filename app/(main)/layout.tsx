@@ -12,7 +12,7 @@ export default function MainLayout({
     <SmoothScroll>
       <IntroAnimation />
       <Navigation />
-      {children}
+      <main className="flex-1">{children}</main>
       <Footer />
     </SmoothScroll>
   );

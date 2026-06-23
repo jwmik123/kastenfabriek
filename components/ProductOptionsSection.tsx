@@ -10,6 +10,7 @@ interface OptionItem {
   image?: string;
   comingSoon?: boolean;
   href?: string;
+  ctaLabel?: string;
 }
 
 interface ProductOptionsSectionProps {
@@ -46,11 +47,11 @@ const ProductOptionsSection: React.FC<ProductOptionsSectionProps> = ({
               <div className="absolute bottom-0 left-0 right-0 p-4 md:translate-y-full md:group-hover:translate-y-0 transition-transform duration-500 ease-[cubic-bezier(0.625,0.05,0,1)]">
                 {option.href ? (
                   <Link href={option.href} className="block w-full bg-primary text-white py-3 px-4 rounded-lg font-semibold text-sm text-center">
-                    Ontwerp je kast
+                    {option.ctaLabel ?? 'Ontwerp je kast'}
                   </Link>
                 ) : (
                   <button className="w-full bg-primary text-white py-3 px-4 rounded-lg font-semibold text-sm text-center">
-                    Ontwerp je kast
+                    {option.ctaLabel ?? 'Ontwerp je kast'}
                   </button>
                 )}
               </div>
@@ -119,12 +120,44 @@ const ProductOptionsSection: React.FC<ProductOptionsSectionProps> = ({
           {mainOptions.map(renderOption)}
         </div>
 
-        {/* Additional Options Grid */}
-        {additionalOptions.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {additionalOptions.map(renderOption)}
-          </div>
-        )}
+        {/* Additional Options — full-width banner bar */}
+        {additionalOptions.map((option) => {
+          const Bar = (
+            <div className="group relative overflow-hidden rounded-lg bg-primary text-white">
+              {option.image && (
+                <>
+                  <Image
+                    src={option.image}
+                    alt={option.title}
+                    fill
+                    className="object-cover opacity-30 transition-transform duration-700 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-r from-primary via-primary/80 to-primary/40" />
+                </>
+              )}
+              <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-4 px-6 md:px-10 py-8 md:py-10">
+                <div>
+                  <h3 className="text-2xl md:text-3xl font-bold mb-1">{option.title}</h3>
+                  <p className="text-sm md:text-base text-white/80">{option.description}</p>
+                </div>
+                <span className="flex-shrink-0 inline-flex items-center justify-center gap-2 bg-white text-primary px-6 py-3 rounded-lg font-semibold text-sm">
+                  {option.ctaLabel ?? 'Bekijk'}
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                  </svg>
+                </span>
+              </div>
+            </div>
+          );
+
+          return option.href ? (
+            <Link key={option.id} href={option.href} className="block">
+              {Bar}
+            </Link>
+          ) : (
+            <div key={option.id}>{Bar}</div>
+          );
+        })}
       </div>
     </section>
   );
