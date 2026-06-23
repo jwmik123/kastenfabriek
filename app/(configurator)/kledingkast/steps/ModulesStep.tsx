@@ -6,6 +6,7 @@ import { getDiagHeightAt, getBackDiagHeightAtZ } from '../scene/diagonalUtils'
 import { Toggle } from '@/components/ui/Toggle'
 import { cn } from '@/lib/utils'
 import { Minus, Plus } from 'lucide-react'
+import ModuleConfigCard from '../components/ModuleConfigCard'
 
 const WALL = 0.018
 const ONDERSTEL_HEIGHT = 0.108
@@ -161,6 +162,13 @@ export default function ModulesStep() {
             )
           })}
         </div>
+
+        {/* Mobile: configure the selected slot inline (desktop uses the canvas popover) */}
+        {selectedSlot !== null && (
+          <div className="md:hidden">
+            <ModuleConfigCard />
+          </div>
+        )}
       </section>
 
       {/* ── Section 3: Deuren tot de vloer ── */}

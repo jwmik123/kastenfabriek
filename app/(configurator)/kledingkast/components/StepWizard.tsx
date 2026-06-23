@@ -11,7 +11,6 @@ import AccessoiresStep from '../steps/AccessoiresStep'
 import ModuleMaterialPanel from './ModuleMaterialPanel'
 import StepHeader from '../../_shared/components/StepHeader'
 import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
 
 const STEP_COUNT = 5
@@ -72,18 +71,17 @@ export default function StepWizard() {
   return (
     <div className="flex flex-col h-full p-6 gap-5">
       {meta && (
-        <div className={cn(isPanelOpen && blurClass)}>
+        <div className={cn('-mx-6 px-6 pb-5 border-b border-border', isPanelOpen && blurClass)}>
           <StepHeader eyebrow={meta.eyebrow} title={meta.title} subtitle={meta.subtitle} />
         </div>
       )}
-      <div className="relative flex-1 overflow-y-auto min-h-0 scrollbar-primary">
+      <div className="relative flex-1 overflow-y-scroll min-h-0 scrollbar-primary">
         <div className={cn(isPanelOpen && blurClass)}>
           <CurrentStep />
         </div>
         <ModuleMaterialPanel />
       </div>
-      <Separator className={cn('transition-opacity duration-200', isPanelOpen && 'opacity-20')} />
-      <div className={cn('flex justify-between gap-3', isPanelOpen && blurClass)}>
+      <div className={cn('-mx-6 px-6 pt-5 border-t border-border flex justify-between gap-3', isPanelOpen && blurClass)}>
         <Button variant="outline" onClick={prevStep} disabled={step === 1}>
           Vorige
         </Button>

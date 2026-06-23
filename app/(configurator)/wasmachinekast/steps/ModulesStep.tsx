@@ -4,6 +4,7 @@ import { useWasmachinekastStore } from '../store'
 import { Toggle } from '@/components/ui/Toggle'
 import { cn } from '@/lib/utils'
 import { Lock, Minus, Plus } from 'lucide-react'
+import ModuleConfigCard from '../components/ModuleConfigCard'
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
@@ -155,6 +156,13 @@ export default function ModulesStep() {
             )
           })}
         </div>
+
+        {/* Mobile: configure the selected slot inline (desktop uses the canvas popover) */}
+        {selectedSlot !== null && (
+          <div className="md:hidden">
+            <ModuleConfigCard />
+          </div>
+        )}
       </section>
 
       <section className="space-y-5">
