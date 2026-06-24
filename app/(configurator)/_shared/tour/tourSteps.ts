@@ -54,7 +54,7 @@ function buildConfiguratorTourSteps(): StepType[] {
       position: 'right',
     },
     {
-      selector: '[data-tour-active="next"]',
+      selector: '[data-tour="next-button"]',
       content: stepContent({
         title: 'Volgende stap',
         body: 'Klik op "Volgende" om door te gaan naar de volgende configuratiestap.',

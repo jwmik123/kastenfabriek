@@ -10,6 +10,7 @@ import DoorHandlesStep from '../../_shared/steps/DoorHandlesStep'
 import AccessoiresStep from '../steps/AccessoiresStep'
 import ModuleMaterialPanel from './ModuleMaterialPanel'
 import StepHeader from '../../_shared/components/StepHeader'
+import ScrollArea from '../../_shared/components/ScrollArea'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
@@ -75,13 +76,13 @@ export default function StepWizard() {
           <StepHeader eyebrow={meta.eyebrow} title={meta.title} subtitle={meta.subtitle} />
         </div>
       )}
-      <div className="relative flex-1 overflow-y-scroll min-h-0 scrollbar-primary">
+      <ScrollArea>
         <div className={cn(isPanelOpen && blurClass)}>
           <CurrentStep />
         </div>
         <ModuleMaterialPanel />
-      </div>
-      <div className={cn('-mx-6 px-6 pt-5 border-t border-border flex justify-between gap-3', isPanelOpen && blurClass)}>
+      </ScrollArea>
+      <div className={cn('-mx-6 -mt-2 px-6 pt-3 border-t border-border flex justify-between gap-3', isPanelOpen && blurClass)}>
         <Button variant="outline" onClick={prevStep} disabled={step === 1}>
           Vorige
         </Button>

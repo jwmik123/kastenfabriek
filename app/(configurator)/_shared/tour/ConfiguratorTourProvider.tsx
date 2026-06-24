@@ -52,25 +52,6 @@ function AutoStart({ steps }: { steps: StepType[] }) {
   return null
 }
 
-function TourTargetMarker() {
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    const mql = window.matchMedia('(min-width: 768px)')
-    const sync = () => {
-      const desktop = document.getElementById('kf-tour-next-desktop')
-      const mobile = document.getElementById('kf-tour-next-mobile')
-      const active = mql.matches ? desktop : mobile
-      const inactive = mql.matches ? mobile : desktop
-      inactive?.removeAttribute('data-tour-active')
-      active?.setAttribute('data-tour-active', 'next')
-    }
-    sync()
-    mql.addEventListener('change', sync)
-    return () => mql.removeEventListener('change', sync)
-  }, [])
-  return null
-}
-
 export default function ConfiguratorTourProvider({ steps, children }: Props) {
   return (
     <TourProvider
@@ -130,7 +111,6 @@ export default function ConfiguratorTourProvider({ steps, children }: Props) {
       }}
     >
       <AutoStart steps={steps} />
-      <TourTargetMarker />
       {children}
     </TourProvider>
   )

@@ -1,14 +1,9 @@
-import Footer from "@/components/Footer"
-
 export default function ConfiguratorLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  return (
-    <>
-      <main className="flex-1">{children}</main>
-      <Footer />
-    </>
-  )
+  // No Footer: the configurator fills the viewport and only the step wizard
+  // scrolls — a page-level footer would make the whole page scrollable.
+  return <main className="flex-1">{children}</main>
 }
