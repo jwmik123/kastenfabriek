@@ -3,7 +3,7 @@
 import * as THREE from 'three/webgpu'
 import { color as tslColor } from 'three/tsl'
 import { useLoader } from '@react-three/fiber'
-import { createContext, useContext, useEffect, useMemo, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, type ReactNode } from 'react'
 import { MATERIAL_COLORS } from '../../kledingkast/materials'
 import { useStripWarmth } from './StripWarmthContext'
 import { createStripWarmthUniforms, buildWarmthNode } from '../shaders/stripWarmth'
@@ -153,9 +153,92 @@ export function ClosetMaterialProvider({
   return (
     <MaterialContext.Provider value={state}>
       <WardrobeRootGroup>
-        {children}
+        <MaterialCacheProvider>
+          {children}
+        </MaterialCacheProvider>
       </WardrobeRootGroup>
     </MaterialContext.Provider>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Shared material cache.
+//
+// Every mesh used to build its own MeshPhysicalNodeMaterial; a material
+// switch then rebuilt ~50 materials and forced WebGPU to compile that many
+// pipelines in one frame — seconds of hang on mobile. Materials are instead
+// shared per (materialId, warmth) key: a switch creates at most a couple of
+// new materials, and switching back reuses already-compiled ones.
+//
+// Lives INSIDE WardrobeRootGroup because the triplanar nodes need the
+// wardrobe-inverse uniform from that context. Warmth uniforms are shared by
+// all warm materials (the strips are global) and synced centrally here.
+// ---------------------------------------------------------------------------
+
+type GetMaterial = (materialId: string | undefined, warmth: boolean) => THREE.MeshPhysicalNodeMaterial
+
+const MaterialCacheContext = createContext<GetMaterial | null>(null)
+
+function MaterialCacheProvider({ children }: { children: ReactNode }) {
+  const ctx = useContext(MaterialContext)
+  const warmthCtx = useStripWarmth()
+  const wardrobeInverse = useWardrobeInverse()
+
+  const cacheRef = useRef(new Map<string, THREE.MeshPhysicalNodeMaterial>())
+  const warmthUniformsRef = useRef<ReturnType<typeof createStripWarmthUniforms> | null>(null)
+
+  // Latest ctx/warmth via refs so getMaterial stays referentially stable.
+  const ctxRef = useRef(ctx)
+  ctxRef.current = ctx
+  const warmthCtxRef = useRef(warmthCtx)
+  warmthCtxRef.current = warmthCtx
+
+  // Texture set identity change (e.g. dev hot reload) invalidates the cache.
+  const texMapsRef = useRef(ctx?.textureMaps)
+  if (texMapsRef.current !== ctx?.textureMaps) {
+    texMapsRef.current = ctx?.textureMaps
+    cacheRef.current.forEach((m) => m.dispose())
+    cacheRef.current.clear()
+  }
+
+  const getMaterial = useCallback<GetMaterial>((materialId, warmth) => {
+    const key = `${materialId ?? '__none__'}|${warmth ? 'warm' : 'plain'}`
+    let mat = cacheRef.current.get(key)
+    if (!mat) {
+      mat = new THREE.MeshPhysicalNodeMaterial()
+      applyPhysicalProps(mat, materialId, ctxRef.current, wardrobeInverse)
+      if (warmth) {
+        if (!warmthUniformsRef.current) {
+          warmthUniformsRef.current = createStripWarmthUniforms()
+          const w = warmthCtxRef.current
+          if (w) syncWarmthUniforms(warmthUniformsRef.current, w.enabled, w.strips)
+        }
+        mat.emissiveNode = buildWarmthNode(warmthUniformsRef.current) as any
+      }
+      cacheRef.current.set(key, mat)
+    }
+    return mat
+  }, [wardrobeInverse])
+
+  // Central warmth sync — one uniform set drives every warm material.
+  useEffect(() => {
+    const u = warmthUniformsRef.current
+    if (!u || !warmthCtx) return
+    syncWarmthUniforms(u, warmthCtx.enabled, warmthCtx.strips)
+  }, [warmthCtx])
+
+  useEffect(() => {
+    const cache = cacheRef.current
+    return () => {
+      cache.forEach((m) => m.dispose())
+      cache.clear()
+    }
+  }, [])
+
+  return (
+    <MaterialCacheContext.Provider value={getMaterial}>
+      {children}
+    </MaterialCacheContext.Provider>
   )
 }
 
@@ -223,87 +306,35 @@ function syncWarmthUniforms(
   }
 }
 
-/** JSX component variant — used as a child of <mesh> */
-export default function ClosetMaterial({
-  variant = 'buitenkant',
-}: {
-  variant?: 'buitenkant' | 'binnenkant'
-}) {
-  const ctx               = useContext(MaterialContext)
-  const override          = useContext(ModuleMaterialOverrideContext)
-  const lightStripsEnabled = ctx?.lightStripsEnabled ?? false
-  const warmthCtx          = useStripWarmth()
-  const wardrobeInverse    = useWardrobeInverse()
-
-  const materialId = resolveMaterialId(variant, ctx, override)
-
-  // Warmth attaches additively over triplanar color/normal — only on
-  // interior panels with strips on and a valid warmth context.
-  const hasWarmthContext = warmthCtx !== null
-  const attachWarmth = lightStripsEnabled && variant === 'binnenkant' && hasWarmthContext
-
-  const warmthUniforms = useMemo(
-    () => (variant === 'binnenkant' && hasWarmthContext ? createStripWarmthUniforms() : null),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [variant, hasWarmthContext],
-  )
-
-  const material = useMemo(() => {
-    const mat = new THREE.MeshPhysicalNodeMaterial()
-    applyPhysicalProps(mat, materialId, ctx, wardrobeInverse)
-    if (attachWarmth && warmthUniforms) {
-      mat.emissiveNode = buildWarmthNode(warmthUniforms) as any
-    }
-    return mat
-  }, [attachWarmth, materialId, ctx, warmthUniforms, wardrobeInverse])
-
-  useEffect(() => () => { material.dispose() }, [material])
-
-  useEffect(() => {
-    if (!attachWarmth || !warmthUniforms || !warmthCtx) return
-    syncWarmthUniforms(warmthUniforms, warmthCtx.enabled, warmthCtx.strips)
-  }, [attachWarmth, warmthCtx, warmthUniforms])
-
-  const primitiveKey = `${materialId ?? '__none__'}-${attachWarmth ? 'warm' : 'plain'}`
-  return <primitive key={primitiveKey} object={material} attach="material" />
-}
-
 /** Imperative hook variant — used where callers need the material object directly */
 export function useClosetMaterialInstance(
   variant: 'buitenkant' | 'binnenkant' = 'buitenkant',
 ): THREE.MeshPhysicalNodeMaterial {
   const ctx               = useContext(MaterialContext)
   const override          = useContext(ModuleMaterialOverrideContext)
+  const getMaterial       = useContext(MaterialCacheContext)
   const lightStripsEnabled = ctx?.lightStripsEnabled ?? false
   const warmthCtx          = useStripWarmth()
-  const wardrobeInverse    = useWardrobeInverse()
+
+  if (!getMaterial) {
+    throw new Error('useClosetMaterialInstance must be used inside <ClosetMaterialProvider>')
+  }
 
   const materialId = resolveMaterialId(variant, ctx, override)
 
-  const hasWarmthContext = warmthCtx !== null
-  const attachWarmth = lightStripsEnabled && variant === 'binnenkant' && hasWarmthContext
+  // Warmth attaches additively over triplanar color/normal — only on
+  // interior panels with strips on and a valid warmth context.
+  const attachWarmth = lightStripsEnabled && variant === 'binnenkant' && warmthCtx !== null
 
-  const warmthUniforms = useMemo(
-    () => (variant === 'binnenkant' && hasWarmthContext ? createStripWarmthUniforms() : null),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [variant, hasWarmthContext],
-  )
+  return getMaterial(materialId, attachWarmth)
+}
 
-  const material = useMemo(() => {
-    const mat = new THREE.MeshPhysicalNodeMaterial()
-    applyPhysicalProps(mat, materialId, ctx, wardrobeInverse)
-    if (attachWarmth && warmthUniforms) {
-      mat.emissiveNode = buildWarmthNode(warmthUniforms) as any
-    }
-    return mat
-  }, [attachWarmth, ctx, materialId, warmthUniforms, wardrobeInverse])
-
-  useEffect(() => () => { material.dispose() }, [material])
-
-  useEffect(() => {
-    if (!attachWarmth || !warmthUniforms || !warmthCtx) return
-    syncWarmthUniforms(warmthUniforms, warmthCtx.enabled, warmthCtx.strips)
-  }, [attachWarmth, warmthCtx, warmthUniforms])
-
-  return material
+/** JSX component variant — used as a child of <mesh> */
+export default function ClosetMaterial({
+  variant = 'buitenkant',
+}: {
+  variant?: 'buitenkant' | 'binnenkant'
+}) {
+  const material = useClosetMaterialInstance(variant)
+  return <primitive key={material.uuid} object={material} attach="material" />
 }
