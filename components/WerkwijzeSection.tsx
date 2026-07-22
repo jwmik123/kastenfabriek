@@ -40,29 +40,29 @@ export default function WerkwijzeSection() {
             Onze werkwijze
           </p>
           <h2 className="text-4xl md:text-5xl font-bold text-white">
-            Van ontwerp tot montage<span className="italic"> in een stroom.</span>
+            Van ontwerp tot montage<span className="italic text-primary-300"> in een stroom.</span>
           </h2>
         </div>
 
         {/* Desktop */}
-        <div className="hidden md:grid grid-cols-[1fr_20px_1fr_20px_1fr_20px_1fr_20px_1fr] items-start">
+        <div className="hidden md:grid grid-cols-[1fr_20px_1fr_20px_1fr_20px_1fr_20px_1fr] items-stretch">
           {steps.flatMap((step, index) => {
             const card = (
-              <div key={step.number} className="flex flex-col">
-                {/* Image area with step number top-left */}
+              <div
+                key={step.number}
+                className="relative flex flex-col overflow-hidden rounded-xl border border-white/10 bg-white/5 p-5 pb-6"
+              >
+                <span className="mb-3 text-xs font-bold tracking-widest text-primary-300/80 select-none">
+                  {step.number}
+                </span>
                 <div className={`relative ${IMAGE_H} mb-4`}>
-                  <span className="absolute -top-[0.4em] -left-[0.2em] z-10 text-[5rem] font-black text-white/[0.15] leading-none select-none pointer-events-none">
-                    {step.number}
-                  </span>
-                  <div className="relative w-full h-full">
-                    <Image
-                      src={step.image}
-                      alt={step.title}
-                      fill
-                      className="object-contain"
-                      sizes="20vw"
-                    />
-                  </div>
+                  <Image
+                    src={step.image}
+                    alt={step.title}
+                    fill
+                    className="object-contain"
+                    sizes="20vw"
+                  />
                 </div>
                 <h3 className="text-white font-semibold text-sm leading-snug text-center">
                   {step.title}
@@ -72,7 +72,7 @@ export default function WerkwijzeSection() {
 
             if (index < steps.length - 1) {
               return [card, (
-                <div key={`arrow-${index}`} className={`flex ${IMAGE_H} items-center justify-center`}>
+                <div key={`arrow-${index}`} className="flex h-full items-center justify-center">
                   <ArrowRight size={14} className="text-white/20" strokeWidth={1.5} />
                 </div>
               )];
@@ -86,12 +86,14 @@ export default function WerkwijzeSection() {
           {steps.map((step, index) => (
             <div
               key={step.number}
-              className={index === steps.length - 1 && steps.length % 2 !== 0 ? "col-span-2" : ""}
+              className={`relative overflow-hidden rounded-xl border border-white/10 bg-white/5 p-4 pb-5 ${
+                index === steps.length - 1 && steps.length % 2 !== 0 ? "col-span-2" : ""
+              }`}
             >
+              <span className="mb-2 block text-xs font-bold tracking-widest text-primary-300/80 select-none">
+                {step.number}
+              </span>
               <div className={`relative mb-3 ${index === steps.length - 1 && steps.length % 2 !== 0 ? "h-56" : "h-36"}`}>
-                <span className="absolute -top-[0.4em] -left-[0.2em] z-10 text-[5rem] font-black text-white/[0.15] leading-none select-none pointer-events-none">
-                  {step.number}
-                </span>
                 <Image
                   src={step.image}
                   alt={step.title}
