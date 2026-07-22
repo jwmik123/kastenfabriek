@@ -16,6 +16,7 @@ import { trapNaN, trapGeo } from '@/utils/debugGeometry'
 import { computeSlotWidthsM } from '../../_shared/store/slotWidths'
 import { getWasmLayoutConfig } from '../moduleLayoutConfigs'
 import { WASHER_LAYOUT_IDS } from '../moduleLayouts'
+import { resolveFrontPlan } from '../../_shared/frontPolicy'
 import type { BaseModuleSlot } from '../../_shared/store/types'
 import type { Section } from '../sections/types'
 
@@ -315,17 +316,19 @@ function WasmTopCabinet({
   mainHeightM,
   depthM,
   modules,
+  sideWallThicknessM,
 }: {
   widthM: number
   heightCm: number
   mainHeightM: number
   depthM: number
   modules: BaseModuleSlot[]
+  sideWallThicknessM: number
 }) {
   const doorsOpen = useWasmachinekastStore((s) => s.doorsOpen)
 
   const SIDE_WALL_EXTRA_M = 0.005
-  const innerW = widthM - WALL * 2
+  const innerW = widthM - sideWallThicknessM * 2
   const moduleDepth = depthM - WALL - CLOSET_INSIDE_INSET
   const ceilH = heightCm / 100 - SIDE_WALL_EXTRA_M
   const flatH = ceilH - mainHeightM - WALL
@@ -378,6 +381,7 @@ interface SectionGroupProps {
   buitenkantMaterialId: string
   binnenkantMaterialId: string
   enableSlotInteraction: boolean
+  sideWallThicknessM: number
 }
 
 function SectionGroup({
@@ -390,11 +394,16 @@ function SectionGroup({
   buitenkantMaterialId,
   binnenkantMaterialId,
   enableSlotInteraction,
+  sideWallThicknessM,
 }: SectionGroupProps) {
   const widthM = section.width / 100
   const depthM = depthCm / 100
   const heightCm = section.height
   const isLow = kind === 'low'
+
+  const doorsExtendToFloor = useWasmachinekastStore((s) => s.doorsExtendToFloor)
+  const selectedHandleId = useWasmachinekastStore((s) => s.doorHandleId)
+  const selectedDrawerHandleId = useWasmachinekastStore((s) => s.drawerHandleId)
 
   const SIDE_WALL_EXTRA_CM = 1.5
   const TOP_CABINET_THRESHOLD = 275
@@ -428,9 +437,9 @@ function SectionGroup({
       backDiagFlatSectionDepth: 0,
       outerDepth: depthM,
       moduleCapY: isLow ? lowMainH : mainHeightCm / 100,
-      sideWallThickness: 0.018,
+      sideWallThickness: sideWallThicknessM,
     }),
-    [widthM, mainHeightCm, heightCm, depthM, isLow, lowMainH, lowClosetH],
+    [widthM, mainHeightCm, heightCm, depthM, isLow, lowMainH, lowClosetH, sideWallThicknessM],
   )
 
   const werkbladMaterialId = countertopMaterialId ?? buitenkantMaterialId
@@ -455,12 +464,22 @@ function SectionGroup({
           const layout = getWasmLayoutConfig(m.layoutId!)
           if (!layout) return null
           const isWasher = WASHER_LAYOUT_IDS.has(m.layoutId!)
+          const plan = resolveFrontPlan({
+            product: 'wasmachinekast',
+            sectionKind: kind,
+            hasDoorSetting: m.hasDoor,
+            isWasher,
+            layoutHasLowFronts: layout.lowFronts === true,
+            doorsExtendToFloor,
+            selectedHandleId,
+            selectedDrawerHandleId,
+          })
           return (
             <Module
               key={m.slotIndex}
               index={m.slotIndex}
               layout={layout}
-              hasDoor={isWasher ? false : m.hasDoor}
+              hasDoor={plan.showDoor}
               span={m.span}
               diagParams={diagParams}
               depthOverride={isWasher ? depthM - WASHER_REAR_CLEARANCE : undefined}
@@ -469,7 +488,10 @@ function SectionGroup({
               sectionModules={section.modules}
               sectionNeedsTopCabinet={isLow ? false : section.height > TOP_CABINET_THRESHOLD}
               sectionKind={kind}
-              washerDoorAbove={isWasher && !isLow}
+              washerDoorAbove={plan.showWasherDoorAbove}
+              drawerFronts={plan.showDrawerFronts}
+              doorHandleIdOverride={plan.doorHandleId}
+              drawerHandleId={plan.drawerHandleId}
             />
           )
         })}
@@ -480,6 +502,7 @@ function SectionGroup({
           mainHeightM={mainHeightCm / 100}
           depthM={depthM}
           modules={section.modules}
+          sideWallThicknessM={sideWallThicknessM}
         />
       )}
       {enableSlotInteraction &&
@@ -517,6 +540,8 @@ export default function WasmachinekastScene() {
   const topPanelThicknessMm = useWasmachinekastStore((s) => s.topPanelThicknessMm)
   const countertopMaterialId = useWasmachinekastStore((s) => s.countertopMaterialId)
   const activeModulesSection = useWasmachinekastStore((s) => s.activeModulesSection)
+  const sidePanelThickness = useWasmachinekastStore((s) => s.sidePanelThickness)
+  const sideWallThicknessM = sidePanelThickness === '36mm' ? 0.036 : 0.018
 
   const isLowOnly = layout === 'low-only'
   const isDual = layout === 'low-left' || layout === 'low-right'
@@ -564,6 +589,7 @@ export default function WasmachinekastScene() {
             buitenkantMaterialId={buitenkantMaterialId}
             binnenkantMaterialId={binnenkantMaterialId}
             enableSlotInteraction={!isDual || activeModulesSection === 'high'}
+            sideWallThicknessM={sideWallThicknessM}
           />
         )}
         {lowSectionRender && !isLowOnly && (
@@ -577,6 +603,7 @@ export default function WasmachinekastScene() {
             buitenkantMaterialId={buitenkantMaterialId}
             binnenkantMaterialId={binnenkantMaterialId}
             enableSlotInteraction={isDual && activeModulesSection === 'low'}
+            sideWallThicknessM={sideWallThicknessM}
           />
         )}
         {isLowOnly && lowSectionRender && (
@@ -590,6 +617,7 @@ export default function WasmachinekastScene() {
             buitenkantMaterialId={buitenkantMaterialId}
             binnenkantMaterialId={binnenkantMaterialId}
             enableSlotInteraction={true}
+            sideWallThicknessM={sideWallThicknessM}
           />
         )}
       </group>

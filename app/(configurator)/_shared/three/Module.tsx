@@ -44,6 +44,15 @@ interface ModuleProps {
   // content (e.g. above a washer), flush with normal module doors. Independent
   // of `hasDoor` — washer bodies have no full-height door of their own.
   washerDoorAbove?: boolean
+  // Kitchen-style fronts (front policy, lage kast layouts with `lowFronts`):
+  // the GLB's fronts are the visible front; `hasDoor` should be false and the
+  // config's noDoorDepthOffset puts them flush with the door plane.
+  drawerFronts?: boolean
+  // Handle override from the front policy ('none' = push-to-open). When
+  // undefined the store's doorHandleId applies.
+  doorHandleIdOverride?: string
+  // Handle rendered horizontally on each front (kitchen style).
+  drawerHandleId?: string | null
 }
 
 function wallHeightAt(xOuter: number, p: DiagParams, floorY: number = MODULE_FLOOR_Y): number {
@@ -157,6 +166,9 @@ export default function Module({
   sectionNeedsTopCabinet,
   sectionKind,
   washerDoorAbove,
+  drawerFronts,
+  doorHandleIdOverride,
+  drawerHandleId,
 }: ModuleProps) {
   const depth        = useConfiguratorStore((s) => s.depth) / 100
   const storeModuleCount = useConfiguratorStore((s) => s.moduleCount)
@@ -167,11 +179,14 @@ export default function Module({
   const hoveredSlot         = useConfiguratorStore((s) => s.hoveredSlot)
   const hoveredSection      = useConfiguratorStore((s) => (s as unknown as { hoveredSection?: 'high' | 'low' | null }).hoveredSection ?? null)
   const hoverMatchesSection = sectionKind === undefined || hoveredSection === null || hoveredSection === sectionKind
-  const doorHandleId        = useConfiguratorStore((s) => s.doorHandleId)
+  const storeDoorHandleId   = useConfiguratorStore((s) => s.doorHandleId)
+  const doorHandleId        = doorHandleIdOverride ?? storeDoorHandleId
   const doorHandleMaterial  = useConfiguratorStore((s) => s.doorHandleMaterial)
   const doorsExtendToFloor  = useConfiguratorStore((s) => s.doorsExtendToFloor)
   const pricingData         = useConfiguratorStore((s) => s.pricingData)
   const resolvedHandle      = pricingData?.handles.find((h) => h.id === doorHandleId)
+  // Drawer fronts have their own handle selection, separate from the doors.
+  const resolvedDrawerHandle = pricingData?.handles.find((h) => h.id === drawerHandleId)
   const doorHandleBodyColor = resolvedHandle?.bodyColor
   const doorHandleMeshId    = resolvedHandle?.meshId
   const doorHandleHeightCm  = resolvedHandle?.heightCm
@@ -465,6 +480,19 @@ export default function Module({
           positionY={elementYs[i]}
           hovered={hoveredSlot === index && hoverMatchesSection}
           hasDoor={hasDoor}
+          extendFrontBottomY={
+            doorsExtendToFloor && !hasDoor ? 0.02 - effectiveFloorY : null
+          }
+          drawerHandle={
+            drawerFronts && drawerHandleId && drawerHandleId !== 'none'
+              ? {
+                  id: drawerHandleId,
+                  meshId: resolvedDrawerHandle?.meshId,
+                  material: doorHandleMaterial,
+                  bodyColor: resolvedDrawerHandle?.bodyColor,
+                }
+              : null
+          }
         />
       ))}
 

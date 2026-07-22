@@ -100,6 +100,7 @@ export default function KledingkastConfigurator({ pricingData, editConfig, editI
           backDiagFlatSectionDepth: state.backDiagFlatSectionDepth,
           doorHandleMaterial: state.doorHandleMaterial,
           doorsExtendToFloor: state.doorsExtendToFloor,
+          sidePanelThickness: state.sidePanelThickness,
           lightStripsEnabled: state.lightStripsEnabled,
           hasTopCabinet: state.needsTopCabinet(),
           topCabinetHeightCm: state.topCabinetHeight(),
@@ -117,7 +118,7 @@ export default function KledingkastConfigurator({ pricingData, editConfig, editI
   return (
     <ConfiguratorStoreContext.Provider value={useClosetStore}>
       <ConfiguratorTourProvider steps={kledingkastTourSteps}>
-        <div className="w-full h-[100svh] md:h-[95vh] flex flex-col">
+        <div className="w-full h-[100dvh] md:h-[95vh] flex flex-col">
           <ConfiguratorMobileHeader price={totalPrice} productName="Kledingkast" />
           <div className="hidden md:block">
             <ConfiguratorTopBar

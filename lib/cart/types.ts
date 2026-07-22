@@ -46,6 +46,9 @@ export interface ClosetConfigSnapshot {
   binnenkantMaterialId: string;
   doorHandleId: string;
   doorHandleName?: string | null;
+  // Wasmachinekast: separate handle for lage-kast drawer fronts
+  // ('none' = push-to-open, the default).
+  drawerHandleId?: string;
 
   // Diagonal walls
   diagonalSide: DiagonalSide;

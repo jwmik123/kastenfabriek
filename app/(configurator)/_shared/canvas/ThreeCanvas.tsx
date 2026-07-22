@@ -4,6 +4,7 @@ import { Canvas, useFrame } from '@react-three/fiber'
 import * as THREE from 'three/webgpu'
 import { useEffect, useRef, type ReactNode } from 'react'
 import SceneEnvironment from './SceneEnvironment'
+import { isLowPowerDevice } from './devicePower'
 import Stats from 'stats.js'
 
 function StatsPanel() {
@@ -32,9 +33,12 @@ interface ThreeCanvasProps {
  * Scene-specific content (controls, objects, overlays) goes in children.
  */
 export default function ThreeCanvas({ children, onPointerMissed }: ThreeCanvasProps) {
+  // Phones/tablets get a lighter render path: capped DPR and smaller shadow
+  // maps. Client-only component (dynamic ssr:false), so this is stable.
+  const lowPower = isLowPowerDevice()
   return (
     <Canvas
-      dpr={[1, 2]}
+      dpr={lowPower ? [1, 1.5] : [1, 2]}
       camera={{ position: [0, 1.6, 3], fov: 55 }}
       shadows
       onPointerMissed={onPointerMissed}
@@ -55,8 +59,8 @@ export default function ThreeCanvas({ children, onPointerMissed }: ThreeCanvasPr
         position={[-3, 5, 10]}
         intensity={0.5}
         castShadow
-        shadow-mapSize-width={2048}
-        shadow-mapSize-height={2048}
+        shadow-mapSize-width={lowPower ? 1024 : 2048}
+        shadow-mapSize-height={lowPower ? 1024 : 2048}
         shadow-camera-left={-3}
         shadow-camera-right={3}
         shadow-camera-top={4}

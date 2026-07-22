@@ -5,10 +5,11 @@ import { CameraControls, CameraControlsImpl, useGLTF } from '@react-three/drei'
 import { useThree, useFrame } from '@react-three/fiber'
 import * as THREE from 'three/webgpu'
 import { useWasmachinekastStore } from '../store'
-import { setGlCanvas, captureNow, tickCapture, setCameraControls } from '@/lib/canvas-capture'
+import { setGlCanvas, tickCapture, setCameraControls } from '@/lib/canvas-capture'
 import ThreeCanvas from '../../_shared/canvas/ThreeCanvas'
 import ThreeLoader from '../../_shared/canvas/ThreeLoader'
 import CanvasFreezeGuard from '../../_shared/canvas/CanvasFreezeGuard'
+import { isLowPowerDevice } from '../../_shared/canvas/devicePower'
 import PostProcessing from '../../_shared/effects/PostProcessing'
 import WebGPURenderGuard from '../../_shared/effects/WebGPURenderGuard'
 import WasmachinekastScene from './WasmachinekastScene'
@@ -36,7 +37,6 @@ function RaycasterSetup() {
 
 function ScreenshotCapture() {
   const { gl } = useThree()
-  const lastCapture = useRef(0)
 
   useEffect(() => {
     const canvas =
@@ -47,12 +47,10 @@ function ScreenshotCapture() {
     return () => setGlCanvas(null)
   }, [gl])
 
+  // Captures are on-demand only (requestCapture at add-to-cart). A periodic
+  // capture here would cost a GPU readback + JPEG encode every second.
   useFrame(() => {
     queueMicrotask(tickCapture)
-    const now = performance.now()
-    if (now - lastCapture.current < 1000) return
-    lastCapture.current = now
-    queueMicrotask(captureNow)
   })
 
   return null
@@ -151,7 +149,9 @@ export default function WasmachinekastCanvas() {
             <CameraSystem />
             <RaycasterSetup />
             <ScreenshotCapture />
-            <PostProcessing />
+            {/* SSGI post-processing is too heavy for phones/tablets — the
+                default pipeline renders there instead. */}
+            {!isLowPowerDevice() && <PostProcessing />}
             <WebGPURenderGuard />
             <WasmMeasurementProjectorLayer projectedRef={projectedRef} />
 

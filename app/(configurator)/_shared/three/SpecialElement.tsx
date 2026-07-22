@@ -1,12 +1,15 @@
 'use client'
 
 import { useGLTF, useAnimations } from '@react-three/drei'
+import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three/webgpu'
 import { useRef, useEffect, useState } from 'react'
 import gsap from 'gsap'
 import type { ModuleElement } from '../../kledingkast/scene/moduleLayouts'
 import { useClosetMaterialInstance, useChromeMaterialInstance, useGlassMaterialInstance } from '../materials/ClosetMaterial'
 import { useConfiguratorStore } from '../store/context'
+import { HandleByType } from '../objects/Handles'
+import type { HandleMaterial, LeatherColor } from '../constants/handleMaterials'
 
 // All nodes in module GLBs carry a -90° Y rotation.
 // After that rotation: local X → world Z (depth), local Z → world X (width).
@@ -31,7 +34,23 @@ interface SpecialElementProps {
   positionY: number    // Y of the element's bbox bottom in module-group space
   hovered: boolean
   hasDoor: boolean
+  // When set, render a horizontal handle centered on each Front* mesh
+  // (kitchen-style lage kast fronts).
+  drawerHandle?: {
+    id: string
+    meshId?: string
+    material?: HandleMaterial
+    bodyColor?: LeatherColor
+  } | null
+  // Module-local Y where the bottom edge of meshes named *_extend should land
+  // (2 cm above the room floor when "deuren tot vloer" is on). The mesh is
+  // stretched downward, its top edge stays fixed. Null/undefined = no stretch.
+  extendFrontBottomY?: number | null
 }
+
+// Same edge inset as the door handle's distance from the door side (Door.tsx
+// handleX = slotW - 0.055): drawer handles sit 5.5 cm below the front's top.
+const DRAWER_HANDLE_TOP_INSET = 0.055
 
 interface MeshOriginal {
   pos: THREE.Vector3
@@ -44,6 +63,8 @@ function SpecialElementInner({
   positionY,
   hovered,
   hasDoor,
+  drawerHandle = null,
+  extendFrontBottomY = null,
 }: SpecialElementProps) {
   const { scene, animations } = useGLTF(element.glbPath)
   const closetMaterial = useClosetMaterialInstance(hasDoor ? 'binnenkant' : 'buitenkant')
@@ -55,6 +76,21 @@ function SpecialElementInner({
   const proxyRef = useRef({ t: 0 })
   const hoveredRef = useRef(hovered)
   useEffect(() => { hoveredRef.current = hovered }, [hovered])
+
+  // Clone-space boxes of Front* meshes, measured after the transform pass —
+  // drives horizontal front handles (kitchen-style lage kast fronts). Each
+  // entry keeps the mesh + its static (post-transform, pre-animation)
+  // position so the handle can follow the drawer-open hover animation.
+  const [drawerFronts, setDrawerFronts] = useState<
+    Array<{
+      cx: number
+      topY: number
+      frontZ: number
+      mesh: THREE.Mesh
+      staticPos: THREE.Vector3
+    }>
+  >([])
+  const handleRefs = useRef<Array<THREE.Group | null>>([])
 
   const isCentered = !!element.centered
 
@@ -182,7 +218,50 @@ function SpecialElementInner({
           mesh.position.z += depthGrowth
         }
       }
+
+      // `_extend` convention: stretch the front downward so its bottom edge
+      // lands at extendFrontBottomY (module-group space), keeping the top
+      // edge fixed. The group shifts the clone by offsetY, so convert the
+      // target into clone space first. Y is unaffected by the shared -90° Y
+      // rotation, so scaling local Y is safe.
+      if (extendFrontBottomY != null && mesh.name.includes('_extend')) {
+        if (!mesh.geometry.boundingBox) mesh.geometry.computeBoundingBox()
+        const g = mesh.geometry.boundingBox!
+        const targetY = extendFrontBottomY - (positionY - box.min.y)
+        const topY = original.pos.y + g.max.y
+        const bottomY = original.pos.y + g.min.y
+        if (topY - bottomY > 1e-6 && targetY < bottomY) {
+          const s = (topY - targetY) / (topY - bottomY)
+          mesh.scale.y = s
+          mesh.position.y = original.pos.y + g.max.y * (1 - s)
+        }
+      }
     })
+
+    const fronts: Array<{
+      cx: number
+      topY: number
+      frontZ: number
+      mesh: THREE.Mesh
+      staticPos: THREE.Vector3
+    }> = []
+    clone.traverse((child: THREE.Object3D) => {
+      if (!(child as THREE.Mesh).isMesh) return
+      const mesh = child as THREE.Mesh
+      if (!mesh.name.includes('Front')) return
+      mesh.updateMatrix()
+      if (!mesh.geometry.boundingBox) mesh.geometry.computeBoundingBox()
+      const b = mesh.geometry.boundingBox!.clone().applyMatrix4(mesh.matrix)
+      fronts.push({
+        cx: (b.min.x + b.max.x) / 2,
+        topY: b.max.y,
+        frontZ: b.max.z,
+        mesh,
+        staticPos: mesh.position.clone(),
+      })
+    })
+    fronts.sort((a, b) => a.topY - b.topY)
+    setDrawerFronts(fronts)
 
     const meshByName = new Map<string, THREE.Object3D>()
     clone.traverse((child: THREE.Object3D) => meshByName.set(child.name, child))
@@ -213,7 +292,7 @@ function SpecialElementInner({
       proxyRef.current.t = targetT
       action.time = targetT
     }
-  }, [clone, originals, box, clonedClips, actions, targetWidth, targetDepth])
+  }, [clone, originals, box, clonedClips, actions, targetWidth, targetDepth, extendFrontBottomY, positionY])
 
   useEffect(() => {
     const action = Object.values(actions)[0]
@@ -240,9 +319,41 @@ function SpecialElementInner({
     })
   }, [hovered, doorsOpen, actions])
 
+  // Follow the drawer-open hover animation: the mixer writes the front mesh's
+  // position each frame; mirror its offset from the measured static position
+  // onto the handle so the handle rides along with the front.
+  useFrame(() => {
+    if (!drawerHandle || drawerHandle.id === 'none') return
+    drawerFronts.forEach((f, i) => {
+      const g = handleRefs.current[i]
+      if (!g) return
+      g.position.set(
+        f.cx + (f.mesh.position.x - f.staticPos.x),
+        f.topY - DRAWER_HANDLE_TOP_INSET + (f.mesh.position.y - f.staticPos.y),
+        f.frontZ + 0.001 + (f.mesh.position.z - f.staticPos.z),
+      )
+    })
+  })
+
   return (
     <group position={[offsetX, offsetY, offsetZ]}>
       <primitive object={clone} />
+      {drawerHandle && drawerHandle.id !== 'none' && drawerFronts.map((f, i) => (
+        <group
+          key={`drawer-handle-${i}`}
+          ref={(el) => { handleRefs.current[i] = el }}
+          position={[f.cx, f.topY - DRAWER_HANDLE_TOP_INSET, f.frontZ + 0.001]}
+          rotation={[0, 0, Math.PI / 2]}
+        >
+          <HandleByType
+            id={drawerHandle.id}
+            meshId={drawerHandle.meshId}
+            material={drawerHandle.material}
+            bodyColor={drawerHandle.bodyColor}
+            position={[0, 0, 0]}
+          />
+        </group>
+      ))}
     </group>
   )
 }

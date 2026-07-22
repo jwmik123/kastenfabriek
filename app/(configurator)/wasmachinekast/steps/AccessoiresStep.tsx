@@ -3,6 +3,7 @@
 import { Info, Plug, Zap } from 'lucide-react'
 import type { BaseModuleSlot } from '../../_shared/store/types'
 import { useWasmachinekastStore } from '../store'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { cn } from '@/lib/utils'
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
@@ -54,6 +55,8 @@ export default function AccessoiresStep() {
   const accessories = useWasmachinekastStore((s) => s.pricingData?.accessories)
   const lowOnlyAccessoryNotice = useWasmachinekastStore((s) => s.lowOnlyAccessoryNotice)
   const dismissLowOnlyAccessoryNotice = useWasmachinekastStore((s) => s.dismissLowOnlyAccessoryNotice)
+  const sidePanelThickness = useWasmachinekastStore((s) => s.sidePanelThickness)
+  const setSidePanelThickness = useWasmachinekastStore((s) => s.setSidePanelThickness)
 
   const powerOutlet = accessories?.find((a) => a.id === 'power-outlet')
   const pradoHidden = layout === 'low-only' && powerOutlet?.availableForLowSection === false
@@ -79,6 +82,27 @@ export default function AccessoiresStep() {
           </button>
         </div>
       )}
+
+      {/* ── Zijpanelen dikte ── */}
+      <section className="space-y-5">
+        <div>
+          <h2 className="text-base font-semibold">Zijpanelen</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            Standaard 18 mm. Upgrade naar 36 mm voor een robuustere uitstraling.
+          </p>
+        </div>
+
+        <div className="p-4 rounded-md border">
+          <SegmentedControl<'18mm' | '36mm'>
+            options={[
+              { value: '18mm', label: '18 mm' },
+              { value: '36mm', label: '36 mm' },
+            ]}
+            value={sidePanelThickness}
+            onChange={(v) => setSidePanelThickness(v)}
+          />
+        </div>
+      </section>
 
       {!pradoHidden && (
         <section className="space-y-5">

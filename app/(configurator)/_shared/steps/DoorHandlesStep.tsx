@@ -26,9 +26,24 @@ const formatter = new Intl.NumberFormat('nl-NL', {
   maximumFractionDigits: 0,
 })
 
-export default function DoorHandlesStep() {
-  const doorHandleId          = useConfiguratorStore((s) => s.doorHandleId)
-  const setDoorHandleId       = useConfiguratorStore((s) => s.setDoorHandleId)
+export default function DoorHandlesStep({
+  priceSuffix = '/ deur',
+  handleId,
+  onSelect,
+  showMaterials = true,
+}: {
+  priceSuffix?: string
+  /** Controlled handle id — overrides the store's doorHandleId (drawer picker). */
+  handleId?: string
+  /** Selection callback — overrides the store's setDoorHandleId. */
+  onSelect?: (id: string) => void
+  /** Hide the Afwerking swatches (drawer picker shares the door material). */
+  showMaterials?: boolean
+} = {}) {
+  const storeDoorHandleId     = useConfiguratorStore((s) => s.doorHandleId)
+  const storeSetDoorHandleId  = useConfiguratorStore((s) => s.setDoorHandleId)
+  const doorHandleId          = handleId ?? storeDoorHandleId
+  const setDoorHandleId       = onSelect ?? storeSetDoorHandleId
   const doorHandleMaterial    = useConfiguratorStore((s) => s.doorHandleMaterial)
   const setDoorHandleMaterial = useConfiguratorStore((s) => s.setDoorHandleMaterial)
   const pricingData           = useConfiguratorStore((s) => s.pricingData)
@@ -161,7 +176,7 @@ export default function DoorHandlesStep() {
                       isActive ? 'text-primary-foreground/70' : 'text-muted-foreground',
                     )}
                   >
-                    {formatter.format(item.price)} / deur
+                    {formatter.format(item.price)} {priceSuffix}
                   </p>
                 </div>
               </button>
@@ -214,7 +229,7 @@ export default function DoorHandlesStep() {
         )}
       </div>
 
-      {doorHandleId !== 'none' && (() => {
+      {showMaterials && doorHandleId !== 'none' && (() => {
         const selectedHandle = handles.find((h) => h.id === doorHandleId)
         const allowed = selectedHandle?.allowedMaterials
         const visibleMetals =

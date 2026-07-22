@@ -42,6 +42,12 @@ export type ModuleLayoutConfig = {
   // its module corpus (walls/back/roof/floor) is suppressed — the GLB itself
   // provides the cabinet body. Used by lage kast washer (15_WMOpen).
   floorMount?: boolean
+  // Kitchen-style fronts (lage kast layouts 20/21/22): the GLB's Front*
+  // meshes are the visible front — no door renders, fronts sit flush with
+  // the door plane and carry the horizontal drawer handle.
+  lowFronts?: boolean
+  // Number of handle-bearing fronts in the GLB (drives handle pricing).
+  lowFrontCount?: number
 }
 
 export type ElementBbox = { minY: number; maxY: number }

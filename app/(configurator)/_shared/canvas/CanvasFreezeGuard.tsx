@@ -98,8 +98,28 @@ export default function CanvasFreezeGuard({ children }: CanvasFreezeGuardProps) 
   }, [])
 
   useEffect(() => {
+    // Backgrounded tabs pause requestAnimationFrame, so the heartbeat stops
+    // without the scene being frozen. Keep resetting it while hidden and give
+    // a grace window on return so tab switches never trip the watchdog.
+    const onVisibility = () => {
+      const now = performance.now()
+      heartbeatRef.current = now
+      if (!document.hidden) {
+        recoveringUntilRef.current = now + RECOVERY_GRACE_MS
+        if (frozenSinceRef.current != null) {
+          frozenSinceRef.current = null
+          setFrozen(false)
+        }
+      }
+    }
+    document.addEventListener('visibilitychange', onVisibility)
+
     const id = setInterval(() => {
       const now = performance.now()
+      if (document.hidden) {
+        heartbeatRef.current = now
+        return
+      }
       if (now < recoveringUntilRef.current) return
       if (now - mountTsRef.current < INITIAL_GRACE_MS) return
 
@@ -116,7 +136,10 @@ export default function CanvasFreezeGuard({ children }: CanvasFreezeGuardProps) 
         setFrozen(false)
       }
     }, CHECK_INTERVAL_MS)
-    return () => clearInterval(id)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility)
+      clearInterval(id)
+    }
   }, [remount])
 
   const handle: CanvasHealthHandle = {

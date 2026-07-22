@@ -101,6 +101,7 @@ const WASM_LOW_PLANK_CONFIG: ModuleLayoutConfig = {
       glbPath: '/objects/washermodules/12_WMPlankLow.glb',
       anchor: { type: 'fromBottom', d: 0 },
       centered: true,
+      noDoorDepthOffset: 0.031,
     },
   ],
   fillZone: {
@@ -108,6 +109,8 @@ const WASM_LOW_PLANK_CONFIG: ModuleLayoutConfig = {
     below: { type: 'open' },
   },
   minSlotHeight: LOW_MODULE_HEIGHT,
+  lowFronts: true,
+  lowFrontCount: 2,
 }
 
 const WASM_LOW_SINGLE_CONFIG: ModuleLayoutConfig = {
@@ -119,6 +122,7 @@ const WASM_LOW_SINGLE_CONFIG: ModuleLayoutConfig = {
       glbPath: '/objects/washermodules/13_WMSingleLow.glb',
       anchor: { type: 'fromBottom', d: 0 },
       centered: true,
+      noDoorDepthOffset: 0.031,
     },
   ],
   fillZone: {
@@ -126,6 +130,8 @@ const WASM_LOW_SINGLE_CONFIG: ModuleLayoutConfig = {
     below: { type: 'open' },
   },
   minSlotHeight: LOW_MODULE_HEIGHT,
+  lowFronts: true,
+  lowFrontCount: 1,
 }
 
 const WASM_LOW_DOUBLE_CONFIG: ModuleLayoutConfig = {
@@ -137,6 +143,7 @@ const WASM_LOW_DOUBLE_CONFIG: ModuleLayoutConfig = {
       glbPath: '/objects/washermodules/14_WMDoubleLow.glb',
       anchor: { type: 'fromBottom', d: 0 },
       centered: true,
+      noDoorDepthOffset: 0.031,
     },
   ],
   fillZone: {
@@ -144,6 +151,8 @@ const WASM_LOW_DOUBLE_CONFIG: ModuleLayoutConfig = {
     below: { type: 'open' },
   },
   minSlotHeight: LOW_MODULE_HEIGHT,
+  lowFronts: true,
+  lowFrontCount: 2,
 }
 
 const WASM_HARDCODED_CONFIGS: Record<number, ModuleLayoutConfig> = {

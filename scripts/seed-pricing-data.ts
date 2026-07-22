@@ -22,7 +22,7 @@ const pricingData = {
     slopedSideWallSurchargePerSide: 1100,
     constraints: {
       singleCorpus: {
-        minWidth: 15,
+        minWidth: 30,
         maxWidth: 65,
         minHeight: 200,
         maxHeight: 275,
@@ -250,7 +250,7 @@ const pricingData = {
       id: "side-panels-36mm",
       name: "Side Panels 36mm Upgrade",
       nameNl: "Zijpanelen 36mm (upgrade)",
-      price: 0,
+      price: 175,
       category: "upgrade",
       perUnit: false,
     },

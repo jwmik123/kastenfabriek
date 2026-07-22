@@ -179,7 +179,7 @@ export default function ModulesStep() {
         <SectionHeading>Deuren tot de vloer</SectionHeading>
         <div className="flex items-center justify-between">
           <span className="text-sm text-muted-foreground">
-            Deuren reiken tot 2 cm boven de vloer
+            Deuren en lades reiken tot 2 cm boven de vloer
           </span>
           <Toggle
             checked={doorsExtendToFloor}

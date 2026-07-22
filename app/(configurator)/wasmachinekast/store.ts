@@ -19,6 +19,7 @@ import type {
 export type { BaseModuleSlot as ModuleSlot }
 
 export type PlacementType = 'vrijstaand' | 'ingebouwd'
+export type SidePanelThickness = '18mm' | '36mm'
 
 export interface WasherModule {
   slotIndex: number
@@ -26,7 +27,7 @@ export interface WasherModule {
 }
 
 const MIN_DEPTH = 85
-const FALLBACK_MODULE_MIN_WIDTH = 15
+const FALLBACK_MODULE_MIN_WIDTH = 30
 const FALLBACK_MODULE_MAX_WIDTH = 65
 const TOP_CABINET_THRESHOLD = 275
 const SIDE_WALL_EXTRA_CM = 1.5
@@ -70,6 +71,11 @@ function resizeModules(existing: BaseModuleSlot[], count: number): BaseModuleSlo
 interface WasmState extends BaseConfiguratorState {
   placementType: PlacementType
   setPlacementType: (type: PlacementType) => void
+  sidePanelThickness: SidePanelThickness
+  setSidePanelThickness: (v: SidePanelThickness) => void
+  // Handle on lage-kast drawer fronts ('none' = push-to-open, the default).
+  drawerHandleId: string
+  setDrawerHandleId: (id: string) => void
   washerModules: WasherModule[]
   addWasherModule: (slotIndex: number, layoutId: number) => void
   removeWasherModule: (slotIndex: number) => void
@@ -129,6 +135,9 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
 
   placementType: 'ingebouwd' as PlacementType,
   setPlacementType: (type) => set({ placementType: type }),
+
+  sidePanelThickness: '18mm' as SidePanelThickness,
+  setSidePanelThickness: (sidePanelThickness) => set({ sidePanelThickness }),
 
   washerModules: [],
 
@@ -363,6 +372,9 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
   buitenkantMaterialId: 'premium-wit',
   binnenkantMaterialId: 'premium-wit',
   doorHandleId: '23',
+  // Drawer fronts (lage kast) have their own handle choice and start
+  // greeploos; the wizard can add a handle separately from the doors.
+  drawerHandleId: 'none',
   doorHandleMaterial: 'chrome' as const,
   doorsExtendToFloor: false,
   lightStripsEnabled: false,
@@ -440,7 +452,7 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
       sectionWidthCm,
       slotIndex,
       candidateMin,
-      FALLBACK_MODULE_MIN_WIDTH,
+      s.constraints?.singleCorpus.minWidth ?? FALLBACK_MODULE_MIN_WIDTH,
     )
   },
 
@@ -643,6 +655,7 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
       doorHandleMaterial: validateHandleMaterial(doorHandleMaterial, handle?.allowedMaterials),
     })
   },
+  setDrawerHandleId: (drawerHandleId) => set({ drawerHandleId }),
   setDoorHandleMaterial: (doorHandleMaterial) => {
     const { pricingData, doorHandleId } = get()
     const handle = pricingData?.handles.find((h) => h.id === doorHandleId)
@@ -734,9 +747,11 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
       buitenkantMaterialId: config.buitenkantMaterialId,
       binnenkantMaterialId: config.binnenkantMaterialId,
       doorHandleId: config.doorHandleId,
+      drawerHandleId: config.drawerHandleId ?? 'none',
       doorHandleMaterial: config.doorHandleMaterial ?? 'chrome',
       doorsExtendToFloor: config.doorsExtendToFloor ?? false,
       lightStripsEnabled: config.lightStripsEnabled,
+      sidePanelThickness: config.sidePanelThickness ?? '18mm',
       placementType: (config.placementType ?? 'ingebouwd') as PlacementType,
       washerModules,
       activeModulesSection: migrated.layout === 'low-only' ? 'low' : 'high',

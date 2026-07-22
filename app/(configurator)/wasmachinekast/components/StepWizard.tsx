@@ -10,6 +10,7 @@ import ModulesStep from '../steps/ModulesStep'
 import MaterialStep from '../steps/MaterialStep'
 import DoorHandlesStep from '../../_shared/steps/DoorHandlesStep'
 import AccessoiresStep from '../steps/AccessoiresStep'
+import { hasLowDrawerFronts } from '../sections/lowDrawerFronts'
 import ModuleMaterialPanel from './ModuleMaterialPanel'
 import StepHeader from '../../_shared/components/StepHeader'
 import ScrollArea from '../../_shared/components/ScrollArea'
@@ -56,6 +57,51 @@ const STEP_META: Record<number, { eyebrow: string; title: string; subtitle: stri
   },
 }
 
+function useHasLowDrawerFronts(): boolean {
+  const layout = useWasmachinekastStore((s) => s.layout)
+  const topLevelModules = useWasmachinekastStore((s) => s.modules)
+  const lowSection = useWasmachinekastStore((s) => s.lowSection)
+  return hasLowDrawerFronts({ layout, topLevelModules, lowSection })
+}
+
+// Doors carry the door-handle choice; lage-kast drawer fronts have their own
+// choice (default push-to-open). The drawer picker only shows when the
+// configuration has drawer fronts.
+function HandlesStep() {
+  const drawerFronts = useHasLowDrawerFronts()
+  const drawerHandleId = useWasmachinekastStore((s) => s.drawerHandleId)
+  const setDrawerHandleId = useWasmachinekastStore((s) => s.setDrawerHandleId)
+
+  return (
+    <div className="space-y-10">
+      <section className="space-y-4">
+        <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+          Deuren
+        </h3>
+        <DoorHandlesStep />
+      </section>
+      {drawerFronts && (
+        <section className="space-y-4">
+          <div>
+            <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              Lades
+            </h3>
+            <p className="text-xs text-muted-foreground/60 mt-1">
+              Standaard push-to-open. De greep wordt horizontaal op de ladefronten geplaatst.
+            </p>
+          </div>
+          <DoorHandlesStep
+            priceSuffix="/ lade"
+            handleId={drawerHandleId}
+            onSelect={setDrawerHandleId}
+            showMaterials={false}
+          />
+        </section>
+      )}
+    </div>
+  )
+}
+
 function CurrentStep() {
   const step = useWasmachinekastStore((s) => s.step)
 
@@ -65,7 +111,7 @@ function CurrentStep() {
     case 3: return <WasherStep />
     case 4: return <ModulesStep />
     case 5: return <MaterialStep />
-    case 6: return <DoorHandlesStep />
+    case 6: return <HandlesStep />
     case 7: return <AccessoiresStep />
     default: return null
   }
@@ -84,6 +130,10 @@ export default function StepWizard() {
   const isLastStep = step === STEP_COUNT
 
   const blurClass = 'transition-[filter] duration-200 blur-sm pointer-events-none select-none'
+
+  function handleNext() {
+    nextStep()
+  }
 
   function handlePrev() {
     if (step === 4) clearWasherModules()
@@ -121,7 +171,7 @@ export default function StepWizard() {
           <Button
             id="kf-tour-next-desktop"
             data-tour="next-button"
-            onClick={nextStep}
+            onClick={handleNext}
             disabled={step === 3 && washerModules.length === 0}
           >
             Volgende

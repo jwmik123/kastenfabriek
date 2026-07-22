@@ -181,7 +181,7 @@ const TOP_CABINET_THRESHOLD = 275
 const SIDE_WALL_EXTRA_CM = 1.5
 
 // Fallback constraints before Sanity data loads
-const FALLBACK_MODULE_MIN_WIDTH = 15
+const FALLBACK_MODULE_MIN_WIDTH = 30
 const FALLBACK_MODULE_MAX_WIDTH = 65
 
 export const useClosetStore = create<ClosetState>((set, get) => ({

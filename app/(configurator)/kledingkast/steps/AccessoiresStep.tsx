@@ -60,7 +60,7 @@ export default function AccessoiresStep() {
         <div>
           <h2 className="text-base font-semibold">Zijpanelen</h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Standaard 18 mm. Upgrade naar 36 mm voor extra stevigheid.
+            Standaard 18 mm. Upgrade naar 36 mm voor een robuustere uitstraling.
           </p>
         </div>
 

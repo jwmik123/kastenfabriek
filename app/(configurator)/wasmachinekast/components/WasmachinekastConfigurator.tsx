@@ -116,6 +116,7 @@ export default function WasmachinekastConfigurator({ pricingData, editConfig, ed
           buitenkantMaterialId: state.buitenkantMaterialId,
           binnenkantMaterialId: state.binnenkantMaterialId,
           doorHandleId: state.doorHandleId,
+          drawerHandleId: state.drawerHandleId,
           doorHandleName: state.doorHandleId === 'none'
             ? 'Greeploos (push-to-open)'
             : (state.pricingData?.handles.find((h) => h.id === state.doorHandleId)?.nameNl
@@ -132,6 +133,7 @@ export default function WasmachinekastConfigurator({ pricingData, editConfig, ed
           backDiagFlatSectionDepth: 0,
           doorHandleMaterial: state.doorHandleMaterial,
           doorsExtendToFloor: state.doorsExtendToFloor,
+          sidePanelThickness: state.sidePanelThickness,
           lightStripsEnabled: state.lightStripsEnabled,
           washerModules: state.washerModules,
           layout: state.layout,
@@ -152,7 +154,7 @@ export default function WasmachinekastConfigurator({ pricingData, editConfig, ed
   return (
     <ConfiguratorStoreContext.Provider value={useWasmachinekastStore}>
       <ConfiguratorTourProvider steps={wasmachinekastTourSteps}>
-        <div className="w-full h-[100svh] md:h-[95vh] flex flex-col">
+        <div className="w-full h-[100dvh] md:h-[95vh] flex flex-col">
           <ConfiguratorMobileHeader price={totalPrice} productName="Wasmachinekast" />
           <div className="hidden md:block">
             <ConfiguratorTopBar
