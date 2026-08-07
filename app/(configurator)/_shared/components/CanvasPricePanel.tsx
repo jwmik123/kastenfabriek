@@ -14,12 +14,16 @@ export interface CanvasPricePanelProps {
   totalPrice: number
   originalPrice?: number
   stepSummary?: { label: string; value: string }
+  onSave?: () => void
+  isSaving?: boolean
 }
 
 export default function CanvasPricePanel({
   totalPrice,
   originalPrice,
   stepSummary,
+  onSave,
+  isSaving = false,
 }: CanvasPricePanelProps) {
   const deliveryWindow = getDeliveryWindow(new Date())
 
@@ -61,10 +65,12 @@ export default function CanvasPricePanel({
 
       <button
         type="button"
-        className="flex items-center gap-2 px-4 h-11 rounded-lg text-sm font-medium border border-border bg-transparent hover:bg-accent transition-colors cursor-pointer whitespace-nowrap"
+        onClick={onSave}
+        disabled={!onSave || isSaving}
+        className="flex items-center gap-2 px-4 h-11 rounded-lg text-sm font-medium border border-border bg-transparent hover:bg-accent transition-colors cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-default"
       >
         <Heart className="size-4 shrink-0" />
-        Bewaar
+        {isSaving ? 'Bezig...' : 'Bewaar'}
       </button>
     </div>
   )

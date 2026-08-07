@@ -64,6 +64,7 @@ export interface SampleConfig {
 
 export interface ProductListItem {
   _id: string;
+  _createdAt: string;
   title: string;
   slug: string;
   productType: ProductType;
@@ -73,6 +74,8 @@ export interface ProductListItem {
   fromPrice: number | null;
   /** True when only one price exists, so no "vanaf" prefix is needed. */
   singlePrice: boolean;
+  /** Samples only: how many swatches a customer may pick. */
+  maxSamples: number | null;
 }
 
 export interface Product {
@@ -93,6 +96,7 @@ export interface Product {
 
 const productListProjection = groq`
   _id,
+  _createdAt,
   title,
   "slug": slug.current,
   productType,
@@ -100,7 +104,8 @@ const productListProjection = groq`
   heroImage,
   "fromPrice": math::min(paxConfig.variants[].priceEur),
   "singlePrice": count(paxConfig.variants[].priceEur) == 1 ||
-    math::min(paxConfig.variants[].priceEur) == math::max(paxConfig.variants[].priceEur)
+    math::min(paxConfig.variants[].priceEur) == math::max(paxConfig.variants[].priceEur),
+  "maxSamples": sampleConfig.maxSelections
 `;
 
 const productProjection = groq`

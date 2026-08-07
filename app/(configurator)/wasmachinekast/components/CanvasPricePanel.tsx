@@ -5,7 +5,7 @@ import { useCartPrice } from '../hooks/useCartPrice'
 import { useWasmachinekastStore } from '../store'
 
 export default function CanvasPricePanel() {
-  const { totalPrice, originalPrice } = useCartPrice()
+  const { totalPrice, originalPrice, handleAddToWishlist, isCapturing } = useCartPrice()
 
   const step = useWasmachinekastStore((s) => s.step)
   const moduleCount = useWasmachinekastStore((s) => s.moduleCount)
@@ -35,6 +35,8 @@ export default function CanvasPricePanel() {
       totalPrice={totalPrice}
       originalPrice={originalPrice}
       stepSummary={stepSummary}
+      onSave={handleAddToWishlist}
+      isSaving={isCapturing}
     />
   )
 }

@@ -44,6 +44,12 @@ export default function ModulesScrollSection() {
   const imageRef = useRef<HTMLDivElement>(null);
   const scrollHintRef = useRef<HTMLDivElement>(null);
   const overlayRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const mobileScrollRef = useRef<HTMLDivElement>(null);
+
+  // Mobile strip starts 250px into the panorama (left edge is mostly empty)
+  useEffect(() => {
+    if (mobileScrollRef.current) mobileScrollRef.current.scrollLeft = 250;
+  }, []);
 
   useEffect(() => {
     const outer = outerRef.current;
@@ -148,7 +154,10 @@ export default function ModulesScrollSection() {
           Bekijk al onze modules
         </h2>
       </div>
-      <div className="w-full overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]">
+      <div
+        ref={mobileScrollRef}
+        className="w-full overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]"
+      >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/images/Modules_High4.webp"

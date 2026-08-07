@@ -29,6 +29,13 @@
       "when": 1780401152376,
       "tag": "0003_striped_swarm",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1784727643907,
+      "tag": "0004_stale_squirrel_girl",
+      "breakpoints": true
     }
   ]
 }

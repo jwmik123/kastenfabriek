@@ -1,6 +1,9 @@
 'use client'
 
-import { Check, Heart, ShoppingCart, User } from 'lucide-react'
+import Link from 'next/link'
+import { ArrowLeft, Check, Heart, ShoppingCart, User } from 'lucide-react'
+
+import { CONFIGURATORS_HREF } from '@/lib/configurators'
 
 export interface TopBarStep {
   label: string
@@ -25,12 +28,23 @@ export default function ConfiguratorTopBar({
       data-testid="configurator-top-bar"
       className="h-16 shrink-0 border-b border-border bg-background flex items-center px-6"
     >
-      <div className="flex items-center gap-3 min-w-[180px]">
+      <div className="flex items-center gap-3 flex-1 basis-0 min-w-[180px]">
+        {/* Back out of the configurator to the "Ontwerp je kast" section. The
+            draft autosaves, so leaving does not lose the configuration. */}
+        <Link
+          href={CONFIGURATORS_HREF}
+          data-testid="configurator-back"
+          aria-label="Terug naar overzicht"
+          className="flex items-center gap-1.5 -ml-2 pl-2 pr-3 h-9 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+        >
+          <ArrowLeft className="size-4" />
+          Terug
+        </Link>
         <span className="font-serif text-lg tracking-tight">Kastenfabriek</span>
         <span className="text-sm text-muted-foreground">{productName}</span>
       </div>
 
-      <ol className="flex-1 flex items-center justify-center gap-2">
+      <ol className="shrink-0 flex items-center justify-center gap-2">
         {steps.map((step, i) => {
           const isDone = step.number < currentStep
           const isCurrent = step.number === currentStep
@@ -79,28 +93,28 @@ export default function ConfiguratorTopBar({
         })}
       </ol>
 
-      <div className="flex items-center gap-1 min-w-[180px] justify-end">
-        <button
-          type="button"
+      <div className="flex items-center gap-1 flex-1 basis-0 min-w-[180px] justify-end">
+        <Link
+          href="/wishlist"
           aria-label="Wishlist"
           className="flex items-center justify-center w-10 h-10 rounded-lg hover:bg-muted transition-colors cursor-pointer"
         >
           <Heart className="size-5" />
-        </button>
-        <button
-          type="button"
+        </Link>
+        <Link
+          href="/cart"
           aria-label="Cart"
           className="flex items-center justify-center w-10 h-10 rounded-lg hover:bg-muted transition-colors cursor-pointer"
         >
           <ShoppingCart className="size-5" />
-        </button>
-        <button
-          type="button"
+        </Link>
+        <Link
+          href="/account"
           aria-label="Account"
           className="flex items-center justify-center w-10 h-10 rounded-lg hover:bg-muted transition-colors cursor-pointer"
         >
           <User className="size-5" />
-        </button>
+        </Link>
       </div>
     </header>
   )

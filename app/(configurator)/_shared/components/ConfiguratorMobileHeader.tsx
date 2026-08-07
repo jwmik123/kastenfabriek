@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Menu, X, User, ShoppingBasket, Heart } from 'lucide-react'
+import { ArrowLeft, Menu, X, User, ShoppingBasket, Heart } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { CONFIGURATORS_HREF } from '@/lib/configurators'
 
 const priceFormatter = new Intl.NumberFormat('nl-NL', {
   style: 'currency',
@@ -51,11 +52,22 @@ export default function ConfiguratorMobileHeader({ price, productName }: Props) 
 
   return (
     <header className="md:hidden h-14 shrink-0 border-b border-border bg-background flex items-center justify-between px-4">
-      <div className="flex flex-col leading-none">
-        <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-0.5">
-          {productName ?? 'Totaalprijs'}
-        </span>
-        <span className="text-lg font-medium leading-none">{priceFormatter.format(price)}</span>
+      <div className="flex items-center gap-2">
+        {/* Back out of the configurator; the draft autosaves. */}
+        <Link
+          href={CONFIGURATORS_HREF}
+          data-testid="configurator-back"
+          aria-label="Terug naar overzicht"
+          className="flex items-center justify-center w-9 h-9 -ml-2 rounded-lg text-muted-foreground hover:bg-muted transition-colors"
+        >
+          <ArrowLeft className="size-5" />
+        </Link>
+        <div className="flex flex-col leading-none">
+          <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-0.5">
+            {productName ?? 'Totaalprijs'}
+          </span>
+          <span className="text-lg font-medium leading-none">{priceFormatter.format(price)}</span>
+        </div>
       </div>
 
       <button

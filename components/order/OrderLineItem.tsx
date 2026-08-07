@@ -34,7 +34,7 @@ function getMaterialName(id: string): string {
 const DOOR_TYPE_LABELS: Record<string, string> = {
   deuren: "Deuren",
   hoekdeuren: "Hoekdeuren",
-  afwerkpaneel: "Afwerkpaneel",
+  afwerkpaneel: "Zijpaneel",
 };
 
 export default function OrderLineItem({ item }: { item: OrderLineSnapshot }) {

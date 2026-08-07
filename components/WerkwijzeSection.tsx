@@ -33,7 +33,11 @@ const IMAGE_H = "h-32";
 
 export default function WerkwijzeSection() {
   return (
-    <section className="w-full bg-primary py-20 md:py-32 font-poppins overflow-hidden">
+    <section
+      id="werkwijze"
+      // Linked from /producten ("Hoe werkt de configurator?") — keep the id.
+      className="w-full scroll-mt-24 bg-primary py-20 md:py-32 font-poppins overflow-hidden"
+    >
       <div className="max-w-7xl mx-auto px-4 md:px-8">
         <div className="mb-24">
           <p className="text-white/50 text-sm uppercase tracking-widest font-semibold mb-3">

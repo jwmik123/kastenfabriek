@@ -1,6 +1,8 @@
 import Image from "next/image";
+import Link from "next/link";
 import { Hammer } from "lucide-react";
 import ProductOptionsSection from "@/components/ProductOptionsSection";
+import { CONFIGURATORS_HREF } from "@/lib/configurators";
 import HeroBackgroundVideo from "@/components/HeroBackgroundVideo";
 // import SloganSection from "@/components/SloganSection";
 // import ModuleHighlight from "@/components/ModuleHighlight";
@@ -33,7 +35,10 @@ export default function Home() {
           <p className="text-base sm:text-lg md:text-xl max-w-2xl text-left">
             Ontwerp zelf. Op maat gemaakte kledingkasten. Volledig afgestemd op jouw wensen.
           </p>
-          <button className="hero-btn w-full md:w-auto flex-shrink-0 flex items-center justify-center md:justify-start gap-3 bg-primary text-white px-6 md:px-8 py-3.5 md:py-4 rounded-sm text-base md:text-lg font-semibold relative overflow-hidden cursor-pointer">
+          <Link
+            href={CONFIGURATORS_HREF}
+            className="hero-btn w-full md:w-auto flex-shrink-0 flex items-center justify-center md:justify-start gap-3 bg-primary text-white px-6 md:px-8 py-3.5 md:py-4 rounded-sm text-base md:text-lg font-semibold relative overflow-hidden cursor-pointer"
+          >
             <div className="relative z-10 overflow-hidden pb-[0.2em] -mb-[0.2em]">
               <span className="btn-anim hero-btn__text block leading-none">
                 Start configurator
@@ -52,7 +57,7 @@ export default function Home() {
               </div>
             </div>
             <div className="btn-anim hero-btn__sweep absolute left-[-10%] bottom-0 w-[120%] h-full bg-black/30 z-0" />
-          </button>
+          </Link>
         </div>
       </div>
     </div>

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 560" width="420" height="560">
+  <g fill="none" stroke="#1a1a1a" stroke-width="2" stroke-linejoin="miter" stroke-linecap="square">
+    <!-- rechter zijvlak -->
+    <polygon points="260,89 297,69 297,449 260,469" fill="#ffffff"/>
+    <!-- bovenvlak -->
+    <polygon points="151,89 260,89 297,69 188,69" fill="#ffffff"/>
+    <!-- voorvlak (grijs) -->
+    <rect x="151" y="89" width="109" height="380" fill="#d6d6d6"/>
+    <!-- voorste hoekrib -->
+    <line x1="260" y1="89" x2="260" y2="469" stroke-width="4"/>
+  </g>
+</svg>

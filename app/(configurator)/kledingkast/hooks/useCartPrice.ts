@@ -6,6 +6,7 @@ import { useSession } from '@/lib/auth-client'
 import { useClosetStore } from '../store'
 import { MATERIALS } from '../materials'
 import { addItem } from '@/lib/cart/cart-store'
+import { addWishlistItem } from '@/lib/wishlist/wishlist-store'
 import { requestCapture, resetToFrontView } from '@/lib/canvas-capture'
 import { PricingEngine } from '@/lib/configurator/pricing-engine'
 import { computeFreeMontage } from '@/lib/configurator/free-montage'
@@ -138,12 +139,9 @@ export function useCartPrice() {
     slopedBackWallSurcharge +
     slopedSideWallSurcharge
 
-  const handleAddToCart = async () => {
-    if (!pricingData || isCapturing) return
-    setIsCapturing(true)
-
-    const itemId = editItemId ?? crypto.randomUUID()
-
+  // Builds the full cart item for the current configuration, including the
+  // two 3D captures (doors closed + open). Shared by cart and wishlist saves.
+  const buildItem = async (itemId: string): Promise<CartItem> => {
     const configSnapshot: ClosetConfigSnapshot = {
       id: itemId,
       capturedAt: new Date().toISOString(),
@@ -217,7 +215,7 @@ export function useCartPrice() {
     await new Promise<void>((r) => setTimeout(r, 700))
     const screenshotOpenUrl = (await requestCapture()) ?? undefined
 
-    const cartItem: CartItem = {
+    return {
       id: itemId,
       addedAt: configSnapshot.capturedAt,
       kind: 'closet',
@@ -227,7 +225,13 @@ export function useCartPrice() {
       screenshotClosedUrl,
       screenshotOpenUrl,
     }
+  }
 
+  const handleAddToCart = async () => {
+    if (!pricingData || isCapturing) return
+    setIsCapturing(true)
+
+    const cartItem = await buildItem(editItemId ?? crypto.randomUUID())
     addItem(cartItem)
 
     if (session?.user) {
@@ -237,6 +241,16 @@ export function useCartPrice() {
     }
   }
 
+  const handleAddToWishlist = async () => {
+    if (!pricingData || isCapturing) return
+    setIsCapturing(true)
+
+    const item = await buildItem(crypto.randomUUID())
+    addWishlistItem(item)
+
+    router.push('/wishlist')
+  }
+
   return {
     totalPrice,
     grandTotal,
@@ -244,6 +258,7 @@ export function useCartPrice() {
     pricingData,
     editItemId,
     handleAddToCart,
+    handleAddToWishlist,
     isCapturing,
     formatter,
   }

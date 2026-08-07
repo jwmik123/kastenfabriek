@@ -3,6 +3,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { User, ShoppingBasket, Heart, Hammer } from 'lucide-react'
+import { CONFIGURATORS_HREF } from '@/lib/configurators'
 import { useEffect, useState, useRef } from 'react'
 import gsap from 'gsap'
 
@@ -84,7 +85,7 @@ const Navigation = () => {
         <Hammer size={14} className="flex-shrink-0" />
         <span>Alle kasten nu met <strong>gratis montage</strong> bij oplevering!</span>
       </div>
-      <div className="flex items-center justify-between px-24 pt-6">
+      <div className="flex items-center justify-between px-4 pt-4 sm:px-8 lg:px-24 lg:pt-6">
 
         {/* Logo — floating independently */}
         <Link
@@ -131,7 +132,7 @@ const Navigation = () => {
             Bestel kleurstalen
           </Link>
           <Link
-            href="/kledingkast"
+            href={CONFIGURATORS_HREF}
             className="relative z-10 px-5 py-2 text-sm font-semibold text-white bg-amber-500 rounded-md hover:opacity-80 transition-opacity duration-150 shadow-sm"
           >
             Ontwerp je kast
@@ -154,7 +155,7 @@ const Navigation = () => {
 
         {/* Mobile Right Section */}
         <div className="flex lg:hidden items-center gap-3 pointer-events-auto">
-          <Link href="/kledingkast" className="text-white bg-primary px-4 py-2 text-sm rounded-md">
+          <Link href={CONFIGURATORS_HREF} className="text-white bg-primary px-4 py-2 text-sm rounded-md">
             Ontwerp je kast
           </Link>
 
@@ -193,7 +194,7 @@ const Navigation = () => {
           <div className="w-16 h-px bg-white/30 my-4" />
 
           <Link
-            href="/kledingkast"
+            href={CONFIGURATORS_HREF}
             onClick={() => setIsMenuOpen(false)}
             className="text-primary bg-white px-8 py-4 rounded-md font-medium"
           >

@@ -22,6 +22,7 @@ import {
 import type { ProductCartItem } from '@/lib/cart/types'
 import { useSession } from '@/lib/auth-client'
 import Lightbox from './Lightbox'
+import { PAX_TYPE_SVGS } from './PaxTypeSvgs'
 
 const COLORWAY_SLUGS: Record<string, string> = {
   'h1199-thermo-eik': 'thermo-eik-zwartbruin',
@@ -46,7 +47,7 @@ function uniqueStrings(arr: string[]): string[] {
 const TYPE_LABELS: Record<PaxDoorType, string> = {
   deuren: 'Deuren',
   hoekdeuren: 'Hoekdeuren',
-  afwerkpaneel: 'Afwerkpaneel',
+  afwerkpaneel: 'Zijpaneel',
 }
 
 function formatEuro(amount: number) {
@@ -424,15 +425,29 @@ export default function PaxDoorConfigurator({
             <div>
               <h3 className="text-sm font-medium mb-2">Type</h3>
               <div className="flex flex-wrap gap-2">
-                {availableTypes.map((t) => (
-                  <PillButton
-                    key={t}
-                    active={t === doorType}
-                    onClick={() => setDoorType(t)}
-                  >
-                    {TYPE_LABELS[t]}
-                  </PillButton>
-                ))}
+                {availableTypes.map((t) => {
+                  const TypeSvg = PAX_TYPE_SVGS[t]
+                  const active = t === doorType
+                  return (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setDoorType(t)}
+                      title={TYPE_LABELS[t]}
+                      aria-label={TYPE_LABELS[t]}
+                      aria-pressed={active}
+                      className={cn(
+                        'flex flex-col items-center gap-2 w-32 px-2 py-4 rounded-md border text-xs font-medium transition-colors',
+                        active
+                          ? 'bg-primary text-primary-foreground border-primary'
+                          : 'bg-background text-foreground border-border hover:border-foreground',
+                      )}
+                    >
+                      <TypeSvg className="h-24 w-auto" />
+                      {TYPE_LABELS[t]}
+                    </button>
+                  )
+                })}
               </div>
             </div>
           )}

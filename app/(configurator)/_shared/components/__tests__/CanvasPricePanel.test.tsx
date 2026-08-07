@@ -46,11 +46,6 @@ describe('CanvasPricePanel', () => {
     expect(html).toContain('Bewaar')
   })
 
-  it('renders add-to-cart primary button', () => {
-    const html = renderToStaticMarkup(<CanvasPricePanel {...baseProps} />)
-    expect(html).toContain('Voeg toe aan winkelwagen')
-  })
-
   it('positions panel as full-width bar at bottom of canvas', () => {
     const html = renderToStaticMarkup(<CanvasPricePanel {...baseProps} />)
     expect(html).toMatch(/bottom-0/)

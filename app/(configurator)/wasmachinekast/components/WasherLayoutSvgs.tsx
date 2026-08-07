@@ -58,6 +58,77 @@ export function WasherPlankSvg({ className }: SvgProps) {
   )
 }
 
+/* ------------------------------------------------------------------ */
+/* Type-picker drawings (step 3)                                       */
+/*                                                                     */
+/* Tall front-view drawings of the whole cabinet: the circle is the    */
+/* washer drum, the lines below are the vakken. Used only in the       */
+/* "Kies een type" list — the small square icons above stay in place   */
+/* for the compact grids (step 4, placed-module list).                 */
+/* ------------------------------------------------------------------ */
+
+const typeFrame = {
+  fill: 'none',
+  stroke: 'currentColor',
+  strokeWidth: 4,
+  strokeLinejoin: 'miter' as const,
+  strokeLinecap: 'butt' as const,
+}
+
+/** Cabinet outline + washer drum, shared by all three type drawings. */
+function TypeShell({ className, children }: SvgProps & { children: React.ReactNode }) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 130 320" className={className}>
+      <g {...typeFrame}>
+        <rect x="15" y="13" width="100" height="294" />
+        <line x1="15" y1="77" x2="115" y2="77" />
+        <line x1="15" y1="213" x2="115" y2="213" />
+        <circle cx="65" cy="145" r="40" />
+        {children}
+      </g>
+    </svg>
+  )
+}
+
+/** Enkel — washer with one vak below (vooraanzicht-cirkel-1streep) */
+export function WasherEnkelTypeSvg({ className }: SvgProps) {
+  return (
+    <TypeShell className={className}>
+      <line x1="52" y1="272" x2="78" y2="272" />
+    </TypeShell>
+  )
+}
+
+/** Dubbel — washer with two vakken below (vooraanzicht-cirkel-2strepen) */
+export function WasherDubbelTypeSvg({ className }: SvgProps) {
+  return (
+    <TypeShell className={className}>
+      <line x1="15" y1="261" x2="115" y2="261" />
+      <line x1="52" y1="242" x2="78" y2="242" />
+      <line x1="52" y1="290" x2="78" y2="290" />
+    </TypeShell>
+  )
+}
+
+/** Plank — washer with a shallow plank vak plus a vak below
+ *  (vooraanzicht-cirkel-1streep-2vakken) */
+export function WasherPlankTypeSvg({ className }: SvgProps) {
+  return (
+    <TypeShell className={className}>
+      <line x1="15" y1="251" x2="115" y2="251" />
+      <line x1="52" y1="237" x2="78" y2="237" />
+    </TypeShell>
+  )
+}
+
+/** Map layoutId to its step-3 type drawing. Ids without an entry fall back
+ *  to the compact WASHER_LAYOUT_SVGS icon. */
+export const WASHER_TYPE_SVGS: Record<number, React.ComponentType<SvgProps>> = {
+  11: WasherEnkelTypeSvg, // Wasmachine (enkel)
+  13: WasherDubbelTypeSvg, // Wasmachine (dubbel model)
+  14: WasherPlankTypeSvg, // Wasmachine met plank
+}
+
 /** Map every washer/low-module layoutId to its SVG (high + low share the 3 shapes). */
 export const WASHER_LAYOUT_SVGS: Record<number, React.ComponentType<SvgProps>> = {
   // high cabinet

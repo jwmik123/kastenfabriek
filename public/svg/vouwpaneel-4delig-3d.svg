@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 560" width="420" height="560">
+  <g fill="none" stroke="#1a1a1a" stroke-width="2" stroke-linejoin="miter" stroke-linecap="square">
+    <!-- paneel 1 -->
+    <polygon points="43,58 153,50 153,489 43,469" fill="#ffffff"/>
+    <!-- paneel 2 (grijs) -->
+    <polygon points="153,50 233,62 233,452 153,489" fill="#d6d6d6"/>
+    <!-- paneel 3 (grijs) -->
+    <polygon points="233,62 332,56 332,475 233,452" fill="#d6d6d6"/>
+    <!-- paneel 4 -->
+    <polygon points="332,56 387,66 387,452 332,475" fill="#ffffff"/>
+    <!-- vouwribben -->
+    <line x1="153" y1="50" x2="153" y2="489" stroke-width="4"/>
+    <line x1="233" y1="62" x2="233" y2="452" stroke-width="4"/>
+    <line x1="332" y1="56" x2="332" y2="475" stroke-width="4"/>
+  </g>
+</svg>

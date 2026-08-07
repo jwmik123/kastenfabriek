@@ -218,6 +218,6 @@ describe('getWasmModuleLayouts', () => {
     const entry = result.find((l) => l.layoutId === WASHER_SINGLE.layoutId)!
     expect(entry.priceSingle).toBe(99)
     expect(entry.minSlotWidth).toBe(68.6)
-    expect(entry.name).toBe('Wasmachine (enkel)')
+    expect(entry.name).toBe(WASHER_SINGLE.name)
   })
 })

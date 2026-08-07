@@ -182,11 +182,11 @@ const paxConfig = defineType({
     }),
     defineField({
       name: "afwerkVariants",
-      title: "Varianten — Afwerkpaneel",
+      title: "Varianten — Zijpaneel",
       type: "array",
       of: [{ type: "paxVariant" }],
       description:
-        "Prijsmatrix voor type 'Afwerkpaneel'. Leeg laten = type niet beschikbaar. Eigen breedtes/hoogtes — hoeft niet gelijk te zijn aan Deuren.",
+        "Prijsmatrix voor type 'Zijpaneel'. Leeg laten = type niet beschikbaar. Eigen breedtes/hoogtes — hoeft niet gelijk te zijn aan Deuren.",
     }),
     defineField({
       name: "allowedMaterialIds",

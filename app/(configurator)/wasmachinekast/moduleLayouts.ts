@@ -2,7 +2,7 @@ import type { ModuleLayout } from '@/types/configurator-pricing'
 
 export const WASHER_SINGLE: ModuleLayout = {
   layoutId: 11,
-  name: 'Wasmachine (enkel)',
+  name: '1 grote lade',
   description: '1 wasmachine — minimaal 68.6 cm breed',
   contents: { shelves: 2, rods: 0, drawers: 0, hasWashingMachineShelf: true },
   priceDouble: 0,
@@ -14,7 +14,7 @@ export const WASHER_SINGLE: ModuleLayout = {
 
 export const WASHER_DOUBLE_GLB: ModuleLayout = {
   layoutId: 13,
-  name: 'Wasmachine (dubbel model)',
+  name: '2 lades',
   description: '2 wasmachines in één kast',
   contents: { shelves: 0, rods: 0, drawers: 0, hasWashingMachineShelf: true },
   priceDouble: 0,
@@ -26,7 +26,7 @@ export const WASHER_DOUBLE_GLB: ModuleLayout = {
 
 export const WASHER_PLANK: ModuleLayout = {
   layoutId: 14,
-  name: 'Wasmachine met plank',
+  name: 'Plank met lade',
   description: 'Wasmachine met een plank erboven',
   contents: { shelves: 1, rods: 0, drawers: 0, hasWashingMachineShelf: true },
   priceDouble: 0,

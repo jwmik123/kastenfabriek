@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Poppins } from "next/font/google";
+import { Geist, Geist_Mono, IBM_Plex_Mono, Poppins } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/components/auth";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -12,6 +12,13 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+/** Eyebrow/label typeface — used for the section kickers on /producten. */
+const plexMono = IBM_Plex_Mono({
+  variable: "--font-plex-mono",
+  subsets: ["latin"],
+  weight: ["400", "500"],
 });
 
 const poppins = Poppins({
@@ -33,7 +40,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${poppins.variable} antialiased min-h-screen flex flex-col`}
+        className={`${geistSans.variable} ${geistMono.variable} ${plexMono.variable} ${poppins.variable} antialiased min-h-screen flex flex-col`}
       >
         <AuthProvider>
           <TooltipProvider delayDuration={400}>
