@@ -9,6 +9,7 @@ import gsap from 'gsap'
 
 const NAV_LINKS = [
   { href: '/', label: 'Home' },
+  { href: CONFIGURATORS_HREF, label: 'Kasten' },
   { href: '/producten', label: 'Producten' },
   { href: '/contact', label: 'Blog' },
 ]
@@ -85,13 +86,12 @@ const Navigation = () => {
         <Hammer size={14} className="flex-shrink-0" />
         <span>Alle kasten nu met <strong>gratis montage</strong> bij oplevering!</span>
       </div>
-      <div className="flex items-center justify-between px-4 pt-4 sm:px-8 lg:px-24 lg:pt-6">
+      <div className="flex items-center justify-between bg-[#f1ede4] px-4 py-3 pointer-events-auto lg:bg-transparent lg:pointer-events-none sm:px-8 lg:px-24 lg:py-0 lg:pt-6">
 
         {/* Logo — floating independently */}
         <Link
           href="/"
-          className="pointer-events-auto flex-shrink-0"
-          style={{ mixBlendMode: 'difference', filter: 'invert(1)' }}
+          className="pointer-events-auto flex-shrink-0 lg:[mix-blend-mode:difference] lg:invert"
         >
           <Image
             src="/logo.svg"
@@ -125,12 +125,6 @@ const Navigation = () => {
             </Link>
           ))}
           <div className="w-px h-5 bg-gray-300/70 mx-1" />
-          <Link
-            href="/producten/materiaalstalen"
-            className="relative z-10 px-5 py-2 text-sm font-semibold text-white bg-primary rounded-md hover:opacity-80 transition-opacity duration-150 shadow-sm"
-          >
-            Bestel kleurstalen
-          </Link>
           <Link
             href={CONFIGURATORS_HREF}
             className="relative z-10 px-5 py-2 text-sm font-semibold text-white bg-amber-500 rounded-md hover:opacity-80 transition-opacity duration-150 shadow-sm"
