@@ -6,7 +6,7 @@ import { WASHER_LAYOUTS, WASHER_LAYOUT_IDS } from './moduleLayouts'
 import { filterForSection } from './sections/wasmModuleLayoutFilter'
 import type { PopoverClickPoint } from '../_shared/components/popoverPlacement'
 import { validateHandleMaterial } from '../_shared/components/validateHandleMaterial'
-import { canFitFixedWidth } from '../_shared/store/slotWidths'
+import { fitVariableSlotCount, FALLBACK_MODULE_MIN_WIDTH_CM } from '../_shared/store/slotWidths'
 import { restore as restoreWasmSnapshot } from './sections/wasmSnapshotMigration'
 import type {
   Section,
@@ -28,7 +28,7 @@ export interface WasherModule {
 
 /** Shallowest cabinet the customer can pick; a washer still fits at 75 cm. */
 export const WASM_MIN_DEPTH_CM = 75
-const FALLBACK_MODULE_MIN_WIDTH = 30
+const FALLBACK_MODULE_MIN_WIDTH = FALLBACK_MODULE_MIN_WIDTH_CM
 const FALLBACK_MODULE_MAX_WIDTH = 65
 const TOP_CABINET_THRESHOLD = 275
 const SIDE_WALL_EXTRA_CM = 1.5
@@ -56,6 +56,101 @@ function clearPowerHoles(modules: BaseModuleSlot[]): { modules: BaseModuleSlot[]
     return m
   })
   return { modules: next, cleared }
+}
+
+/**
+ * Module count the section needs so a washer of `candidateWidthCm` fits in
+ * `slotIndex`. A washer slot is fixed-width, so two of them can squeeze the
+ * remaining variable slots below their minimum — in that case trailing modules
+ * are dropped until the rest fit again.
+ *
+ * Returns the count to use (the current one when nothing has to change), or
+ * null when the washer cannot be placed at all: when dropping modules would
+ * delete an existing washer, or when the section stays too narrow.
+ */
+function washerFitModuleCount({
+  modules,
+  sectionWidthCm,
+  slotIndex,
+  candidateWidthCm,
+  minVarWidthCm,
+  maxVarWidthCm,
+}: {
+  modules: BaseModuleSlot[]
+  sectionWidthCm: number
+  slotIndex: number
+  candidateWidthCm: number | undefined
+  minVarWidthCm: number
+  maxVarWidthCm: number
+}): number | null {
+  if (!candidateWidthCm) return modules.length
+  if (modules.length === 0 || sectionWidthCm <= 0) return null
+  if (slotIndex < 0 || slotIndex >= modules.length) return null
+
+  let totalFixed = candidateWidthCm
+  let variableCount = 0
+  // Trailing modules are dropped, so no fixed slot may fall outside the new count.
+  let lastFixedIndex = slotIndex
+  for (let i = 0; i < modules.length; i++) {
+    if (i === slotIndex) continue
+    if (modules[i].fixedWidth) {
+      totalFixed += modules[i].fixedWidth!
+      lastFixedIndex = Math.max(lastFixedIndex, i)
+    } else {
+      variableCount += 1
+    }
+  }
+
+  const keptVariable = fitVariableSlotCount({
+    sectionWidthCm,
+    totalFixedCm: totalFixed,
+    currentVariableCount: variableCount,
+    minVarWidthCm,
+    maxVarWidthCm,
+  })
+  if (keptVariable === null) return null
+
+  const fixedCount = modules.length - variableCount
+  const count = fixedCount + keptVariable
+  return count > lastFixedIndex ? count : null
+}
+
+/**
+ * Resolve where a washer would land and at which module count, or null when it
+ * cannot be placed. `moduleCount` equals `currentModuleCount` unless trailing
+ * modules have to be dropped to make room.
+ */
+function washerFitPlan(
+  s: WasmState,
+  slotIndex: number,
+  layoutId: number,
+): {
+  moduleCount: number
+  currentModuleCount: number
+  targetIsTopLevel: boolean
+} | null {
+  const target: WasherSection =
+    s.washerSection ?? (s.layout === 'low-only' ? 'low' : 'high')
+  // Top-level fields hold the active editing section: high in dual/high-only,
+  // low in low-only.
+  const targetIsTopLevel =
+    (target === 'high' && s.layout !== 'low-only') ||
+    (target === 'low' && s.layout === 'low-only')
+  const sectionWidthCm = targetIsTopLevel ? s.width : s.lowSection?.width ?? 0
+  const sectionModules: BaseModuleSlot[] =
+    targetIsTopLevel ? s.modules : s.lowSection?.modules ?? []
+
+  const candidateMin = s.moduleLayouts.find((l) => l.layoutId === layoutId)?.minSlotWidth
+  const moduleCount = washerFitModuleCount({
+    modules: sectionModules,
+    sectionWidthCm,
+    slotIndex,
+    candidateWidthCm: candidateMin,
+    minVarWidthCm: s.constraints?.singleCorpus.minWidth ?? FALLBACK_MODULE_MIN_WIDTH,
+    maxVarWidthCm: s.constraints?.singleCorpus.maxWidth ?? FALLBACK_MODULE_MAX_WIDTH,
+  })
+  if (moduleCount === null) return null
+  return { moduleCount, currentModuleCount: sectionModules.length, targetIsTopLevel }
 }
 
 function resizeModules(existing: BaseModuleSlot[], count: number): BaseModuleSlot[] {
@@ -91,10 +186,16 @@ interface WasmState extends BaseConfiguratorState {
   layout: WasmLayout
   lowSection: Section | null
   washerSection: WasherSection
-  // Returns true iff placing a washer of `layoutId` at `slotIndex` (in the
-  // section currently used for washers) leaves the remaining non-washer slots
-  // with enough room (>= FALLBACK_MODULE_MIN_WIDTH each).
+  // Returns true iff a washer of `layoutId` can go in `slotIndex` (in the
+  // section currently used for washers) — either straight away, or after
+  // dropping trailing modules so the remaining non-washer slots keep their
+  // minimum width. addWasherModule performs that drop.
   canPlaceWasher: (slotIndex: number, layoutId: number) => boolean
+
+  // Module count the last washer placement shrank the section to, so the step
+  // can say so once. Null when the placement changed nothing.
+  washerModuleCountNotice: number | null
+  dismissWasherModuleCountNotice: () => void
   topPanelThicknessMm: 18 | 36
   countertopMaterialId: string | undefined
   activeModulesSection: 'high' | 'low'
@@ -433,32 +534,21 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
     }
   },
 
-  canPlaceWasher: (slotIndex, layoutId) => {
-    const s = get()
-    const layout = s.moduleLayouts.find((l) => l.layoutId === layoutId)
-    const candidateMin = layout?.minSlotWidth
-    if (!candidateMin) return true
+  canPlaceWasher: (slotIndex, layoutId) => washerFitPlan(get(), slotIndex, layoutId) !== null,
 
-    // Resolve the section that holds washers right now.
-    const target: WasherSection =
-      s.washerSection ?? (s.layout === 'low-only' ? 'low' : 'high')
-    const targetIsTopLevel =
-      (target === 'high' && s.layout !== 'low-only') ||
-      (target === 'low' && s.layout === 'low-only')
-    const sectionWidthCm = targetIsTopLevel ? s.width : s.lowSection?.width ?? 0
-    const sectionModules: BaseModuleSlot[] =
-      targetIsTopLevel ? s.modules : s.lowSection?.modules ?? []
-    return canFitFixedWidth(
-      sectionModules,
-      sectionWidthCm,
-      slotIndex,
-      candidateMin,
-      s.constraints?.singleCorpus.minWidth ?? FALLBACK_MODULE_MIN_WIDTH,
-    )
-  },
+  washerModuleCountNotice: null,
+  dismissWasherModuleCountNotice: () => set({ washerModuleCountNotice: null }),
 
   addWasherModule: (slotIndex, layoutId) => {
-    if (!get().canPlaceWasher(slotIndex, layoutId)) return
+    const plan = washerFitPlan(get(), slotIndex, layoutId)
+    if (!plan) return
+    // Two fixed-width washers can squeeze the remaining slots below their
+    // minimum; drop the trailing modules first so the placement fits.
+    if (plan.moduleCount < plan.currentModuleCount) {
+      if (plan.targetIsTopLevel) get().setModuleCount(plan.moduleCount)
+      else get().setLowSectionModuleCount(plan.moduleCount)
+      set({ washerModuleCountNotice: plan.moduleCount })
+    }
     const s = get()
     const target: WasherSection =
       s.washerSection ?? (s.layout === 'low-only' ? 'low' : 'high')

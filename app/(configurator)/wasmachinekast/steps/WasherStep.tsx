@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useWasmachinekastStore } from '../store'
 import { WASHER_LAYOUTS } from '../moduleLayouts'
 import { filterForSection } from '../sections/wasmModuleLayoutFilter'
-import { WashingMachine, Trash2, Plus } from 'lucide-react'
+import { WashingMachine, Trash2, Plus, Info } from 'lucide-react'
 import { WASHER_LAYOUT_SVGS, WASHER_TYPE_SVGS } from '../components/WasherLayoutSvgs'
 import { cn } from '@/lib/utils'
 import {
@@ -66,6 +66,10 @@ export default function WasherStep() {
   const removeWasherModule = useWasmachinekastStore((s) => s.removeWasherModule)
   const canPlaceWasher = useWasmachinekastStore((s) => s.canPlaceWasher)
   const setHoveredSlot = useWasmachinekastStore((s) => s.setHoveredSlot)
+  const moduleCountNotice = useWasmachinekastStore((s) => s.washerModuleCountNotice)
+  const dismissModuleCountNotice = useWasmachinekastStore(
+    (s) => s.dismissWasherModuleCountNotice,
+  )
   const washerSection = useWasmachinekastStore((s) => s.washerSection)
   const setWasherSection = useWasmachinekastStore((s) => s.setWasherSection)
   const layout = useWasmachinekastStore((s) => s.layout)
@@ -122,6 +126,23 @@ export default function WasherStep() {
 
   return (
     <div className="space-y-8">
+
+      {moduleCountNotice !== null && (
+        <div className="flex items-start gap-2 rounded-md bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800">
+          <Info className="w-4 h-4 shrink-0 mt-0.5" />
+          <span className="flex-1">
+            Om het wastoestel te laten passen is het aantal modules verlaagd naar{' '}
+            {moduleCountNotice}.
+          </span>
+          <button
+            type="button"
+            onClick={dismissModuleCountNotice}
+            className="text-amber-900 underline underline-offset-2 hover:text-amber-950"
+          >
+            Begrepen
+          </button>
+        </div>
+      )}
 
       <section className="space-y-3">
         <SectionHeading>Waar wens je de wastoestellen te plaatsen?</SectionHeading>

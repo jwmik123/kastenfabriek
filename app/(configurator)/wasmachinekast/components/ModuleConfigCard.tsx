@@ -3,7 +3,10 @@
 import { X } from 'lucide-react'
 import { useWasmachinekastStore } from '../store'
 import { WASHER_LAYOUTS } from '../moduleLayouts'
-import { canFitFixedWidth } from '../../_shared/store/slotWidths'
+import {
+  canFitFixedWidth,
+  FALLBACK_MODULE_MIN_WIDTH_CM,
+} from '../../_shared/store/slotWidths'
 import { filterForSection } from '../sections/wasmModuleLayoutFilter'
 import { LAYOUT_SVGS } from '../../kledingkast/components/LayoutSvgs'
 import { WASHER_LAYOUT_SVGS } from './WasherLayoutSvgs'
@@ -37,6 +40,10 @@ export default function ModuleConfigCard({ className }: { className?: string }) 
   const washerModules    = useWasmachinekastStore((s) => s.washerModules)
   const washerSection    = useWasmachinekastStore((s) => s.washerSection)
   const layout           = useWasmachinekastStore((s) => s.layout)
+  const constraints      = useWasmachinekastStore((s) => s.constraints)
+  // Same floor as the washer placement gate in step 3, so a fixed-width layout
+  // is offered here exactly when it leaves the other slots wide enough.
+  const minModuleWidthCm = constraints?.singleCorpus.minWidth ?? FALLBACK_MODULE_MIN_WIDTH_CM
 
   const isDual = layout === 'low-left' || layout === 'low-right'
   const editingLow = isDual && activeModulesSection === 'low' && lowSection !== null
@@ -146,6 +153,7 @@ export default function ModuleConfigCard({ className }: { className?: string }) 
                 sectionWidthCm,
                 selectedSlot,
                 layoutItem.minSlotWidth,
+                minModuleWidthCm,
               )
               return (
                 <button

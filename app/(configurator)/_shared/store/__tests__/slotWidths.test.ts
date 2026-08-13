@@ -1,5 +1,42 @@
 import { describe, it, expect } from 'vitest'
-import { computeSlotWidthsM, canFitFixedWidth } from '../slotWidths'
+import { computeSlotWidthsM, canFitFixedWidth, fitVariableSlotCount } from '../slotWidths'
+
+describe('fitVariableSlotCount', () => {
+  const base = { minVarWidthCm: 30, maxVarWidthCm: 65 }
+
+  it('keeps every variable slot when they all stay above the minimum', () => {
+    // 250 - 68.6 = 181.4 over 5 slots = 36.3 each
+    expect(
+      fitVariableSlotCount({ ...base, sectionWidthCm: 250, totalFixedCm: 68.6, currentVariableCount: 5 }),
+    ).toBe(5)
+  })
+
+  it('drops slots until the rest reach the minimum', () => {
+    // 250 - 137.2 = 112.8; 4 slots would be 28.2 each, 3 slots are 37.6
+    expect(
+      fitVariableSlotCount({ ...base, sectionWidthCm: 250, totalFixedCm: 137.2, currentVariableCount: 4 }),
+    ).toBe(3)
+  })
+
+  it('returns null when even one slot would exceed the maximum width', () => {
+    // 200 - 0 = 200 left for a single slot: 200 > 65
+    expect(
+      fitVariableSlotCount({ ...base, sectionWidthCm: 200, totalFixedCm: 0, currentVariableCount: 1 }),
+    ).toBeNull()
+  })
+
+  it('returns null when the fixed widths already overflow the section', () => {
+    expect(
+      fitVariableSlotCount({ ...base, sectionWidthCm: 100, totalFixedCm: 150, currentVariableCount: 1 }),
+    ).toBeNull()
+  })
+
+  it('returns 0 when there are no variable slots left to place', () => {
+    expect(
+      fitVariableSlotCount({ ...base, sectionWidthCm: 150, totalFixedCm: 137.2, currentVariableCount: 0 }),
+    ).toBe(0)
+  })
+})
 
 describe('computeSlotWidthsM', () => {
   it('shares innerW equally among variable slots', () => {

@@ -23,6 +23,40 @@ export function computeSlotWidthsM(
  *
  * Returns true for non-fixed candidates (candidateWidthCm falsy).
  */
+/** Narrowest a variable (non-fixed) module may get when Sanity says nothing. */
+export const FALLBACK_MODULE_MIN_WIDTH_CM = 30
+
+/**
+ * How many variable slots can sit next to the fixed ones and still each keep a
+ * width inside [minVarWidthCm, maxVarWidthCm]?
+ *
+ * Returns the largest count that is at most `currentVariableCount` — i.e. how
+ * many variable slots survive, dropping as few as possible — or null when even
+ * a single variable slot cannot be made to fit.
+ */
+export function fitVariableSlotCount({
+  sectionWidthCm,
+  totalFixedCm,
+  currentVariableCount,
+  minVarWidthCm,
+  maxVarWidthCm,
+}: {
+  sectionWidthCm: number
+  totalFixedCm: number
+  currentVariableCount: number
+  minVarWidthCm: number
+  maxVarWidthCm: number
+}): number | null {
+  const free = sectionWidthCm - totalFixedCm
+  if (free < 0) return null
+  if (currentVariableCount <= 0) return 0
+
+  const mostThatFit = Math.floor(free / minVarWidthCm)
+  const fewestAllowed = Math.max(1, Math.ceil(free / maxVarWidthCm))
+  const count = Math.min(currentVariableCount, mostThatFit)
+  return count >= fewestAllowed ? count : null
+}
+
 export function canFitFixedWidth(
   modules: Array<{ fixedWidth?: number }>,
   sectionWidthCm: number,

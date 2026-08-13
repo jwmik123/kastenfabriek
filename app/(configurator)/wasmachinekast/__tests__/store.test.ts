@@ -1063,6 +1063,71 @@ describe('canPlaceWasher / addWasherModule — capacity gate', () => {
     expect(useWasmachinekastStore.getState().canPlaceWasher(1, 99)).toBe(true)
   })
 
+  it('drops trailing modules so a second washer fits, and records the new count', () => {
+    // width=250, 6 slots, 2 washers @75cm => 150cm; 4 non-washer slots would be
+    // 25cm each (< 30). Dropping one leaves 3 × 33.3cm, so the count goes to 5.
+    useWasmachinekastStore.setState({
+      width: 250, moduleCount: 6, layout: 'high-only',
+      washerModules: [{ slotIndex: 0, layoutId: 99 }],
+      modules: [
+        { slotIndex: 0, layoutId: 99, hasDoor: true, span: 1, fixedWidth: 75 },
+        ...[1, 2, 3, 4, 5].map((slotIndex) => ({
+          slotIndex, layoutId: null, hasDoor: true, span: 1 as const,
+        })),
+      ],
+      moduleLayouts: basePricingData.modules,
+    })
+    expect(useWasmachinekastStore.getState().canPlaceWasher(2, 99)).toBe(true)
+
+    useWasmachinekastStore.getState().addWasherModule(2, 99)
+    const s = useWasmachinekastStore.getState()
+    expect(s.moduleCount).toBe(5)
+    expect(s.modules).toHaveLength(5)
+    expect(s.washerModules.map((w) => w.slotIndex).sort()).toEqual([0, 2])
+    expect(s.modules[2].layoutId).toBe(99)
+    expect(s.washerModuleCountNotice).toBe(5)
+  })
+
+  it('leaves the module count alone when the washer already fits', () => {
+    useWasmachinekastStore.setState({
+      width: 220, moduleCount: 4, layout: 'high-only',
+      washerModules: [{ slotIndex: 0, layoutId: 99 }],
+      modules: [
+        { slotIndex: 0, layoutId: 99, hasDoor: true, span: 1, fixedWidth: 75 },
+        ...[1, 2, 3].map((slotIndex) => ({
+          slotIndex, layoutId: null, hasDoor: true, span: 1 as const,
+        })),
+      ],
+      moduleLayouts: basePricingData.modules,
+    })
+    useWasmachinekastStore.getState().addWasherModule(1, 99)
+    const s = useWasmachinekastStore.getState()
+    expect(s.moduleCount).toBe(4)
+    expect(s.washerModuleCountNotice).toBeNull()
+  })
+
+  it('rejects when dropping modules would delete an existing washer', () => {
+    // The only way to free up room is to cut slot 5, which holds a washer.
+    useWasmachinekastStore.setState({
+      width: 250, moduleCount: 6, layout: 'high-only',
+      washerModules: [{ slotIndex: 5, layoutId: 99 }],
+      modules: [
+        ...[0, 1, 2, 3, 4].map((slotIndex) => ({
+          slotIndex, layoutId: null, hasDoor: true, span: 1 as const,
+        })),
+        { slotIndex: 5, layoutId: 99, hasDoor: true, span: 1, fixedWidth: 75 },
+      ],
+      moduleLayouts: basePricingData.modules,
+    })
+    expect(useWasmachinekastStore.getState().canPlaceWasher(0, 99)).toBe(false)
+  })
+
+  it('dismissWasherModuleCountNotice clears the flag', () => {
+    useWasmachinekastStore.setState({ washerModuleCountNotice: 5 })
+    useWasmachinekastStore.getState().dismissWasherModuleCountNotice()
+    expect(useWasmachinekastStore.getState().washerModuleCountNotice).toBeNull()
+  })
+
   it('allows replacing an existing washer slot (slot already pinned does not double-count)', () => {
     // Replacing slot 0's washer with another washer of the same minSlotWidth
     // must not be rejected by the gate.
