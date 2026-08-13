@@ -56,10 +56,10 @@ describe('AccessoiresStep', () => {
     expect(html).toContain('data-plug="1"')
   })
 
-  it('renders the Prado 2.0 section heading', async () => {
+  it('renders the Stekkerdoos section heading', async () => {
     const { default: AccessoiresStep } = await import('../steps/AccessoiresStep')
     const html = renderToStaticMarkup(<AccessoiresStep />)
-    expect(html).toContain('Prado 2.0')
+    expect(html).toContain('Stekkerdoos')
   })
 
   it('renders Zijpanelen section with always-visible 18/36mm picker', async () => {

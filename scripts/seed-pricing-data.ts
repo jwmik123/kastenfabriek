@@ -240,8 +240,8 @@ const pricingData = {
     },
     {
       id: "power-outlet",
-      name: "Prado 2.0",
-      nameNl: "Prado 2.0",
+      name: "Stekkerdoos",
+      nameNl: "Stekkerdoos",
       price: 145,
       category: "electrical",
       perUnit: true,

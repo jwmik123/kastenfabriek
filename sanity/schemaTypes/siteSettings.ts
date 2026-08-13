@@ -95,7 +95,7 @@ export const siteSettings = defineType({
       name: "mainsElectricityNotice",
       title: "Netstroom melding",
       description:
-        "Wordt getoond bij LED-verlichting en Prado 2.0 in de configurator.",
+        "Wordt getoond bij LED-verlichting en Stekkerdoos in de configurator.",
       type: "string",
       initialValue:
         "Let op: er moet netstroom achter de kast aanwezig zijn.",

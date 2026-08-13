@@ -41,15 +41,15 @@ A secondary cabinet stacked on top of the main wardrobe when total height > 275 
 `'ingebouwd'` (built-in, can have slopes) or `'vrijstaand'` (free-standing, slopes forced off). Stored on `useClosetStore.placementType`.
 
 ### Accessory
-Priced add-on customer toggles in step "Accessoires" (extra shelf, pull-out rail, WCD/Prado 2.0, side panels, …). Sanity `accessory` document. Two pricing modes: `perUnit=true` (priced per item) or `perUnit=false` (priced per module — note schema field is `maxPerCorpus` but the unit is actually a module, per the schema misnomer above).
+Priced add-on customer toggles in step "Accessoires" (extra shelf, pull-out rail, WCD/Stekkerdoos, side panels, …). Sanity `accessory` document. Two pricing modes: `perUnit=true` (priced per item) or `perUnit=false` (priced per module — note schema field is `maxPerCorpus` but the unit is actually a module, per the schema misnomer above).
 
 Accessories are quantity-toggled at the wardrobe level (one counter for the whole wardrobe), not per module. The "extra shelf" accessory is *not* rendered in the 3D scene — pure pricing line item. Per-module placement of shelves is potential future work.
 
 ### Surcharge
 Conditional price additions tied to wardrobe configuration, **not** customer-toggleable. Live in `pricingConfig` (e.g. `slopedBackWallSurcharge`, `slopedSideWallSurchargePerSide`). Pricing engine applies them when the relevant store flag is set. Side-slope surcharge is **per side** (left + right = double).
 
-### WCD / Prado 2.0
-Electrical wall socket option. Customer-facing name is **Prado 2.0** (renamed from WCD). Internally still `hasPowerHole` on a slot. When enabled, the cabinet needs mains electricity behind it (same constraint applies to LED).
+### WCD / Stekkerdoos
+Electrical wall socket option. Customer-facing name is **Stekkerdoos** (renamed from WCD). Internally still `hasPowerHole` on a slot. When enabled, the cabinet needs mains electricity behind it (same constraint applies to LED).
 
 ## Wasmachinekast-only terms
 

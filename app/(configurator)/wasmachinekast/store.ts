@@ -106,7 +106,7 @@ interface WasmState extends BaseConfiguratorState {
   setLowCountertopMaterialId: (id: string) => void
   applySectionsState: (next: WasmSectionsState) => void
 
-  // Set when entering low-only forces Prado reset because Sanity marks
+  // Set when entering low-only forces the socket reset because Sanity marks
   // power-outlet as not available for the low section. AccessoiresStep clears
   // it after showing a one-time notice.
   lowOnlyAccessoryNotice: boolean

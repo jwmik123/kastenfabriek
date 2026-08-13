@@ -24,7 +24,7 @@ export default function AccessoiresStep() {
   const diagonalSide = useClosetStore((s) => s.diagonalSide)
   const sidePanels36mmLocked = diagonalSide !== 'none'
   const mainsNotice = useClosetStore((s) => s.pricingData?.mainsElectricityNotice)
-  const anyPrado = modules.some((m) => m.hasPowerHole)
+  const anySocket = modules.some((m) => m.hasPowerHole)
 
   return (
     <div className="space-y-10">
@@ -82,12 +82,12 @@ export default function AccessoiresStep() {
         </div>
       </section>
 
-      {/* ── Prado 2.0 ── */}
+      {/* ── Stekkerdoos ── */}
       <section className="space-y-5">
         <div>
-          <SectionHeading>Prado 2.0</SectionHeading>
+          <SectionHeading>Stekkerdoos</SectionHeading>
           <p className="text-xs text-muted-foreground/60 mt-1">
-            Selecteer een vak om Prado 2.0 toe te voegen
+            Selecteer een vak om een stekkerdoos toe te voegen
           </p>
         </div>
 
@@ -111,7 +111,7 @@ export default function AccessoiresStep() {
             )
           })}
         </div>
-        {anyPrado && mainsNotice && (
+        {anySocket && mainsNotice && (
           <div className="flex items-start gap-2 rounded-md bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800">
             <Zap className="w-4 h-4 shrink-0 mt-0.5" />
             <span>{mainsNotice}</span>

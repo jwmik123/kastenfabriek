@@ -59,9 +59,9 @@ export default function AccessoiresStep() {
   const setSidePanelThickness = useWasmachinekastStore((s) => s.setSidePanelThickness)
 
   const powerOutlet = accessories?.find((a) => a.id === 'power-outlet')
-  const pradoHidden = layout === 'low-only' && powerOutlet?.availableForLowSection === false
+  const socketHidden = layout === 'low-only' && powerOutlet?.availableForLowSection === false
   const isDual = layout === 'low-left' || layout === 'low-right'
-  const anyPrado =
+  const anySocket =
     modules.some((m) => m.hasPowerHole) ||
     (lowSection?.modules.some((m) => m.hasPowerHole) ?? false)
 
@@ -104,12 +104,12 @@ export default function AccessoiresStep() {
         </div>
       </section>
 
-      {!pradoHidden && (
+      {!socketHidden && (
         <section className="space-y-5">
           <div>
-            <SectionHeading>Prado 2.0</SectionHeading>
+            <SectionHeading>Stekkerdoos</SectionHeading>
             <p className="text-xs text-muted-foreground/60 mt-1">
-              Selecteer een vak om Prado 2.0 toe te voegen
+              Selecteer een vak om een stekkerdoos toe te voegen
             </p>
           </div>
 
@@ -131,7 +131,7 @@ export default function AccessoiresStep() {
             <SlotGrid modules={modules} onToggle={setHasPowerHole} />
           )}
 
-          {anyPrado && mainsNotice && (
+          {anySocket && mainsNotice && (
             <div className="flex items-start gap-2 rounded-md bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800">
               <Zap className="w-4 h-4 shrink-0 mt-0.5" />
               <span>{mainsNotice}</span>

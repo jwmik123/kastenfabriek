@@ -1,4 +1,5 @@
 import LockViewport from './_shared/components/LockViewport'
+import MobileDesktopNotice from './_shared/components/MobileDesktopNotice'
 
 export default function ConfiguratorLayout({
   children,
@@ -12,6 +13,7 @@ export default function ConfiguratorLayout({
   return (
     <main className="flex-1 min-h-0">
       <LockViewport />
+      <MobileDesktopNotice />
       {children}
     </main>
   )
