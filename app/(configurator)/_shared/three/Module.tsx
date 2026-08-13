@@ -196,6 +196,12 @@ export default function Module({
   const storeNeedsTop = useConfiguratorStore((s) => s.needsTopCabinet())
   const needsTop     = sectionNeedsTopCabinet ?? storeNeedsTop
 
+  // Which colour the module's interior takes. A washer module carries no
+  // full-height door, but the push-to-open door above it closes the module off,
+  // so its carcass, shelves and elements finish in the binnenkant colour just
+  // like every other closed module.
+  const insideFinish = hasDoor || washerDoorAbove === true
+
   const sideWallM    = p.sideWallThickness
   const innerW       = width - sideWallM * 2
   const moduleDepth  = depthOverride ?? (depth - WALL - CLOSET_INSIDE_INSET)
@@ -480,6 +486,8 @@ export default function Module({
           positionY={elementYs[i]}
           hovered={hoveredSlot === index && hoverMatchesSection}
           hasDoor={hasDoor}
+          insideFinish={insideFinish}
+          exposedFronts={insideFinish && !hasDoor}
           extendFrontBottomY={
             doorsExtendToFloor && !hasDoor ? 0.02 - effectiveFloorY : null
           }
@@ -505,7 +513,7 @@ export default function Module({
           depth={contentDepth}
           centerX={centerX}
           centerZ={centerZ}
-          hasDoor={hasDoor}
+          insideFinish={insideFinish}
           fillToTop={fillToTop}
         />
       )}
@@ -519,7 +527,7 @@ export default function Module({
           depth={contentDepth}
           centerX={centerX}
           centerZ={centerZ}
-          hasDoor={hasDoor}
+          insideFinish={insideFinish}
           fillToTop={fillToTop}
         />
       )}
@@ -528,11 +536,11 @@ export default function Module({
       {isBackDiag ? (
         <mesh key="back-wall-bd" position={[moduleWidth / 2, hBack / 2, MODULE_WALL / 2]} castShadow receiveShadow>
           <boxGeometry args={[moduleWidth, Math.max(0.001, hBack), MODULE_WALL]} />
-          <ClosetMaterial variant={hasDoor ? 'binnenkant' : 'buitenkant'} />
+          <ClosetMaterial variant={insideFinish ? 'binnenkant' : 'buitenkant'} />
         </mesh>
       ) : (
         <mesh key="back-wall-sd" position={[0, 0, 0]} geometry={backWallGeo!} castShadow receiveShadow>
-          <ClosetMaterial variant={hasDoor ? 'binnenkant' : 'buitenkant'} />
+          <ClosetMaterial variant={insideFinish ? 'binnenkant' : 'buitenkant'} />
         </mesh>
       )}
 
@@ -548,13 +556,13 @@ export default function Module({
       {isBackDiag ? (
         bdSideWallGeo && (
           <mesh key="left-wall-bd" position={[0, 0, 0]} geometry={bdSideWallGeo} castShadow receiveShadow>
-            <ClosetMaterial variant={hasDoor ? 'binnenkant' : 'buitenkant'} />
+            <ClosetMaterial variant={insideFinish ? 'binnenkant' : 'buitenkant'} />
           </mesh>
         )
       ) : (
         leftWallGeo && (
           <mesh key="left-wall-sd" position={[0, 0, centerZ - moduleDepth / 2]} geometry={leftWallGeo} castShadow receiveShadow>
-            <ClosetMaterial variant={hasDoor ? 'binnenkant' : 'buitenkant'} />
+            <ClosetMaterial variant={insideFinish ? 'binnenkant' : 'buitenkant'} />
           </mesh>
         )
       )}
@@ -563,13 +571,13 @@ export default function Module({
       {isBackDiag ? (
         bdSideWallGeo && (
           <mesh key="right-wall-bd" position={[moduleWidth - MODULE_WALL, 0, 0]} geometry={bdSideWallGeo} castShadow receiveShadow>
-            <ClosetMaterial variant={hasDoor ? 'binnenkant' : 'buitenkant'} />
+            <ClosetMaterial variant={insideFinish ? 'binnenkant' : 'buitenkant'} />
           </mesh>
         )
       ) : (
         rightWallGeo && (
           <mesh key="right-wall-sd" position={[0, 0, centerZ - moduleDepth / 2]} geometry={rightWallGeo} castShadow receiveShadow>
-            <ClosetMaterial variant={hasDoor ? 'binnenkant' : 'buitenkant'} />
+            <ClosetMaterial variant={insideFinish ? 'binnenkant' : 'buitenkant'} />
           </mesh>
         )
       )}
@@ -578,7 +586,7 @@ export default function Module({
       {!isFloorMount && (
         <mesh position={[moduleWidth / 2, MODULE_WALL / 2, centerZ]} castShadow receiveShadow>
           <boxGeometry args={[moduleWidth, MODULE_WALL, moduleDepth]} />
-          <ClosetMaterial variant={hasDoor ? 'binnenkant' : 'buitenkant'} />
+          <ClosetMaterial variant={insideFinish ? 'binnenkant' : 'buitenkant'} />
         </mesh>
       )}
 
@@ -586,12 +594,12 @@ export default function Module({
       {isBackDiag ? (
         bdRoofGeo && (
           <mesh key="roof-bd" position={[0, 0, 0]} geometry={bdRoofGeo} castShadow receiveShadow>
-            <ClosetMaterial variant={hasDoor ? 'binnenkant' : 'buitenkant'} />
+            <ClosetMaterial variant={insideFinish ? 'binnenkant' : 'buitenkant'} />
           </mesh>
         )
       ) : (
         <mesh key="roof-sd" position={[0, 0, centerZ - moduleDepth / 2]} geometry={roofGeo!} castShadow receiveShadow>
-          <ClosetMaterial variant={hasDoor ? 'binnenkant' : 'buitenkant'} />
+          <ClosetMaterial variant={insideFinish ? 'binnenkant' : 'buitenkant'} />
         </mesh>
       )}
 
@@ -660,7 +668,7 @@ export default function Module({
           depth={contentDepth}
           centerX={centerX}
           centerZ={centerZ}
-          hasDoor={true}
+          insideFinish={insideFinish}
         />
       )}
 

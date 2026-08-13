@@ -61,8 +61,7 @@ export default function CanvasToolbar({ showRandomize = true }: { showRandomize?
   const isMobile = useIsMobile()
   const { orientation, items } = getToolbarLayout({ isMobile, showRandomize })
 
-  const isHorizontal = orientation === 'horizontal'
-  const tooltipSide = isHorizontal ? 'bottom' : 'right'
+  const tooltipSide = orientation === 'horizontal' ? 'bottom' : 'right'
 
   const renderItem = (item: ToolbarItem) => {
     switch (item) {
@@ -114,18 +113,20 @@ export default function CanvasToolbar({ showRandomize = true }: { showRandomize?
       data-tour="canvas-toolbar"
       data-orientation={orientation}
       className={cn(
-        'absolute z-10 flex items-center gap-0.5 bg-background/90 backdrop-blur-sm border border-border rounded-xl p-1.5 shadow-lg',
-        isHorizontal
-          ? 'flex-row top-2 left-1/2 -translate-x-1/2'
-          : 'flex-col left-4 top-1/3',
+        'absolute z-10 flex flex-col items-center bg-background/90 backdrop-blur-sm border border-border shadow-lg',
+        isMobile
+          // Compact rail tucked against the left edge, so it stays clear of the
+          // cabinet in the middle of the canvas.
+          ? 'left-2 top-1/4 gap-0 rounded-lg p-1 [&_button]:w-8 [&_button]:h-8 [&_svg]:size-4'
+          : 'left-4 top-1/3 gap-0.5 rounded-xl p-1.5',
       )}
     >
       {items.map((item, i) => (
         <Fragment key={item}>
           {i > 0 && (
             <Separator
-              orientation={isHorizontal ? 'vertical' : 'horizontal'}
-              className={isHorizontal ? 'h-6 mx-1' : 'w-6 my-1'}
+              orientation="horizontal"
+              className={isMobile ? 'w-4 my-0.5' : 'w-6 my-1'}
             />
           )}
           {renderItem(item)}

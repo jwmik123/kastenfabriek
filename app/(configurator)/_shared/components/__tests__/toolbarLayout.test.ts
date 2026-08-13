@@ -15,9 +15,9 @@ describe('getToolbarLayout', () => {
     ])
   })
 
-  it('renders a horizontal bar without zoom buttons on mobile', () => {
+  it('renders a vertical rail without zoom buttons on mobile', () => {
     const layout = getToolbarLayout({ isMobile: true, showRandomize: true })
-    expect(layout.orientation).toBe('horizontal')
+    expect(layout.orientation).toBe('vertical')
     expect(layout.items).not.toContain('zoomIn')
     expect(layout.items).not.toContain('zoomOut')
     expect(layout.items).toEqual(['measurements', 'doors', 'randomize', 'help'])

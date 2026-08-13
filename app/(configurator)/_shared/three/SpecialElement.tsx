@@ -34,6 +34,19 @@ interface SpecialElementProps {
   positionY: number    // Y of the element's bbox bottom in module-group space
   hovered: boolean
   hasDoor: boolean
+  /**
+   * Interior finish: closed modules take the binnenkant colour. Separate from
+   * `hasDoor`, which also drives the depth offset — a washer module has no
+   * full-height door but is still finished on the inside.
+   */
+  insideFinish: boolean
+  /**
+   * True when the element's Front* meshes are visible from outside the cabinet
+   * (a washer module: finished inside, but no full-height door in front of the
+   * drawers). Those fronts then take the buitenkant colour like any other
+   * exposed front.
+   */
+  exposedFronts?: boolean
   // When set, render a horizontal handle centered on each Front* mesh
   // (kitchen-style lage kast fronts).
   drawerHandle?: {
@@ -63,11 +76,14 @@ function SpecialElementInner({
   positionY,
   hovered,
   hasDoor,
+  insideFinish,
+  exposedFronts = false,
   drawerHandle = null,
   extendFrontBottomY = null,
 }: SpecialElementProps) {
   const { scene, animations } = useGLTF(element.glbPath)
-  const closetMaterial = useClosetMaterialInstance(hasDoor ? 'binnenkant' : 'buitenkant')
+  const closetMaterial = useClosetMaterialInstance(insideFinish ? 'binnenkant' : 'buitenkant')
+  const outerMaterial  = useClosetMaterialInstance('buitenkant')
   const chromeMaterial = useChromeMaterialInstance()
   const glassMaterial  = useGlassMaterialInstance()
 
@@ -138,13 +154,18 @@ function SpecialElementInner({
         if (glbMeshes.has(mesh.name)) return
         if (glassMeshes.has(mesh.name)) { mesh.material = glassMaterial; return }
         const isChrome = chromeMeshes.has(mesh.name) || mesh.name.includes('Metal')
-        mesh.material = isChrome ? chromeMaterial : closetMaterial
+        const isExposedFront = exposedFronts && mesh.name.includes('Front')
+        mesh.material = isChrome
+          ? chromeMaterial
+          : isExposedFront
+            ? outerMaterial
+            : closetMaterial
         mesh.castShadow = true
         mesh.receiveShadow = true
       })
     }
     applyMaterial(clone)
-  }, [clone, closetMaterial, chromeMaterial, glassMaterial, element.glbMaterialMeshes, element.chromeMaterialMeshes, element.glassMaterialMeshes])
+  }, [clone, closetMaterial, outerMaterial, exposedFronts, chromeMaterial, glassMaterial, element.glbMaterialMeshes, element.chromeMaterialMeshes, element.glassMaterialMeshes])
 
   useEffect(() => {
     const action = Object.values(actions)[0]

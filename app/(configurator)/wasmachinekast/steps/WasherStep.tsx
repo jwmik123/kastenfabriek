@@ -124,7 +124,7 @@ export default function WasherStep() {
     <div className="space-y-8">
 
       <section className="space-y-3">
-        <SectionHeading>Wasmachine in hoge of lage kast?</SectionHeading>
+        <SectionHeading>Waar wens je de wastoestellen te plaatsen?</SectionHeading>
         <div className="flex rounded-md border border-border overflow-hidden text-sm font-medium">
           <button
             type="button"

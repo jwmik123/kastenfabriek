@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useWasmachinekastStore, type PlacementType } from '../store'
+import { useWasmachinekastStore, WASM_MIN_DEPTH_CM, type PlacementType } from '../store'
 import { Slider } from '@/components/ui/slider'
 import { Info } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -123,7 +123,7 @@ export default function DimensionsStep() {
   const topMax = constraints?.topCabinet.maxHeight ?? 110
   const minW = sc?.minWidth ?? 15
   const maxW = (sc?.maxWidth ?? 65) * 8
-  const minDepth = Math.max(85, sc?.minDepth ?? 85)
+  const minDepth = Math.max(WASM_MIN_DEPTH_CM, sc?.minDepth ?? WASM_MIN_DEPTH_CM)
   const isLowOnly = layout === 'low-only'
   const isDual = layout === 'low-left' || layout === 'low-right'
 
@@ -164,7 +164,7 @@ export default function DimensionsStep() {
           max={sc?.maxDepth ?? 90}
           unit="cm"
           onChange={setDepth}
-          hint="Minimaal 85 cm voor wasmachine"
+          hint={`Minimaal ${minDepth} cm voor wasmachine`}
         />
 
         {isLowOnly && (

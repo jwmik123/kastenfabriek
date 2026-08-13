@@ -29,9 +29,10 @@ export interface ToolbarLayoutOptions {
 /**
  * Resolve the toolbar orientation and ordered button list.
  *
- * - Desktop renders a vertical rail including zoom in/out buttons.
- * - Mobile renders a horizontal bar with zoom omitted (pinch-to-zoom remains).
- * - Randomize is gated by `showRandomize` in both orientations.
+ * - Both viewports render a vertical rail along the left edge; mobile's is
+ *   compact (see CanvasToolbar) so it stays clear of the cabinet.
+ * - Desktop includes zoom in/out; mobile omits them (pinch-to-zoom remains).
+ * - Randomize is gated by `showRandomize`.
  */
 export function getToolbarLayout({
   isMobile,
@@ -53,7 +54,7 @@ export function getToolbarLayout({
   items.push('help')
 
   return {
-    orientation: isMobile ? 'horizontal' : 'vertical',
+    orientation: 'vertical',
     items,
   }
 }

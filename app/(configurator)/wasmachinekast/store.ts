@@ -26,7 +26,8 @@ export interface WasherModule {
   layoutId: number
 }
 
-const MIN_DEPTH = 85
+/** Shallowest cabinet the customer can pick; a washer still fits at 75 cm. */
+export const WASM_MIN_DEPTH_CM = 75
 const FALLBACK_MODULE_MIN_WIDTH = 30
 const FALLBACK_MODULE_MAX_WIDTH = 65
 const TOP_CABINET_THRESHOLD = 275
@@ -568,7 +569,7 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
 
   setDepth: (depth) => {
     const c = get().constraints?.singleCorpus
-    const minDepth = Math.max(MIN_DEPTH, c?.minDepth ?? MIN_DEPTH)
+    const minDepth = Math.max(WASM_MIN_DEPTH_CM, c?.minDepth ?? WASM_MIN_DEPTH_CM)
     const maxDepth = c?.maxDepth ?? 120
     set({ depth: Math.max(minDepth, Math.min(maxDepth, depth)) })
   },

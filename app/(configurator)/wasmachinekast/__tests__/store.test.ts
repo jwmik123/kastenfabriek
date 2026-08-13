@@ -101,14 +101,14 @@ const baseSnapshot: ClosetConfigSnapshot = {
 describe('setDepth', () => {
   beforeEach(resetStore)
 
-  it('clamps depth to minimum 85cm', () => {
+  it('clamps depth to minimum 75cm', () => {
     useWasmachinekastStore.getState().setDepth(40)
-    expect(useWasmachinekastStore.getState().depth).toBe(85)
+    expect(useWasmachinekastStore.getState().depth).toBe(75)
   })
 
-  it('accepts depth exactly at 85cm', () => {
-    useWasmachinekastStore.getState().setDepth(85)
-    expect(useWasmachinekastStore.getState().depth).toBe(85)
+  it('accepts depth exactly at 75cm', () => {
+    useWasmachinekastStore.getState().setDepth(75)
+    expect(useWasmachinekastStore.getState().depth).toBe(75)
   })
 
   it('accepts depth above 85cm', () => {

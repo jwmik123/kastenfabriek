@@ -16,7 +16,8 @@ interface FillZoneProps {
   depth: number   // shelf depth
   centerX: number // X center of shelves within the module group
   centerZ: number // Z center of shelves within the module group
-  hasDoor: boolean
+  /** Interior finish: closed modules take the binnenkant colour. */
+  insideFinish: boolean
   fillToTop?: boolean // skip gap-above check, fill right up to the ceiling
 }
 
@@ -28,7 +29,7 @@ export default function FillZone({
   depth,
   centerX,
   centerZ,
-  hasDoor,
+  insideFinish,
   fillToTop = false,
 }: FillZoneProps) {
   const shelfPositions = useMemo(
@@ -44,7 +45,7 @@ export default function FillZone({
         // y is the shelf TOP in module-space; mesh center sits a half-thickness below.
         <mesh key={i} position={[centerX, y - SHELF_THICKNESS / 2, centerZ]} castShadow receiveShadow>
           <boxGeometry args={[width, SHELF_THICKNESS, depth]} />
-          <ClosetMaterial variant={hasDoor ? 'binnenkant' : 'buitenkant'} />
+          <ClosetMaterial variant={insideFinish ? 'binnenkant' : 'buitenkant'} />
         </mesh>
       ))}
     </>
