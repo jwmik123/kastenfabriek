@@ -91,6 +91,14 @@ export default function ModulesStep() {
   const canBeDouble = selectedSlot !== null && selectedSlot < modules.length - 1 &&
     (diagParams.backDiagonal || !isUnderDiagonal)
 
+  // The indeling step is about the interior — open the doors on entry so the
+  // slots are visible. Closing them again while on this step stays respected.
+  useEffect(() => {
+    if (!useClosetStore.getState().doorsOpen) {
+      useClosetStore.setState({ doorsOpen: true })
+    }
+  }, [])
+
   // Mobile: the inline config card sits below the fold, so reveal it on select.
   useEffect(() => {
     if (!isMobile || selectedSlot === null) return

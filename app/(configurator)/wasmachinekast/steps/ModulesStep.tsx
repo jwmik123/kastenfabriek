@@ -62,6 +62,14 @@ export default function ModulesStep() {
     (layout === 'low-only' && washerSection === 'low')
   const washerSlots = new Set(washerLocksThisSection ? washerModules.map((w) => w.slotIndex) : [])
 
+  // The indeling step is about the interior — open the doors on entry so the
+  // slots are visible. Closing them again while on this step stays respected.
+  useEffect(() => {
+    if (!useWasmachinekastStore.getState().doorsOpen) {
+      useWasmachinekastStore.setState({ doorsOpen: true })
+    }
+  }, [])
+
   // Mobile: the inline config card sits below the fold, so reveal it on select.
   useEffect(() => {
     if (!isMobile || selectedSlot === null) return

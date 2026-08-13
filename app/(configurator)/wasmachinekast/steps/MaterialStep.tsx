@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useWasmachinekastStore } from '../store'
 import { MATERIALS } from '../../kledingkast/materials'
 import { cn } from '@/lib/utils'
-import MaterialColorWheel from '../../kledingkast/components/MaterialColorWheel'
+import MaterialPicker from '../../kledingkast/components/MaterialPicker'
 
 type MaterialTab = 'buitenkant' | 'binnenkant' | 'werkblad'
 
@@ -83,7 +83,7 @@ export default function MaterialStep() {
       </div>
 
       <div className="flex flex-col items-center gap-3">
-        <MaterialColorWheel materialId={materialId} onSelect={setMaterialId} size={300} hideOutsideOnly={activeTab === 'binnenkant'} />
+        <MaterialPicker materialId={materialId} onSelect={setMaterialId} size={300} hideOutsideOnly={activeTab === 'binnenkant'} />
         {selectedMaterial && (
           <p className="text-sm font-medium">{selectedMaterial.name}</p>
         )}
@@ -96,7 +96,7 @@ export default function MaterialStep() {
           if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' })
           else window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
         }}
-        className="w-full text-sm text-muted-foreground hover:text-foreground underline underline-offset-4 py-2"
+        className="hidden md:block w-full text-sm text-muted-foreground hover:text-foreground underline underline-offset-4 py-2"
       >
         Scroll naar beneden om de kast in het echt te zien met je gekozen materiaal
       </button>

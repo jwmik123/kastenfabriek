@@ -5,7 +5,7 @@ import { X } from 'lucide-react'
 import { useClosetStore } from '../store'
 import { MATERIALS } from '../materials'
 import { cn } from '@/lib/utils'
-import MaterialColorWheel from './MaterialColorWheel'
+import MaterialPicker from './MaterialPicker'
 
 export default function ModuleMaterialPanel() {
   const step = useClosetStore((s) => s.step)
@@ -76,7 +76,7 @@ export default function ModuleMaterialPanel() {
 
       {/* Color wheel */}
       <div className="flex flex-col items-center gap-3">
-        <MaterialColorWheel materialId={materialId} onSelect={handleSelect} size={260} />
+        <MaterialPicker materialId={materialId} onSelect={handleSelect} size={260} />
         {selectedMaterial && (
           <p className="text-sm font-medium">{selectedMaterial.name}</p>
         )}

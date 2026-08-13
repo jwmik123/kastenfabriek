@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useWasmachinekastStore } from '../store'
 import { MATERIALS } from '../../kledingkast/materials'
 import { cn } from '@/lib/utils'
-import MaterialColorWheel from '../../kledingkast/components/MaterialColorWheel'
+import MaterialPicker from '../../kledingkast/components/MaterialPicker'
 
 export default function ModuleMaterialPanel() {
   const step = useWasmachinekastStore((s) => s.step)
@@ -80,7 +80,7 @@ export default function ModuleMaterialPanel() {
       </div>
 
       <div className="flex flex-col items-center gap-3">
-        <MaterialColorWheel materialId={materialId} onSelect={handleSelect} size={260} />
+        <MaterialPicker materialId={materialId} onSelect={handleSelect} size={260} />
         {selectedMaterial && (
           <p className="text-sm font-medium">{selectedMaterial.name}</p>
         )}

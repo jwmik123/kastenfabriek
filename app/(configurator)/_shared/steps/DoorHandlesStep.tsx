@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useConfiguratorStore } from '../store/context'
 import { computeHandlePages } from '../components/computeHandlePages'
 import { cn } from '@/lib/utils'
@@ -120,10 +120,93 @@ export default function DoorHandlesStep({
   const canPrev = safeIndex > 0
   const canNext = safeIndex < pages.length - 1
 
+  // ─── Swipe between pages (touch/pen/mouse drag) ──────────────────────────
+  const SWIPE_THRESHOLD_PX = 50
+  const AXIS_LOCK_PX = 10
+  // A press that wandered this far was a drag, not a tap — swallow its click.
+  const CLICK_SUPPRESS_PX = 20
+  const drag = useRef<{
+    startX: number
+    startY: number
+    axis: 'x' | 'y' | null
+    dx: number
+  } | null>(null)
+  const swiped = useRef(false)
+  const [dragX, setDragX] = useState(0)
+  const [dragging, setDragging] = useState(false)
+
+  function endDrag() {
+    drag.current = null
+    setDragging(false)
+    setDragX(0)
+  }
+
+  function onPointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    if (pages.length < 2) return
+    swiped.current = false
+    drag.current = { startX: e.clientX, startY: e.clientY, axis: null, dx: 0 }
+  }
+
+  function onPointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    const d = drag.current
+    if (!d) return
+    const dx = e.clientX - d.startX
+    const dy = e.clientY - d.startY
+
+    if (d.axis === null) {
+      if (Math.abs(dx) < AXIS_LOCK_PX && Math.abs(dy) < AXIS_LOCK_PX) return
+      // Vertical intent — leave the gesture to the scroll container.
+      d.axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y'
+      if (d.axis === 'y') {
+        drag.current = null
+        return
+      }
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId)
+      } catch {
+        // Pointer already released — drag still works without capture.
+      }
+      setDragging(true)
+    }
+
+    // Rubber-band at the first/last page.
+    const atEdge = (dx > 0 && !canPrev) || (dx < 0 && !canNext)
+    d.dx = atEdge ? dx * 0.25 : dx
+    setDragX(d.dx)
+  }
+
+  function onPointerUp() {
+    const d = drag.current
+    if (d?.axis === 'x') {
+      if (d.dx <= -SWIPE_THRESHOLD_PX && canNext) {
+        setPageIndex(safeIndex + 1)
+        swiped.current = true
+      } else if (d.dx >= SWIPE_THRESHOLD_PX && canPrev) {
+        setPageIndex(safeIndex - 1)
+        swiped.current = true
+      } else if (Math.abs(d.dx) > CLICK_SUPPRESS_PX) {
+        // Dragged but not far enough — still suppress the click it fires.
+        swiped.current = true
+      }
+    }
+    endDrag()
+  }
+
   return (
     <div className="space-y-7">
       <div className="space-y-3">
-        <div className="grid grid-cols-3 gap-2">
+        <div
+          className="grid grid-cols-3 gap-2 touch-pan-y select-none"
+          data-testid="handle-page-grid"
+          style={{
+            transform: `translateX(${dragX}px)`,
+            transition: dragging ? 'none' : 'transform 200ms ease-out',
+          }}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onPointerCancel={endDrag}
+        >
           {currentPage.map((item) => {
             const isActive = item.id === doorHandleId
             const isDisabled = disabledHandleIds.has(item.id)
@@ -133,7 +216,10 @@ export default function DoorHandlesStep({
             return (
               <button
                 key={item.id}
-                onClick={() => !isDisabled && setDoorHandleId(item.id)}
+                onClick={() => {
+                  if (swiped.current || isDisabled) return
+                  setDoorHandleId(item.id)
+                }}
                 disabled={isDisabled}
                 title={disabledTitle}
                 aria-disabled={isDisabled}
@@ -203,15 +289,24 @@ export default function DoorHandlesStep({
               aria-label="Pagina-indicator"
             >
               {pages.map((_, i) => (
-                <span
+                <button
                   key={i}
+                  type="button"
+                  role="tab"
+                  aria-label={`Pagina ${i + 1}`}
+                  aria-selected={i === safeIndex}
+                  onClick={() => setPageIndex(i)}
                   data-testid="handle-page-dot"
                   data-active={i === safeIndex ? 'true' : 'false'}
-                  className={cn(
-                    'size-2 rounded-full transition-colors',
-                    i === safeIndex ? 'bg-foreground' : 'bg-muted-foreground/30',
-                  )}
-                />
+                  className="p-2 -m-1 leading-none"
+                >
+                  <span
+                    className={cn(
+                      'block size-2 rounded-full transition-colors',
+                      i === safeIndex ? 'bg-foreground' : 'bg-muted-foreground/30',
+                    )}
+                  />
+                </button>
               ))}
             </div>
 
