@@ -31,10 +31,12 @@ export default async function ProductPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ edit?: string }>;
+  searchParams: Promise<{ edit?: string; staal?: string }>;
 }) {
   const { slug } = await params;
-  const { edit } = await searchParams;
+  // `staal` comes from the homepage material lightbox: one or more material ids
+  // to tick straight away in the sample picker.
+  const { edit, staal } = await searchParams;
   const product = await getProductBySlug(slug);
 
   if (!product) notFound();
@@ -74,7 +76,10 @@ export default async function ProductPage({
       </nav>
 
       {isSamples ? (
-        <SampleConfigurator product={product} />
+        <SampleConfigurator
+          product={product}
+          preselectedMaterialIds={staal ? staal.split(",") : []}
+        />
       ) : isPax ? (
         <PaxDoorConfigurator
           product={product}

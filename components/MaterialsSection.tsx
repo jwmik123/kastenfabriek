@@ -1,12 +1,24 @@
+'use client'
+
 import Image from 'next/image'
 import Link from 'next/link'
+import { useState } from 'react'
 import { ArrowRight } from 'lucide-react'
-import { MATERIALS, ColorMaterial, TextureMaterial } from '@/app/(configurator)/kledingkast/materials'
+import {
+  MATERIALS,
+  ColorMaterial,
+  Material,
+  TextureMaterial,
+} from '@/app/(configurator)/kledingkast/materials'
+import MaterialLightbox from './MaterialLightbox'
 
 const colors = MATERIALS.filter((m): m is ColorMaterial => m.type === 'color')
 const textures = MATERIALS.filter((m): m is TextureMaterial => m.type === 'texture')
 
 export default function MaterialsSection() {
+  // Clicking a swatch enlarges it, with a link on to ordering that sample.
+  const [zoomed, setZoomed] = useState<Material | null>(null)
+
   return (
     <section className="bg-[#f2ede4] py-20 px-6">
       <div className="max-w-7xl mx-auto">
@@ -45,7 +57,15 @@ export default function MaterialsSection() {
             </div>
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3 sm:gap-5 flex-1">
               {textures.map((texture) => (
-                <div key={texture.id} className="group flex flex-col gap-2">
+                <button
+                  key={texture.id}
+                  type="button"
+                  onClick={() => setZoomed(texture)}
+                  aria-label={`${texture.name} vergroot bekijken`}
+                  data-testid="material-swatch-tile"
+                  data-material={texture.id}
+                  className="group flex flex-col gap-2 text-left cursor-pointer"
+                >
                   <div className="w-full aspect-square rounded-sm overflow-hidden relative transition-shadow duration-300 group-hover:shadow-lg">
                     <Image
                       src={texture.preview.replace(/\.webp$/, '.jpg')}
@@ -56,7 +76,7 @@ export default function MaterialsSection() {
                     />
                   </div>
                   <span className="text-sm font-medium text-gray-800 leading-tight transition-colors group-hover:text-[var(--color-secondary)]">{texture.name}</span>
-                </div>
+                </button>
               ))}
             </div>
           </div>
@@ -71,19 +91,29 @@ export default function MaterialsSection() {
             </div>
             <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-7 lg:grid-cols-10 gap-3 sm:gap-5 flex-1">
               {colors.map((color) => (
-                <div key={color.id} className="group flex flex-col gap-2">
+                <button
+                  key={color.id}
+                  type="button"
+                  onClick={() => setZoomed(color)}
+                  aria-label={`${color.name} vergroot bekijken`}
+                  data-testid="material-swatch-tile"
+                  data-material={color.id}
+                  className="group flex flex-col gap-2 text-left cursor-pointer"
+                >
                   <div
                     className="w-full aspect-square rounded-sm border border-black/5 transition-transform duration-300 ease-out group-hover:scale-110 group-hover:shadow-lg"
                     style={{ backgroundColor: color.color }}
                   />
                   <span className="text-xs font-medium text-gray-700 leading-tight transition-colors group-hover:text-[var(--color-secondary)]">{color.name}</span>
-                </div>
+                </button>
               ))}
             </div>
           </div>
 
         </div>
       </div>
+
+      <MaterialLightbox material={zoomed} onClose={() => setZoomed(null)} />
     </section>
   )
 }

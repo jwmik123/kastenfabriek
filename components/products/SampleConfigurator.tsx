@@ -19,10 +19,21 @@ const textures = MATERIALS.filter(
 );
 const colors = MATERIALS.filter((m): m is ColorMaterial => m.type === "color");
 
-export default function SampleConfigurator({ product }: { product: Product }) {
+export default function SampleConfigurator({
+  product,
+  preselectedMaterialIds = [],
+}: {
+  product: Product;
+  /** Material ids to tick on arrival (from the homepage material lightbox). */
+  preselectedMaterialIds?: string[];
+}) {
   const maxSelections = product.sampleConfig?.maxSelections ?? 3;
 
-  const [selected, setSelected] = useState<string[]>([]);
+  const [selected, setSelected] = useState<string[]>(() =>
+    preselectedMaterialIds
+      .filter((id) => MATERIALS.some((m) => m.id === id))
+      .slice(0, maxSelections)
+  );
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
