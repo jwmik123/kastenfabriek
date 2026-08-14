@@ -37,6 +37,12 @@ const DOOR_TYPE_LABELS: Record<string, string> = {
   afwerkpaneel: "Zijpaneel",
 };
 
+const DOOR_SIDE_LABELS: Record<string, string> = {
+  left: "linkerdeur",
+  right: "rechterdeur",
+  pair: "set links + rechts",
+};
+
 export default function OrderLineItem({ item }: { item: OrderLineSnapshot }) {
   if (item.kind === "product") return <ProductLine item={item} />;
   return <ClosetLine item={item} />;
@@ -58,8 +64,11 @@ function ProductLine({
           <p className="text-sm text-gray-500 mt-0.5">
             {DOOR_TYPE_LABELS[cfg.doorType ?? "deuren"]} ·{" "}
             {cfg.widthLabel ?? `${cfg.widthCm} cm`} × {cfg.heightCm} cm
-            {cfg.isVerlengd ? " (verlengd)" : ""} · {cfg.materialName} ·{" "}
-            {item.quantity} {item.quantity === 1 ? "stuk" : "stuks"}
+            {cfg.isVerlengd ? " (verlengd)" : ""}
+            {cfg.depthCm != null ? ` · ${cfg.depthCm} cm diep` : ""}
+            {cfg.doorSide ? ` · ${DOOR_SIDE_LABELS[cfg.doorSide]}` : ""} ·{" "}
+            {cfg.materialName} · {item.quantity}{" "}
+            {item.quantity === 1 ? "stuk" : "stuks"}
           </p>
         </div>
         <span className="font-semibold text-gray-900">

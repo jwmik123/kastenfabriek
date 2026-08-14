@@ -224,11 +224,26 @@ const paxConfig = defineType({
     }),
     defineField({
       name: "verlengdeHoekPrice",
-      title: "Verlengde deuren — prijs Hoekdeuren (vast)",
+      title: "Hoekdeuren tot plafond — prijs (vast)",
       type: "number",
       description:
-        "Vaste verlengde-prijs voor Hoekdeuren (ongeacht breedte). Leeg laten = optie verborgen voor Hoekdeuren.",
+        "Vaste prijs voor hoekdeuren tot plafond (eigen hoogte, ongeacht breedte). Leeg laten = optie verborgen bij Hoekdeuren.",
       validation: (Rule) => Rule.min(0),
+    }),
+    defineField({
+      name: "afwerkMinDepthCm",
+      title: "Zijpaneel — min. diepte (cm)",
+      type: "number",
+      description:
+        "Ondergrens voor het diepte-invoerveld bij Zijpaneel. Standaard 20. De diepte bepaalt de prijs niet.",
+      validation: (Rule) => Rule.positive(),
+    }),
+    defineField({
+      name: "afwerkMaxDepthCm",
+      title: "Zijpaneel — max. diepte (cm)",
+      type: "number",
+      description: "Bovengrens voor het diepte-invoerveld bij Zijpaneel. Standaard 120.",
+      validation: (Rule) => Rule.positive(),
     }),
     defineField({
       name: "verlengdeMinHeightCm",

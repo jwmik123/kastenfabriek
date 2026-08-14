@@ -50,6 +50,15 @@ const TYPE_LABELS: Record<PaxDoorType, string> = {
   afwerkpaneel: 'Zijpaneel',
 }
 
+type DoorSide = 'left' | 'right' | 'pair'
+
+/** A pair is one left plus one right door, so it counts as two panels. */
+const DOOR_SIDE_OPTIONS: { value: DoorSide; label: string; hint: string }[] = [
+  { value: 'left', label: 'Linkerdeur', hint: 'scharnieren links' },
+  { value: 'right', label: 'Rechterdeur', hint: 'scharnieren rechts' },
+  { value: 'pair', label: 'Set van 2', hint: 'links + rechts' },
+]
+
 function formatEuro(amount: number) {
   return new Intl.NumberFormat('nl-NL', {
     style: 'currency',
@@ -161,8 +170,20 @@ export default function PaxDoorConfigurator({
   const [isVerlengd, setIsVerlengd] = useState<boolean>(
     seed?.configuration.isVerlengd ?? false,
   )
+  const [doorSide, setDoorSide] = useState<DoorSide>(
+    seed?.configuration.doorSide ?? 'left',
+  )
+  const afwerkMinDepth = cfg?.afwerkMinDepthCm ?? 20
+  const afwerkMaxDepth = cfg?.afwerkMaxDepthCm ?? 120
+  const [depthCm, setDepthCm] = useState<number>(
+    seed?.configuration.depthCm ?? cfg?.afwerkMinDepthCm ?? 20,
+  )
 
   const isHoek = doorType === 'hoekdeuren'
+  // Hinge side is a door thing; a corner set and a side panel have none.
+  const sideApplies = doorType === 'deuren'
+  const depthApplies = doorType === 'afwerkpaneel'
+  const activeDoorSide = sideApplies ? doorSide : undefined
   const hoekVariants = useMemo(() => cfg?.hoekVariants ?? [], [cfg?.hoekVariants])
 
   // Verlengde is per-width for numeric types, a flat price for hoekdeuren.
@@ -250,6 +271,8 @@ export default function PaxDoorConfigurator({
       )
       setHeightCm(found.configuration.heightCm)
       setMaterialId(found.configuration.materialId)
+      setDoorSide(found.configuration.doorSide ?? 'left')
+      if (found.configuration.depthCm != null) setDepthCm(found.configuration.depthCm)
       setQty(found.quantity)
       setActiveEditId(found.id)
     }
@@ -295,18 +318,24 @@ export default function PaxDoorConfigurator({
         qty,
         doorType,
         isVerlengd,
+        doorSide: activeDoorSide,
       })
     } catch {
       return null
     }
-  }, [product, widthCm, widthLabel, heightCm, materialId, qty, doorType, isVerlengd])
+  }, [product, widthCm, widthLabel, heightCm, materialId, qty, doorType, isVerlengd, activeDoorSide])
 
   const verlengdHeightValid =
     !isVerlengd ||
     (Number.isFinite(heightCm) &&
       heightCm >= verlengdeMinHeight &&
       heightCm <= verlengdeMaxHeight)
-  const canAdd = !!priceSnapshot && verlengdHeightValid
+  const depthValid =
+    !depthApplies ||
+    (Number.isFinite(depthCm) &&
+      depthCm >= afwerkMinDepth &&
+      depthCm <= afwerkMaxDepth)
+  const canAdd = !!priceSnapshot && verlengdHeightValid && depthValid
 
   const lineTotal = priceSnapshot ? priceSnapshot.total * qty : 0
 
@@ -341,6 +370,8 @@ export default function PaxDoorConfigurator({
         materialName: activeMaterial.name,
         doorType,
         isVerlengd,
+        doorSide: activeDoorSide,
+        depthCm: depthApplies ? depthCm : undefined,
       },
       priceSnapshot,
       quantity: qty,
@@ -472,6 +503,46 @@ export default function PaxDoorConfigurator({
             </div>
           </div>
 
+          {/* Hinge side — deuren only */}
+          {sideApplies && (
+            <div>
+              <h3 className="text-sm font-medium mb-2">Uitvoering</h3>
+              <div className="flex flex-wrap gap-2">
+                {DOOR_SIDE_OPTIONS.map((o) => (
+                  <button
+                    key={o.value}
+                    type="button"
+                    onClick={() => setDoorSide(o.value)}
+                    aria-pressed={doorSide === o.value}
+                    data-testid="door-side-option"
+                    data-side={o.value}
+                    className={cn(
+                      'h-auto px-4 py-2 rounded-md border text-sm font-medium text-left transition-colors',
+                      doorSide === o.value
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'bg-background text-foreground border-border hover:border-foreground',
+                    )}
+                  >
+                    {o.label}
+                    <span
+                      className={cn(
+                        'block text-xs font-normal',
+                        doorSide === o.value
+                          ? 'text-primary-foreground/70'
+                          : 'text-muted-foreground',
+                      )}
+                    >
+                      {o.hint}
+                    </span>
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Meerdere dezelfde deuren? Verhoog het aantal hieronder.
+              </p>
+            </div>
+          )}
+
           {/* Width */}
           <div>
             <h3 className="text-sm font-medium mb-2">Breedte</h3>
@@ -524,7 +595,31 @@ export default function PaxDoorConfigurator({
             )}
           </div>
 
-          {/* Verlengde deuren */}
+          {/* Depth — zijpaneel only; production detail, no price effect */}
+          {depthApplies && (
+            <div>
+              <h3 className="text-sm font-medium mb-2">Diepte</h3>
+              <div className="inline-flex items-center gap-2">
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={afwerkMinDepth}
+                  max={afwerkMaxDepth}
+                  value={depthCm || ''}
+                  onChange={(e) => setDepthCm(Number(e.target.value))}
+                  data-testid="afwerk-depth-input"
+                  className="h-10 w-28 rounded-md border border-border bg-background px-3 text-sm"
+                />
+                <span className="text-sm text-muted-foreground">cm</span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Tussen {afwerkMinDepth} en {afwerkMaxDepth} cm. De diepte verandert de
+                prijs niet.
+              </p>
+            </div>
+          )}
+
+          {/* Verlengde deuren / hoekdeuren tot plafond */}
           {verlengdeAvailable && (
             <label className="flex items-center gap-3 cursor-pointer select-none">
               <input
@@ -534,7 +629,7 @@ export default function PaxDoorConfigurator({
                 onChange={(e) => setIsVerlengd(e.target.checked)}
               />
               <span className="text-sm font-medium">
-                Verlengde deuren{' '}
+                {isHoek ? 'Hoekdeuren tot plafond' : 'Verlengde deuren'}{' '}
                 <span className="text-muted-foreground font-normal">
                   — eigen hoogte invoeren
                 </span>
@@ -544,7 +639,9 @@ export default function PaxDoorConfigurator({
 
           {/* Qty */}
           <div>
-            <h3 className="text-sm font-medium mb-2">Aantal</h3>
+            <h3 className="text-sm font-medium mb-2">
+              {doorSide === 'pair' && sideApplies ? 'Aantal sets' : 'Aantal'}
+            </h3>
             <div className="inline-flex items-center gap-2">
               <Button
                 type="button"

@@ -55,6 +55,35 @@ describe('calcProductPrice', () => {
     expect(snap.total).toBe(175)
   })
 
+  it('prices a left or right door as a single panel', () => {
+    for (const doorSide of ['left', 'right'] as const) {
+      const snap = calcProductPrice({
+        product: baseProduct,
+        widthCm: 25,
+        heightCm: 194,
+        materialId: 'zwart',
+        qty: 1,
+        doorSide,
+      })
+      expect(snap.unitPrice).toBe(100)
+      expect(snap.total).toBe(100)
+    }
+  })
+
+  it('doubles panel price and surcharge for a left+right pair', () => {
+    const snap = calcProductPrice({
+      product: baseProduct,
+      widthCm: 37,
+      heightCm: 229,
+      materialId: 'h1714-lincoln-notelaar',
+      qty: 1,
+      doorSide: 'pair',
+    })
+    expect(snap.unitPrice).toBe(300)
+    expect(snap.materialSurcharge).toBe(50)
+    expect(snap.total).toBe(350)
+  })
+
   it('zero surcharge when material has no entry', () => {
     const snap = calcProductPrice({
       product: baseProduct,

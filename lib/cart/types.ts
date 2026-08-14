@@ -113,6 +113,11 @@ export interface ProductConfigSnapshot {
   widthLabel?: string;
   // True when heightCm is a custom ("verlengde") height entered by the user.
   isVerlengd?: boolean;
+  // Hinge side for 'deuren'. 'pair' = one left + one right, priced as two doors.
+  // Absent on older cart entries and on types where the side does not apply.
+  doorSide?: "left" | "right" | "pair";
+  // Zijpaneel depth in cm — production detail, does not affect the price.
+  depthCm?: number;
 }
 
 // Price calculated at "Add to Cart" time for a closet

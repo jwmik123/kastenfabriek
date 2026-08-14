@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { cartItem } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { getCurrentUser } from "./auth";
+import { sameProductLine } from "@/lib/cart/merge";
 import type {
   CartItem,
   ClosetCartItem,
@@ -133,15 +134,12 @@ export async function addProductCartItem(incoming: ProductCartItem): Promise<voi
     where: and(eq(cartItem.userId, user.id), eq(cartItem.kind, 'product')),
   });
 
-  const match = existingRows.find((row) => {
-    const cfg = row.configuration as ProductCartItem['configuration'];
-    return (
-      cfg.sanityProductId === incoming.configuration.sanityProductId &&
-      cfg.widthCm === incoming.configuration.widthCm &&
-      cfg.heightCm === incoming.configuration.heightCm &&
-      cfg.materialId === incoming.configuration.materialId
-    );
-  });
+  const match = existingRows.find((row) =>
+    sameProductLine(
+      row.configuration as ProductCartItem['configuration'],
+      incoming.configuration,
+    ),
+  );
 
   if (match) {
     await db

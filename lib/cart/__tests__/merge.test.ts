@@ -92,6 +92,54 @@ describe('mergeOrAddProduct', () => {
     expect(next).toHaveLength(2)
   })
 
+  it('appends when doorType differs', () => {
+    const initial: CartItem[] = [productItem('a', { doorType: 'deuren' })]
+    const next = mergeOrAddProduct(initial, productItem('b', { doorType: 'afwerkpaneel' }))
+    expect(next).toHaveLength(2)
+  })
+
+  it('appends when the hinge side differs', () => {
+    const initial: CartItem[] = [productItem('a', { doorSide: 'left' })]
+    const next = mergeOrAddProduct(initial, productItem('b', { doorSide: 'right' }))
+    expect(next).toHaveLength(2)
+  })
+
+  it('appends when the zijpaneel depth differs', () => {
+    const initial: CartItem[] = [
+      productItem('a', { doorType: 'afwerkpaneel', depthCm: 35 }),
+    ]
+    const next = mergeOrAddProduct(
+      initial,
+      productItem('b', { doorType: 'afwerkpaneel', depthCm: 58 }),
+    )
+    expect(next).toHaveLength(2)
+  })
+
+  it('appends when one line is verlengd and the other is not', () => {
+    const initial: CartItem[] = [productItem('a', { isVerlengd: true })]
+    const next = mergeOrAddProduct(initial, productItem('b'))
+    expect(next).toHaveLength(2)
+  })
+
+  it('appends when the hoekdeuren width label differs', () => {
+    const initial: CartItem[] = [
+      productItem('a', { doorType: 'hoekdeuren', widthLabel: '27cm & 51cm' }),
+    ]
+    const next = mergeOrAddProduct(
+      initial,
+      productItem('b', { doorType: 'hoekdeuren', widthLabel: '37cm & 51cm' }),
+    )
+    expect(next).toHaveLength(2)
+  })
+
+  it('merges identical lines that both carry the same side and depth', () => {
+    const opts = { doorType: 'afwerkpaneel' as const, depthCm: 58 }
+    const initial: CartItem[] = [productItem('a', opts, 2)]
+    const next = mergeOrAddProduct(initial, productItem('b', opts, 1))
+    expect(next).toHaveLength(1)
+    expect(next[0].quantity).toBe(3)
+  })
+
   it('never merges with closet items', () => {
     const initial: CartItem[] = [closetItem('closet-1')]
     const next = mergeOrAddProduct(initial, productItem('a'))

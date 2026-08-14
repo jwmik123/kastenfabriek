@@ -64,6 +64,12 @@ export interface OrderConfirmationProps {
 const BRAND_GREEN = "#34463a";
 const BRAND_GREEN_LIGHT = "#e2e9e3";
 
+const PRODUCT_SIDE_LABELS: Record<string, string> = {
+  left: "linkerdeur",
+  right: "rechterdeur",
+  pair: "set links + rechts",
+};
+
 function getMaterialName(id: string): string {
   return MATERIALS.find((m) => m.id === id)?.name ?? id;
 }
@@ -170,6 +176,18 @@ export default function OrderConfirmation({
                       <td style={detailLabel}><Text style={label}>Maat</Text></td>
                       <td><Text style={value}>{cfg.widthCm} × {cfg.heightCm} cm</Text></td>
                     </tr>
+                    {cfg.depthCm != null && (
+                      <tr>
+                        <td style={detailLabel}><Text style={label}>Diepte</Text></td>
+                        <td><Text style={value}>{cfg.depthCm} cm</Text></td>
+                      </tr>
+                    )}
+                    {cfg.doorSide && (
+                      <tr>
+                        <td style={detailLabel}><Text style={label}>Uitvoering</Text></td>
+                        <td><Text style={value}>{PRODUCT_SIDE_LABELS[cfg.doorSide]}</Text></td>
+                      </tr>
+                    )}
                     <tr>
                       <td style={detailLabel}><Text style={label}>Materiaal</Text></td>
                       <td><Text style={value}>{cfg.materialName}</Text></td>

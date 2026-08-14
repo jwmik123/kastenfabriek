@@ -21,6 +21,8 @@ export interface CalcProductPriceArgs {
   widthLabel?: string
   /** When true, heightCm is a custom height and price comes from the verlengde config. */
   isVerlengd?: boolean
+  /** Hinge side; 'pair' is one left + one right door and therefore costs double. */
+  doorSide?: 'left' | 'right' | 'pair'
 }
 
 /** Numeric price matrix for deuren/afwerkpaneel. Hoekdeuren use a separate label-keyed matrix. */
@@ -39,6 +41,7 @@ export function calcProductPrice({
   doorType = 'deuren',
   widthLabel,
   isVerlengd = false,
+  doorSide,
 }: CalcProductPriceArgs): ProductPriceSnapshot {
   const cfg = product.paxConfig
   if (!cfg) {
@@ -87,13 +90,18 @@ export function calcProductPrice({
     cfg.materialSurcharges?.find((s) => s.materialId === materialId)
       ?.surchargeEur ?? 0
 
-  const total = unitPrice + surcharge
+  // A 'pair' is one left plus one right door in a single line, so both the
+  // panel price and the material surcharge count twice.
+  const panels = doorSide === 'pair' ? 2 : 1
+  const linePrice = unitPrice * panels
+  const lineSurcharge = surcharge * panels
+  const total = linePrice + lineSurcharge
 
   return {
     calculatedAt: new Date().toISOString(),
     currency: 'EUR',
-    unitPrice,
-    materialSurcharge: surcharge,
+    unitPrice: linePrice,
+    materialSurcharge: lineSurcharge,
     deliveryCost: product.deliveryFee ?? 0,
     total,
   }

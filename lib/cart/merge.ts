@@ -1,11 +1,39 @@
-import type { CartItem, ProductCartItem } from "./types";
+import type {
+  CartItem,
+  ProductCartItem,
+  ProductConfigSnapshot,
+} from "./types";
+
+/**
+ * Would these two product lines be produced identically? Compares every option
+ * a customer can pick, so a zijpaneel never merges into a door line and a left
+ * door never merges into a right one.
+ */
+export function sameProductLine(
+  a: ProductConfigSnapshot,
+  b: ProductConfigSnapshot,
+): boolean {
+  return (
+    a.sanityProductId === b.sanityProductId &&
+    (a.doorType ?? 'deuren') === (b.doorType ?? 'deuren') &&
+    a.widthCm === b.widthCm &&
+    a.widthLabel === b.widthLabel &&
+    a.heightCm === b.heightCm &&
+    (a.isVerlengd ?? false) === (b.isVerlengd ?? false) &&
+    a.doorSide === b.doorSide &&
+    a.depthCm === b.depthCm &&
+    a.materialId === b.materialId
+  );
+}
 
 /**
  * Merge a product item into a cart, or append it.
  *
- * Identity for merging: same `(sanityProductId, widthCm, heightCm, materialId)`.
- * On match, the existing line's quantity is incremented by the incoming
- * item's quantity. On no match, the item is appended.
+ * Identity for merging: every configured option a customer can pick — product,
+ * type, size, material, hinge side and zijpaneel depth. Two lines only merge
+ * when they would be produced identically. On match, the existing line's
+ * quantity is incremented by the incoming item's quantity. On no match, the
+ * item is appended.
  *
  * Closet items are never considered for merging.
  */
@@ -16,10 +44,7 @@ export function mergeOrAddProduct(
   const idx = items.findIndex(
     (it) =>
       it.kind === 'product' &&
-      it.configuration.sanityProductId === incoming.configuration.sanityProductId &&
-      it.configuration.widthCm === incoming.configuration.widthCm &&
-      it.configuration.heightCm === incoming.configuration.heightCm &&
-      it.configuration.materialId === incoming.configuration.materialId,
+      sameProductLine(it.configuration, incoming.configuration),
   );
 
   if (idx === -1) {

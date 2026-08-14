@@ -49,10 +49,13 @@ export interface PaxConfig {
   afwerkVariants?: PaxVariant[];
   /** Per-width price for custom-height ("verlengde") deuren/afwerk. Absent/empty = option hidden. */
   verlengdePrices?: PaxVerlengdePrice[];
-  /** Flat custom-height price for hoekdeuren (width-independent). Absent = option hidden for hoek. */
+  /** Flat "tot plafond" (custom-height) price for hoekdeuren. Absent = option hidden for hoek. */
   verlengdeHoekPrice?: number;
   verlengdeMinHeightCm?: number;
   verlengdeMaxHeightCm?: number;
+  /** Bounds for the zijpaneel depth input. Depth is a production detail, not priced. */
+  afwerkMinDepthCm?: number;
+  afwerkMaxDepthCm?: number;
   allowedMaterialIds?: string[];
   materialSurcharges?: PaxMaterialSurcharge[];
   hingeSide?: "left" | "right";
