@@ -11,7 +11,7 @@ const NAV_LINKS = [
   { href: '/', label: 'Home' },
   { href: CONFIGURATORS_HREF, label: 'Kasten' },
   { href: '/producten', label: 'Producten' },
-  { href: '/contact', label: 'Blog' },
+  { href: '/kennisbank', label: 'Kennisbank' },
 ]
 
 const ICON_LINKS = [

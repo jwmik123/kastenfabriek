@@ -16,7 +16,7 @@ const priceFormatter = new Intl.NumberFormat('nl-NL', {
 const NAV_LINKS = [
   { href: '/', label: 'Home' },
   { href: '/producten', label: 'Producten' },
-  { href: '/contact', label: 'Blog' },
+  { href: '/kennisbank', label: 'Kennisbank' },
 ]
 
 const ICON_LINKS = [

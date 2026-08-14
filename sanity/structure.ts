@@ -23,6 +23,17 @@ export const structure: StructureResolver = (S) =>
             ]),
         ),
 
+      S.listItem()
+        .title('Kennisbank')
+        .child(
+          S.list()
+            .title('Kennisbank')
+            .items([
+              S.documentTypeListItem('kennisbankItem').title('Items'),
+              S.documentTypeListItem('kennisbankCategory').title('Categorieën'),
+            ]),
+        ),
+
       S.divider(),
 
       S.listItem()

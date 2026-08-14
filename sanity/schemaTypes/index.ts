@@ -10,6 +10,7 @@ import { pricingConfig } from "./pricingConfig";
 import { testimonial } from "./testimonial";
 import { coupon } from "./coupon";
 import { productSchemaTypes } from "./product";
+import { kennisbankSchemaTypes } from "./kennisbank";
 
 export const schema: { types: SchemaTypeDefinition[] } = {
   types: [
@@ -17,6 +18,7 @@ export const schema: { types: SchemaTypeDefinition[] } = {
     page,
     siteSettings,
     testimonial,
+    ...kennisbankSchemaTypes,
     // Configurator Pricing
     moduleLayout,
     accessory,
