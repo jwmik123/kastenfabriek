@@ -64,7 +64,7 @@ export default function MaterialsSection() {
                   aria-label={`${texture.name} vergroot bekijken`}
                   data-testid="material-swatch-tile"
                   data-material={texture.id}
-                  className="group flex flex-col gap-2 text-left cursor-pointer"
+                  className="group flex min-w-0 flex-col gap-2 text-left cursor-pointer"
                 >
                   <div className="w-full aspect-square rounded-sm overflow-hidden relative transition-shadow duration-300 group-hover:shadow-lg">
                     <Image
@@ -75,7 +75,7 @@ export default function MaterialsSection() {
                       sizes="(max-width: 640px) 30vw, 160px"
                     />
                   </div>
-                  <span className="text-sm font-medium text-gray-800 leading-tight transition-colors group-hover:text-[var(--color-secondary)]">{texture.name}</span>
+                  <span lang="nl" className="text-sm font-medium text-gray-800 leading-tight break-words hyphens-auto transition-colors group-hover:text-[var(--color-secondary)]">{texture.name}</span>
                 </button>
               ))}
             </div>
@@ -89,7 +89,9 @@ export default function MaterialsSection() {
               <p className="font-semibold text-sm text-gray-900">Kleuren</p>
               <p className="text-sm text-gray-400 mt-0.5">{colors.length} opties</p>
             </div>
-            <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-7 lg:grid-cols-10 gap-3 sm:gap-5 flex-1">
+            {/* Column counts keep every cell wide enough for the longest colour
+                name (Granaatappelrood), so labels never collide. */}
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-5 flex-1">
               {colors.map((color) => (
                 <button
                   key={color.id}
@@ -98,13 +100,13 @@ export default function MaterialsSection() {
                   aria-label={`${color.name} vergroot bekijken`}
                   data-testid="material-swatch-tile"
                   data-material={color.id}
-                  className="group flex flex-col gap-2 text-left cursor-pointer"
+                  className="group flex min-w-0 flex-col gap-2 text-left cursor-pointer"
                 >
                   <div
                     className="w-full aspect-square rounded-sm border border-black/5 transition-transform duration-300 ease-out group-hover:scale-110 group-hover:shadow-lg"
                     style={{ backgroundColor: color.color }}
                   />
-                  <span className="text-xs font-medium text-gray-700 leading-tight transition-colors group-hover:text-[var(--color-secondary)]">{color.name}</span>
+                  <span lang="nl" className="text-xs font-medium text-gray-700 leading-tight break-words hyphens-auto transition-colors group-hover:text-[var(--color-secondary)]">{color.name}</span>
                 </button>
               ))}
             </div>
