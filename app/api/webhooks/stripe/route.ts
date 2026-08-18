@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { db } from "@/db";
 import { order, orderItem, cartItem } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 import { sendOrderEmails } from "@/lib/email/resend";
 import { incrementCouponUseCount } from "@/lib/actions/coupon";
 import { buildOrderSummary } from "@/lib/order/order-summary";
@@ -47,8 +47,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing orderId in metadata" }, { status: 400 });
     }
 
-    // Update order: mark as paid, store payment intent
-    await db
+    // Mark as paid. Stripe delivers at least once and retries on failure, so
+    // this doubles as the idempotency guard: only the delivery that actually
+    // moves the order out of its unpaid state gets a row back and goes on to
+    // count the coupon and send the mails. The UPDATE is atomic, so concurrent
+    // deliveries cannot both win.
+    const [fullOrder] = await db
       .update(order)
       .set({
         status: "paid",
@@ -56,19 +60,20 @@ export async function POST(request: NextRequest) {
         paidAt: new Date(),
         updatedAt: new Date(),
       })
-      .where(eq(order.id, orderId));
+      .where(and(eq(order.id, orderId), ne(order.status, "paid")))
+      .returning();
+
+    if (!fullOrder) {
+      return NextResponse.json({ received: true, alreadyProcessed: true });
+    }
 
     // Clear the user's server-side cart
     if (userId) {
       await db.delete(cartItem).where(eq(cartItem.userId, userId));
     }
 
-    const fullOrder = await db.query.order.findFirst({
-      where: eq(order.id, orderId),
-    });
-
     // Increment coupon use count post-payment
-    if (fullOrder?.couponCode) {
+    if (fullOrder.couponCode) {
       try {
         await incrementCouponUseCount(fullOrder.couponCode);
       } catch (err) {
@@ -80,7 +85,7 @@ export async function POST(request: NextRequest) {
     // Both carry the spec PDF. Mail failures must not fail the webhook — the
     // payment already succeeded and Stripe would keep retrying the delivery.
     const customerEmail = session.customer_email;
-    if (customerEmail && fullOrder) {
+    if (customerEmail) {
       const orderItems = await db.query.orderItem.findMany({
         where: eq(orderItem.orderId, orderId),
       });

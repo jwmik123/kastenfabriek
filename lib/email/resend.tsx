@@ -5,6 +5,7 @@ import OrderConfirmation from "@/emails/OrderConfirmation";
 import OrderAdminNotification from "@/emails/OrderAdminNotification";
 import OrderSpecPdf from "@/emails/OrderSpecPdf";
 import type { OrderDocumentProps } from "@/lib/order/types";
+import { CONTACT_EMAIL } from "@/lib/configurators";
 import SampleRequestConfirmation, {
   type SampleRequestConfirmationProps,
 } from "@/emails/SampleRequestConfirmation";
@@ -16,15 +17,23 @@ export const resend = new Resend(process.env.RESEND_API_KEY);
 
 /**
  * Senders must sit on a domain that is verified in Resend — kasten-fabriek.nl.
- * Order mail comes from the orders mailbox so customer replies about an order
- * land there; the rest comes from the general mailbox. Both are overridable so
- * a domain change does not need a deploy.
+ * Order mail is sent from the orders address, the rest from the general one.
+ * Both are overridable so a domain change does not need a deploy.
  */
 const ORDER_FROM_ADDRESS =
   process.env.RESEND_ORDER_FROM ?? "Kastenfabriek <bestellingen@kasten-fabriek.nl>";
 const SAMPLE_FROM_ADDRESS =
   process.env.RESEND_FROM ?? "Kastenfabriek <info@kasten-fabriek.nl>";
 const ADMIN_ADDRESS = process.env.ADMIN_EMAIL ?? "info@kasten-fabriek.nl";
+
+/**
+ * Where a customer's reply should land. Sending needs only SPF/DKIM, so the
+ * order address is not necessarily a mailbox anyone reads — point replies at
+ * the contact address instead of losing them. Set RESEND_ORDER_REPLY_TO once
+ * the order address can receive mail (an MX record plus a mailbox or a
+ * forwarder), or point it anywhere else you read.
+ */
+const ORDER_REPLY_TO = process.env.RESEND_ORDER_REPLY_TO ?? CONTACT_EMAIL;
 
 /**
  * Send the paid-order mails: one to the customer, one to ourselves under a
@@ -53,6 +62,7 @@ export async function sendOrderEmails(props: OrderDocumentProps): Promise<void> 
     resend.emails.send({
       from: ORDER_FROM_ADDRESS,
       to: props.customerEmail,
+      replyTo: ORDER_REPLY_TO,
       subject: `Bevestiging bestelling ${props.orderNumber} — Kastenfabriek`,
       html: customerHtml,
       attachments,
