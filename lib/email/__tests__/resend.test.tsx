@@ -8,8 +8,11 @@ vi.mock("resend", () => ({
   }),
 }));
 
+// Echo the screenshot srcs back so a test can assert what ended up in the body.
 vi.mock("@react-email/components", () => ({
-  render: vi.fn().mockResolvedValue("<html>mail</html>"),
+  render: vi.fn(async (el: { props: { items: unknown[] } }) =>
+    `<html>${JSON.stringify(el.props.items)}</html>`,
+  ),
 }));
 
 vi.mock("@react-pdf/renderer", () => ({
@@ -87,6 +90,35 @@ describe("sendOrderEmails", () => {
           contentType: "application/pdf",
         },
       ]);
+    }
+  });
+
+  it("references the 3D captures by cid and ships the bytes as attachments", async () => {
+    const base64 = "A".repeat(120_000);
+    await sendOrderEmails({
+      ...props,
+      items: [
+        {
+          kind: "closet",
+          configuration: {} as never,
+          priceSnapshot: {} as never,
+          quantity: 1,
+          screenshotClosedUrl: `data:image/jpeg;base64,${base64}`,
+          screenshotOpenUrl: `data:image/jpeg;base64,${base64}`,
+        },
+      ],
+    });
+
+    for (const call of mockSend.mock.calls) {
+      // Gmail refuses data: URIs and clips a body over ~102 KB, cutting the
+      // HTML mid-tag. Neither may come back.
+      expect(call[0].html).not.toContain("data:image");
+      expect(call[0].html).toContain("cid:kast-1-dicht@kastenfabriek");
+      expect(call[0].html.length).toBeLessThan(102_400);
+
+      const inline = call[0].attachments.filter((a: { contentId?: string }) => a.contentId);
+      expect(inline).toHaveLength(2);
+      expect(inline[0].content).toBe(base64);
     }
   });
 

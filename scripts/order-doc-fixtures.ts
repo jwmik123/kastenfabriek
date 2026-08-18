@@ -164,8 +164,22 @@ export const address: AddressSnapshot = {
   phone: '+31 6 12345678',
 }
 
+/**
+ * A capture as the configurator stores it: a `data:` URI. Real ones are ~100 KB;
+ * this stand-in only has to prove the inlining path, not the byte count.
+ */
+export const captureDataUri =
+  'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q=='
+
 export const items: OrderLine[] = [
-  { kind: 'closet', configuration: kledingkast, priceSnapshot: price(), quantity: 1 },
+  {
+    kind: 'closet',
+    configuration: kledingkast,
+    priceSnapshot: price(),
+    quantity: 1,
+    screenshotClosedUrl: captureDataUri,
+    screenshotOpenUrl: captureDataUri,
+  },
   {
     kind: 'closet',
     configuration: wasmachinekast,

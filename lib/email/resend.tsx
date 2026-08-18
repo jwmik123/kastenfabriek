@@ -6,6 +6,7 @@ import OrderAdminNotification from "@/emails/OrderAdminNotification";
 import OrderSpecPdf from "@/emails/OrderSpecPdf";
 import type { OrderDocumentProps } from "@/lib/order/types";
 import { CONTACT_EMAIL } from "@/lib/configurators";
+import { inlineOrderImages } from "./inline-images";
 import SampleRequestConfirmation, {
   type SampleRequestConfirmationProps,
 } from "@/emails/SampleRequestConfirmation";
@@ -44,9 +45,14 @@ const ORDER_REPLY_TO = process.env.RESEND_ORDER_REPLY_TO ?? CONTACT_EMAIL;
  * the failures are reported together.
  */
 export async function sendOrderEmails(props: OrderDocumentProps): Promise<void> {
+  // The 3D captures leave the body as inline attachments — see inline-images.
+  // The PDF is built from the original props, since it does not use them.
+  const { items, attachments: imageAttachments } = inlineOrderImages(props.items);
+  const mailProps = { ...props, items };
+
   const [customerHtml, adminHtml, pdf] = await Promise.all([
-    render(<OrderConfirmation {...props} />),
-    render(<OrderAdminNotification {...props} />),
+    render(<OrderConfirmation {...mailProps} />),
+    render(<OrderAdminNotification {...mailProps} />),
     renderToBuffer(<OrderSpecPdf {...props} />),
   ]);
 
@@ -56,6 +62,7 @@ export async function sendOrderEmails(props: OrderDocumentProps): Promise<void> 
       content: pdf.toString("base64"),
       contentType: "application/pdf",
     },
+    ...imageAttachments,
   ];
 
   const results = await Promise.allSettled([

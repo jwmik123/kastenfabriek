@@ -6,6 +6,7 @@ import OrderSpecPdf from '@/emails/OrderSpecPdf'
 import OrderConfirmation from '@/emails/OrderConfirmation'
 import OrderAdminNotification from '@/emails/OrderAdminNotification'
 import { buildOrderSummary } from '@/lib/order/order-summary'
+import { inlineOrderImages } from '@/lib/email/inline-images'
 import { address, coupon, items } from './order-doc-fixtures'
 
 /**
@@ -30,8 +31,21 @@ async function main() {
   const pdf = await renderToBuffer(<OrderSpecPdf {...props} />)
   writeFileSync(join(outDir, 'specificaties.pdf'), pdf)
 
-  writeFileSync(join(outDir, 'confirmation.html'), await render(<OrderConfirmation {...props} />))
-  writeFileSync(join(outDir, 'admin.html'), await render(<OrderAdminNotification {...props} />))
+  // Mails go out with the captures as inline attachments, so preview what the
+  // reader actually gets — a body with `cid:` references, not base64 blobs.
+  const { items: mailItems, attachments } = inlineOrderImages(props.items)
+  const mailProps = { ...props, items: mailItems }
+
+  const confirmation = await render(<OrderConfirmation {...mailProps} />)
+  const admin = await render(<OrderAdminNotification {...mailProps} />)
+  writeFileSync(join(outDir, 'confirmation.html'), confirmation)
+  writeFileSync(join(outDir, 'admin.html'), admin)
+
+  const kb = (n: number) => `${Math.round(n / 1024)} KB`
+  console.log(
+    `HTML-body: bevestiging ${kb(confirmation.length)}, admin ${kb(admin.length)} ` +
+      `(Gmail knipt boven 102 KB) · ${attachments.length} inline afbeeldingen`,
+  )
 
   console.log(`Wrote ${outDir}/{specificaties.pdf,confirmation.html,admin.html}`)
   console.log('Summary:', props.summary)
