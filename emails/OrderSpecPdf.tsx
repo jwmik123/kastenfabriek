@@ -26,6 +26,7 @@ import {
   type ProductOrderLine,
 } from "@/lib/order/types";
 import { getDeliveryWindow } from "@/lib/delivery-window";
+import { CONTACT_EMAIL } from "@/lib/configurators";
 
 /**
  * The order specification sheet, sent to the customer and to ourselves.
@@ -470,7 +471,7 @@ export default function OrderSpecPdf({
         )}
 
         <Text style={styles.footer} fixed>
-          Kastenfabriek · info@kastenfabriek.nl · Specificaties bij bestelling {orderNumber}
+          Kastenfabriek · {CONTACT_EMAIL} · Specificaties bij bestelling {orderNumber}
         </Text>
       </Page>
     </Document>

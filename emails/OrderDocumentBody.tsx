@@ -26,6 +26,7 @@ import {
   type ProductOrderLine,
 } from "@/lib/order/types";
 import { getDeliveryWindow } from "@/lib/delivery-window";
+import { CONTACT_EMAIL } from "@/lib/configurators";
 
 /**
  * The shared body of both order emails.
@@ -203,8 +204,8 @@ export default function OrderDocumentBody({
             ) : (
               <Text style={footerText}>
                 Vragen over je bestelling? Mail ons op{" "}
-                <a href="mailto:info@kastenfabriek.nl" style={footerLink}>
-                  info@kastenfabriek.nl
+                <a href={`mailto:${CONTACT_EMAIL}`} style={footerLink}>
+                  {CONTACT_EMAIL}
                 </a>
               </Text>
             )}

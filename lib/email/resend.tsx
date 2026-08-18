@@ -14,8 +14,17 @@ import SampleRequestAdminNotification, {
 
 export const resend = new Resend(process.env.RESEND_API_KEY);
 
-const FROM_ADDRESS = "Kastenfabriek <onboarding@resend.dev>";
-const ADMIN_ADDRESS = process.env.ADMIN_EMAIL ?? "info@kastenfabriek.nl";
+/**
+ * Senders must sit on a domain that is verified in Resend — kasten-fabriek.nl.
+ * Order mail comes from the orders mailbox so customer replies about an order
+ * land there; the rest comes from the general mailbox. Both are overridable so
+ * a domain change does not need a deploy.
+ */
+const ORDER_FROM_ADDRESS =
+  process.env.RESEND_ORDER_FROM ?? "Kastenfabriek <bestellingen@kasten-fabriek.nl>";
+const SAMPLE_FROM_ADDRESS =
+  process.env.RESEND_FROM ?? "Kastenfabriek <info@kasten-fabriek.nl>";
+const ADMIN_ADDRESS = process.env.ADMIN_EMAIL ?? "info@kasten-fabriek.nl";
 
 /**
  * Send the paid-order mails: one to the customer, one to ourselves under a
@@ -42,14 +51,14 @@ export async function sendOrderEmails(props: OrderDocumentProps): Promise<void> 
 
   const results = await Promise.allSettled([
     resend.emails.send({
-      from: FROM_ADDRESS,
+      from: ORDER_FROM_ADDRESS,
       to: props.customerEmail,
       subject: `Bevestiging bestelling ${props.orderNumber} — Kastenfabriek`,
       html: customerHtml,
       attachments,
     }),
     resend.emails.send({
-      from: FROM_ADDRESS,
+      from: ORDER_FROM_ADDRESS,
       to: ADMIN_ADDRESS,
       replyTo: props.customerEmail,
       subject: `Nieuwe bestelling ${props.orderNumber} — ${props.shippingAddress.firstName} ${props.shippingAddress.lastName}`,
@@ -79,13 +88,13 @@ export async function sendSampleRequestEmails(props: {
 
   await Promise.all([
     resend.emails.send({
-      from: FROM_ADDRESS,
+      from: SAMPLE_FROM_ADDRESS,
       to: props.customerEmail,
       subject: "Je gratis materiaalstalen zijn onderweg — Kastenfabriek",
       html: customerHtml,
     }),
     resend.emails.send({
-      from: FROM_ADDRESS,
+      from: SAMPLE_FROM_ADDRESS,
       to: ADMIN_ADDRESS,
       subject: `Nieuwe stalenaanvraag — ${props.admin.name}`,
       html: adminHtml,

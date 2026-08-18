@@ -10,6 +10,7 @@ import {
   Text,
 } from "@react-email/components";
 import { MATERIALS } from "@/app/(configurator)/kledingkast/materials";
+import { CONTACT_EMAIL } from "@/lib/configurators";
 
 export interface SampleRequestConfirmationProps {
   name: string;
@@ -80,8 +81,8 @@ export default function SampleRequestConfirmation({
             <Hr style={hr} />
             <Text style={footerText}>
               Vragen? Mail ons op{" "}
-              <a href="mailto:info@kastenfabriek.nl" style={footerLink}>
-                info@kastenfabriek.nl
+              <a href={`mailto:${CONTACT_EMAIL}`} style={footerLink}>
+                {CONTACT_EMAIL}
               </a>
             </Text>
           </Section>
