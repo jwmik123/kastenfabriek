@@ -7,7 +7,7 @@ import ClosetMaterial from '../materials/ClosetMaterial'
 import { Model as HingeModel } from './Hinge'
 import { HandleByType } from './Handles'
 import type { HandleMaterial, LeatherColor } from '../constants/handleMaterials'
-import { computeHandleY, DEFAULT_HANDLE_Y, SAFETY, FALLBACK_HEIGHT_CM } from '../handleFit'
+import { canMountHandle, computeHandleY, SAFETY, FALLBACK_HEIGHT_CM } from '../handleFit'
 import { trapShape, trapGeo } from '@/utils/debugGeometry'
 
 const DOOR_DEPTH = 0.018
@@ -141,6 +141,13 @@ export default function Door({
         { doorHeightAtHandle },
         { heightCm: doorHandleHeightCm },
       )
+  // A door only carries a handle when the panel has room for it. computeHandleY
+  // already lowers the handle on short doors (lage kast, sloped kledingkast
+  // doors), so the test is whether it fits at all — not whether it reaches the
+  // full-height position.
+  const handleFits =
+    bottomYOverride != null ||
+    canMountHandle({ heightCm: doorHandleHeightCm }, { doorHeightAtHandle })
 
   useEffect(() => {
     if (!pivotRef.current || !posRef.current) return
@@ -166,7 +173,7 @@ export default function Door({
             <ClosetMaterial />
           </mesh>
 
-          {doorHandleId !== 'none' && (handleY >= DEFAULT_HANDLE_Y || bottomYOverride != null) && (
+          {doorHandleId !== 'none' && handleFits && (
             <HandleByType
               id={doorHandleId}
               meshId={doorHandleMeshId}

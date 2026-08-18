@@ -32,6 +32,25 @@ describe('computeHandleY', () => {
   })
 })
 
+describe('lage-kast door (~72 cm panel)', () => {
+  // Door.tsx renders the handle when canMountHandle passes and places it at
+  // computeHandleY. A low module's door never reaches DEFAULT_HANDLE_Y, so the
+  // two have to agree that it still carries a handle.
+  const LOW_DOOR_H = 0.72
+
+  it('mounts a normal handle and sits below the full-height position', () => {
+    expect(canMountHandle({ heightCm: 20 }, { doorHeightAtHandle: LOW_DOOR_H })).toBe(true)
+    const y = computeHandleY({ doorHeightAtHandle: LOW_DOOR_H }, { heightCm: 20 })
+    expect(y).toBeCloseTo(LOW_DOOR_H - 0.1 - SAFETY, 6)
+    expect(y).toBeLessThan(DEFAULT_HANDLE_Y)
+    expect(y).toBeGreaterThan(0)
+  })
+
+  it('rejects a handle taller than the panel allows', () => {
+    expect(canMountHandle({ heightCm: 70 }, { doorHeightAtHandle: LOW_DOOR_H })).toBe(false)
+  })
+})
+
 describe('canMountHandle', () => {
   it('is symmetric across the mirror flag (math depends only on doorHeightAtHandle)', () => {
     // The Door.tsx callsite resolves mirror to leftH or rightH before calling
