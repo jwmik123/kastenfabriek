@@ -5,8 +5,7 @@ import { useWasmachinekastStore } from '../store'
 import { MATERIALS } from '../../kledingkast/materials'
 import { cn } from '@/lib/utils'
 import MaterialPicker from '../../kledingkast/components/MaterialPicker'
-
-const MATERIAL_STEP = 4
+import { STEP } from '../steps/steps'
 
 export default function ModuleMaterialPanel() {
   const step = useWasmachinekastStore((s) => s.step)
@@ -28,7 +27,7 @@ export default function ModuleMaterialPanel() {
 
   const [activeTab, setActiveTab] = useState<'buitenkant' | 'binnenkant'>('buitenkant')
 
-  if (step !== MATERIAL_STEP || selectedSlot === null) return null
+  if (step !== STEP.material || selectedSlot === null) return null
 
   const moduleSlot = modules.find((m) => m.slotIndex === selectedSlot)
   if (!moduleSlot) return null

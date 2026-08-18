@@ -15,6 +15,7 @@ import { useClosetMaterialInstance } from '../../_shared/materials/ClosetMateria
 import { trapNaN, trapGeo } from '@/utils/debugGeometry'
 import { computeSlotWidthsM } from '../../_shared/store/slotWidths'
 import { getWasmLayoutConfig } from '../moduleLayoutConfigs'
+import { STEP } from '../steps/steps'
 import { WASHER_LAYOUT_IDS } from '../moduleLayouts'
 import { resolveFrontPlan } from '../../_shared/frontPolicy'
 import type { BaseModuleSlot } from '../../_shared/store/types'
@@ -54,6 +55,8 @@ function SlotInteraction({
   const selectedSlot = useWasmachinekastStore((s) => s.selectedSlot)
   const activeModulesSection = useWasmachinekastStore((s) => s.activeModulesSection)
   const layout = useWasmachinekastStore((s) => s.layout)
+  const step = useWasmachinekastStore((s) => s.step)
+  const setStep = useWasmachinekastStore((s) => s.setStep)
   const hoveredSlot = useWasmachinekastStore((s) => s.hoveredSlot)
   const hoveredSection = useWasmachinekastStore((s) => s.hoveredSection)
   // Single-section layouts have only one place a selection can be.
@@ -161,6 +164,13 @@ function SlotInteraction({
             setSelectedSlot(null)
           } else {
             const ne = e.nativeEvent as MouseEvent
+            // Clicking a module is a request to configure it, so take the
+            // customer to the indeling step. The material step has its own
+            // meaning for a module click (recolour that module), so it stays.
+            if (step !== STEP.modules && step !== STEP.material) {
+              setStep(STEP.modules)
+            }
+            // setStep clears the selection, so select after moving.
             setSelectedSlot(slotIndex, { x: ne.clientX, y: ne.clientY }, sectionKind)
           }
         }}

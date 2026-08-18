@@ -11,10 +11,9 @@ import { filterForSection } from '../sections/wasmModuleLayoutFilter'
 import { getWasmLayoutConfig } from '../moduleLayoutConfigs'
 import { LAYOUT_SVGS } from '../../kledingkast/components/LayoutSvgs'
 import { LOW_LAYOUT_SVGS, WASHER_LAYOUT_SVGS, WASHER_TYPE_SVGS } from './WasherLayoutSvgs'
+import { STEP } from '../steps/steps'
 import { Toggle } from '@/components/ui/Toggle'
 import { cn } from '@/lib/utils'
-
-const MODULES_STEP = 3
 
 function PickerHeading({ children }: { children: React.ReactNode }) {
   return (
@@ -93,7 +92,7 @@ export default function ModuleConfigCard({ className }: { className?: string }) 
   const washerIds   = new Set(WASHER_LAYOUTS.map((l) => l.layoutId))
 
   const isWasherSlot = selectedSlot !== null && washerSlots.has(selectedSlot)
-  const isActive = step === MODULES_STEP && selectedSlot !== null
+  const isActive = step === STEP.modules && selectedSlot !== null
 
   if (!isActive || selectedSlot === null) return null
 

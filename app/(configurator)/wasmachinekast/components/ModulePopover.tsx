@@ -5,8 +5,8 @@ import { useWasmachinekastStore } from '../store'
 import { computePopoverPlacement, type PopoverPlacement } from '../../_shared/components/popoverPlacement'
 import { useIsMobile } from '../../_shared/components/useIsMobile'
 import ModuleConfigCard from './ModuleConfigCard'
+import { STEP } from '../steps/steps'
 
-const MODULES_STEP = 3
 const POPOVER_WIDTH_PX = 320
 
 /**
@@ -35,7 +35,7 @@ export default function ModulePopover() {
 
   // Washer slots open the popover too — the washer is one of the layouts you
   // pick there, so it has to be reachable to change or remove.
-  const isActive = step === MODULES_STEP && selectedSlot !== null && !isMobile
+  const isActive = step === STEP.modules && selectedSlot !== null && !isMobile
 
   useEffect(() => {
     if (!isActive) return

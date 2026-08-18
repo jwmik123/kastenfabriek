@@ -10,13 +10,12 @@ import MaterialStep from '../steps/MaterialStep'
 import DoorHandlesStep from '../../_shared/steps/DoorHandlesStep'
 import AccessoiresStep from '../steps/AccessoiresStep'
 import { hasLowDrawerFronts } from '../sections/lowDrawerFronts'
+import { STEP, STEP_COUNT } from '../steps/steps'
 import ModuleMaterialPanel from './ModuleMaterialPanel'
 import StepHeader from '../../_shared/components/StepHeader'
 import ScrollArea from '../../_shared/components/ScrollArea'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-
-const STEP_COUNT = 6
 
 const STEP_META: Record<number, { eyebrow: string; title: string; subtitle: string }> = {
   1: {
@@ -83,12 +82,12 @@ function CurrentStep() {
   const step = useWasmachinekastStore((s) => s.step)
 
   switch (step) {
-    case 1: return <LayoutStep />
-    case 2: return <DimensionsStep />
-    case 3: return <ModulesStep />
-    case 4: return <MaterialStep />
-    case 5: return <HandlesStep />
-    case 6: return <AccessoiresStep />
+    case STEP.layout: return <LayoutStep />
+    case STEP.dimensions: return <DimensionsStep />
+    case STEP.modules: return <ModulesStep />
+    case STEP.material: return <MaterialStep />
+    case STEP.handles: return <HandlesStep />
+    case STEP.accessories: return <AccessoiresStep />
     default: return null
   }
 }
@@ -99,7 +98,7 @@ export default function StepWizard() {
   const prevStep = useWasmachinekastStore((s) => s.prevStep)
   const selectedSlot = useWasmachinekastStore((s) => s.selectedSlot)
   const { pricingData, editItemId, handleAddToCart, isCapturing } = useCartPrice()
-  const isPanelOpen = step === 4 && selectedSlot !== null
+  const isPanelOpen = step === STEP.material && selectedSlot !== null
   const meta = STEP_META[step]
   const isLastStep = step === STEP_COUNT
 
