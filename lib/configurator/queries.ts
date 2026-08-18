@@ -57,7 +57,9 @@ export const pricingDataQuery = groq`{
     heightCm,
     allowedMaterials,
     bodyColor,
-    meshId
+    meshId,
+    fitsLowModule,
+    noRotationOnDrawer
   }
 }`;
 

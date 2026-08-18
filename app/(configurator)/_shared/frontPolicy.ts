@@ -14,9 +14,11 @@
  *   cabinet, which never has handles) is push-to-open.
  * - Low-section-specific layouts (lage kast 20/21/22, `lowFronts` on their
  *   config) show their GLB fronts directly — no door in front. Those fronts
- *   carry the separate DRAWER handle choice (horizontal), which defaults to
- *   'none' (push-to-open). Shared layouts (e.g. Drawers + shelves) keep a
- *   normal deurtje in the low section.
+ *   carry the same handle as the doors, mounted horizontally. Shared layouts
+ *   (e.g. Drawers + shelves) keep a normal deurtje in the low section.
+ * - One handle choice covers the whole cabinet. A handle that does not fit a
+ *   drawer front or a low module (Sanity `fitsLowModule`) leaves those fronts
+ *   push-to-open; the picker keeps it out of reach once a low section exists.
  * - Washer modules: high section gets a push-to-open door above the washer
  *   only; low section stays open.
  */
@@ -33,13 +35,13 @@ export type FrontPolicyContext = {
   layoutHasLowFronts: boolean
   /** Global doors-extend-to-floor setting. */
   doorsExtendToFloor: boolean
-  /** The customer's DOOR handle choice ('none' = greeploos). */
+  /** The customer's handle choice ('none' = greeploos), doors and drawers alike. */
   selectedHandleId: string
   /**
-   * The customer's DRAWER handle choice for lage-kast fronts ('none' =
-   * push-to-open, the default). Ignored for the kledingkast.
+   * False when the selected handle does not fit a drawer front / low module
+   * (Sanity `fitsLowModule`). Those fronts stay push-to-open instead.
    */
-  selectedDrawerHandleId?: string
+  selectedHandleFitsLowModule?: boolean
 }
 
 export type FrontPlan = {
@@ -83,24 +85,29 @@ export function resolveFrontPlan(ctx: FrontPolicyContext): FrontPlan {
     }
   }
 
-  // Kitchen-style fronts: no door; separate drawer-handle choice.
+  // Kitchen-style fronts: no door, and the same handle the doors carry — unless
+  // that handle is too big for a drawer front, then push-to-open.
   if (ctx.sectionKind === 'low' && ctx.layoutHasLowFronts) {
     return {
       showDoor: false,
       showWasherDoorAbove: false,
       showDrawerFronts: true,
       doorHandleId: 'none',
-      drawerHandleId: ctx.selectedDrawerHandleId ?? 'none',
+      drawerHandleId:
+        ctx.selectedHandleFitsLowModule === false ? 'none' : ctx.selectedHandleId,
       bottom,
     }
   }
 
-  // Regular doors (high section and lage-kast deurtjes): selected handle.
+  // Regular doors (high section and lage-kast deurtjes): selected handle. A
+  // lage-kast deurtje is a low module too, so the same fit rule applies.
+  const doorTooBigForLow =
+    ctx.sectionKind === 'low' && ctx.selectedHandleFitsLowModule === false
   return {
     showDoor: ctx.hasDoorSetting,
     showWasherDoorAbove: false,
     showDrawerFronts: false,
-    doorHandleId: ctx.selectedHandleId,
+    doorHandleId: doorTooBigForLow ? 'none' : ctx.selectedHandleId,
     drawerHandleId: null,
     bottom,
   }

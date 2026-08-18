@@ -113,7 +113,6 @@ export default function WasmachinekastConfigurator({ pricingData, editConfig, ed
           buitenkantMaterialId: state.buitenkantMaterialId,
           binnenkantMaterialId: state.binnenkantMaterialId,
           doorHandleId: state.doorHandleId,
-          drawerHandleId: state.drawerHandleId,
           doorHandleName: state.doorHandleId === 'none'
             ? 'Greeploos (push-to-open)'
             : (state.pricingData?.handles.find((h) => h.id === state.doorHandleId)?.nameNl

@@ -505,6 +505,7 @@ export default function Module({
                   meshId: resolvedDrawerHandle?.meshId,
                   material: doorHandleMaterial,
                   bodyColor: resolvedDrawerHandle?.bodyColor,
+                  noRotation: resolvedDrawerHandle?.noRotationOnDrawer,
                 }
               : null
           }

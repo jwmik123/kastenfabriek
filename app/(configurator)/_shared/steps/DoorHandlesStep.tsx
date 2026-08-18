@@ -31,6 +31,7 @@ export default function DoorHandlesStep({
   handleId,
   onSelect,
   showMaterials = true,
+  requireLowModuleFit = false,
 }: {
   priceSuffix?: string
   /** Controlled handle id — overrides the store's doorHandleId (drawer picker). */
@@ -39,6 +40,11 @@ export default function DoorHandlesStep({
   onSelect?: (id: string) => void
   /** Hide the Afwerking swatches (drawer picker shares the door material). */
   showMaterials?: boolean
+  /**
+   * Only offer handles that also fit a drawer front / low module — set by the
+   * wasmachinekast when the configuration has a low section.
+   */
+  requireLowModuleFit?: boolean
 } = {}) {
   const storeDoorHandleId     = useConfiguratorStore((s) => s.doorHandleId)
   const storeSetDoorHandleId  = useConfiguratorStore((s) => s.setDoorHandleId)
@@ -80,9 +86,14 @@ export default function DoorHandlesStep({
       if (!canMountHandle({ heightCm: h.heightCm }, { doorHeightAtHandle: minEdgeHeightM })) {
         set.add(h.id)
       }
+      // One handle covers the whole cabinet, so a configuration with a low
+      // section can only use handles that also fit a drawer front.
+      if (requireLowModuleFit && h.fitsLowModule === false) {
+        set.add(h.id)
+      }
     }
     return set
-  }, [handles, minEdgeHeightM])
+  }, [handles, minEdgeHeightM, requireLowModuleFit])
 
   // Invalidate selection if the currently-chosen handle no longer fits any door.
   useEffect(() => {
@@ -210,9 +221,15 @@ export default function DoorHandlesStep({
           {currentPage.map((item) => {
             const isActive = item.id === doorHandleId
             const isDisabled = disabledHandleIds.has(item.id)
-            const disabledTitle = isDisabled
-              ? 'Greep past niet op de schuine deur in deze configuratie.'
-              : undefined
+            const tooBigForLow =
+              requireLowModuleFit &&
+              'fitsLowModule' in item &&
+              (item as HandleType).fitsLowModule === false
+            const disabledTitle = !isDisabled
+              ? undefined
+              : tooBigForLow
+                ? 'Greep past niet op de lades en modules van de lage kast.'
+                : 'Greep past niet op de schuine deur in deze configuratie.'
             return (
               <button
                 key={item.id}

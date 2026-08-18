@@ -78,6 +78,22 @@ export const handle = defineType({
       validation: (Rule) => Rule.unique(),
     }),
     defineField({
+      name: "fitsLowModule",
+      title: "Past op lage module",
+      type: "boolean",
+      initialValue: true,
+      description:
+        "Zet uit wanneer deze greep niet op een lade of een module van de lage kast past. Uitgeschakelde grepen zijn niet kiesbaar zodra de configuratie een lage kast heeft. Leeg = past wel.",
+    }),
+    defineField({
+      name: "noRotationOnDrawer",
+      title: "Niet draaien op lade",
+      type: "boolean",
+      initialValue: false,
+      description:
+        "Standaard wordt een greep een kwartslag gedraaid zodat hij horizontaal op een ladefront ligt. Zet aan voor grepen die rechtop moeten blijven (bijvoorbeeld knoppen of grepen die al horizontaal getekend zijn).",
+    }),
+    defineField({
       name: "meshId",
       title: "Mesh ID (override)",
       type: "string",

@@ -66,7 +66,6 @@ export default function WasmSummarySection() {
   const binnenkantMaterialId = useWasmachinekastStore((s) => s.binnenkantMaterialId)
   const countertopMaterialId = useWasmachinekastStore((s) => s.countertopMaterialId)
   const doorHandleId = useWasmachinekastStore((s) => s.doorHandleId)
-  const drawerHandleId = useWasmachinekastStore((s) => s.drawerHandleId)
   const needsTopCabinet = useWasmachinekastStore((s) => s.needsTopCabinet)
   const topCabinetHeight = useWasmachinekastStore((s) => s.topCabinetHeight)
   const handles = useWasmachinekastStore((s) => s.pricingData?.handles)
@@ -120,10 +119,7 @@ export default function WasmSummarySection() {
                 <MaterialSwatch id={countertopMaterialId ?? buitenkantMaterialId} />
               </SpecRow>
             )}
-            <SpecRow label="Handgreep deuren">{handleLabel(doorHandleId, handles)}</SpecRow>
-            {lowSection && (
-              <SpecRow label="Handgreep lades">{handleLabel(drawerHandleId, handles)}</SpecRow>
-            )}
+            <SpecRow label="Handgreep">{handleLabel(doorHandleId, handles)}</SpecRow>
           </div>
         </div>
       </section>

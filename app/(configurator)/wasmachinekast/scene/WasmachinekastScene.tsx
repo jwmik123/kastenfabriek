@@ -427,7 +427,10 @@ function SectionGroup({
 
   const doorsExtendToFloor = useWasmachinekastStore((s) => s.doorsExtendToFloor)
   const selectedHandleId = useWasmachinekastStore((s) => s.doorHandleId)
-  const selectedDrawerHandleId = useWasmachinekastStore((s) => s.drawerHandleId)
+  // One handle covers doors and drawers; Sanity says whether it fits a low module.
+  const selectedHandleFitsLowModule = useWasmachinekastStore(
+    (s) => s.pricingData?.handles.find((h) => h.id === s.doorHandleId)?.fitsLowModule !== false,
+  )
 
   const SIDE_WALL_EXTRA_CM = 1.5
   const TOP_CABINET_THRESHOLD = 275
@@ -501,7 +504,7 @@ function SectionGroup({
             layoutHasLowFronts: layout.lowFronts === true,
             doorsExtendToFloor,
             selectedHandleId,
-            selectedDrawerHandleId,
+            selectedHandleFitsLowModule,
           })
           return (
             <Module

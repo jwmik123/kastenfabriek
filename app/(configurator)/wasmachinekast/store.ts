@@ -172,9 +172,6 @@ interface WasmState extends BaseConfiguratorState {
   setPlacementType: (type: PlacementType) => void
   sidePanelThickness: SidePanelThickness
   setSidePanelThickness: (v: SidePanelThickness) => void
-  // Handle on lage-kast drawer fronts ('none' = push-to-open, the default).
-  drawerHandleId: string
-  setDrawerHandleId: (id: string) => void
   // Placed washers, each in its own section — high and low may both hold some.
   // `section` defaults to the one the top-level fields stand for.
   washerModules: WasherModule[]
@@ -460,7 +457,6 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
   doorHandleId: '23',
   // Drawer fronts (lage kast) have their own handle choice and start
   // greeploos; the wizard can add a handle separately from the doors.
-  drawerHandleId: 'none',
   doorHandleMaterial: 'chrome' as const,
   doorsExtendToFloor: false,
   lightStripsEnabled: false,
@@ -706,7 +702,6 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
       doorHandleMaterial: validateHandleMaterial(doorHandleMaterial, handle?.allowedMaterials),
     })
   },
-  setDrawerHandleId: (drawerHandleId) => set({ drawerHandleId }),
   setDoorHandleMaterial: (doorHandleMaterial) => {
     const { pricingData, doorHandleId } = get()
     const handle = pricingData?.handles.find((h) => h.id === doorHandleId)
@@ -812,7 +807,6 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
       buitenkantMaterialId: config.buitenkantMaterialId,
       binnenkantMaterialId: config.binnenkantMaterialId,
       doorHandleId: config.doorHandleId,
-      drawerHandleId: config.drawerHandleId ?? 'none',
       doorHandleMaterial: config.doorHandleMaterial ?? 'chrome',
       doorsExtendToFloor: config.doorsExtendToFloor ?? false,
       lightStripsEnabled: config.lightStripsEnabled,

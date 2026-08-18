@@ -58,40 +58,23 @@ function useHasLowDrawerFronts(): boolean {
   return hasLowDrawerFronts({ layout, topLevelModules, lowSection })
 }
 
-// Doors carry the door-handle choice; lage-kast drawer fronts have their own
-// choice (default push-to-open). The drawer picker only shows when the
-// configuration has drawer fronts.
+// One handle for the whole cabinet: doors, lage-kast deurtjes and drawer
+// fronts. With a low section present, handles that do not fit a drawer front
+// are out of reach — the picker disables them.
 function HandlesStep() {
+  const layout = useWasmachinekastStore((s) => s.layout)
+  const lowSection = useWasmachinekastStore((s) => s.lowSection)
+  const hasLowSection = layout === 'low-only' || lowSection !== null
   const drawerFronts = useHasLowDrawerFronts()
-  const drawerHandleId = useWasmachinekastStore((s) => s.drawerHandleId)
-  const setDrawerHandleId = useWasmachinekastStore((s) => s.setDrawerHandleId)
 
   return (
-    <div className="space-y-10">
-      <section className="space-y-4">
-        <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-          Deuren
-        </h3>
-        <DoorHandlesStep />
-      </section>
+    <div className="space-y-4">
       {drawerFronts && (
-        <section className="space-y-4">
-          <div>
-            <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              Lades
-            </h3>
-            <p className="text-xs text-muted-foreground/60 mt-1">
-              Standaard push-to-open. De greep wordt horizontaal op de ladefronten geplaatst.
-            </p>
-          </div>
-          <DoorHandlesStep
-            priceSuffix="/ lade"
-            handleId={drawerHandleId}
-            onSelect={setDrawerHandleId}
-            showMaterials={false}
-          />
-        </section>
+        <p className="text-xs text-muted-foreground/60">
+          Deze greep komt op de deuren én op de ladefronten van de lage kast.
+        </p>
       )}
+      <DoorHandlesStep requireLowModuleFit={hasLowSection} />
     </div>
   )
 }

@@ -35,7 +35,6 @@ export function useCartPrice() {
   const buitenkantMaterialId = useWasmachinekastStore((s) => s.buitenkantMaterialId)
   const binnenkantMaterialId = useWasmachinekastStore((s) => s.binnenkantMaterialId)
   const doorHandleId = useWasmachinekastStore((s) => s.doorHandleId)
-  const drawerHandleId = useWasmachinekastStore((s) => s.drawerHandleId)
   const lightStripsEnabled = useWasmachinekastStore((s) => s.lightStripsEnabled)
   const width = useWasmachinekastStore((s) => s.width)
   const height = useWasmachinekastStore((s) => s.height)
@@ -105,6 +104,12 @@ export function useCartPrice() {
     topLevelModules: modules,
     lowSection,
   })
+  // Drawer fronts carry the same handle as the doors, unless that handle does
+  // not fit a low module — then they stay push-to-open.
+  const drawerHandleId =
+    pricingData?.handles.find((h) => h.id === doorHandleId)?.fitsLowModule === false
+      ? 'none'
+      : doorHandleId
   const mechanismCost = engine
     ? regularDoorCount * engine.getHandlePrice(doorHandleId) +
       (pushDoorCount + topCabinetDoorCount) * engine.getHandlePrice('none') +

@@ -10,7 +10,6 @@ const base: FrontPolicyContext = {
   layoutHasLowFronts: false,
   doorsExtendToFloor: false,
   selectedHandleId: '23',
-  selectedDrawerHandleId: 'none',
 }
 
 describe('resolveFrontPlan — kledingkast (unchanged behavior)', () => {
@@ -97,25 +96,36 @@ describe('resolveFrontPlan — low section kitchen-style fronts', () => {
     expect(plan.showDoor).toBe(false)
   })
 
-  it('drawer fronts default to push-to-open (no handle)', () => {
-    const plan = resolveFrontPlan({
-      ...base,
-      sectionKind: 'low',
-      layoutHasLowFronts: true,
-      selectedDrawerHandleId: undefined,
-    })
-    expect(plan.drawerHandleId).toBe('none')
-  })
-
-  it('drawer fronts carry the separate drawer-handle choice, not the door handle', () => {
+  it('drawer fronts carry the same handle as the doors', () => {
     const plan = resolveFrontPlan({
       ...base,
       sectionKind: 'low',
       layoutHasLowFronts: true,
       selectedHandleId: '23',
-      selectedDrawerHandleId: '12',
     })
-    expect(plan.drawerHandleId).toBe('12')
+    expect(plan.drawerHandleId).toBe('23')
+    expect(plan.doorHandleId).toBe('none')
+  })
+
+  it('drawer fronts stay push-to-open when the handle does not fit a low module', () => {
+    const plan = resolveFrontPlan({
+      ...base,
+      sectionKind: 'low',
+      layoutHasLowFronts: true,
+      selectedHandleId: '23',
+      selectedHandleFitsLowModule: false,
+    })
+    expect(plan.drawerHandleId).toBe('none')
+  })
+
+  it('a lage-kast deurtje drops the handle when it does not fit a low module', () => {
+    const plan = resolveFrontPlan({
+      ...base,
+      sectionKind: 'low',
+      selectedHandleId: '23',
+      selectedHandleFitsLowModule: false,
+    })
+    expect(plan.showDoor).toBe(true)
     expect(plan.doorHandleId).toBe('none')
   })
 

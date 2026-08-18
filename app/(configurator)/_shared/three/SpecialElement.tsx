@@ -53,6 +53,8 @@ interface SpecialElementProps {
     meshId?: string
     material?: HandleMaterial
     bodyColor?: LeatherColor
+    /** Keep the handle upright instead of turning it onto its side. */
+    noRotation?: boolean
   } | null
   // Module-local Y where the bottom edge of meshes named *_extend should land
   // (2 cm above the room floor when "deuren tot vloer" is on). The mesh is
@@ -389,7 +391,7 @@ function SpecialElementInner({
           key={`drawer-handle-${i}`}
           ref={(el) => { handleRefs.current[i] = el }}
           position={[f.cx, f.topY - DRAWER_HANDLE_TOP_INSET, f.frontZ + 0.001]}
-          rotation={[0, 0, Math.PI / 2]}
+          rotation={[0, 0, drawerHandle.noRotation ? 0 : Math.PI / 2]}
         >
           <HandleByType
             id={drawerHandle.id}

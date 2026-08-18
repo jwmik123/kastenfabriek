@@ -100,6 +100,10 @@ export interface HandleType {
   allowedMaterials?: HandleMaterial[];
   bodyColor?: LeatherColor;
   meshId?: string;
+  /** False when the handle is too big for a drawer front or a low module. Undefined = fits. */
+  fitsLowModule?: boolean;
+  /** True when the handle must stay upright on a drawer front instead of being turned. */
+  noRotationOnDrawer?: boolean;
 }
 
 export interface FullPricingData {
