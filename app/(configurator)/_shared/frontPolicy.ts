@@ -42,6 +42,11 @@ export type FrontPolicyContext = {
    * (Sanity `fitsLowModule`). Those fronts stay push-to-open instead.
    */
   selectedHandleFitsLowModule?: boolean
+  /**
+   * Per-module override (ModuleSlot.pushToOpen): this module opens by pushing,
+   * so its door and drawer fronts carry no handle whatever the cabinet uses.
+   */
+  modulePushToOpen?: boolean
 }
 
 export type FrontPlan = {
@@ -61,13 +66,15 @@ export type FrontPlan = {
 
 export function resolveFrontPlan(ctx: FrontPolicyContext): FrontPlan {
   const bottom = ctx.doorsExtendToFloor ? 'floor' : 'plinth'
+  // A push-to-open module never carries a handle, whatever the cabinet uses.
+  const handleId = ctx.modulePushToOpen ? 'none' : ctx.selectedHandleId
 
   if (ctx.product === 'kledingkast') {
     return {
       showDoor: ctx.hasDoorSetting,
       showWasherDoorAbove: false,
       showDrawerFronts: false,
-      doorHandleId: ctx.selectedHandleId,
+      doorHandleId: handleId,
       drawerHandleId: null,
       bottom,
     }
@@ -94,7 +101,7 @@ export function resolveFrontPlan(ctx: FrontPolicyContext): FrontPlan {
       showDrawerFronts: true,
       doorHandleId: 'none',
       drawerHandleId:
-        ctx.selectedHandleFitsLowModule === false ? 'none' : ctx.selectedHandleId,
+        ctx.selectedHandleFitsLowModule === false ? 'none' : handleId,
       bottom,
     }
   }
@@ -107,7 +114,7 @@ export function resolveFrontPlan(ctx: FrontPolicyContext): FrontPlan {
     showDoor: ctx.hasDoorSetting,
     showWasherDoorAbove: false,
     showDrawerFronts: false,
-    doorHandleId: doorTooBigForLow ? 'none' : ctx.selectedHandleId,
+    doorHandleId: doorTooBigForLow ? 'none' : handleId,
     drawerHandleId: null,
     bottom,
   }

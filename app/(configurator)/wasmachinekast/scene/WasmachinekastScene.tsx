@@ -505,6 +505,7 @@ function SectionGroup({
             doorsExtendToFloor,
             selectedHandleId,
             selectedHandleFitsLowModule,
+            modulePushToOpen: m.pushToOpen === true,
           })
           return (
             <Module

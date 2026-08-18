@@ -11,6 +11,8 @@ export interface ModuleSlotSnapshot {
   buitenkantMaterialId?: string;
   binnenkantMaterialId?: string;
   hasPowerHole?: boolean;
+  /** This module opens by pushing — no handle, regardless of the cabinet's choice. */
+  pushToOpen?: boolean;
 }
 
 // Wasmachinekast sections (issue 075/076).

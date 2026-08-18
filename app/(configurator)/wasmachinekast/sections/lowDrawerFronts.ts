@@ -35,14 +35,17 @@ export function hasLowDrawerFronts(args: {
   return countLowDrawerFronts(args) > 0
 }
 
-/** Total number of handle-bearing fronts across the low section. */
+/**
+ * Total number of handle-bearing fronts across the low section. A module set to
+ * push-to-open keeps its fronts but carries no handle, so it counts as zero.
+ */
 export function countLowDrawerFronts(args: {
   layout: WasmLayout
   topLevelModules: BaseModuleSlot[]
   lowSection: Section | null
 }): number {
   return lowModules(args.layout, args.topLevelModules, args.lowSection).reduce(
-    (sum, m) => sum + frontsInLayout(m.layoutId),
+    (sum, m) => sum + (m.pushToOpen ? 0 : frontsInLayout(m.layoutId)),
     0,
   )
 }

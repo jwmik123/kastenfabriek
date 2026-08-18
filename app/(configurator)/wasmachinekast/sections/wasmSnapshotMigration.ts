@@ -37,6 +37,7 @@ function moduleFromSnapshot(s: ModuleSlotSnapshot): BaseModuleSlot {
     buitenkantMaterialId: s.buitenkantMaterialId,
     binnenkantMaterialId: s.binnenkantMaterialId,
     hasPowerHole: s.hasPowerHole ?? false,
+    pushToOpen: s.pushToOpen ?? false,
   }
 }
 
@@ -50,6 +51,7 @@ function moduleToSnapshot(m: BaseModuleSlot): ModuleSlotSnapshot {
     buitenkantMaterialId: m.buitenkantMaterialId,
     binnenkantMaterialId: m.binnenkantMaterialId,
     hasPowerHole: m.hasPowerHole ?? false,
+    pushToOpen: m.pushToOpen ?? false,
   }
 }
 

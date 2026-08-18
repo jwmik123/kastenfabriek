@@ -10,6 +10,7 @@ const mkMod = (i: number, layoutId: number | null = null): ModuleSlotSnapshot =>
   hasDoor: true,
   span: 1,
   hasPowerHole: false,
+  pushToOpen: false,
 })
 
 describe('wasmSnapshotMigration — restore (legacy)', () => {

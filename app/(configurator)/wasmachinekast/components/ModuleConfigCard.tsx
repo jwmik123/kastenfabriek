@@ -8,6 +8,7 @@ import {
   FALLBACK_MODULE_MIN_WIDTH_CM,
 } from '../../_shared/store/slotWidths'
 import { filterForSection } from '../sections/wasmModuleLayoutFilter'
+import { getWasmLayoutConfig } from '../moduleLayoutConfigs'
 import { LAYOUT_SVGS } from '../../kledingkast/components/LayoutSvgs'
 import { LOW_LAYOUT_SVGS, WASHER_LAYOUT_SVGS, WASHER_TYPE_SVGS } from './WasherLayoutSvgs'
 import { Toggle } from '@/components/ui/Toggle'
@@ -53,6 +54,9 @@ export default function ModuleConfigCard({ className }: { className?: string }) 
   const setLowSectionModuleLayout = useWasmachinekastStore((s) => s.setLowSectionModuleLayout)
   const setLowSectionModuleSpan = useWasmachinekastStore((s) => s.setLowSectionModuleSpan)
   const toggleLowSectionModuleDoor = useWasmachinekastStore((s) => s.toggleLowSectionModuleDoor)
+  const togglePushToOpenTop = useWasmachinekastStore((s) => s.toggleModulePushToOpen)
+  const toggleLowSectionPushToOpen = useWasmachinekastStore((s) => s.toggleLowSectionModulePushToOpen)
+  const selectedHandleId = useWasmachinekastStore((s) => s.doorHandleId)
   const topModules       = useWasmachinekastStore((s) => s.modules)
   const topWidth         = useWasmachinekastStore((s) => s.width)
   const lowSection       = useWasmachinekastStore((s) => s.lowSection)
@@ -77,6 +81,7 @@ export default function ModuleConfigCard({ className }: { className?: string }) 
   const setModuleLayout = editingLow ? setLowSectionModuleLayout : setModuleLayoutTop
   const setModuleSpan = editingLow ? setLowSectionModuleSpan : setModuleSpanTop
   const toggleModuleDoor = editingLow ? toggleLowSectionModuleDoor : toggleModuleDoorTop
+  const togglePushToOpen = editingLow ? toggleLowSectionPushToOpen : togglePushToOpenTop
 
   // Washers live per section, so a washer in high slot N must not lock low slot
   // N — same index, different vak.
@@ -98,6 +103,15 @@ export default function ModuleConfigCard({ className }: { className?: string }) 
 
   const nextIsWasher = washerSlots.has(selectedSlot + 1)
   const canBeDouble = selectedSlot < modules.length - 1 && !nextIsWasher
+
+  // A vak only has something to push on when it has a door or drawer fronts.
+  const activeLayoutConfig =
+    modules[selectedSlot]?.layoutId !== null && modules[selectedSlot]?.layoutId !== undefined
+      ? getWasmLayoutConfig(modules[selectedSlot].layoutId!)
+      : undefined
+  const hasFront =
+    (modules[selectedSlot]?.hasDoor ?? false) ||
+    (editingSection === 'low' && activeLayoutConfig?.lowFronts === true)
 
   // Washer layouts are picked here like any other indeling; they just carry
   // their own placement rules (fixed width, may shrink the module count).
@@ -254,6 +268,24 @@ export default function ModuleConfigCard({ className }: { className?: string }) 
               </div>
             )}
           </div>
+          )}
+
+          {/* Per-module push-to-open. Only meaningful on a front that would
+              otherwise carry the cabinet's handle. */}
+          {!isWasherSlot && hasFront && selectedHandleId !== 'none' && (
+            <div
+              data-testid="module-popover-push-to-open-toggle"
+              className="flex items-center justify-between"
+            >
+              <div>
+                <span className="text-sm">Push-to-open</span>
+                <p className="text-xs text-muted-foreground/60">Dit vak krijgt geen greep</p>
+              </div>
+              <Toggle
+                checked={modules[selectedSlot]?.pushToOpen ?? false}
+                onCheckedChange={() => togglePushToOpen(selectedSlot)}
+              />
+            </div>
           )}
 
           <div data-testid="module-popover-layout-picker" className="space-y-4">

@@ -223,6 +223,9 @@ interface WasmState extends BaseConfiguratorState {
   setLowSectionModuleLayout: (slotIndex: number, layoutId: number) => void
   setLowSectionModuleSpan: (slotIndex: number, span: 1 | 2) => void
   toggleLowSectionModuleDoor: (slotIndex: number) => void
+  toggleLowSectionModulePushToOpen: (slotIndex: number) => void
+  /** Per-module push-to-open: the module keeps its front but drops the handle. */
+  toggleModulePushToOpen: (slotIndex: number) => void
   setLowSectionHasPowerHole: (slotIndex: number, value: boolean) => void
   setLowSectionModuleMaterial: (
     slotIndex: number,
@@ -416,6 +419,18 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
         ...s.lowSection,
         modules: s.lowSection.modules.map((m) =>
           m.slotIndex === slotIndex ? { ...m, hasDoor: !m.hasDoor } : m,
+        ),
+      },
+    })
+  },
+  toggleLowSectionModulePushToOpen: (slotIndex) => {
+    const s = get()
+    if (!s.lowSection) return
+    set({
+      lowSection: {
+        ...s.lowSection,
+        modules: s.lowSection.modules.map((m) =>
+          m.slotIndex === slotIndex ? { ...m, pushToOpen: !m.pushToOpen } : m,
         ),
       },
     })
@@ -666,6 +681,13 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
   toggleModuleDoor: (slotIndex) =>
     set((s) => ({
       modules: s.modules.map((m) => (m.slotIndex === slotIndex ? { ...m, hasDoor: !m.hasDoor } : m)),
+    })),
+
+  toggleModulePushToOpen: (slotIndex) =>
+    set((s) => ({
+      modules: s.modules.map((m) =>
+        m.slotIndex === slotIndex ? { ...m, pushToOpen: !m.pushToOpen } : m,
+      ),
     })),
 
   setHasPowerHole: (slotIndex, value) =>

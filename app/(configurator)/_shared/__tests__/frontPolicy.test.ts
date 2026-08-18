@@ -129,6 +129,23 @@ describe('resolveFrontPlan — low section kitchen-style fronts', () => {
     expect(plan.doorHandleId).toBe('none')
   })
 
+  it('a push-to-open module drops the handle on its door', () => {
+    const plan = resolveFrontPlan({ ...base, modulePushToOpen: true })
+    expect(plan.showDoor).toBe(true)
+    expect(plan.doorHandleId).toBe('none')
+  })
+
+  it('a push-to-open module drops the handle on its drawer fronts', () => {
+    const plan = resolveFrontPlan({
+      ...base,
+      sectionKind: 'low',
+      layoutHasLowFronts: true,
+      modulePushToOpen: true,
+    })
+    expect(plan.showDrawerFronts).toBe(true)
+    expect(plan.drawerHandleId).toBe('none')
+  })
+
   it('shared layouts (e.g. Drawers + shelves, id 2) in the low section keep a deurtje', () => {
     const plan = resolveFrontPlan({ ...base, sectionKind: 'low' })
     expect(plan.showDoor).toBe(true)

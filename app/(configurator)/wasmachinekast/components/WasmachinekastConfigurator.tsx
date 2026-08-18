@@ -85,6 +85,7 @@ export default function WasmachinekastConfigurator({ pricingData, editConfig, ed
             buitenkantMaterialId: m.buitenkantMaterialId,
             binnenkantMaterialId: m.binnenkantMaterialId,
             hasPowerHole: m.hasPowerHole ?? false,
+        pushToOpen: m.pushToOpen ?? false,
           })),
           ...(state.layout === 'low-only' || state.lowSection
             ? {
@@ -103,6 +104,7 @@ export default function WasmachinekastConfigurator({ pricingData, editConfig, ed
                     buitenkantMaterialId: m.buitenkantMaterialId,
                     binnenkantMaterialId: m.binnenkantMaterialId,
                     hasPowerHole: m.hasPowerHole ?? false,
+        pushToOpen: m.pushToOpen ?? false,
                   })),
                   topPanelThicknessMm: state.topPanelThicknessMm,
                   countertopMaterialId:

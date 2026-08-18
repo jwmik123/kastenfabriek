@@ -10,6 +10,8 @@ export interface BaseModuleSlot {
   buitenkantMaterialId?: string
   binnenkantMaterialId?: string
   hasPowerHole?: boolean
+  /** Per-module override: this module opens by pushing, so it carries no handle. */
+  pushToOpen?: boolean
   fixedWidth?: number  // cm; when set, slot has fixed width (e.g. washer modules)
 }
 

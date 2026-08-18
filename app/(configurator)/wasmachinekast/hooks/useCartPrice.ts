@@ -91,7 +91,9 @@ export function useCartPrice() {
     const variant = material?.type === 'texture' ? 'veneer' : 'standard'
     const count = module.span === 2 ? 2 : 1
     moduleDoorCost += engine.getDoorPrice(variant) * count
-    if (!low && isWasher) pushDoorCount += count
+    // A washer door and a module the customer set to push-to-open both go
+    // without a handle.
+    if ((!low && isWasher) || module.pushToOpen) pushDoorCount += count
     else regularDoorCount += count
   }
 
@@ -156,6 +158,7 @@ export function useCartPrice() {
         buitenkantMaterialId: m.buitenkantMaterialId,
         binnenkantMaterialId: m.binnenkantMaterialId,
         hasPowerHole: m.hasPowerHole ?? false,
+        pushToOpen: m.pushToOpen ?? false,
       })),
       buitenkantMaterialId,
       binnenkantMaterialId,
@@ -189,6 +192,7 @@ export function useCartPrice() {
                 buitenkantMaterialId: m.buitenkantMaterialId,
                 binnenkantMaterialId: m.binnenkantMaterialId,
                 hasPowerHole: m.hasPowerHole ?? false,
+        pushToOpen: m.pushToOpen ?? false,
               })),
               topPanelThicknessMm,
               countertopMaterialId: countertopMaterialId ?? buitenkantMaterialId,
