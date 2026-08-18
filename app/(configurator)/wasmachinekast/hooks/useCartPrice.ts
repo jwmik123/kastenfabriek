@@ -46,7 +46,6 @@ export function useCartPrice() {
   const topCabinetHeight = useWasmachinekastStore((s) => s.topCabinetHeight)
   const moduleLayouts = useWasmachinekastStore((s) => s.moduleLayouts)
   const layout = useWasmachinekastStore((s) => s.layout)
-  const washerSection = useWasmachinekastStore((s) => s.washerSection)
   const lowSection = useWasmachinekastStore((s) => s.lowSection)
   const topPanelThicknessMm = useWasmachinekastStore((s) => s.topPanelThicknessMm)
   const countertopMaterialId = useWasmachinekastStore((s) => s.countertopMaterialId)
@@ -167,7 +166,6 @@ export function useCartPrice() {
       rightDiagTopWidth: 0,
       placementType: 'ingebouwd',
       layout,
-      washerSection,
       ...(layout === 'low-only' || lowSection
         ? {
             lowSection: {

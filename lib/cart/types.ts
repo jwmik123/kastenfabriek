@@ -71,14 +71,16 @@ export interface ClosetConfigSnapshot {
   doorHandleMaterial?: HandleMaterial;
   doorsExtendToFloor?: boolean;
 
-  // Washer modules
-  washerModules?: { slotIndex: number; layoutId: number }[];
+  // Washer modules. `section` is absent in snapshots from before washers could
+  // sit in both sections — `washerSection` below held it for the whole set then.
+  washerModules?: { slotIndex: number; layoutId: number; section?: 'high' | 'low' }[];
 
   // Wasmachinekast sections (issue 076). Optional — kledingkast ignores.
   // When `layout` is absent, top-level width/height/moduleCount/modules are
   // interpreted as the high section and layout defaults to 'high-only'.
   layout?: WasmLayout;
   lowSection?: LowSectionSnapshot;
+  /** Legacy: the single section that held every washer. Read, no longer written. */
   washerSection?: WasherSection;
 
   // Lighting & extras

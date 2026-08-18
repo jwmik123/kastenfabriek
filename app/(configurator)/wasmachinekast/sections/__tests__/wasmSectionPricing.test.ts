@@ -53,7 +53,7 @@ const low: Section = {
 describe('priceWasmachinekast', () => {
   it('high-only: prices high section, no werkblad', () => {
     const state: WasmSectionsState = {
-      layout: 'high-only', highSection: high, lowSection: null, washerSection: 'high',
+      layout: 'high-only', highSection: high, lowSection: null,
     }
     const r = priceWasmachinekast({ state, depth: DEPTH, pricingData, buitenkantRatePerSqCm: RATE })
     // 160cm > 65 → double; 200 + 300 = 500
@@ -66,7 +66,7 @@ describe('priceWasmachinekast', () => {
 
   it('low-only: prices low section + werkblad', () => {
     const state: WasmSectionsState = {
-      layout: 'low-only', highSection: null, lowSection: low, washerSection: 'low',
+      layout: 'low-only', highSection: null, lowSection: low,
     }
     const r = priceWasmachinekast({ state, depth: DEPTH, pricingData, buitenkantRatePerSqCm: RATE })
     // 120cm > 65 → double; 200 + 300 = 500
@@ -78,7 +78,7 @@ describe('priceWasmachinekast', () => {
 
   it('low-left: sums both sections + werkblad', () => {
     const state: WasmSectionsState = {
-      layout: 'low-left', highSection: high, lowSection: low, washerSection: 'high',
+      layout: 'low-left', highSection: high, lowSection: low,
     }
     const r = priceWasmachinekast({ state, depth: DEPTH, pricingData, buitenkantRatePerSqCm: RATE })
     expect(r.high).toBe(500)
@@ -89,10 +89,10 @@ describe('priceWasmachinekast', () => {
 
   it('low-right: same totals as low-left (sections preserved)', () => {
     const stateL: WasmSectionsState = {
-      layout: 'low-left', highSection: high, lowSection: low, washerSection: 'high',
+      layout: 'low-left', highSection: high, lowSection: low,
     }
     const stateR: WasmSectionsState = {
-      layout: 'low-right', highSection: high, lowSection: low, washerSection: 'high',
+      layout: 'low-right', highSection: high, lowSection: low,
     }
     const rL = priceWasmachinekast({ state: stateL, depth: DEPTH, pricingData, buitenkantRatePerSqCm: RATE })
     const rR = priceWasmachinekast({ state: stateR, depth: DEPTH, pricingData, buitenkantRatePerSqCm: RATE })
@@ -101,7 +101,7 @@ describe('priceWasmachinekast', () => {
 
   it('werkblad price is zero when no low section', () => {
     const state: WasmSectionsState = {
-      layout: 'high-only', highSection: high, lowSection: null, washerSection: null,
+      layout: 'high-only', highSection: high, lowSection: null,
     }
     const r = priceWasmachinekast({ state, depth: DEPTH, pricingData, buitenkantRatePerSqCm: RATE })
     expect(r.werkblad).toBe(0)
@@ -111,10 +111,10 @@ describe('priceWasmachinekast', () => {
     const low18: Section = { ...low, topPanelThicknessMm: 18 }
     const low36: Section = { ...low, topPanelThicknessMm: 36 }
     const state18: WasmSectionsState = {
-      layout: 'low-only', highSection: null, lowSection: low18, washerSection: 'low',
+      layout: 'low-only', highSection: null, lowSection: low18,
     }
     const state36: WasmSectionsState = {
-      layout: 'low-only', highSection: null, lowSection: low36, washerSection: 'low',
+      layout: 'low-only', highSection: null, lowSection: low36,
     }
     const r18 = priceWasmachinekast({ state: state18, depth: DEPTH, pricingData, buitenkantRatePerSqCm: RATE })
     const r36 = priceWasmachinekast({ state: state36, depth: DEPTH, pricingData, buitenkantRatePerSqCm: RATE })

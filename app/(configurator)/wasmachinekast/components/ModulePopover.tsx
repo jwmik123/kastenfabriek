@@ -6,7 +6,7 @@ import { computePopoverPlacement, type PopoverPlacement } from '../../_shared/co
 import { useIsMobile } from '../../_shared/components/useIsMobile'
 import ModuleConfigCard from './ModuleConfigCard'
 
-const MODULES_STEP = 4
+const MODULES_STEP = 3
 const POPOVER_WIDTH_PX = 320
 
 /**
@@ -21,8 +21,6 @@ export default function ModulePopover() {
   const topModuleCount   = useWasmachinekastStore((s) => s.moduleCount)
   const lowSection       = useWasmachinekastStore((s) => s.lowSection)
   const activeModulesSection = useWasmachinekastStore((s) => s.activeModulesSection)
-  const washerModules    = useWasmachinekastStore((s) => s.washerModules)
-  const washerSection    = useWasmachinekastStore((s) => s.washerSection)
   const lastClickPoint   = useWasmachinekastStore((s) => s.lastClickPoint)
   const layout           = useWasmachinekastStore((s) => s.layout)
 
@@ -32,19 +30,12 @@ export default function ModulePopover() {
   const editingLow = isDual && activeModulesSection === 'low' && lowSection !== null
   const moduleCount = editingLow ? lowSection!.moduleCount : topModuleCount
 
-  const editingSection: 'high' | 'low' =
-    layout === 'low-only' ? 'low' : editingLow ? 'low' : 'high'
-  const washerLocksThisSection =
-    washerSection !== null && washerSection === editingSection
-  const washerSlots = new Set(
-    washerLocksThisSection ? washerModules.map((w) => w.slotIndex) : [],
-  )
-  const isWasherSlot = selectedSlot !== null && washerSlots.has(selectedSlot)
-
   const ref = useRef<HTMLDivElement>(null)
   const [placement, setPlacement] = useState<PopoverPlacement | null>(null)
 
-  const isActive = step === MODULES_STEP && selectedSlot !== null && !isWasherSlot && !isMobile
+  // Washer slots open the popover too — the washer is one of the layouts you
+  // pick there, so it has to be reachable to change or remove.
+  const isActive = step === MODULES_STEP && selectedSlot !== null && !isMobile
 
   useEffect(() => {
     if (!isActive) return

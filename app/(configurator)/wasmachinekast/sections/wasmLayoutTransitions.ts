@@ -3,7 +3,6 @@ import { defaultLowSection } from './wasmSectionDefaults'
 import type {
   Section,
   SharedMaterials,
-  WasherSection,
   WasmLayout,
   WasmSectionsState,
 } from './types'
@@ -67,19 +66,13 @@ export function transition(
     ? state.lowSection ?? defaultLowSection(state.highSection, shared)
     : null
 
-  let nextWasher: WasherSection = state.washerSection
-  if (nextWasher === 'high' && nextHigh === null) {
-    nextWasher = nextLow !== null ? 'low' : null
-  } else if (nextWasher === 'low' && nextLow === null) {
-    nextWasher = nextHigh !== null ? 'high' : null
-  }
-
+  // Washers ride along with their own section; the store drops the placements
+  // of a section that disappears here.
   return {
     nextState: {
       layout: nextLayout,
       highSection: nextHigh,
       lowSection: nextLow,
-      washerSection: nextWasher,
     },
     requiresConfirm,
   }

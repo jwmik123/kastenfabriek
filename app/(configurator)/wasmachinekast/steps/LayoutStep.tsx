@@ -100,14 +100,12 @@ function buildSectionsState(s: {
   moduleCount: number
   modules: ReturnType<typeof useWasmachinekastStore.getState>['modules']
   lowSection: ReturnType<typeof useWasmachinekastStore.getState>['lowSection']
-  washerSection: ReturnType<typeof useWasmachinekastStore.getState>['washerSection']
 }): WasmSectionsState {
   const active = { width: s.width, height: s.height, moduleCount: s.moduleCount, modules: s.modules }
   return {
     layout: s.layout,
     highSection: s.layout === 'low-only' ? null : active,
     lowSection: s.layout === 'low-only' ? active : s.lowSection,
-    washerSection: s.washerSection,
   }
 }
 
@@ -118,7 +116,6 @@ export default function LayoutStep() {
   const moduleCount = useWasmachinekastStore((s) => s.moduleCount)
   const modules = useWasmachinekastStore((s) => s.modules)
   const lowSection = useWasmachinekastStore((s) => s.lowSection)
-  const washerSection = useWasmachinekastStore((s) => s.washerSection)
   const buitenkantMaterialId = useWasmachinekastStore((s) => s.buitenkantMaterialId)
   const binnenkantMaterialId = useWasmachinekastStore((s) => s.binnenkantMaterialId)
   const applySectionsState = useWasmachinekastStore((s) => s.applySectionsState)
@@ -128,7 +125,7 @@ export default function LayoutStep() {
 
   function handlePick(next: WasmLayout) {
     if (next === layout) return
-    const current = buildSectionsState({ layout, width, height, moduleCount, modules, lowSection, washerSection })
+    const current = buildSectionsState({ layout, width, height, moduleCount, modules, lowSection })
     const result = transition(current, next, { buitenkantMaterialId, binnenkantMaterialId })
     if (result.requiresConfirm) {
       const dropped = current.highSection && !result.nextState.highSection

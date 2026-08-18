@@ -2,6 +2,8 @@ import { client } from '@/sanity/lib/client'
 import { pricingDataQuery } from '@/lib/configurator/queries'
 import type { FullPricingData } from '@/types/configurator-pricing'
 import WasmachinekastConfigurator from './components/WasmachinekastConfigurator'
+import ColorwayPreview from './components/ColorwayPreview'
+import WasmSummarySection from './components/WasmSummarySection'
 import { getServerSession } from '@/lib/actions/auth'
 import { getDbCartItemById } from '@/lib/actions/cart'
 import type { ClosetConfigSnapshot } from '@/lib/cart/types'
@@ -24,10 +26,16 @@ export default async function WasmachinekastPage({
   }
 
   return (
-    <WasmachinekastConfigurator
-      pricingData={pricingData}
-      editConfig={editConfig}
-      editItemId={edit ?? null}
-    />
+    <>
+      <WasmachinekastConfigurator
+        pricingData={pricingData}
+        editConfig={editConfig}
+        editItemId={edit ?? null}
+      />
+      <div className="hidden md:block">
+        <ColorwayPreview />
+        <WasmSummarySection />
+      </div>
+    </>
   )
 }

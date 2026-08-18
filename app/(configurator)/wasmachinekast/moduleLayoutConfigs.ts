@@ -102,6 +102,17 @@ const WASM_LOW_PLANK_CONFIG: ModuleLayoutConfig = {
       anchor: { type: 'fromBottom', d: 0 },
       centered: true,
       noDoorDepthOffset: 0.031,
+      // Modelled for a 68.6 cm slot; fronts span the slot, not the opening.
+      nativeSlotWidth: 0.686,
+      // Cabinet-mounted halves of the drawer runners: hardware, not panelwork.
+      chromeMaterialMeshes: ['WMPlankLowFixedLeft', 'WMPlankLowFixedRight'],
+      widthScaleMeshes: [
+        'WMPlankLowBack',
+        'WMPlankLowBottom_ds',
+        'WMPlankLowFront1_extend',
+        'WMPlankLowFront2',
+        'WMPlankLowPlank',
+      ],
     },
   ],
   fillZone: {
@@ -123,6 +134,14 @@ const WASM_LOW_SINGLE_CONFIG: ModuleLayoutConfig = {
       anchor: { type: 'fromBottom', d: 0 },
       centered: true,
       noDoorDepthOffset: 0.031,
+      // Modelled for a 68.6 cm slot; fronts span the slot, not the opening.
+      nativeSlotWidth: 0.686,
+      chromeMaterialMeshes: ['WMSingleLowFixedLeft', 'WMSingleLowFixedRight'],
+      widthScaleMeshes: [
+        'WMSingleLowBack',
+        'WMSingleLowBottom_ds',
+        'WMSingleLowFront_extend',
+      ],
     },
   ],
   fillZone: {
@@ -144,6 +163,17 @@ const WASM_LOW_DOUBLE_CONFIG: ModuleLayoutConfig = {
       anchor: { type: 'fromBottom', d: 0 },
       centered: true,
       noDoorDepthOffset: 0.031,
+      // Modelled for a 68.6 cm slot; fronts span the slot, not the opening.
+      nativeSlotWidth: 0.686,
+      chromeMaterialMeshes: ['WMDoubleLowFixedLeft', 'WMDoubleLowFixedRight'],
+      widthScaleMeshes: [
+        'WMDoubleLowBack1',
+        'WMDoubleLowBack2',
+        'WMDoubleLowBottom1_ds',
+        'WMDoubleLowBottom2_ds',
+        'WMDoubleLowFront1_extend',
+        'WMDoubleLowFront2',
+      ],
     },
   ],
   fillZone: {

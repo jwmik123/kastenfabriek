@@ -6,6 +6,8 @@ import { MATERIALS } from '../../kledingkast/materials'
 import { cn } from '@/lib/utils'
 import MaterialPicker from '../../kledingkast/components/MaterialPicker'
 
+const MATERIAL_STEP = 4
+
 export default function ModuleMaterialPanel() {
   const step = useWasmachinekastStore((s) => s.step)
   const selectedSlot = useWasmachinekastStore((s) => s.selectedSlot)
@@ -26,7 +28,7 @@ export default function ModuleMaterialPanel() {
 
   const [activeTab, setActiveTab] = useState<'buitenkant' | 'binnenkant'>('buitenkant')
 
-  if (step !== 5 || selectedSlot === null) return null
+  if (step !== MATERIAL_STEP || selectedSlot === null) return null
 
   const moduleSlot = modules.find((m) => m.slotIndex === selectedSlot)
   if (!moduleSlot) return null
@@ -46,7 +48,10 @@ export default function ModuleMaterialPanel() {
     <div className="absolute inset-0 bg-primary text-white rounded-md z-10 flex flex-col p-6 gap-5 overflow-y-auto">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-base font-semibold">Module {selectedSlot + 1}</h2>
+          {/* Both sections are selectable, so the index alone does not say which module. */}
+          <h2 className="text-base font-semibold">
+            {isDual ? `${editingLow ? 'Lage' : 'Hoge'} kast · module ${selectedSlot + 1}` : `Module ${selectedSlot + 1}`}
+          </h2>
           <p className="text-sm text-muted mt-0.5">Kies een kleur voor deze module.</p>
         </div>
         <button

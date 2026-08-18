@@ -32,7 +32,6 @@ interface SpecialElementProps {
   targetWidth: number  // slot width in meters
   targetDepth: number  // module depth in meters
   positionY: number    // Y of the element's bbox bottom in module-group space
-  hovered: boolean
   hasDoor: boolean
   /**
    * Interior finish: closed modules take the binnenkant colour. Separate from
@@ -74,7 +73,6 @@ function SpecialElementInner({
   targetWidth,
   targetDepth,
   positionY,
-  hovered,
   hasDoor,
   insideFinish,
   exposedFronts = false,
@@ -90,8 +88,10 @@ function SpecialElementInner({
   const doorsOpen = useConfiguratorStore((s) => s.doorsOpen)
 
   const proxyRef = useRef({ t: 0 })
-  const hoveredRef = useRef(hovered)
-  useEffect(() => { hoveredRef.current = hovered }, [hovered])
+  // Drawers follow the "deuren open" toggle, not hover: opening the doors slides
+  // every drawer out, closing them slides all of them back.
+  const doorsOpenRef = useRef(doorsOpen)
+  useEffect(() => { doorsOpenRef.current = doorsOpen }, [doorsOpen])
 
   // Clone-space boxes of Front* meshes, measured after the transform pass —
   // drives horizontal front handles (kitchen-style lage kast fronts). Each
@@ -134,8 +134,17 @@ function SpecialElementInner({
     return { clone: c, originals: origs, box: b, clonedClips: clips }
   })
 
+  // Slot-filling elements (widthScaleMeshes) grow by the slot's growth over the
+  // width they were modelled at, measured on the module — not on the corpus
+  // opening the bbox-relative scale uses. Every listed mesh keeps its left edge,
+  // so the element's post-transform width is its bbox width plus that growth.
+  const slotGrowth =
+    element.nativeSlotWidth && element.widthScaleMeshes?.length
+      ? targetWidth + MODULE_WALL * 2 - element.nativeSlotWidth
+      : null
+
   const offsetX = isCentered
-    ? MODULE_WALL + targetWidth / 2 - (box.min.x + box.max.x) / 2
+    ? MODULE_WALL + targetWidth / 2 - (box.min.x + box.max.x + (slotGrowth ?? 0)) / 2
     : -box.min.x + MODULE_WALL
   const offsetZ = -box.min.z + (!hasDoor ? (element.noDoorDepthOffset ?? 0) : 0)
   // Subtract bbox.min.y so positionY refers to the bbox bottom, not the GLB origin.
@@ -178,11 +187,14 @@ function SpecialElementInner({
       action.time = 0
     }
 
+    const wsMeshes = new Set(element.widthScaleMeshes ?? [])
     const originalWidth = box.max.x - box.min.x
     const originalDepth = box.max.z - box.min.z
     const widthScale  = targetWidth / originalWidth
     const depthScale  = targetDepth / originalDepth
-    const widthGrowth = targetWidth - originalWidth
+    // slotGrowth is measured on the module for slot-filling elements; without
+    // it, growth is the element bbox's own change towards the corpus opening.
+    const widthGrowth = slotGrowth ?? targetWidth - originalWidth
     const depthGrowth = targetDepth - originalDepth
 
     clone.traverse((child: THREE.Object3D) => {
@@ -195,7 +207,7 @@ function SpecialElementInner({
       mesh.position.copy(original.pos)
 
       const hasDS    = mesh.name.includes('_ds')
-      const hasWS    = mesh.name.includes('_ws')
+      const hasWS    = mesh.name.includes('_ws') || wsMeshes.has(mesh.name)
       const isRight  = mesh.name.includes('Right')
       const isMiddle = mesh.name.includes('Middle')
       const isBack   = (() => {
@@ -218,13 +230,26 @@ function SpecialElementInner({
         return false
       })()
 
-      if (hasDS && hasWS) {
-        mesh.scale.set(depthScale, 1, widthScale)
-      } else if (hasDS) {
-        mesh.scale.x = depthScale
+      // `widthScaleMeshes` grows a mesh by exactly widthGrowth with its left
+      // edge pinned, instead of scaling it proportionally about the origin.
+      // Side panels and runners move by widthGrowth too, so a proportional
+      // stretch would leave the drawer bottom short of them by its left inset.
+      let widthFactor = 1
+      if (wsMeshes.has(mesh.name)) {
+        if (!mesh.geometry.boundingBox) mesh.geometry.computeBoundingBox()
+        const gz = mesh.geometry.boundingBox!
+        const spanZ = gz.max.z - gz.min.z
+        if (spanZ > 1e-6) {
+          widthFactor = (spanZ + widthGrowth) / spanZ
+          // Local +Z maps to world -X, so the local max edge is the world min.
+          mesh.position.x += gz.max.z * (widthFactor - 1)
+        }
       } else if (hasWS) {
-        mesh.scale.z = widthScale
+        widthFactor = widthScale
       }
+
+      if (hasDS) mesh.scale.x = depthScale
+      mesh.scale.z = widthFactor
 
       if (isRight && !hasWS) {
         mesh.position.x += widthGrowth
@@ -309,11 +334,11 @@ function SpecialElementInner({
     })
 
     if (action) {
-      const targetT = hoveredRef.current ? action.getClip().duration : 0
+      const targetT = doorsOpenRef.current ? action.getClip().duration : 0
       proxyRef.current.t = targetT
       action.time = targetT
     }
-  }, [clone, originals, box, clonedClips, actions, targetWidth, targetDepth, extendFrontBottomY, positionY])
+  }, [clone, originals, box, clonedClips, actions, targetWidth, targetDepth, extendFrontBottomY, positionY, element.widthScaleMeshes, slotGrowth])
 
   useEffect(() => {
     const action = Object.values(actions)[0]
@@ -331,14 +356,14 @@ function SpecialElementInner({
     const duration = action.getClip().duration
     gsap.killTweensOf(proxyRef.current)
     gsap.to(proxyRef.current, {
-      t: hovered && doorsOpen ? duration : 0,
+      t: doorsOpen ? duration : 0,
       duration: 0.6,
       ease: 'power2.inOut',
       onUpdate: () => {
         action.time = Math.max(0, Math.min(duration, proxyRef.current.t))
       },
     })
-  }, [hovered, doorsOpen, actions])
+  }, [doorsOpen, actions])
 
   // Follow the drawer-open hover animation: the mixer writes the front mesh's
   // position each frame; mirror its offset from the measured static position

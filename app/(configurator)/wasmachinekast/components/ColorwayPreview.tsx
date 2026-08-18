@@ -1,9 +1,9 @@
 'use client'
 
-import { useClosetStore } from '../store'
+import { useWasmachinekastStore } from '../store'
 import ColorwayPreviewSection from '../../_shared/components/ColorwayPreview'
 
 export default function ColorwayPreview() {
-  const buitenkantMaterialId = useClosetStore((s) => s.buitenkantMaterialId)
+  const buitenkantMaterialId = useWasmachinekastStore((s) => s.buitenkantMaterialId)
   return <ColorwayPreviewSection buitenkantMaterialId={buitenkantMaterialId} />
 }

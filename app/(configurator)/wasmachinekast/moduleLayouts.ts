@@ -68,7 +68,6 @@ export const WASM_LOW_PLANK: ModuleLayout = {
   priceSingle: 0,
   availableForTopCabinet: false,
   sectionType: 'low',
-  minSlotWidth: 68.6,
 }
 
 export const WASM_LOW_SINGLE: ModuleLayout = {
@@ -80,7 +79,6 @@ export const WASM_LOW_SINGLE: ModuleLayout = {
   priceSingle: 0,
   availableForTopCabinet: false,
   sectionType: 'low',
-  minSlotWidth: 68.6,
 }
 
 export const WASM_LOW_DOUBLE: ModuleLayout = {
@@ -92,7 +90,6 @@ export const WASM_LOW_DOUBLE: ModuleLayout = {
   priceSingle: 0,
   availableForTopCabinet: false,
   sectionType: 'low',
-  minSlotWidth: 68.6,
 }
 
 export const WASM_LOW_MODULE_LAYOUTS: ModuleLayout[] = [

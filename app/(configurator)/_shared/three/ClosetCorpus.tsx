@@ -238,9 +238,16 @@ function TopFillerWedge({
 export default function ClosetCorpus({
   diagParams: p,
   hideTopPanel = false,
+  sharedSideWall = null,
 }: {
   diagParams: DiagParams
   hideTopPanel?: boolean
+  /**
+   * Side where the neighbouring section's panel doubles as this one's, so no
+   * panel is drawn here (wasmachinekast dual layouts: the low section butts
+   * against the high section's panel instead of adding a second one).
+   */
+  sharedSideWall?: 'left' | 'right' | null
 }) {
   const needsTop = useConfiguratorStore((s) => s.needsTopCabinet())
 
@@ -285,26 +292,30 @@ export default function ClosetCorpus({
       <BackWall width={width} mainH={mainH} depth={depth} p={p} />
 
       {/* Left wall assembly */}
-      <SideWallAssembly
-        side="left"
-        width={width}
-        mainH={mainH}
-        height={height}
-        depth={depth}
-        p={p}
-        needsTop={needsTop}
-      />
+      {sharedSideWall !== 'left' && (
+        <SideWallAssembly
+          side="left"
+          width={width}
+          mainH={mainH}
+          height={height}
+          depth={depth}
+          p={p}
+          needsTop={needsTop}
+        />
+      )}
 
       {/* Right wall assembly */}
-      <SideWallAssembly
-        side="right"
-        width={width}
-        mainH={mainH}
-        height={height}
-        depth={depth}
-        p={p}
-        needsTop={needsTop}
-      />
+      {sharedSideWall !== 'right' && (
+        <SideWallAssembly
+          side="right"
+          width={width}
+          mainH={mainH}
+          height={height}
+          depth={depth}
+          p={p}
+          needsTop={needsTop}
+        />
+      )}
 
       {/* Top panels */}
       {hideTopPanel ? null : p.backDiagonal ? (

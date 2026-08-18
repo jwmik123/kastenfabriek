@@ -4,10 +4,29 @@ import type {
   LowSectionSnapshot,
   MigratedState,
   Section,
+  WasherPlacement,
+  WasmLayout,
   WasmSectionsSnapshot,
 } from './types'
 
 const MIN_WASM_DEPTH_CM = 85
+
+/**
+ * Older snapshots stored one `washerSection` for every placement. Stamp each
+ * entry with its own section and drop the ones whose section the layout no
+ * longer has.
+ */
+function washersFromSnapshot(
+  snap: WasmSectionsSnapshot,
+  layout: WasmLayout,
+): WasherPlacement[] {
+  const legacy = snap.washerSection ?? (layout === 'low-only' ? 'low' : 'high')
+  return (snap.washerModules ?? [])
+    .map((w) => ({ ...w, section: w.section ?? legacy }))
+    .filter((w) =>
+      w.section === 'high' ? layout !== 'low-only' : layout !== 'high-only',
+    )
+}
 
 function moduleFromSnapshot(s: ModuleSlotSnapshot): BaseModuleSlot {
   return {
@@ -62,9 +81,8 @@ export function restore(snap: WasmSectionsSnapshot): MigratedState {
       layout: 'high-only',
       highSection: highSectionFromSnapshot(snap),
       lowSection: null,
-      washerSection: null,
       depth,
-      washerModules: snap.washerModules ?? [],
+      washerModules: washersFromSnapshot(snap, 'high-only'),
     }
   }
 
@@ -80,9 +98,8 @@ export function restore(snap: WasmSectionsSnapshot): MigratedState {
     layout,
     highSection,
     lowSection,
-    washerSection: snap.washerSection ?? null,
     depth,
-    washerModules: snap.washerModules ?? [],
+    washerModules: washersFromSnapshot(snap, layout),
   }
 }
 
@@ -97,7 +114,6 @@ export function serialize(state: MigratedState): WasmSectionsSnapshot {
     moduleCount: high?.moduleCount ?? 0,
     modules: high ? high.modules.map(moduleToSnapshot) : [],
     depthCm: state.depth,
-    washerSection: state.washerSection,
     washerModules: state.washerModules,
   }
 

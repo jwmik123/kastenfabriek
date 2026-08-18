@@ -18,6 +18,11 @@ interface MockState {
   setModuleLayout: (slot: number, id: number) => void
   setModuleSpan: (slot: number, span: 1 | 2) => void
   toggleModuleDoor: (slot: number) => void
+  addWasherModule: (slot: number, id: number, section?: 'high' | 'low') => void
+  removeWasherModule: (slot: number, section?: 'high' | 'low') => void
+  canPlaceWasher: (slot: number, id: number, section?: 'high' | 'low') => boolean
+  washerModuleCountNotice: number | null
+  dismissWasherModuleCountNotice: () => void
   setLowSectionModuleLayout: (slot: number, id: number) => void
   setLowSectionModuleSpan: (slot: number, span: 1 | 2) => void
   toggleLowSectionModuleDoor: (slot: number) => void
@@ -25,8 +30,7 @@ interface MockState {
   moduleCount: number
   moduleWidthCm: () => number
   moduleLayouts: Array<{ layoutId: number; name: string; minSlotWidth?: number }>
-  washerModules: Array<{ slotIndex: number; layoutId: number }>
-  washerSection: 'high' | 'low' | null
+  washerModules: Array<{ slotIndex: number; layoutId: number; section: 'high' | 'low' }>
   activeModulesSection: 'high' | 'low'
   lowSection: null
   lastClickPoint: { x: number; y: number } | null
@@ -53,7 +57,7 @@ vi.mock('../store', () => ({
 
 beforeEach(() => {
   mockState = {
-    step: 4,
+    step: 3,
     selectedSlot: 1,
     layout: 'high-only',
     setSelectedSlot: vi.fn(),
@@ -61,14 +65,18 @@ beforeEach(() => {
     setModuleSpan: vi.fn(),
     toggleModuleDoor: vi.fn(),
     setLowSectionModuleLayout: vi.fn(),
+    addWasherModule: vi.fn(),
+    removeWasherModule: vi.fn(),
+    canPlaceWasher: () => true,
+    washerModuleCountNotice: null,
+    dismissWasherModuleCountNotice: vi.fn(),
     setLowSectionModuleSpan: vi.fn(),
     toggleLowSectionModuleDoor: vi.fn(),
     modules: baseModules.map((m) => ({ ...m })),
     moduleCount: 4,
     moduleWidthCm: () => 70,
     moduleLayouts: baseLayouts,
-    washerModules: [{ slotIndex: 0, layoutId: 11 }],
-    washerSection: 'high',
+    washerModules: [{ slotIndex: 0, layoutId: 11, section: 'high' }] as Array<{ slotIndex: number; layoutId: number; section: 'high' | 'low' }>,
     activeModulesSection: 'high',
     lowSection: null,
     lastClickPoint: null,
@@ -90,11 +98,14 @@ describe('ModulePopover (wasmachinekast)', () => {
     expect(html).toBe('')
   })
 
-  it('renders nothing when selected slot is a washer slot', async () => {
+  it('opens on a washer slot, without the deur and dubbele toggles', async () => {
     mockState.selectedSlot = 0
     const { default: ModulePopover } = await import('../components/ModulePopover')
     const html = renderToStaticMarkup(<ModulePopover />)
-    expect(html).toBe('')
+    // The washer is one of the layouts in the picker, so its vak stays editable.
+    expect(html).toContain('data-testid="module-popover-layout-picker"')
+    expect(html).not.toContain('data-testid="module-popover-door-toggle"')
+    expect(html).not.toContain('data-testid="module-popover-double-toggle"')
   })
 
   it('renders bay header for selected slot', async () => {
@@ -111,11 +122,11 @@ describe('ModulePopover (wasmachinekast)', () => {
     expect(html).toContain('data-testid="module-popover-double-toggle"')
   })
 
-  it('omits washer layouts from picker', async () => {
+  it('offers washer layouts in the picker', async () => {
     const { default: ModulePopover } = await import('../components/ModulePopover')
     const html = renderToStaticMarkup(<ModulePopover />)
     expect(html).toContain('data-layout-id="1"')
-    expect(html).not.toContain('data-layout-id="11"')
+    expect(html).toContain('data-layout-id="11"')
   })
 
   it('renders only covered message for the second half of a double slot', async () => {
@@ -140,7 +151,7 @@ describe('ModulePopover (wasmachinekast)', () => {
 
   it('hides dubbele toggle when next slot is a washer slot', async () => {
     // Move washer to slot 2 so that selecting slot 1 has washer at slot+1.
-    mockState.washerModules = [{ slotIndex: 2, layoutId: 11 }]
+    mockState.washerModules = [{ slotIndex: 2, layoutId: 11, section: 'high' }]
     mockState.selectedSlot = 1
     const { default: ModulePopover } = await import('../components/ModulePopover')
     const html = renderToStaticMarkup(<ModulePopover />)

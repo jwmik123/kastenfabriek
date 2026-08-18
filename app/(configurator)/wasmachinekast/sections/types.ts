@@ -9,6 +9,16 @@ import type {
 export type { LowSectionSnapshot, WasherSection, WasmLayout }
 export type SectionType = 'high' | 'low' | 'both'
 
+/**
+ * A placed washer. Carries its own section: washers may sit in the high and the
+ * low section at the same time, so a slot index alone does not identify one.
+ */
+export interface WasherPlacement {
+  slotIndex: number
+  layoutId: number
+  section: 'high' | 'low'
+}
+
 export interface Section {
   width: number
   height: number
@@ -27,7 +37,6 @@ export interface WasmSectionsState {
   layout: WasmLayout
   highSection: Section | null
   lowSection: Section | null
-  washerSection: WasherSection
 }
 
 export interface WasmSectionsSnapshot {
@@ -37,7 +46,9 @@ export interface WasmSectionsSnapshot {
   moduleCount: number
   modules: ModuleSlotSnapshot[]
   depthCm: number
-  washerModules?: { slotIndex: number; layoutId: number }[]
+  // `section` is absent in snapshots written before washers could sit in both
+  // sections; `washerSection` held it for the whole set back then.
+  washerModules?: { slotIndex: number; layoutId: number; section?: 'high' | 'low' }[]
   lowSection?: LowSectionSnapshot
   washerSection?: WasherSection
 }
@@ -46,7 +57,6 @@ export interface MigratedState {
   layout: WasmLayout
   highSection: Section | null
   lowSection: Section | null
-  washerSection: WasherSection
   depth: number
-  washerModules: { slotIndex: number; layoutId: number }[]
+  washerModules: WasherPlacement[]
 }

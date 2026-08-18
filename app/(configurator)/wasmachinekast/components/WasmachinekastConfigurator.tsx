@@ -17,11 +17,10 @@ import StepWizard from './StepWizard'
 const TOP_BAR_STEPS = [
   { label: 'Layout', number: 1 },
   { label: 'Afmetingen', number: 2 },
-  { label: 'Wasmachine', number: 3 },
-  { label: 'Indeling', number: 4 },
-  { label: 'Materiaal', number: 5 },
-  { label: 'Handgrepen', number: 6 },
-  { label: 'Accessoires', number: 7 },
+  { label: 'Indeling', number: 3 },
+  { label: 'Materiaal', number: 4 },
+  { label: 'Handgrepen', number: 5 },
+  { label: 'Accessoires', number: 6 },
 ]
 import { getDraftConfig, saveDraftConfig } from '@/lib/cart/draft-config'
 import { getCart } from '@/lib/cart/cart-store'
@@ -39,12 +38,10 @@ export default function WasmachinekastConfigurator({ pricingData, editConfig, ed
   const restoreConfig = useWasmachinekastStore((s) => s.restoreConfig)
   const step = useWasmachinekastStore((s) => s.step)
   const setStep = useWasmachinekastStore((s) => s.setStep)
-  const clearWasherModules = useWasmachinekastStore((s) => s.clearWasherModules)
   const { totalPrice } = useCartPrice()
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   function handleTopBarStep(target: number) {
-    if (target === 3) clearWasherModules()
     setStep(target)
   }
 
@@ -137,7 +134,6 @@ export default function WasmachinekastConfigurator({ pricingData, editConfig, ed
           lightStripsEnabled: state.lightStripsEnabled,
           washerModules: state.washerModules,
           layout: state.layout,
-          washerSection: state.washerSection,
           hasTopCabinet: state.needsTopCabinet(),
           topCabinetHeightCm: state.topCabinetHeight(),
         }

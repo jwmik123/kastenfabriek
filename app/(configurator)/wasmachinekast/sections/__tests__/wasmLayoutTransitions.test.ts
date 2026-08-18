@@ -41,25 +41,21 @@ const HIGH_ONLY: WasmSectionsState = {
   layout: 'high-only',
   highSection: high,
   lowSection: null,
-  washerSection: 'high',
 }
 const LOW_ONLY: WasmSectionsState = {
   layout: 'low-only',
   highSection: null,
   lowSection: low,
-  washerSection: 'low',
 }
 const LOW_LEFT: WasmSectionsState = {
   layout: 'low-left',
   highSection: high,
   lowSection: low,
-  washerSection: 'high',
 }
 const LOW_RIGHT: WasmSectionsState = {
   layout: 'low-right',
   highSection: high,
   lowSection: low,
-  washerSection: 'high',
 }
 
 interface Case {
@@ -90,7 +86,6 @@ const cases: Case[] = [
       expect(s.lowSection).not.toBeNull()
       expect(s.lowSection?.height).toBe(90)
       expect(s.lowSection?.width).toBe(high.width)
-      expect(s.washerSection).toBe('low')
     },
   },
   {
@@ -102,7 +97,6 @@ const cases: Case[] = [
       expect(s.layout).toBe('low-left')
       expect(s.highSection).toEqual(high)
       expect(s.lowSection?.width).toBe(high.width)
-      expect(s.washerSection).toBe('high')
     },
   },
   {
@@ -127,7 +121,6 @@ const cases: Case[] = [
       expect(s.layout).toBe('high-only')
       expect(s.lowSection).toBeNull()
       expect(s.highSection).not.toBeNull()
-      expect(s.washerSection).toBe('high')
     },
   },
   {
@@ -146,7 +139,6 @@ const cases: Case[] = [
       expect(s.layout).toBe('low-left')
       expect(s.lowSection).toEqual(low)
       expect(s.highSection?.width).toBe(low.width)
-      expect(s.washerSection).toBe('low')
     },
   },
   {
@@ -171,7 +163,6 @@ const cases: Case[] = [
       expect(s.layout).toBe('high-only')
       expect(s.highSection).toEqual(high)
       expect(s.lowSection).toBeNull()
-      expect(s.washerSection).toBe('high')
     },
   },
   {
@@ -183,7 +174,6 @@ const cases: Case[] = [
       expect(s.layout).toBe('low-only')
       expect(s.lowSection).toEqual(low)
       expect(s.highSection).toBeNull()
-      expect(s.washerSection).toBe('low')
     },
   },
   {
@@ -202,7 +192,6 @@ const cases: Case[] = [
       expect(s.layout).toBe('low-right')
       expect(s.highSection).toEqual(high)
       expect(s.lowSection).toEqual(low)
-      expect(s.washerSection).toBe('high')
     },
   },
 

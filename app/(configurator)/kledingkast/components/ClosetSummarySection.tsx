@@ -1,55 +1,8 @@
 'use client'
 
-import { Ruler, Wrench } from 'lucide-react'
 import { useClosetStore } from '../store'
-import { MATERIALS } from '../materials'
-import { HANDLE_TYPES } from '../../_shared/objects/Handles'
-
-function ServiceItem({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
-  return (
-    <div className="flex items-start gap-4">
-      <div className="text-primary mt-0.5">{icon}</div>
-      <div>
-        <p className="font-semibold text-sm text-foreground">{title}</p>
-        <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
-      </div>
-    </div>
-  )
-}
-
-// ─── Spec row ─────────────────────────────────────────────────────────────────
-
-function SpecRow({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex items-start justify-between gap-4 py-3.5 border-b border-border last:border-0">
-      <span className="text-sm text-muted-foreground shrink-0 w-40">{label}</span>
-      <span className="text-sm text-foreground text-right">{children}</span>
-    </div>
-  )
-}
-
-function MaterialSwatch({ id }: { id: string }) {
-  const material = MATERIALS.find((m) => m.id === id)
-  if (!material) return <span className="text-sm text-foreground">{id}</span>
-
-  return (
-    <span className="inline-flex items-center gap-2">
-      {material.type === 'color' ? (
-        <span
-          className="inline-block w-4 h-4 rounded-full border border-border shrink-0"
-          style={{ backgroundColor: material.color }}
-        />
-      ) : (
-        <img
-          src={material.preview}
-          alt={material.name}
-          className="w-4 h-4 rounded-full object-cover border border-border shrink-0"
-        />
-      )}
-      {material.name}
-    </span>
-  )
-}
+import ConfiguratorServicesBar from '../../_shared/components/ConfiguratorServicesBar'
+import { SpecRow, MaterialSwatch } from '../../_shared/components/SpecList'
 
 // ─── Module summary ───────────────────────────────────────────────────────────
 
@@ -91,40 +44,19 @@ export default function ClosetSummarySection() {
   const doorHandleId = useClosetStore((s) => s.doorHandleId)
   const needsTopCabinet = useClosetStore((s) => s.needsTopCabinet)
   const topCabinetHeight = useClosetStore((s) => s.topCabinetHeight)
+  const handles = useClosetStore((s) => s.pricingData?.handles)
 
+  // Handles are Sanity-driven, so their display names live on the pricing data.
+  const handle = handles?.find((h) => h.id === doorHandleId)
   const handleLabel =
     doorHandleId === 'none'
       ? 'Geen (push-to-open)'
-      : HANDLE_TYPES.find((h) => h.id === doorHandleId)?.name ?? doorHandleId
+      : handle?.nameNl ?? handle?.name ?? doorHandleId
 
   return (
     <>
       {/* Services bar — full width, directly under configurator */}
-      <div className="w-full bg-primary-200 px-8 py-12 flex justify-between flex-col sm:flex-row gap-12">
-        <ServiceItem
-          icon={<Ruler size={28} className="shrink-0" />}
-          title="Optionele Inmeetservice"
-          description="Wij meten jouw ruimte professioneel op."
-        />
-        <div className="hidden sm:block w-px bg-primary" />
-        <ServiceItem
-          icon={<Wrench size={28} className="shrink-0" />}
-          title="Optionele Montageservice"
-          description="Wij monteren de kast bij jou thuis."
-        />
-        <div className="hidden sm:block w-px bg-primary" />
-        <ServiceItem
-          icon={<Ruler size={28} className="shrink-0" />}
-          title="Optionele Inmeetservice"
-          description="Wij meten jouw ruimte professioneel op."
-        />
-        <div className="hidden sm:block w-px bg-primary" />
-        <ServiceItem
-          icon={<Wrench size={28} className="shrink-0" />}
-          title="Optionele Montageservice"
-          description="Wij monteren de kast bij jou thuis."
-        />
-      </div>
+      <ConfiguratorServicesBar />
 
       {/* Specifications */}
       <section className="w-full container mx-auto px-4 py-12 md:py-24">

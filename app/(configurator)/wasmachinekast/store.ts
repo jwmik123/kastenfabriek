@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import type { FullPricingData } from '@/types/configurator-pricing'
 import type { BaseConfiguratorState, BaseModuleSlot } from '../_shared/store/types'
 import type { ClosetConfigSnapshot } from '@/lib/cart/types'
-import { WASHER_LAYOUTS, WASHER_LAYOUT_IDS } from './moduleLayouts'
+import { WASHER_LAYOUTS } from './moduleLayouts'
 import { filterForSection } from './sections/wasmModuleLayoutFilter'
 import type { PopoverClickPoint } from '../_shared/components/popoverPlacement'
 import { validateHandleMaterial } from '../_shared/components/validateHandleMaterial'
@@ -10,7 +10,7 @@ import { fitVariableSlotCount, FALLBACK_MODULE_MIN_WIDTH_CM } from '../_shared/s
 import { restore as restoreWasmSnapshot } from './sections/wasmSnapshotMigration'
 import type {
   Section,
-  WasherSection,
+  WasherPlacement,
   WasmLayout,
   WasmSectionsSnapshot,
   WasmSectionsState,
@@ -21,9 +21,11 @@ export type { BaseModuleSlot as ModuleSlot }
 export type PlacementType = 'vrijstaand' | 'ingebouwd'
 export type SidePanelThickness = '18mm' | '36mm'
 
-export interface WasherModule {
-  slotIndex: number
-  layoutId: number
+export type WasherModule = WasherPlacement
+
+/** Section the top-level width/height/modules fields stand for. */
+function topLevelSection(layout: WasmLayout): 'high' | 'low' {
+  return layout === 'low-only' ? 'low' : 'high'
 }
 
 /** Shallowest cabinet the customer can pick; a washer still fits at 75 cm. */
@@ -124,18 +126,19 @@ function washerFitPlan(
   s: WasmState,
   slotIndex: number,
   layoutId: number,
+  section: 'high' | 'low',
 ): {
   moduleCount: number
   currentModuleCount: number
   targetIsTopLevel: boolean
 } | null {
-  const target: WasherSection =
-    s.washerSection ?? (s.layout === 'low-only' ? 'low' : 'high')
+  if (section === 'high' && s.layout === 'low-only') return null
+  if (section === 'low' && s.lowSection === null && s.layout !== 'low-only') return null
   // Top-level fields hold the active editing section: high in dual/high-only,
   // low in low-only.
   const targetIsTopLevel =
-    (target === 'high' && s.layout !== 'low-only') ||
-    (target === 'low' && s.layout === 'low-only')
+    (section === 'high' && s.layout !== 'low-only') ||
+    (section === 'low' && s.layout === 'low-only')
   const sectionWidthCm = targetIsTopLevel ? s.width : s.lowSection?.width ?? 0
   const sectionModules: BaseModuleSlot[] =
     targetIsTopLevel ? s.modules : s.lowSection?.modules ?? []
@@ -172,12 +175,18 @@ interface WasmState extends BaseConfiguratorState {
   // Handle on lage-kast drawer fronts ('none' = push-to-open, the default).
   drawerHandleId: string
   setDrawerHandleId: (id: string) => void
+  // Placed washers, each in its own section — high and low may both hold some.
+  // `section` defaults to the one the top-level fields stand for.
   washerModules: WasherModule[]
-  addWasherModule: (slotIndex: number, layoutId: number) => void
-  removeWasherModule: (slotIndex: number) => void
+  addWasherModule: (slotIndex: number, layoutId: number, section?: 'high' | 'low') => void
+  removeWasherModule: (slotIndex: number, section?: 'high' | 'low') => void
   clearWasherModules: () => void
   lastClickPoint: PopoverClickPoint
-  setSelectedSlot: (slot: number | null, clickPoint?: PopoverClickPoint) => void
+  setSelectedSlot: (
+    slot: number | null,
+    clickPoint?: PopoverClickPoint,
+    section?: 'high' | 'low',
+  ) => void
 
   // Sections. Top-level width/height/moduleCount/modules hold the HIGH section's
   // data in any layout that has high (high-only / low-left / low-right). In
@@ -185,12 +194,10 @@ interface WasmState extends BaseConfiguratorState {
   // section's data when the layout includes one.
   layout: WasmLayout
   lowSection: Section | null
-  washerSection: WasherSection
-  // Returns true iff a washer of `layoutId` can go in `slotIndex` (in the
-  // section currently used for washers) — either straight away, or after
-  // dropping trailing modules so the remaining non-washer slots keep their
-  // minimum width. addWasherModule performs that drop.
-  canPlaceWasher: (slotIndex: number, layoutId: number) => boolean
+  // Returns true iff a washer of `layoutId` can go in `slotIndex` of `section` —
+  // either straight away, or after dropping trailing modules so the remaining
+  // non-washer slots keep their minimum width. addWasherModule performs that drop.
+  canPlaceWasher: (slotIndex: number, layoutId: number, section?: 'high' | 'low') => boolean
 
   // Module count the last washer placement shrank the section to, so the step
   // can say so once. Null when the placement changed nothing.
@@ -203,7 +210,6 @@ interface WasmState extends BaseConfiguratorState {
   hoveredSection: 'high' | 'low' | null
   setHoveredSection: (section: 'high' | 'low' | null) => void
   highSection: () => Section | null
-  setWasherSection: (section: WasherSection) => void
   setLowTopPanelThicknessMm: (t: 18 | 36) => void
   setLowCountertopMaterialId: (id: string) => void
   applySectionsState: (next: WasmSectionsState) => void
@@ -249,13 +255,14 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
 
   layout: 'high-only' as WasmLayout,
   lowSection: null,
-  washerSection: null as WasherSection,
   topPanelThicknessMm: 18 as 18 | 36,
   countertopMaterialId: undefined as string | undefined,
   lowOnlyAccessoryNotice: false,
   dismissLowOnlyAccessoryNotice: () => set({ lowOnlyAccessoryNotice: false }),
   hoveredSection: null as 'high' | 'low' | null,
   setHoveredSection: (section) => set({ hoveredSection: section }),
+  // Section the module editing UI is bound to. No longer a mode the customer
+  // sets: selecting a slot moves it, so both sections stay clickable.
   activeModulesSection: 'high' as 'high' | 'low',
   setActiveModulesSection: (section) => {
     const s = get()
@@ -267,32 +274,6 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
     const { layout, width, height, moduleCount, modules } = get()
     if (layout === 'low-only') return null
     return { width, height, moduleCount, modules }
-  },
-  setWasherSection: (section) => {
-    const s = get()
-    if (section === 'low' && s.lowSection === null && s.layout !== 'low-only') return
-    if (section === 'high' && s.layout === 'low-only') return
-    if (section === s.washerSection) return
-    // Switching to a different section discards existing washer placements.
-    set({
-      washerSection: section,
-      washerModules: [],
-      modules: s.modules.map((m) =>
-        m.layoutId !== null && WASHER_LAYOUT_IDS.has(m.layoutId)
-          ? { ...m, layoutId: null, fixedWidth: undefined }
-          : m,
-      ),
-      lowSection: s.lowSection
-        ? {
-            ...s.lowSection,
-            modules: s.lowSection.modules.map((m) =>
-              m.layoutId !== null && WASHER_LAYOUT_IDS.has(m.layoutId)
-                ? { ...m, layoutId: null, fixedWidth: undefined }
-                : m,
-            ),
-          }
-        : s.lowSection,
-    })
   },
   setLowTopPanelThicknessMm: (t) => {
     const s = get()
@@ -317,29 +298,27 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
     // low-only does it mirror low.
     const topLevel: Section | null =
       next.layout === 'low-only' ? next.lowSection : next.highSection
+    // A mirror swap only moves the sections around, so every placement survives;
+    // otherwise a washer goes only if its own section is gone.
+    const survivesLayout = (w: WasherModule) =>
+      isMirrorSwap ||
+      (w.section === 'high' ? next.highSection !== null : next.lowSection !== null)
+    const nextWashers = s.washerModules.filter(survivesLayout)
     if (!topLevel) {
-      set({ layout: next.layout, lowSection: next.lowSection, washerSection: next.washerSection })
+      set({ layout: next.layout, lowSection: next.lowSection, washerModules: nextWashers })
       return
     }
     const lowSec = next.lowSection
-    // Preserve washerModules on mirror swap; otherwise drop entries that target
-    // a section that no longer exists.
-    const washerPreserved = isMirrorSwap
-    const washerStillValid =
-      (next.washerSection === 'high' && next.highSection !== null) ||
-      (next.washerSection === 'low' && next.lowSection !== null) ||
-      next.washerSection === null
     set({
       layout: next.layout,
       lowSection: lowSec,
-      washerSection: washerStillValid ? next.washerSection : null,
       width: topLevel.width,
       height: topLevel.height,
       moduleCount: topLevel.moduleCount,
       modules: topLevel.modules,
       topPanelThicknessMm: lowSec?.topPanelThicknessMm ?? s.topPanelThicknessMm,
       countertopMaterialId: lowSec?.countertopMaterialId ?? s.countertopMaterialId,
-      washerModules: washerPreserved && washerStillValid ? s.washerModules : [],
+      washerModules: nextWashers,
       activeModulesSection: next.layout === 'low-only' ? 'low' : 'high',
       selectedSlot: null,
       lastClickPoint: null,
@@ -387,11 +366,16 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
     const clamped = Math.max(minMods, Math.min(maxMods, count))
     const modules = resizeModules(s.lowSection.modules, clamped)
     set({ lowSection: { ...s.lowSection, moduleCount: clamped, modules } })
-    if (s.washerSection === 'low') {
-      const outOfBounds = s.washerModules.filter((w) => w.slotIndex >= clamped)
-      if (outOfBounds.length > 0) {
-        set({ washerModules: s.washerModules.filter((w) => w.slotIndex < clamped) })
-      }
+    // Only low-section washers can fall outside the low section's new count.
+    const outOfBounds = s.washerModules.filter(
+      (w) => w.section === 'low' && w.slotIndex >= clamped,
+    )
+    if (outOfBounds.length > 0) {
+      set({
+        washerModules: s.washerModules.filter(
+          (w) => w.section !== 'low' || w.slotIndex < clamped,
+        ),
+      })
     }
   },
   setLowSectionModuleLayout: (slotIndex, layoutId) => {
@@ -534,13 +518,15 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
     }
   },
 
-  canPlaceWasher: (slotIndex, layoutId) => washerFitPlan(get(), slotIndex, layoutId) !== null,
+  canPlaceWasher: (slotIndex, layoutId, section) =>
+    washerFitPlan(get(), slotIndex, layoutId, section ?? topLevelSection(get().layout)) !== null,
 
   washerModuleCountNotice: null,
   dismissWasherModuleCountNotice: () => set({ washerModuleCountNotice: null }),
 
-  addWasherModule: (slotIndex, layoutId) => {
-    const plan = washerFitPlan(get(), slotIndex, layoutId)
+  addWasherModule: (slotIndex, layoutId, section) => {
+    const target = section ?? topLevelSection(get().layout)
+    const plan = washerFitPlan(get(), slotIndex, layoutId, target)
     if (!plan) return
     // Two fixed-width washers can squeeze the remaining slots below their
     // minimum; drop the trailing modules first so the placement fits.
@@ -550,87 +536,60 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
       set({ washerModuleCountNotice: plan.moduleCount })
     }
     const s = get()
-    const target: WasherSection =
-      s.washerSection ?? (s.layout === 'low-only' ? 'low' : 'high')
     set({
       washerModules: [
-        ...s.washerModules.filter((w) => w.slotIndex !== slotIndex),
-        { slotIndex, layoutId },
+        ...s.washerModules.filter(
+          (w) => w.section !== target || w.slotIndex !== slotIndex,
+        ),
+        { slotIndex, layoutId, section: target },
       ],
-      washerSection: target,
     })
-    // top-level modules hold the active editing section: high in any dual or
-    // high-only, low in low-only. Write into the right section.
-    const topLevelIsTarget =
-      (target === 'high' && s.layout !== 'low-only') ||
-      (target === 'low' && s.layout === 'low-only')
-    if (topLevelIsTarget) {
+    if (plan.targetIsTopLevel) {
       get().setModuleLayout(slotIndex, layoutId)
     } else {
       get().setLowSectionModuleLayout(slotIndex, layoutId)
     }
   },
 
-  removeWasherModule: (slotIndex) => {
+  removeWasherModule: (slotIndex, section) => {
     const s = get()
-    const target: WasherSection = s.washerSection
-    const washerModules = s.washerModules.filter((w) => w.slotIndex !== slotIndex)
+    const target = section ?? topLevelSection(s.layout)
+    const clearSlot = (m: BaseModuleSlot) =>
+      m.slotIndex === slotIndex ? { ...m, layoutId: null, fixedWidth: undefined } : m
     set({
-      washerModules,
-      washerSection: washerModules.length === 0 ? null : s.washerSection,
+      washerModules: s.washerModules.filter(
+        (w) => w.section !== target || w.slotIndex !== slotIndex,
+      ),
     })
-    const topLevelIsTarget =
-      (target === 'high' && s.layout !== 'low-only') ||
-      (target === 'low' && s.layout === 'low-only')
-    if (topLevelIsTarget) {
-      set({
-        modules: s.modules.map((m) =>
-          m.slotIndex === slotIndex ? { ...m, layoutId: null, fixedWidth: undefined } : m,
-        ),
-      })
-    } else if (target === 'low' && s.lowSection) {
-      set({
-        lowSection: {
-          ...s.lowSection,
-          modules: s.lowSection.modules.map((m) =>
-            m.slotIndex === slotIndex ? { ...m, layoutId: null, fixedWidth: undefined } : m,
-          ),
-        },
-      })
+    if (target === topLevelSection(s.layout)) {
+      set({ modules: s.modules.map(clearSlot) })
+    } else if (s.lowSection) {
+      set({ lowSection: { ...s.lowSection, modules: s.lowSection.modules.map(clearSlot) } })
     }
   },
 
   clearWasherModules: () => {
     const s = get()
-    const washerSlots = new Set(s.washerModules.map((w) => w.slotIndex))
-    const target: WasherSection = s.washerSection
-    const topLevelIsTarget =
-      (target === 'high' && s.layout !== 'low-only') ||
-      (target === 'low' && s.layout === 'low-only')
+    const topLevel = topLevelSection(s.layout)
+    const slotsIn = (section: 'high' | 'low') =>
+      new Set(s.washerModules.filter((w) => w.section === section).map((w) => w.slotIndex))
+    const clearSlots = (modules: BaseModuleSlot[], slots: Set<number>) =>
+      modules.map((m) =>
+        slots.has(m.slotIndex) ? { ...m, layoutId: null, fixedWidth: undefined } : m,
+      )
+    const lowIsTopLevel = topLevel === 'low'
     set({
       washerModules: [],
-      washerSection: null,
-      modules: topLevelIsTarget
-        ? s.modules.map((m) =>
-            washerSlots.has(m.slotIndex) ? { ...m, layoutId: null, fixedWidth: undefined } : m,
-          )
-        : s.modules,
+      modules: clearSlots(s.modules, slotsIn(topLevel)),
       lowSection:
-        target === 'low' && !topLevelIsTarget && s.lowSection
-          ? {
-              ...s.lowSection,
-              modules: s.lowSection.modules.map((m) =>
-                washerSlots.has(m.slotIndex)
-                  ? { ...m, layoutId: null, fixedWidth: undefined }
-                  : m,
-              ),
-            }
+        !lowIsTopLevel && s.lowSection
+          ? { ...s.lowSection, modules: clearSlots(s.lowSection.modules, slotsIn('low')) }
           : s.lowSection,
     })
   },
 
   setStep: (step) => set({ step, selectedSlot: null, lastClickPoint: null }),
-  nextStep: () => set((s) => ({ step: Math.min(s.step + 1, 7), selectedSlot: null, lastClickPoint: null })),
+  nextStep: () => set((s) => ({ step: Math.min(s.step + 1, 6), selectedSlot: null, lastClickPoint: null })),
   prevStep: () => set((s) => ({ step: Math.max(s.step - 1, 1), selectedSlot: null, lastClickPoint: null })),
 
   setWidth: (width) => {
@@ -678,11 +637,12 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
     }))
     set({ moduleCount: clamped, modules })
 
-    const outOfBounds = get().washerModules.filter((w) => w.slotIndex >= clamped)
-    if (outOfBounds.length > 0) {
-      outOfBounds.forEach((w) => get().removeWasherModule(w.slotIndex))
-      if (get().washerModules.length === 0) set({ step: 2 })
-    }
+    // The top-level fields hold one section; only its washers can fall outside.
+    const section = topLevelSection(get().layout)
+    const outOfBounds = get().washerModules.filter(
+      (w) => w.section === section && w.slotIndex >= clamped,
+    )
+    outOfBounds.forEach((w) => get().removeWasherModule(w.slotIndex, section))
   },
 
   setModuleLayout: (slotIndex: number, layoutId: number) => {
@@ -758,21 +718,36 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
   toggleMeasurements: () => set((s) => ({ showMeasurements: !s.showMeasurements })),
   zoomIn: () => set((s) => ({ userZoom: Math.max(0, s.userZoom - 0.1) })),
   zoomOut: () => set((s) => ({ userZoom: Math.min(1, s.userZoom + 0.1) })),
-  setSelectedSlot: (slot, clickPoint) =>
+  // A slot index alone is ambiguous in a dual layout — high vak 2 and low vak 2
+  // share it. Callers that know which section was clicked pass it along, and the
+  // selection moves the editing section with it, so every module in the scene
+  // can be selected directly instead of switching sections first.
+  setSelectedSlot: (slot, clickPoint, section) => {
+    const s = get()
+    const sectionExists =
+      section === undefined
+        ? false
+        : section === 'high'
+          ? s.layout !== 'low-only'
+          : s.lowSection !== null || s.layout === 'low-only'
     set({
       selectedSlot: slot,
       lastClickPoint: slot === null ? null : (clickPoint ?? null),
-    }),
+      ...(section !== undefined && sectionExists ? { activeModulesSection: section } : {}),
+    })
+  },
   setHoveredSlot: (slot) => set({ hoveredSlot: slot }),
 
   randomFill: () => {
     const { modules, moduleLayouts, washerModules, layout } = get()
-    const washerSlots = new Set(washerModules.map((w) => w.slotIndex))
+    const section = topLevelSection(layout)
+    const washerSlots = new Set(
+      washerModules.filter((w) => w.section === section).map((w) => w.slotIndex),
+    )
     const washerLayoutIds = new Set(WASHER_LAYOUTS.map((l) => l.layoutId))
-    const topLevelSection: 'high' | 'low' = layout === 'low-only' ? 'low' : 'high'
     const pool = filterForSection(
       moduleLayouts.filter((l) => !washerLayoutIds.has(l.layoutId)),
-      topLevelSection,
+      section,
     )
     const newModules: BaseModuleSlot[] = modules.map((m, i) => {
       if (washerSlots.has(i)) return m
@@ -807,12 +782,12 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
       const layout = moduleLayouts.find((l) => l.layoutId === m.layoutId)
       return { ...m, fixedWidth: layout?.minSlotWidth }
     })
-    const washerTargetSection: Section | null =
-      migrated.washerSection === 'low' ? migrated.lowSection : active
-    const washerMax = washerTargetSection?.moduleCount ?? 0
-    const washerModules = migrated.washerModules.filter((w) => w.slotIndex < washerMax)
-    const washerSection: WasherSection =
-      migrated.washerSection ?? (washerModules.length > 0 ? (migrated.layout === 'low-only' ? 'low' : 'high') : null)
+    // Each placement is bounded by its own section's module count.
+    const sectionFor = (section: 'high' | 'low'): Section | null =>
+      section === topLevelSection(migrated.layout) ? active : migrated.lowSection
+    const washerModules = migrated.washerModules.filter(
+      (w) => w.slotIndex < (sectionFor(w.section)?.moduleCount ?? 0),
+    )
     const restoredLowSection: Section | null = migrated.lowSection
       ? {
           ...migrated.lowSection,
@@ -831,7 +806,6 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
       modules,
       layout: migrated.layout,
       lowSection: restoredLowSection,
-      washerSection,
       topPanelThicknessMm: migrated.lowSection?.topPanelThicknessMm ?? 18,
       countertopMaterialId:
         migrated.lowSection?.countertopMaterialId ?? config.buitenkantMaterialId,

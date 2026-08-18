@@ -411,7 +411,7 @@ describe('addWasherModule / removeWasherModule / clearWasherModules', () => {
 
   it('clearWasherModules empties washerModules', () => {
     useWasmachinekastStore.setState({
-      washerModules: [{ slotIndex: 1, layoutId: 99 }],
+      washerModules: [{ slotIndex: 1, layoutId: 99, section: 'high' }],
     })
     useWasmachinekastStore.getState().clearWasherModules()
     expect(useWasmachinekastStore.getState().washerModules).toHaveLength(0)
@@ -484,7 +484,7 @@ describe('randomFill — washer slots preserved', () => {
   it('randomFill never changes layoutId of a washer slot', () => {
     useWasmachinekastStore.setState({
       moduleCount: 3,
-      washerModules: [{ slotIndex: 1, layoutId: 99 }],
+      washerModules: [{ slotIndex: 1, layoutId: 99, section: 'high' }],
       modules: [
         { slotIndex: 0, layoutId: null, hasDoor: true, span: 1 },
         { slotIndex: 1, layoutId: 99, hasDoor: true, span: 1 },
@@ -501,7 +501,7 @@ describe('randomFill — washer slots preserved', () => {
   it('randomFill still fills non-washer slots', () => {
     useWasmachinekastStore.setState({
       moduleCount: 2,
-      washerModules: [{ slotIndex: 0, layoutId: 99 }],
+      washerModules: [{ slotIndex: 0, layoutId: 99, section: 'high' }],
       modules: [
         { slotIndex: 0, layoutId: 99, hasDoor: true, span: 1 },
         { slotIndex: 1, layoutId: null, hasDoor: true, span: 1 },
@@ -515,7 +515,7 @@ describe('randomFill — washer slots preserved', () => {
   it('randomFill preserves multiple washer slots', () => {
     useWasmachinekastStore.setState({
       moduleCount: 4,
-      washerModules: [{ slotIndex: 1, layoutId: 11 }, { slotIndex: 2, layoutId: 13 }],
+      washerModules: [{ slotIndex: 1, layoutId: 11, section: 'high' }, { slotIndex: 2, layoutId: 13, section: 'high' }],
       modules: [
         { slotIndex: 0, layoutId: null, hasDoor: true, span: 1 },
         { slotIndex: 1, layoutId: 11, hasDoor: true, span: 1 },
@@ -538,11 +538,11 @@ describe('randomFill — washer slots preserved', () => {
 describe('setModuleCount — washer slot reset', () => {
   beforeEach(resetStore)
 
-  it('reducing count so a washer slot >= count clears that washer and sets step to 2', () => {
+  it('reducing count so a washer slot >= count clears that washer', () => {
     useWasmachinekastStore.setState({
       width: 120,
       moduleCount: 3,
-      washerModules: [{ slotIndex: 2, layoutId: 99 }],
+      washerModules: [{ slotIndex: 2, layoutId: 99, section: 'high' }],
       step: 3,
       modules: [
         { slotIndex: 0, layoutId: null, hasDoor: true, span: 1 },
@@ -553,14 +553,15 @@ describe('setModuleCount — washer slot reset', () => {
     useWasmachinekastStore.getState().setModuleCount(2)
     const s = useWasmachinekastStore.getState()
     expect(s.washerModules).toHaveLength(0)
-    expect(s.step).toBe(2)
+    // Washers are an indeling choice now, so losing one no longer moves the step.
+    expect(s.step).toBe(3)
   })
 
   it('reducing count that keeps all washer slots valid does not clear washers', () => {
     useWasmachinekastStore.setState({
       width: 120,
       moduleCount: 3,
-      washerModules: [{ slotIndex: 0, layoutId: 99 }],
+      washerModules: [{ slotIndex: 0, layoutId: 99, section: 'high' }],
       step: 3,
       modules: [
         { slotIndex: 0, layoutId: 99, hasDoor: true, span: 1 },
@@ -578,7 +579,7 @@ describe('setModuleCount — washer slot reset', () => {
     useWasmachinekastStore.setState({
       width: 120,
       moduleCount: 3,
-      washerModules: [{ slotIndex: 0, layoutId: 11 }, { slotIndex: 2, layoutId: 14 }],
+      washerModules: [{ slotIndex: 0, layoutId: 11, section: 'high' }, { slotIndex: 2, layoutId: 14, section: 'high' }],
       step: 3,
       modules: [
         { slotIndex: 0, layoutId: 11, hasDoor: true, span: 1 },
@@ -602,7 +603,7 @@ describe('setWidth — washer slot reset', () => {
     useWasmachinekastStore.setState({
       width: 120,
       moduleCount: 3,
-      washerModules: [{ slotIndex: 2, layoutId: 99 }],
+      washerModules: [{ slotIndex: 2, layoutId: 99, section: 'high' }],
       step: 3,
       modules: [
         { slotIndex: 0, layoutId: null, hasDoor: true, span: 1 },
@@ -617,7 +618,7 @@ describe('setWidth — washer slot reset', () => {
     useWasmachinekastStore.getState().setWidth(60)
     const s = useWasmachinekastStore.getState()
     expect(s.washerModules).toHaveLength(0)
-    expect(s.step).toBe(2)
+    expect(s.step).toBe(3)
   })
 })
 
@@ -627,7 +628,7 @@ describe('restoreConfig — washer fields', () => {
   beforeEach(resetStore)
 
   it('restores washerModules from snapshot', () => {
-    const snap = { ...baseSnapshot, washerModules: [{ slotIndex: 1, layoutId: 99 }] }
+    const snap = { ...baseSnapshot, washerModules: [{ slotIndex: 1, layoutId: 99, section: 'high' as const }] }
     useWasmachinekastStore.getState().restoreConfig(snap)
     const s = useWasmachinekastStore.getState()
     expect(s.washerModules).toHaveLength(1)
@@ -639,7 +640,7 @@ describe('restoreConfig — washer fields', () => {
     const snap = {
       ...baseSnapshot,
       moduleCount: 2,
-      washerModules: [{ slotIndex: 5, layoutId: 99 }],
+      washerModules: [{ slotIndex: 5, layoutId: 99, section: 'high' as const }],
     }
     useWasmachinekastStore.getState().restoreConfig(snap)
     expect(useWasmachinekastStore.getState().washerModules).toHaveLength(0)
@@ -654,7 +655,10 @@ describe('restoreConfig — washer fields', () => {
     const snap = {
       ...baseSnapshot,
       moduleCount: 2,
-      washerModules: [{ slotIndex: 0, layoutId: 11 }, { slotIndex: 5, layoutId: 99 }],
+      washerModules: [
+        { slotIndex: 0, layoutId: 11, section: 'high' as const },
+        { slotIndex: 5, layoutId: 99, section: 'high' as const },
+      ],
     }
     useWasmachinekastStore.getState().restoreConfig(snap)
     const s = useWasmachinekastStore.getState()
@@ -763,7 +767,6 @@ describe('low-section setters', () => {
         topPanelThicknessMm: 18,
         countertopMaterialId: 'premium-wit',
       },
-      washerSection: null,
     })
   }
 
@@ -789,22 +792,25 @@ describe('low-section setters', () => {
     expect(s.modules[0].layoutId).toBeNull()
   })
 
-  it('setWasherSection discards existing washers when switching', () => {
+  it('holds washers in both sections at once', () => {
     bootstrapDual()
-    useWasmachinekastStore.setState({
-      washerSection: 'high',
-      washerModules: [{ slotIndex: 0, layoutId: 11 }],
-      modules: [
-        { slotIndex: 0, layoutId: 11, hasDoor: true, span: 1, fixedWidth: 68.6 },
-        { slotIndex: 1, layoutId: null, hasDoor: true, span: 1 },
-        { slotIndex: 2, layoutId: null, hasDoor: true, span: 1 },
-      ],
-    })
-    useWasmachinekastStore.getState().setWasherSection('low')
+    useWasmachinekastStore.getState().addWasherModule(0, 11, 'high')
+    useWasmachinekastStore.getState().addWasherModule(0, 11, 'low')
     const s = useWasmachinekastStore.getState()
-    expect(s.washerSection).toBe('low')
-    expect(s.washerModules).toHaveLength(0)
-    expect(s.modules[0].layoutId).toBeNull()
+    expect(s.washerModules).toHaveLength(2)
+    expect(s.modules[0].layoutId).toBe(11)
+    expect(s.lowSection?.modules[0].layoutId).toBe(11)
+  })
+
+  it('removing a washer only clears its own section', () => {
+    bootstrapDual()
+    useWasmachinekastStore.getState().addWasherModule(0, 11, 'high')
+    useWasmachinekastStore.getState().addWasherModule(0, 11, 'low')
+    useWasmachinekastStore.getState().removeWasherModule(0, 'low')
+    const s = useWasmachinekastStore.getState()
+    expect(s.washerModules).toEqual([{ slotIndex: 0, layoutId: 11, section: 'high' }])
+    expect(s.modules[0].layoutId).toBe(11)
+    expect(s.lowSection?.modules[0].layoutId).toBeNull()
   })
 })
 
@@ -907,7 +913,6 @@ describe('low-only accessory filter', () => {
         topPanelThicknessMm: 18,
         countertopMaterialId: 'premium-wit',
       },
-      washerSection: null,
     })
     const s = useWasmachinekastStore.getState()
     expect(s.modules.every((m) => !m.hasPowerHole)).toBe(true)
@@ -935,7 +940,6 @@ describe('low-only accessory filter', () => {
         topPanelThicknessMm: 18,
         countertopMaterialId: 'premium-wit',
       },
-      washerSection: null,
     })
     const s = useWasmachinekastStore.getState()
     expect(s.modules[0].hasPowerHole).toBe(true)
@@ -960,7 +964,6 @@ describe('low-only accessory filter', () => {
         ],
       },
       lowSection: null,
-      washerSection: null,
     })
     const s = useWasmachinekastStore.getState()
     expect(s.modules[0].hasPowerHole).toBe(true)
@@ -1021,7 +1024,7 @@ describe('canPlaceWasher / addWasherModule — capacity gate', () => {
     // washer would leave no non-washer slots but 75+75=150 > 100. Rejected.
     useWasmachinekastStore.setState({
       width: 100, moduleCount: 2, layout: 'high-only',
-      washerModules: [{ slotIndex: 0, layoutId: 99 }],
+      washerModules: [{ slotIndex: 0, layoutId: 99, section: 'high' }],
       modules: [
         { slotIndex: 0, layoutId: 99, hasDoor: true, span: 1, fixedWidth: 75 },
         { slotIndex: 1, layoutId: null, hasDoor: true, span: 1 },
@@ -1034,7 +1037,7 @@ describe('canPlaceWasher / addWasherModule — capacity gate', () => {
   it('addWasherModule is a no-op when canPlaceWasher rejects', () => {
     useWasmachinekastStore.setState({
       width: 100, moduleCount: 2, layout: 'high-only',
-      washerModules: [{ slotIndex: 0, layoutId: 99 }],
+      washerModules: [{ slotIndex: 0, layoutId: 99, section: 'high' }],
       modules: [
         { slotIndex: 0, layoutId: 99, hasDoor: true, span: 1, fixedWidth: 75 },
         { slotIndex: 1, layoutId: null, hasDoor: true, span: 1 },
@@ -1051,7 +1054,7 @@ describe('canPlaceWasher / addWasherModule — capacity gate', () => {
     // 2 non-washer slots = 35cm each ≥ FALLBACK_MODULE_MIN_WIDTH (30). OK.
     useWasmachinekastStore.setState({
       width: 220, moduleCount: 4, layout: 'high-only',
-      washerModules: [{ slotIndex: 0, layoutId: 99 }],
+      washerModules: [{ slotIndex: 0, layoutId: 99, section: 'high' }],
       modules: [
         { slotIndex: 0, layoutId: 99, hasDoor: true, span: 1, fixedWidth: 75 },
         { slotIndex: 1, layoutId: null, hasDoor: true, span: 1 },
@@ -1068,7 +1071,7 @@ describe('canPlaceWasher / addWasherModule — capacity gate', () => {
     // 25cm each (< 30). Dropping one leaves 3 × 33.3cm, so the count goes to 5.
     useWasmachinekastStore.setState({
       width: 250, moduleCount: 6, layout: 'high-only',
-      washerModules: [{ slotIndex: 0, layoutId: 99 }],
+      washerModules: [{ slotIndex: 0, layoutId: 99, section: 'high' }],
       modules: [
         { slotIndex: 0, layoutId: 99, hasDoor: true, span: 1, fixedWidth: 75 },
         ...[1, 2, 3, 4, 5].map((slotIndex) => ({
@@ -1091,7 +1094,7 @@ describe('canPlaceWasher / addWasherModule — capacity gate', () => {
   it('leaves the module count alone when the washer already fits', () => {
     useWasmachinekastStore.setState({
       width: 220, moduleCount: 4, layout: 'high-only',
-      washerModules: [{ slotIndex: 0, layoutId: 99 }],
+      washerModules: [{ slotIndex: 0, layoutId: 99, section: 'high' }],
       modules: [
         { slotIndex: 0, layoutId: 99, hasDoor: true, span: 1, fixedWidth: 75 },
         ...[1, 2, 3].map((slotIndex) => ({
@@ -1110,7 +1113,7 @@ describe('canPlaceWasher / addWasherModule — capacity gate', () => {
     // The only way to free up room is to cut slot 5, which holds a washer.
     useWasmachinekastStore.setState({
       width: 250, moduleCount: 6, layout: 'high-only',
-      washerModules: [{ slotIndex: 5, layoutId: 99 }],
+      washerModules: [{ slotIndex: 5, layoutId: 99, section: 'high' as const }],
       modules: [
         ...[0, 1, 2, 3, 4].map((slotIndex) => ({
           slotIndex, layoutId: null, hasDoor: true, span: 1 as const,
@@ -1133,7 +1136,7 @@ describe('canPlaceWasher / addWasherModule — capacity gate', () => {
     // must not be rejected by the gate.
     useWasmachinekastStore.setState({
       width: 110, moduleCount: 2, layout: 'high-only',
-      washerModules: [{ slotIndex: 0, layoutId: 99 }],
+      washerModules: [{ slotIndex: 0, layoutId: 99, section: 'high' }],
       modules: [
         { slotIndex: 0, layoutId: 99, hasDoor: true, span: 1, fixedWidth: 75 },
         { slotIndex: 1, layoutId: null, hasDoor: true, span: 1 },

@@ -39,6 +39,7 @@ function SlotInteraction({
   sectionDepthM,
   modules,
   sectionKind,
+  sharedSideWall = null,
 }: {
   slotIndex: number
   span: 1 | 2
@@ -48,17 +49,29 @@ function SlotInteraction({
   sectionDepthM: number
   modules: BaseModuleSlot[]
   sectionKind: 'high' | 'low'
+  sharedSideWall?: 'left' | 'right' | null
 }) {
   const selectedSlot = useWasmachinekastStore((s) => s.selectedSlot)
+  const activeModulesSection = useWasmachinekastStore((s) => s.activeModulesSection)
+  const layout = useWasmachinekastStore((s) => s.layout)
   const hoveredSlot = useWasmachinekastStore((s) => s.hoveredSlot)
   const hoveredSection = useWasmachinekastStore((s) => s.hoveredSection)
+  // Single-section layouts have only one place a selection can be.
+  const selectedSectionMatches =
+    layout !== 'low-left' && layout !== 'low-right'
+      ? true
+      : activeModulesSection === sectionKind
   const setSelectedSlot = useWasmachinekastStore((s) => s.setSelectedSlot)
   const setHoveredSlot = useWasmachinekastStore((s) => s.setHoveredSlot)
   const setHoveredSection = useWasmachinekastStore((s) => s.setHoveredSection)
 
   const [localHovered, setLocalHovered] = useState(false)
 
-  const innerW = sectionWidthM - WALL * 2
+  // Mirrors Module's interior: a shared panel belongs to the neighbouring
+  // section, so the hit area runs out to this section's edge on that side.
+  const leftWallM = sharedSideWall === 'left' ? 0 : WALL
+  const rightWallM = sharedSideWall === 'right' ? 0 : WALL
+  const innerW = sectionWidthM - leftWallM - rightWallM
   const moduleDepth = sectionDepthM - WALL - CLOSET_INSIDE_INSET
   // Group sits at y=MODULE_FLOOR_Y (top of plinth). Plane should reach the
   // module-interior cap at y=sectionMainHeightM in world space, so cap to that
@@ -69,7 +82,9 @@ function SlotInteraction({
   const slotOffset = slotWidthsM.slice(0, slotIndex).reduce((a, b) => a + b, 0)
   const totalW = slotWidthsM.slice(slotIndex, slotIndex + span).reduce((a, b) => a + b, 0)
 
-  const isSelected = selectedSlot === slotIndex
+  // The selection lives in one section at a time, so an index match in the
+  // other section is a different vak.
+  const isSelected = selectedSlot === slotIndex && selectedSectionMatches
 
   const shapeGeo = useMemo(() => {
     trapNaN(totalW, `WasmSlotInteraction${slotIndex}-totalW`)
@@ -133,7 +148,7 @@ function SlotInteraction({
   const showVisual = isSelected || hovered
 
   return (
-    <group position={[(-innerW / 2) + slotOffset, MODULE_FLOOR_Y, WALL]}>
+    <group position={[-sectionWidthM / 2 + leftWallM + slotOffset, MODULE_FLOOR_Y, WALL]}>
       <mesh
         position={[0, 0, moduleDepth + 0.002]}
         geometry={shapeGeo}
@@ -146,7 +161,7 @@ function SlotInteraction({
             setSelectedSlot(null)
           } else {
             const ne = e.nativeEvent as MouseEvent
-            setSelectedSlot(slotIndex, { x: ne.clientX, y: ne.clientY })
+            setSelectedSlot(slotIndex, { x: ne.clientX, y: ne.clientY }, sectionKind)
           }
         }}
       />
@@ -223,12 +238,18 @@ function SectionPlinth({
   widthM,
   depthM,
   modules,
+  sharedSideWall = null,
 }: {
   widthM: number
   depthM: number
   modules: BaseModuleSlot[]
+  sharedSideWall?: 'left' | 'right' | null
 }) {
-  const innerW = widthM - WALL * 2
+  // Follows the corpus: where the neighbouring section's panel is shared, this
+  // section has no panel of its own and the plinth runs out to the seam.
+  const leftWallM = sharedSideWall === 'left' ? 0 : WALL
+  const rightWallM = sharedSideWall === 'right' ? 0 : WALL
+  const innerW = widthM - leftWallM - rightWallM
   const slotWidthsM = useMemo(() => computeSlotWidthsM(modules, innerW), [modules, innerW])
 
   const segments = useMemo(() => {
@@ -253,12 +274,13 @@ function SectionPlinth({
       cursorX += slotW
     }
     if (runWidth > 0) runs.push({ width: runWidth, startX: runStart })
-    // Translate runs from inner-x coords (0..innerW) into section coords (centered at 0).
+    // Translate runs from inner-x coords (0..innerW) into section coords
+    // (centered at 0). With both panels present this equals -innerW / 2.
     return runs.map((r) => ({
       segWidthM: r.width,
-      centerXM: -innerW / 2 + r.startX + r.width / 2,
+      centerXM: -widthM / 2 + leftWallM + r.startX + r.width / 2,
     }))
-  }, [modules, slotWidthsM, innerW])
+  }, [modules, slotWidthsM, widthM, leftWallM])
 
   return (
     <>
@@ -382,6 +404,7 @@ interface SectionGroupProps {
   binnenkantMaterialId: string
   enableSlotInteraction: boolean
   sideWallThicknessM: number
+  sharedSideWall?: 'left' | 'right' | null
 }
 
 function SectionGroup({
@@ -395,6 +418,7 @@ function SectionGroup({
   binnenkantMaterialId,
   enableSlotInteraction,
   sideWallThicknessM,
+  sharedSideWall = null,
 }: SectionGroupProps) {
   const widthM = section.width / 100
   const depthM = depthCm / 100
@@ -446,8 +470,13 @@ function SectionGroup({
 
   return (
     <group position={[xOffsetM, 0, 0]}>
-      <ClosetCorpus diagParams={diagParams} hideTopPanel={isLow} />
-      <SectionPlinth widthM={widthM} depthM={depthM} modules={section.modules} />
+      <ClosetCorpus diagParams={diagParams} hideTopPanel={isLow} sharedSideWall={sharedSideWall} />
+      <SectionPlinth
+        widthM={widthM}
+        depthM={depthM}
+        modules={section.modules}
+        sharedSideWall={sharedSideWall}
+      />
       {isLow && (
         <WerkbladSlab
           widthM={widthM}
@@ -492,6 +521,7 @@ function SectionGroup({
               drawerFronts={plan.showDrawerFronts}
               doorHandleIdOverride={plan.doorHandleId}
               drawerHandleId={plan.drawerHandleId}
+              sharedSideWall={sharedSideWall}
             />
           )
         })}
@@ -520,6 +550,7 @@ function SectionGroup({
               sectionDepthM={depthM}
               modules={section.modules}
               sectionKind={kind}
+              sharedSideWall={sharedSideWall}
             />
           )
         })}
@@ -539,7 +570,6 @@ export default function WasmachinekastScene() {
   const binnenkantMaterialId = useWasmachinekastStore((s) => s.binnenkantMaterialId)
   const topPanelThicknessMm = useWasmachinekastStore((s) => s.topPanelThicknessMm)
   const countertopMaterialId = useWasmachinekastStore((s) => s.countertopMaterialId)
-  const activeModulesSection = useWasmachinekastStore((s) => s.activeModulesSection)
   const sidePanelThickness = useWasmachinekastStore((s) => s.sidePanelThickness)
   const sideWallThicknessM = sidePanelThickness === '36mm' ? 0.036 : 0.018
 
@@ -575,6 +605,11 @@ export default function WasmachinekastScene() {
     lowX = 0
   }
 
+  // The sections meet as one cabinet, so they share a single panel at the seam
+  // instead of standing two back to back. The high section keeps its panel; the
+  // low section drops the one facing it and widens into the freed space.
+  const lowSharedSideWall = !isDual ? null : layout === 'low-left' ? 'right' : 'left'
+
   return (
     <ClosetMaterialProvider buitenkantMaterialId={buitenkantMaterialId} binnenkantMaterialId={binnenkantMaterialId}>
       <group>
@@ -588,7 +623,7 @@ export default function WasmachinekastScene() {
             countertopMaterialId={countertopMaterialId}
             buitenkantMaterialId={buitenkantMaterialId}
             binnenkantMaterialId={binnenkantMaterialId}
-            enableSlotInteraction={!isDual || activeModulesSection === 'high'}
+            enableSlotInteraction
             sideWallThicknessM={sideWallThicknessM}
           />
         )}
@@ -602,8 +637,9 @@ export default function WasmachinekastScene() {
             countertopMaterialId={countertopMaterialId}
             buitenkantMaterialId={buitenkantMaterialId}
             binnenkantMaterialId={binnenkantMaterialId}
-            enableSlotInteraction={isDual && activeModulesSection === 'low'}
+            enableSlotInteraction
             sideWallThicknessM={sideWallThicknessM}
+            sharedSideWall={lowSharedSideWall}
           />
         )}
         {isLowOnly && lowSectionRender && (

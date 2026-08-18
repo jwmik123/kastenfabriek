@@ -53,6 +53,10 @@ interface ModuleProps {
   doorHandleIdOverride?: string
   // Handle rendered horizontally on each front (kitchen style).
   drawerHandleId?: string | null
+  // Side where this section has no side panel of its own because it shares the
+  // neighbouring section's (wasmachinekast dual layouts). The interior widens
+  // into the freed space instead of leaving a gap against the shared panel.
+  sharedSideWall?: 'left' | 'right' | null
 }
 
 function wallHeightAt(xOuter: number, p: DiagParams, floorY: number = MODULE_FLOOR_Y): number {
@@ -164,11 +168,11 @@ export default function Module({
   sectionModuleCount,
   sectionModules,
   sectionNeedsTopCabinet,
-  sectionKind,
   washerDoorAbove,
   drawerFronts,
   doorHandleIdOverride,
   drawerHandleId,
+  sharedSideWall = null,
 }: ModuleProps) {
   const depth        = useConfiguratorStore((s) => s.depth) / 100
   const storeModuleCount = useConfiguratorStore((s) => s.moduleCount)
@@ -176,9 +180,6 @@ export default function Module({
   const moduleCount  = sectionModuleCount ?? storeModuleCount
   const width        = (sectionWidthCm ?? storeWidthCm) / 100
   const doorsOpen           = useConfiguratorStore((s) => s.doorsOpen)
-  const hoveredSlot         = useConfiguratorStore((s) => s.hoveredSlot)
-  const hoveredSection      = useConfiguratorStore((s) => (s as unknown as { hoveredSection?: 'high' | 'low' | null }).hoveredSection ?? null)
-  const hoverMatchesSection = sectionKind === undefined || hoveredSection === null || hoveredSection === sectionKind
   const storeDoorHandleId   = useConfiguratorStore((s) => s.doorHandleId)
   const doorHandleId        = doorHandleIdOverride ?? storeDoorHandleId
   const doorHandleMaterial  = useConfiguratorStore((s) => s.doorHandleMaterial)
@@ -199,11 +200,16 @@ export default function Module({
   // Which colour the module's interior takes. A washer module carries no
   // full-height door, but the push-to-open door above it closes the module off,
   // so its carcass, shelves and elements finish in the binnenkant colour just
-  // like every other closed module.
-  const insideFinish = hasDoor || washerDoorAbove === true
+  // like every other closed module. Same for a lage-kast module whose drawer
+  // fronts close it off: the drawer boxes behind them are interior.
+  const insideFinish = hasDoor || washerDoorAbove === true || drawerFronts === true
 
   const sideWallM    = p.sideWallThickness
-  const innerW       = width - sideWallM * 2
+  // A shared side wall belongs to the neighbouring section, so this section has
+  // no panel of its own there and its interior runs out to the section edge.
+  const leftWallM    = sharedSideWall === 'left'  ? 0 : sideWallM
+  const rightWallM   = sharedSideWall === 'right' ? 0 : sideWallM
+  const innerW       = width - leftWallM - rightWallM
   const moduleDepth  = depthOverride ?? (depth - WALL - CLOSET_INSIDE_INSET)
   const groupZ       = depthOverride != null ? (depth - CLOSET_INSIDE_INSET - depthOverride) : WALL
   const contentDepth = moduleDepth - MODULE_INSIDE_INSET
@@ -224,8 +230,8 @@ export default function Module({
   const nextSlotW    = slotWidthsM[index + 1] ?? thisSlotW
   const centerX      = moduleWidth / 2
 
-  const leftWallXOuter  = sideWallM + slotOffset
-  const rightWallXOuter = sideWallM + slotOffset + moduleWidth
+  const leftWallXOuter  = leftWallM + slotOffset
+  const rightWallXOuter = leftWallM + slotOffset + moduleWidth
 
   const isLastModule = index + span === moduleCount
 
@@ -468,7 +474,9 @@ export default function Module({
     return [{ x: 0, y: h }, { x: thisSlotW, y: h }]
   }, [isBackDiag, moduleDepth, needsTop, p, thisSlotW, effectiveFloorY])
 
-  const startX = -innerW / 2
+  // Interior starts behind the left panel; with both panels present this is the
+  // same as centring innerW on the section.
+  const startX = -width / 2 + leftWallM
   const x      = startX + slotOffset
 
   return (
@@ -484,7 +492,6 @@ export default function Module({
           targetWidth={moduleWidth - MODULE_WALL * 2}
           targetDepth={contentDepth}
           positionY={elementYs[i]}
-          hovered={hoveredSlot === index && hoverMatchesSection}
           hasDoor={hasDoor}
           insideFinish={insideFinish}
           exposedFronts={insideFinish && !hasDoor}

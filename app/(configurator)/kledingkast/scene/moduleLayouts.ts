@@ -24,6 +24,21 @@ export type ModuleElement = {
   glbMaterialMeshes?: string[]
   chromeMaterialMeshes?: string[]
   glassMaterialMeshes?: string[]
+  /**
+   * Meshes that stretch with the slot width, for GLBs whose nodes lack the
+   * `_ws` suffix. Unlike the suffix (which scales the mesh proportionally
+   * towards the module's inner width), each listed mesh grows by exactly the
+   * slot's growth over `nativeSlotWidth` with its left edge pinned, so fronts,
+   * drawer bottoms and side panels keep the spacing the modeller gave them.
+   * Requires `nativeSlotWidth`.
+   */
+  widthScaleMeshes?: string[]
+  /**
+   * Slot width in meters the GLB was modelled for. The element's fronts span
+   * the whole slot, wider than the corpus opening, so growth is measured
+   * against this rather than against the element's own bbox.
+   */
+  nativeSlotWidth?: number
 }
 
 // --- Module layout ---

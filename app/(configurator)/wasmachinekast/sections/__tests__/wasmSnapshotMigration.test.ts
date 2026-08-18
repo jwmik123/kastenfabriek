@@ -25,7 +25,7 @@ describe('wasmSnapshotMigration — restore (legacy)', () => {
     expect(state.highSection?.height).toBe(240)
     expect(state.highSection?.moduleCount).toBe(2)
     expect(state.lowSection).toBeNull()
-    expect(state.washerSection).toBeNull()
+    expect(state.washerModules).toEqual([])
   })
 
   it('legacy snapshot clamps depth from 65 to 85', () => {
@@ -51,10 +51,10 @@ describe('wasmSnapshotMigration — restore (legacy)', () => {
       widthCm: 160, heightCm: 240, moduleCount: 2,
       modules: [mkMod(0), mkMod(1, 11)],
       depthCm: 90,
-      washerModules: [{ slotIndex: 1, layoutId: 11 }],
+      washerModules: [{ slotIndex: 1, layoutId: 11, section: 'high' }],
     }
     const state = restore(snap)
-    expect(state.washerModules).toEqual([{ slotIndex: 1, layoutId: 11 }])
+    expect(state.washerModules).toEqual([{ slotIndex: 1, layoutId: 11, section: 'high' }])
   })
 })
 
@@ -80,7 +80,6 @@ describe('wasmSnapshotMigration — serialize always writes layout', () => {
         topPanelThicknessMm: 18,
         countertopMaterialId: 'antraciet',
       },
-      washerSection: 'low',
       washerModules: [],
     }
     const out = serialize(restore(snap))
@@ -95,7 +94,6 @@ describe('wasmSnapshotMigration — serialize(restore(s)) round-trip on new form
       widthCm: 160, heightCm: 240, moduleCount: 2,
       modules: [mkMod(0), mkMod(1)],
       depthCm: 90,
-      washerSection: 'high',
       washerModules: [],
     }
     expect(serialize(restore(snap))).toEqual(snap)
@@ -112,7 +110,6 @@ describe('wasmSnapshotMigration — serialize(restore(s)) round-trip on new form
         topPanelThicknessMm: 36,
         countertopMaterialId: 'wit',
       },
-      washerSection: 'low',
       washerModules: [],
     }
     expect(serialize(restore(snap))).toEqual(snap)
@@ -130,7 +127,6 @@ describe('wasmSnapshotMigration — serialize(restore(s)) round-trip on new form
         topPanelThicknessMm: 18,
         countertopMaterialId: 'antraciet',
       },
-      washerSection: 'high',
       washerModules: [],
     }
     expect(serialize(restore(snap))).toEqual(snap)
@@ -148,7 +144,6 @@ describe('wasmSnapshotMigration — serialize(restore(s)) round-trip on new form
         topPanelThicknessMm: 18,
         countertopMaterialId: 'antraciet',
       },
-      washerSection: 'high',
       washerModules: [],
     }
     expect(serialize(restore(snap))).toEqual(snap)
