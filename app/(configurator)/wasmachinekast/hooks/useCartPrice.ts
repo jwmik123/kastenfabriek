@@ -13,7 +13,8 @@ import { computeFreeMontage } from '@/lib/configurator/free-montage'
 import { countLowDrawerFronts } from '../sections/lowDrawerFronts'
 import { getWasmLayoutConfig } from '../moduleLayoutConfigs'
 import { WASHER_LAYOUT_IDS } from '../moduleLayouts'
-import type { CartItem, ClosetConfigSnapshot, PriceSnapshot } from '@/lib/cart/types'
+import { buildWasmConfigSnapshot, resolveHandleName } from '../wasmSnapshot'
+import type { CartItem, PriceSnapshot } from '@/lib/cart/types'
 
 export const formatter = new Intl.NumberFormat('nl-NL', {
   style: 'currency',
@@ -49,6 +50,8 @@ export function useCartPrice() {
   const topPanelThicknessMm = useWasmachinekastStore((s) => s.topPanelThicknessMm)
   const countertopMaterialId = useWasmachinekastStore((s) => s.countertopMaterialId)
   const sidePanelThickness = useWasmachinekastStore((s) => s.sidePanelThickness)
+  const placementType = useWasmachinekastStore((s) => s.placementType)
+  const washerModules = useWasmachinekastStore((s) => s.washerModules)
 
   const hasTopCabinet = needsTopCabinet()
   const topCabinetHeightCm = topCabinetHeight()
@@ -140,75 +143,33 @@ export function useCartPrice() {
   // Builds the full cart item for the current configuration, including the
   // two 3D captures (doors closed + open). Shared by cart and wishlist saves.
   const buildItem = async (itemId: string): Promise<CartItem> => {
-    const configSnapshot: ClosetConfigSnapshot = {
+    const configSnapshot = buildWasmConfigSnapshot({
       id: itemId,
-      capturedAt: new Date().toISOString(),
-      widthCm: width,
-      heightCm: height,
-      depthCm: depth,
+      width,
+      height,
+      depth,
       moduleCount,
-      modules: modules.map((m) => ({
-        slotIndex: m.slotIndex,
-        layoutId: m.layoutId,
-        layoutName: m.layoutId != null
-          ? (moduleLayouts.find((l) => l.layoutId === m.layoutId)?.name ?? null)
-          : null,
-        hasDoor: m.hasDoor,
-        span: m.span,
-        buitenkantMaterialId: m.buitenkantMaterialId,
-        binnenkantMaterialId: m.binnenkantMaterialId,
-        hasPowerHole: m.hasPowerHole ?? false,
-        pushToOpen: m.pushToOpen ?? false,
-      })),
+      modules,
+      moduleLayouts,
+      layout,
+      lowSection,
+      washerModules,
+      topPanelThicknessMm,
+      countertopMaterialId,
       buitenkantMaterialId,
       binnenkantMaterialId,
       doorHandleId,
-      doorHandleName: doorHandleId === 'none'
-        ? 'Greeploos (push-to-open)'
-        : (engine?.getHandle(doorHandleId)?.nameNl ?? engine?.getHandle(doorHandleId)?.name ?? null),
+      doorHandleName: resolveHandleName(doorHandleId, pricingData?.handles),
       drawerHandleId,
-      diagonalSide: 'none',
-      leftDiagStartHeight: 0,
-      rightDiagStartHeight: 0,
-      leftDiagTopWidth: 0,
-      rightDiagTopWidth: 0,
-      placementType: 'ingebouwd',
-      layout,
-      ...(layout === 'low-only' || lowSection
-        ? {
-            lowSection: {
-              width: layout === 'low-only' ? width : lowSection!.width,
-              height: 90,
-              moduleCount: layout === 'low-only' ? moduleCount : lowSection!.moduleCount,
-              modules: (layout === 'low-only' ? modules : lowSection!.modules).map((m) => ({
-                slotIndex: m.slotIndex,
-                layoutId: m.layoutId,
-                layoutName:
-                  m.layoutId != null
-                    ? moduleLayouts.find((l) => l.layoutId === m.layoutId)?.name ?? null
-                    : null,
-                hasDoor: m.hasDoor,
-                span: m.span,
-                buitenkantMaterialId: m.buitenkantMaterialId,
-                binnenkantMaterialId: m.binnenkantMaterialId,
-                hasPowerHole: m.hasPowerHole ?? false,
-        pushToOpen: m.pushToOpen ?? false,
-              })),
-              topPanelThicknessMm,
-              countertopMaterialId: countertopMaterialId ?? buitenkantMaterialId,
-            },
-          }
-        : {}),
-      backDiagonal: false,
-      backDiagKinkHeight: 0,
-      backDiagFlatSectionDepth: 0,
+      drawerHandleName: resolveHandleName(drawerHandleId, pricingData?.handles),
       doorHandleMaterial,
       doorsExtendToFloor,
       lightStripsEnabled,
       sidePanelThickness,
+      placementType,
       hasTopCabinet,
       topCabinetHeightCm,
-    }
+    })
 
     const priceSnapshot: PriceSnapshot = {
       calculatedAt: new Date().toISOString(),
@@ -217,6 +178,7 @@ export function useCartPrice() {
       doorCost,
       mechanismCost,
       ledCost,
+      powerHoleCost,
       deliveryCost,
       subtotal,
       installationTierName: installationTier?.name ?? null,

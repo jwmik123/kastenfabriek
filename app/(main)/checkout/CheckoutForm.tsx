@@ -7,9 +7,10 @@ import { createAddress } from '@/lib/actions/address'
 import { validateCoupon } from '@/lib/actions/coupon'
 import type { ValidateCouponResult } from '@/lib/actions/coupon'
 import { calculateDiscount } from '@/lib/cart/discount'
-import type { CartItem } from '@/lib/cart/types'
+import type { CartItem, ClosetConfigSnapshot } from '@/lib/cart/types'
 import { getDeliveryWindow } from '@/lib/delivery-window'
 import { calcCartTotals } from '@/lib/cart/totals'
+import { summarizeCloset } from '@/lib/order/closet-spec'
 
 type Address = {
   id: string
@@ -33,6 +34,19 @@ interface CheckoutFormProps {
 }
 
 const fmt = new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 })
+
+/** Name and outer size — a dual-layout wasmachinekast counts both sections. */
+function ClosetSummaryLine({ config }: { config: ClosetConfigSnapshot }) {
+  const headline = summarizeCloset(config)
+  return (
+    <div>
+      <p className="font-medium text-sm text-gray-900">{headline.typeLabel}</p>
+      <p className="text-xs text-gray-500">
+        {headline.totalWidthCm} × {headline.maxHeightCm} × {config.depthCm} cm
+      </p>
+    </div>
+  )
+}
 
 type Step = 'address' | 'review' | 'payment'
 
@@ -310,12 +324,7 @@ export default function CheckoutForm({ addresses, cartItems }: CheckoutFormProps
               <div key={item.id} className="py-3 border-b border-gray-100 last:border-0">
                 <div className="flex justify-between items-start">
                   {item.kind === 'closet' ? (
-                    <div>
-                      <p className="font-medium text-sm text-gray-900">Maatwerkkast</p>
-                      <p className="text-xs text-gray-500">
-                        {item.configuration.widthCm} × {item.configuration.heightCm} × {item.configuration.depthCm} cm
-                      </p>
-                    </div>
+                    <ClosetSummaryLine config={item.configuration} />
                   ) : (
                     <div>
                       <p className="font-medium text-sm text-gray-900">{item.configuration.productName}</p>

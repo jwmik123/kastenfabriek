@@ -6,6 +6,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Trash2, Heart, ShoppingCart, Pencil } from 'lucide-react'
 import type { CartItem, ClosetCartItem, ProductCartItem } from '@/lib/cart/types'
+import { summarizeCloset } from '@/lib/order/closet-spec'
 import { addItem } from '@/lib/cart/cart-store'
 import { getWishlist, removeWishlistItem } from '@/lib/wishlist/wishlist-store'
 import { syncLocalWishlistToServer } from '@/lib/wishlist/wishlist-sync'
@@ -169,6 +170,7 @@ function ClosetWishCard({
   onMoveToCart: () => void
 }) {
   const config = item.configuration
+  const headline = summarizeCloset(config)
   const price = item.priceSnapshot
 
   const configuredModules = config.modules.filter((m) => m.layoutId !== null)
@@ -194,10 +196,10 @@ function ClosetWishCard({
       <div className="flex-1 min-w-0 p-6">
         <div className="flex items-start justify-between mb-4">
           <div>
-            <h3 className="font-semibold text-gray-900 text-lg">Maatwerkkast</h3>
+            <h3 className="font-semibold text-gray-900 text-lg">{headline.typeLabel}</h3>
             <p className="text-sm text-gray-500 mt-0.5">
-              {config.widthCm} × {config.heightCm} × {config.depthCm} cm
-              {' · '}{config.moduleCount} {config.moduleCount === 1 ? 'module' : 'modules'}
+              {headline.totalWidthCm} × {headline.maxHeightCm} × {config.depthCm} cm
+              {' · '}{headline.moduleTotal} {headline.moduleTotal === 1 ? 'module' : 'modules'}
               {config.hasTopCabinet && ` · bovenkast ${config.topCabinetHeightCm} cm`}
             </p>
           </div>

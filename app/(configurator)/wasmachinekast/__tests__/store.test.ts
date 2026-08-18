@@ -357,9 +357,10 @@ describe('no diagonal fields', () => {
     expect(s.diagonalSide).toBeUndefined()
   })
 
-  it('store has no placementType field', () => {
-    const s = useWasmachinekastStore.getState() as unknown as Record<string, unknown>
-    expect(s.placementType).toBeUndefined()
+  // A wasmachinekast does have a placement — it is snapshotted onto the order
+  // and printed on the spec sheet — it just never has diagonal walls.
+  it('store defaults placementType to ingebouwd', () => {
+    expect(useWasmachinekastStore.getState().placementType).toBe('ingebouwd')
   })
 })
 

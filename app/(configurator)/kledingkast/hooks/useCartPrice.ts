@@ -145,23 +145,33 @@ export function useCartPrice() {
     const configSnapshot: ClosetConfigSnapshot = {
       id: itemId,
       capturedAt: new Date().toISOString(),
+      productType: 'kledingkast',
       widthCm: width,
       heightCm: height,
       depthCm: depth,
       moduleCount,
-      modules: modules.map((m) => ({
-        slotIndex: m.slotIndex,
-        layoutId: m.layoutId,
-        layoutName:
-          m.layoutId != null
-            ? (moduleLayouts.find((l) => l.layoutId === m.layoutId)?.name ?? null)
-            : null,
-        hasDoor: m.hasDoor,
-        span: m.span,
-        buitenkantMaterialId: m.buitenkantMaterialId,
-        binnenkantMaterialId: m.binnenkantMaterialId,
-        hasPowerHole: m.hasPowerHole ?? false,
-      })),
+      modules: modules.map((m) => {
+        const layout = m.layoutId != null
+          ? moduleLayouts.find((l) => l.layoutId === m.layoutId)
+          : undefined
+        return {
+          slotIndex: m.slotIndex,
+          layoutId: m.layoutId,
+          layoutName: layout?.name ?? null,
+          layoutContents: layout
+            ? {
+                shelves: layout.contents.shelves,
+                rods: layout.contents.rods,
+                drawers: layout.contents.drawers,
+              }
+            : undefined,
+          hasDoor: m.hasDoor,
+          span: m.span,
+          buitenkantMaterialId: m.buitenkantMaterialId,
+          binnenkantMaterialId: m.binnenkantMaterialId,
+          hasPowerHole: m.hasPowerHole ?? false,
+        }
+      }),
       buitenkantMaterialId,
       binnenkantMaterialId,
       doorHandleId,
@@ -192,6 +202,7 @@ export function useCartPrice() {
       doorCost,
       mechanismCost,
       ledCost,
+      powerHoleCost,
       deliveryCost,
       subtotal,
       installationTierName: installationTier?.name ?? null,

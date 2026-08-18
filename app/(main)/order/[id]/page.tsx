@@ -6,6 +6,7 @@ import { getOrderById, getOrderItems } from "@/lib/actions/order";
 import OrderLineItem, {
   type OrderLineSnapshot,
 } from "@/components/order/OrderLineItem";
+import { buildOrderSummary } from "@/lib/order/order-summary";
 import type {
   ClosetConfigSnapshot,
   PriceSnapshot,
@@ -74,6 +75,11 @@ export default async function OrderPage({
       priceSnapshot: snap.priceSnapshot,
       quantity: row.quantity,
     };
+  });
+
+  const summary = buildOrderSummary(lines, {
+    code: orderRecord.couponCode,
+    amountCents: orderRecord.discountAmount,
   });
 
   const shippingAddress = orderRecord.shippingAddressSnapshot as {
@@ -150,6 +156,39 @@ export default async function OrderPage({
             ))}
           </div>
         )}
+
+        {/* Order-level costs: one shipment, one montage, one coupon. */}
+        <div className="pt-4 border-t border-gray-100 text-sm text-gray-600 space-y-1">
+          <div className="flex justify-between">
+            <span>Producten</span>
+            <span>{fmt.format(summary.lineSubtotal)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Bezorging</span>
+            <span>{fmt.format(summary.delivery)}</span>
+          </div>
+          {summary.installationGross > 0 && (
+            <div className="flex justify-between">
+              <span>
+                Montage
+                {summary.installationTierName ? ` (${summary.installationTierName})` : ""}
+              </span>
+              <span>{fmt.format(summary.installationGross)}</span>
+            </div>
+          )}
+          {summary.freeMontageDiscount > 0 && (
+            <div className="flex justify-between text-green-700">
+              <span>Gratis montage</span>
+              <span>-{fmt.format(summary.freeMontageDiscount)}</span>
+            </div>
+          )}
+          {summary.discount > 0 && (
+            <div className="flex justify-between text-green-700">
+              <span>Korting{summary.discountCode ? ` (${summary.discountCode})` : ""}</span>
+              <span>-{fmt.format(summary.discount)}</span>
+            </div>
+          )}
+        </div>
 
         {/* Total */}
         <div className="pt-4 border-t border-gray-100">

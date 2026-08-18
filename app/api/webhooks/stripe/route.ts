@@ -3,15 +3,16 @@ import Stripe from "stripe";
 import { db } from "@/db";
 import { order, orderItem, cartItem } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { sendOrderConfirmationEmail } from "@/lib/email/resend";
+import { sendOrderEmails } from "@/lib/email/resend";
 import { incrementCouponUseCount } from "@/lib/actions/coupon";
+import { buildOrderSummary } from "@/lib/order/order-summary";
+import type { AddressSnapshot, OrderLine } from "@/lib/order/types";
 import type {
   ClosetConfigSnapshot,
   PriceSnapshot,
   ProductConfigSnapshot,
   ProductPriceSnapshot,
 } from "@/lib/cart/types";
-import type { EmailOrderItem } from "@/emails/OrderConfirmation";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2026-02-25.clover",
@@ -75,64 +76,58 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Send order confirmation email
+    // Send the confirmation to the customer and the notification to ourselves.
+    // Both carry the spec PDF. Mail failures must not fail the webhook — the
+    // payment already succeeded and Stripe would keep retrying the delivery.
     const customerEmail = session.customer_email;
-    if (customerEmail) {
+    if (customerEmail && fullOrder) {
       const orderItems = await db.query.orderItem.findMany({
         where: eq(orderItem.orderId, orderId),
       });
 
-      if (fullOrder) {
-        const shippingAddress = fullOrder.shippingAddressSnapshot as {
-          firstName: string;
-          lastName: string;
-          company?: string | null;
-          street: string;
-          houseNumber: string;
-          houseNumberAddition?: string | null;
-          postalCode: string;
-          city: string;
-          country: string;
-          phone?: string | null;
-        };
-
-        const items: EmailOrderItem[] = orderItems.map((item) => {
-          if (item.kind === "product") {
-            const snapshot = item.configurationSnapshot as {
-              configuration: ProductConfigSnapshot;
-              priceSnapshot: ProductPriceSnapshot;
-            };
-            return {
-              kind: "product",
-              configuration: snapshot.configuration,
-              priceSnapshot: snapshot.priceSnapshot,
-              quantity: item.quantity,
-            };
-          }
+      const items: OrderLine[] = orderItems.map((item) => {
+        if (item.kind === "product") {
           const snapshot = item.configurationSnapshot as {
-            configuration: ClosetConfigSnapshot;
-            priceSnapshot: PriceSnapshot;
-            screenshotClosedUrl?: string | null;
-            screenshotOpenUrl?: string | null;
+            configuration: ProductConfigSnapshot;
+            priceSnapshot: ProductPriceSnapshot;
           };
           return {
-            kind: "closet",
+            kind: "product",
             configuration: snapshot.configuration,
             priceSnapshot: snapshot.priceSnapshot,
             quantity: item.quantity,
-            screenshotClosedUrl: snapshot.screenshotClosedUrl ?? undefined,
-            screenshotOpenUrl: snapshot.screenshotOpenUrl ?? undefined,
           };
-        });
+        }
+        const snapshot = item.configurationSnapshot as {
+          configuration: ClosetConfigSnapshot;
+          priceSnapshot: PriceSnapshot;
+          screenshotClosedUrl?: string | null;
+          screenshotOpenUrl?: string | null;
+        };
+        return {
+          kind: "closet",
+          configuration: snapshot.configuration,
+          priceSnapshot: snapshot.priceSnapshot,
+          quantity: item.quantity,
+          screenshotClosedUrl: snapshot.screenshotClosedUrl ?? undefined,
+          screenshotOpenUrl: snapshot.screenshotOpenUrl ?? undefined,
+        };
+      });
 
-        await sendOrderConfirmationEmail({
+      try {
+        await sendOrderEmails({
           orderNumber: fullOrder.orderNumber,
           orderDate: fullOrder.paidAt ?? fullOrder.createdAt,
           customerEmail,
-          shippingAddress,
+          shippingAddress: fullOrder.shippingAddressSnapshot as AddressSnapshot,
           items,
-          totalAmountCents: fullOrder.totalAmount,
+          summary: buildOrderSummary(items, {
+            code: fullOrder.couponCode,
+            amountCents: fullOrder.discountAmount,
+          }),
         });
+      } catch (err) {
+        console.error(`Failed to send order emails for ${fullOrder.orderNumber}:`, err);
       }
     }
   }

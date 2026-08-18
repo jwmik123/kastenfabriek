@@ -11,6 +11,7 @@ import ConfiguratorMobileHeader from '../../_shared/components/ConfiguratorMobil
 import ConfiguratorTourProvider from '../../_shared/tour/ConfiguratorTourProvider'
 import { wasmachinekastTourSteps } from '../../_shared/tour/tourSteps'
 import { getWasmModuleLayouts } from '../moduleLayouts'
+import { buildWasmConfigSnapshot, resolveHandleName } from '../wasmSnapshot'
 import { useCartPrice } from '../hooks/useCartPrice'
 import StepWizard from './StepWizard'
 
@@ -69,75 +70,38 @@ export default function WasmachinekastConfigurator({ pricingData, editConfig, ed
       if (!state.pricingData) return
       if (autosaveTimer.current) clearTimeout(autosaveTimer.current)
       autosaveTimer.current = setTimeout(() => {
-        const config: ClosetConfigSnapshot = {
+        const drawerHandleId =
+          state.pricingData?.handles.find((h) => h.id === state.doorHandleId)
+            ?.fitsLowModule === false
+            ? 'none'
+            : state.doorHandleId
+        const config = buildWasmConfigSnapshot({
           id: crypto.randomUUID(),
-          capturedAt: new Date().toISOString(),
-          widthCm: state.width,
-          heightCm: state.height,
-          depthCm: state.depth,
+          width: state.width,
+          height: state.height,
+          depth: state.depth,
           moduleCount: state.moduleCount,
-          modules: state.modules.map((m) => ({
-            slotIndex: m.slotIndex,
-            layoutId: m.layoutId,
-            layoutName: state.moduleLayouts.find((l) => l.layoutId === m.layoutId)?.name ?? null,
-            hasDoor: m.hasDoor,
-            span: m.span,
-            buitenkantMaterialId: m.buitenkantMaterialId,
-            binnenkantMaterialId: m.binnenkantMaterialId,
-            hasPowerHole: m.hasPowerHole ?? false,
-        pushToOpen: m.pushToOpen ?? false,
-          })),
-          ...(state.layout === 'low-only' || state.lowSection
-            ? {
-                lowSection: {
-                  width: state.layout === 'low-only' ? state.width : state.lowSection!.width,
-                  height: 90,
-                  moduleCount:
-                    state.layout === 'low-only' ? state.moduleCount : state.lowSection!.moduleCount,
-                  modules: (state.layout === 'low-only' ? state.modules : state.lowSection!.modules).map((m) => ({
-                    slotIndex: m.slotIndex,
-                    layoutId: m.layoutId,
-                    layoutName:
-                      state.moduleLayouts.find((l) => l.layoutId === m.layoutId)?.name ?? null,
-                    hasDoor: m.hasDoor,
-                    span: m.span,
-                    buitenkantMaterialId: m.buitenkantMaterialId,
-                    binnenkantMaterialId: m.binnenkantMaterialId,
-                    hasPowerHole: m.hasPowerHole ?? false,
-        pushToOpen: m.pushToOpen ?? false,
-                  })),
-                  topPanelThicknessMm: state.topPanelThicknessMm,
-                  countertopMaterialId:
-                    state.countertopMaterialId ?? state.buitenkantMaterialId,
-                },
-              }
-            : {}),
+          modules: state.modules,
+          moduleLayouts: state.moduleLayouts,
+          layout: state.layout,
+          lowSection: state.lowSection,
+          washerModules: state.washerModules,
+          topPanelThicknessMm: state.topPanelThicknessMm,
+          countertopMaterialId: state.countertopMaterialId,
           buitenkantMaterialId: state.buitenkantMaterialId,
           binnenkantMaterialId: state.binnenkantMaterialId,
           doorHandleId: state.doorHandleId,
-          doorHandleName: state.doorHandleId === 'none'
-            ? 'Greeploos (push-to-open)'
-            : (state.pricingData?.handles.find((h) => h.id === state.doorHandleId)?.nameNl
-              ?? state.pricingData?.handles.find((h) => h.id === state.doorHandleId)?.name
-              ?? null),
-          diagonalSide: 'none',
-          leftDiagStartHeight: 0,
-          rightDiagStartHeight: 0,
-          leftDiagTopWidth: 0,
-          rightDiagTopWidth: 0,
-          placementType: state.placementType,
-          backDiagonal: false,
-          backDiagKinkHeight: 0,
-          backDiagFlatSectionDepth: 0,
+          doorHandleName: resolveHandleName(state.doorHandleId, state.pricingData?.handles),
+          drawerHandleId,
+          drawerHandleName: resolveHandleName(drawerHandleId, state.pricingData?.handles),
           doorHandleMaterial: state.doorHandleMaterial,
           doorsExtendToFloor: state.doorsExtendToFloor,
-          sidePanelThickness: state.sidePanelThickness,
           lightStripsEnabled: state.lightStripsEnabled,
-          washerModules: state.washerModules,
-          layout: state.layout,
+          sidePanelThickness: state.sidePanelThickness,
+          placementType: state.placementType,
           hasTopCabinet: state.needsTopCabinet(),
           topCabinetHeightCm: state.topCabinetHeight(),
-        }
+        })
         saveDraftConfig(config, 'wasmachinekast')
       }, 500)
     })

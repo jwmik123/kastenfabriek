@@ -6,6 +6,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Trash2, ShoppingBag, ArrowRight, Pencil } from 'lucide-react'
 import type { CartItem, ClosetCartItem, ProductCartItem } from '@/lib/cart/types'
+import { summarizeCloset } from '@/lib/order/closet-spec'
 import { getCart, removeItem, clearCart } from '@/lib/cart/cart-store'
 import { syncCartItems, removeDbCartItem } from '@/lib/actions/cart'
 import { getDeliveryWindow } from '@/lib/delivery-window'
@@ -128,7 +129,8 @@ export default function CartView({ isAuthenticated, initialDbItems }: CartViewPr
               key={item.id}
               item={item}
               onRemove={() => handleRemove(item)}
-              editHref={`/kledingkast?edit=${item.id}`}
+              // Edit reopens the configurator the item was built in.
+              editHref={`/${summarizeCloset(item.configuration).kind}?edit=${item.id}`}
             />
           )
         )}
@@ -186,7 +188,11 @@ export default function CartView({ isAuthenticated, initialDbItems }: CartViewPr
             </div>
           )}
           <Link
-            href={`/kledingkast${items.length === 1 && items[0].kind === 'closet' ? `?edit=${items[0].id}` : ''}`}
+            href={
+              items.length === 1 && items[0].kind === 'closet'
+                ? `/${summarizeCloset(items[0].configuration).kind}?edit=${items[0].id}`
+                : '/kledingkast'
+            }
             className="flex items-center justify-center w-full py-3 px-6 border border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors text-sm"
           >
             Verder configureren
@@ -199,6 +205,7 @@ export default function CartView({ isAuthenticated, initialDbItems }: CartViewPr
 
 function CartItemCard({ item, onRemove, editHref }: { item: ClosetCartItem; onRemove: () => void; editHref: string }) {
   const config = item.configuration
+  const headline = summarizeCloset(config)
   const price = item.priceSnapshot
   const [expanded, setExpanded] = useState(false)
 
@@ -233,10 +240,10 @@ function CartItemCard({ item, onRemove, editHref }: { item: ClosetCartItem; onRe
       <div className="flex-1 min-w-0 p-6">
       <div className="flex items-start justify-between mb-4">
         <div>
-          <h3 className="font-semibold text-gray-900 text-lg">Maatwerkkast</h3>
+          <h3 className="font-semibold text-gray-900 text-lg">{headline.typeLabel}</h3>
           <p className="text-sm text-gray-500 mt-0.5">
-            {config.widthCm} × {config.heightCm} × {config.depthCm} cm
-            {' · '}{config.moduleCount} {config.moduleCount === 1 ? 'module' : 'modules'}
+            {headline.totalWidthCm} × {headline.maxHeightCm} × {config.depthCm} cm
+            {' · '}{headline.moduleTotal} {headline.moduleTotal === 1 ? 'module' : 'modules'}
             {config.hasTopCabinet && ` · bovenkast ${config.topCabinetHeightCm} cm`}
           </p>
         </div>

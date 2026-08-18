@@ -8,6 +8,12 @@ import { getCurrentUser } from "./auth";
 import { revalidatePath } from "next/cache";
 import type { CartItem, ClosetCartItem, ProductCartItem } from "@/lib/cart/types";
 import { calcCartTotals, lineNetOfDelivery } from "@/lib/cart/totals";
+import {
+  CLOSET_TYPE_LABELS,
+  buildClosetSpec,
+  getMaterialName,
+  resolveClosetKind,
+} from "@/lib/order/closet-spec";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2026-02-25.clover",
@@ -95,12 +101,14 @@ export async function createCheckoutSession(
   // Create order items (dispatch by kind)
   for (const item of items) {
     const kind = item.kind;
+    const closetKind =
+      kind === "closet" ? resolveClosetKind(item.configuration) : null;
     const sanityId =
-      kind === "product"
-        ? item.configuration.sanityProductId
-        : "custom-closet";
+      kind === "product" ? item.configuration.sanityProductId : `custom-${closetKind}`;
     const productName =
-      kind === "product" ? item.configuration.productName : "Maatwerkkast";
+      kind === "product"
+        ? item.configuration.productName
+        : CLOSET_TYPE_LABELS[closetKind!];
     const lineNetEur = lineNetOfDelivery(item);
     const unitPriceCents = Math.round(lineNetEur * 100);
 
@@ -110,14 +118,12 @@ export async function createCheckoutSession(
       sanityProductId: sanityId,
       productName,
       kind,
+      // The coupon is an order-level concept and lives on the order row. It
+      // used to be stamped onto every closet line too, which made a
+      // multi-cabinet order show the discount once per cabinet.
       configurationSnapshot: {
         configuration: item.configuration,
-        priceSnapshot: {
-          ...item.priceSnapshot,
-          ...(coupon && kind === "closet"
-            ? { discountCode: coupon.couponCode, discountAmount: discountCents }
-            : {}),
-        },
+        priceSnapshot: item.priceSnapshot,
         screenshotClosedUrl: item.screenshotClosedUrl ?? null,
         screenshotOpenUrl: item.screenshotOpenUrl ?? null,
       },
@@ -146,12 +152,14 @@ export async function createCheckoutSession(
         };
       }
       const cfg = item.configuration;
+      const spec = buildClosetSpec(cfg, item.priceSnapshot);
+      const moduleTotal = spec.sections.reduce((sum, s) => sum + s.moduleCount, 0);
       return {
         price_data: {
           currency: "eur",
           product_data: {
-            name: `Maatwerkkast ${cfg.widthCm}×${cfg.heightCm}×${cfg.depthCm} cm`,
-            description: `${cfg.moduleCount} modules · ${cfg.buitenkantMaterialId}`,
+            name: spec.title,
+            description: `${moduleTotal} modules · ${getMaterialName(cfg.buitenkantMaterialId)}`,
           },
           unit_amount: unitAmount,
         },

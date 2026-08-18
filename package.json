@@ -12,6 +12,7 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "sanity:seed": "tsx scripts/seed-pricing-data.ts",
+    "preview:order-docs": "tsx scripts/preview-order-docs.tsx",
     "test": "vitest run",
     "test:watch": "vitest"
   },
@@ -22,6 +23,7 @@
     "@gsap/react": "^2.1.2",
     "@mux/mux-player-react": "^3.13.0",
     "@react-email/components": "^1.0.12",
+    "@react-pdf/renderer": "^4.6.1",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.5.0",
     "@react-three/postprocessing": "^3.0.4",

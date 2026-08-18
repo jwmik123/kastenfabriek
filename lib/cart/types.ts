@@ -6,6 +6,11 @@ export interface ModuleSlotSnapshot {
   slotIndex: number;
   layoutId: number | null;
   layoutName: string | null; // snapshot of name from Sanity
+  /**
+   * Snapshot of the layout's interior from Sanity, so order specs and the
+   * production drawing do not need the pricing data to describe the module.
+   */
+  layoutContents?: { shelves: number; rods: number; drawers: number };
   hasDoor: boolean;
   span: 1 | 2;
   buitenkantMaterialId?: string;
@@ -13,7 +18,16 @@ export interface ModuleSlotSnapshot {
   hasPowerHole?: boolean;
   /** This module opens by pushing — no handle, regardless of the cabinet's choice. */
   pushToOpen?: boolean;
+  /**
+   * cm. Set when the slot has a fixed width instead of sharing the leftover
+   * space (washer modules). Absent on entries from before it was snapshotted —
+   * fall back to the layout's `minSlotWidth`.
+   */
+  fixedWidth?: number;
 }
+
+/** The configurator a closet snapshot came out of. */
+export type ClosetProductType = 'kledingkast' | 'wasmachinekast';
 
 // Wasmachinekast sections (issue 075/076).
 // Kledingkast snapshots leave these undefined; wasmachinekast writes them.
@@ -34,6 +48,13 @@ export interface ClosetConfigSnapshot {
   id: string; // uuid generated at cart time
   capturedAt: string; // ISO timestamp
 
+  /**
+   * Which configurator produced this. Absent on entries written before the
+   * field existed — `resolveClosetKind` in lib/order/closet-spec.ts falls back
+   * to sniffing the wasmachinekast-only fields.
+   */
+  productType?: ClosetProductType;
+
   // Dimensions (cm)
   widthCm: number;
   heightCm: number;
@@ -51,6 +72,7 @@ export interface ClosetConfigSnapshot {
   // Wasmachinekast: separate handle for lage-kast drawer fronts
   // ('none' = push-to-open, the default).
   drawerHandleId?: string;
+  drawerHandleName?: string | null;
 
   // Diagonal walls
   diagonalSide: DiagonalSide;
@@ -133,6 +155,8 @@ export interface PriceSnapshot {
   doorCost: number; // all door panel costs (main + top cabinet)
   mechanismCost: number; // handles or push-to-open
   ledCost: number; // 0 unless LED enabled
+  /** Kabeldoorvoeren. Optional for back-compat; derivable as the subtotal residual. */
+  powerHoleCost?: number;
   deliveryCost: number; // €95 flat
   subtotal: number; // all of the above combined
 
@@ -151,8 +175,15 @@ export interface PriceSnapshot {
 
   total: number; // subtotal + installationCost
 
+  /**
+   * @deprecated Coupons are an order-level concept — read `order.couponCode` /
+   * `order.discountAmount` instead. Still present on snapshots written before
+   * that, where the full discount was stamped onto every closet line.
+   */
   discountCode?: string;
+  /** @deprecated see `discountCode` */
   discountAmount?: number; // cents
+  /** @deprecated see `discountCode` */
   discountType?: "percent" | "fixed";
 }
 
