@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- Light tile so the mark keeps contrast on both light and dark browser tabs -->
+  <rect width="32" height="32" rx="7" fill="#e2e9e3" />
+  <!-- Two door panels with a real gap between them: at 16px the gap is a full
+       pixel, which survives where a hairline seam would not. -->
+  <g fill="#34463a">
+    <rect x="5" y="5" width="10" height="22" rx="1.5" />
+    <rect x="17" y="5" width="10" height="22" rx="1.5" />
+  </g>
+  <!-- Handles, carved out of the inner edges -->
+  <g fill="#e2e9e3">
+    <rect x="12.5" y="14" width="1.5" height="4" rx="0.75" />
+    <rect x="18" y="14" width="1.5" height="4" rx="0.75" />
+  </g>
+</svg>
