@@ -93,6 +93,9 @@ export default function TestimonialSlider({
         type: "x",
         bounds: { minX: -maxDrag, maxX: 0 },
         inertia: true,
+        // Without this, Draggable pins z-index 1000 on the list and the cards
+        // start covering the fixed navigation.
+        zIndexBoost: false,
         maxDuration: 1,
         snap: (raw: number) => {
           const d = clamp(-raw);
