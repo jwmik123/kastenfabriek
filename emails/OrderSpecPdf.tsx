@@ -2,6 +2,7 @@ import {
   Circle,
   Document,
   G,
+  Image,
   Line,
   Page,
   Rect,
@@ -135,6 +136,17 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   drawingCaption: { fontSize: 7.5, color: MUTED, marginTop: 4 },
+  captureRow: { flexDirection: "row", gap: 8 },
+  captureCell: { flexGrow: 1, flexBasis: 0 },
+  capture: {
+    width: "100%",
+    maxHeight: 150,
+    objectFit: "contain",
+    borderWidth: 0.5,
+    borderColor: BRAND_LIGHT,
+    borderRadius: 3,
+  },
+  captureCaption: { fontSize: 7, color: MUTED, marginTop: 2, textAlign: "center" },
 });
 
 const STROKE: Record<LineWeight, { color: string; width: number }> = {
@@ -274,6 +286,36 @@ function ModuleTable({ section }: { section: SpecSection }) {
   );
 }
 
+/**
+ * The two 3D captures from the configurator, straight from the snapshot's
+ * data: URIs — the same look the customer configured, next to the technical
+ * drawing. Skipped entirely for old orders without captures.
+ */
+function CaptureRow({ closedUrl, openUrl }: { closedUrl?: string; openUrl?: string }) {
+  const shots = [
+    { url: closedUrl, caption: "Deuren dicht" },
+    { url: openUrl, caption: "Deuren open" },
+  ].filter((sh): sh is { url: string; caption: string } =>
+    Boolean(sh.url && (sh.url.startsWith("data:image/") || sh.url.startsWith("https://"))),
+  );
+  if (shots.length === 0) return null;
+
+  return (
+    <>
+      <Text style={styles.sectionHeading}>3D-weergave</Text>
+      <View style={styles.captureRow}>
+        {shots.map((sh) => (
+          <View key={sh.caption} style={styles.captureCell}>
+            {/* eslint-disable-next-line jsx-a11y/alt-text -- @react-pdf Image, geen HTML img */}
+            <Image src={sh.url} style={styles.capture} />
+            <Text style={styles.captureCaption}>{sh.caption}</Text>
+          </View>
+        ))}
+      </View>
+    </>
+  );
+}
+
 function ClosetBlock({
   line,
   index,
@@ -298,11 +340,16 @@ function ClosetBlock({
         Aantal: {line.quantity} · Diepte: {spec.depthCm} cm
       </Text>
 
+      <CaptureRow closedUrl={line.screenshotClosedUrl} openUrl={line.screenshotOpenUrl} />
+
       <Text style={styles.sectionHeading}>Vooraanzicht (zonder deuren)</Text>
       <Wireframe drawing={drawing} />
       <Text style={styles.drawingCaption}>
         Maten in cm. Buitenmaten en modulebreedtes zijn exact
-        {drawing.hasSchematicInteriors ? "; de indeling binnen de modules is schematisch" : ""}.
+        {drawing.hasSchematicInteriors
+          ? "; de indeling van een of meer modules is schematisch"
+          : "; de indeling volgt de 3D-configuratie"}
+        .
       </Text>
 
       <Text style={styles.sectionHeading}>Specificaties</Text>

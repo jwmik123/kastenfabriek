@@ -198,3 +198,7 @@ const WASM_HARDCODED_CONFIGS: Record<number, ModuleLayoutConfig> = {
 export function getWasmLayoutConfig(layoutId: number): ModuleLayoutConfig | undefined {
   return WASM_HARDCODED_CONFIGS[layoutId] ?? getLayoutById(layoutId)
 }
+
+/** Every wasm-specific config, for tooling that walks all GLB references. */
+export const WASM_MODULE_LAYOUT_CONFIGS: ModuleLayoutConfig[] =
+  Object.values(WASM_HARDCODED_CONFIGS)

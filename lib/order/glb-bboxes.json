@@ -1,0 +1,46 @@
+{
+  "/objects/mainmodules/DeskModule.glb": {
+    "minY": 0.136,
+    "maxY": 0.872
+  },
+  "/objects/mainmodules/DrawerModule.glb": {
+    "minY": 0.136,
+    "maxY": 0.872
+  },
+  "/objects/mainmodules/RodModule.glb": {
+    "minY": 0.937,
+    "maxY": 1.068
+  },
+  "/objects/mainmodules/SplitModule.glb": {
+    "minY": 0.136,
+    "maxY": 1.608
+  },
+  "/objects/washermodules/12_WMPlankLow.glb": {
+    "minY": 0.12,
+    "maxY": 0.89
+  },
+  "/objects/washermodules/13_WMSingleLow.glb": {
+    "minY": 0.12,
+    "maxY": 0.891
+  },
+  "/objects/washermodules/14_WMDoubleLow.glb": {
+    "minY": 0.12,
+    "maxY": 0.891
+  },
+  "/objects/washermodules/ModuleWasherDouble.glb": {
+    "minY": 0.12,
+    "maxY": 1.765
+  },
+  "/objects/washermodules/ModuleWasherPlank.glb": {
+    "minY": 0.12,
+    "maxY": 1.765
+  },
+  "/objects/washermodules/ModuleWasherSingle.glb": {
+    "minY": 0.118,
+    "maxY": 1.765
+  },
+  "/objects/washermodules/WMWasherOnlyLow.glb": {
+    "minY": 0.8718,
+    "maxY": 1.7352
+  }
+}

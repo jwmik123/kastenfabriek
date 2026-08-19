@@ -15,7 +15,8 @@
     "preview:order-docs": "tsx scripts/preview-order-docs.tsx",
     "test": "vitest run",
     "test:watch": "vitest",
-    "sanity:seed-hotspots": "tsx scripts/seed-hotspot-section.ts"
+    "sanity:seed-hotspots": "tsx scripts/seed-hotspot-section.ts",
+    "generate:glb-bboxes": "tsx scripts/generate-glb-bboxes.ts"
   },
   "dependencies": {
     "@gltf-transform/core": "^4.3.0",

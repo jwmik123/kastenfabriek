@@ -4,6 +4,15 @@ import {
   ONDERSTEL_HEIGHT,
   WALL,
 } from "@/app/(configurator)/kledingkast/scene/closetConstants";
+import {
+  computeShelfPositions,
+  resolveElementPositions,
+  SHELF_THICKNESS,
+  type ElementBbox,
+  type ModuleLayoutConfig,
+} from "@/app/(configurator)/kledingkast/scene/moduleLayouts";
+import { getWasmLayoutConfig } from "@/app/(configurator)/wasmachinekast/moduleLayoutConfigs";
+import glbBboxes from "./glb-bboxes.json";
 import type { ClosetConfigSnapshot } from "@/lib/cart/types";
 import { resolveSections, type SpecModule, type SpecSection } from "./closet-spec";
 
@@ -15,10 +24,13 @@ import { resolveSections, type SpecModule, type SpecSection } from "./closet-spe
  * origin), including the margins the dimension lines live in, so a renderer
  * only has to scale the whole thing into the space it has.
  *
- * The carcass, the section split and every width are exact — they come from the
- * same numbers the 3D scene uses. Interiors (shelves, rods, drawers) are drawn
- * schematically from the module's Sanity contents: the right count in the right
- * band, not the exact millimetre positions.
+ * Carcass, section split and every width are exact — the same numbers the 3D
+ * scene uses. Interiors are exact too: element and shelf positions come from
+ * `resolveElementPositions` / `computeShelfPositions`, the functions the scene
+ * itself places drawers, rods and shelves with, fed by GLB bounding boxes that
+ * `npm run generate:glb-bboxes` measured from the same models the scene loads.
+ * Only a module whose layout is unknown here (a new Sanity layout without a
+ * config) falls back to a schematic sketch of its contents.
  */
 
 // Scene constants are in metres; the drawing works in centimetres.
@@ -244,9 +256,19 @@ export function buildWireframe(
           const frontH = Math.min(openH, WASHER_FRONT_HEIGHT_CM);
           drawWasher(circles, lines, openLeft, openW, openBottom, frontH, dy);
           if (frontH < openH - 0.01) hLine(openLeft, openRight, openBottom + frontH, "interior");
-        } else if (m.contents) {
-          const drew = drawInterior(hLine, m, openLeft, openRight, openBottom, openTop);
-          hasSchematicInteriors = hasSchematicInteriors || drew;
+        } else {
+          const exact = drawInteriorFromConfig(
+            { rect, hLine },
+            m,
+            openLeft,
+            openRight,
+            openBottom,
+            openTop,
+          );
+          if (!exact && m.contents) {
+            const drew = drawInterior(hLine, m, openLeft, openRight, openBottom, openTop);
+            hasSchematicInteriors = hasSchematicInteriors || drew;
+          }
         }
 
         // Top cabinet compartments line up with the modules below them.
@@ -328,6 +350,96 @@ function drawInterior(
   const rodSpan = top - topShelfY;
   for (let r = 1; r <= rods; r++) {
     hLine(left + 2, right - 2, top - (rodSpan / (rods + 1)) * r, "interior");
+  }
+
+  return true;
+}
+
+type DrawOps = {
+  rect: (x: number, yBottom: number, w: number, h: number, weight: LineWeight) => void;
+  hLine: (x1: number, x2: number, y: number, weight: LineWeight) => void;
+};
+
+const BBOXES = glbBboxes as Record<string, ElementBbox>;
+
+/**
+ * Draw a module interior exactly as the 3D scene builds it.
+ *
+ * Same functions, same inputs: `resolveElementPositions` places the drawer,
+ * split and desk boxes (using the measured GLB bounds), `computeShelfPositions`
+ * lays the shelves out in the fill zones around them, and a rod is drawn at the
+ * height its GLB hangs at. All positions are in module space (metres above the
+ * module floor), converted here to the drawing's centimetres.
+ *
+ * Returns false when the layout is unknown or a GLB was never measured — the
+ * caller then falls back to the schematic sketch.
+ */
+function drawInteriorFromConfig(
+  ops: DrawOps,
+  m: SpecModule,
+  left: number,
+  right: number,
+  bottom: number,
+  top: number,
+): boolean {
+  if (m.layoutId == null) return false;
+  const config: ModuleLayoutConfig | undefined = getWasmLayoutConfig(m.layoutId);
+  if (!config) return false;
+
+  const bboxes = config.elements.map((el) => BBOXES[el.glbPath]);
+  if (bboxes.some((b) => !b)) return false;
+
+  const width = right - left;
+  const roofY = (top - bottom) / 100; // module space, metres
+
+  // Lage-kast fronts: the GLB is a run of kitchen fronts covering the opening.
+  if (config.lowFronts) {
+    const count = config.lowFrontCount ?? 1;
+    for (let i = 1; i < count; i++) {
+      ops.hLine(left, right, bottom + ((top - bottom) / count) * i, "interior");
+    }
+    return true;
+  }
+
+  const { elementYs, fillAbove, fillBelow } = resolveElementPositions(config, roofY, bboxes);
+
+  // A line only makes sense inside the opening; a squat module can put an
+  // element's top past its roof, so everything is clipped to [bottom, top].
+  const inBand = (y: number) => y > bottom + 0.05 && y < top - 0.05;
+
+  config.elements.forEach((el, i) => {
+    const b = bboxes[i];
+    const hM = b.maxY - b.minY;
+    const yCm = bottom + elementYs[i] * 100;
+    const isRod = el.glbPath.includes("Rod");
+    if (isRod) {
+      // A rod reads as a bar, not a box: one line at the height it hangs.
+      const rodY = yCm + (hM / 2) * 100;
+      if (inBand(rodY)) ops.hLine(left + width * 0.06, right - width * 0.06, rodY, "interior");
+      return;
+    }
+    const yTop = Math.min(yCm + hM * 100, top);
+    if (yTop - yCm <= 0) return;
+    ops.rect(left, yCm, width, yTop - yCm, "interior");
+    // Drawer stacks get their fronts hinted, evenly over the box.
+    const drawers = m.contents?.drawers ?? 0;
+    if (drawers > 1 && el.glbPath.includes("Drawer")) {
+      for (let d = 1; d < drawers; d++) {
+        const y = yCm + ((yTop - yCm) / drawers) * d;
+        if (inBand(y)) ops.hLine(left, right, y, "interior");
+      }
+    }
+  });
+
+  // Shelves in the zones around the elements — top surfaces, like the scene.
+  for (const zone of [
+    { config: config.fillZone.above, span: fillAbove },
+    { config: config.fillZone.below, span: fillBelow },
+  ]) {
+    for (const shelfTop of computeShelfPositions(zone.config, zone.span.start, zone.span.end, false)) {
+      const y = bottom + (shelfTop - SHELF_THICKNESS) * 100;
+      if (inBand(y)) ops.hLine(left, right, y, "interior");
+    }
   }
 
   return true;

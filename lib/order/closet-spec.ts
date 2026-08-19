@@ -44,6 +44,8 @@ export interface SpecModule {
   /** Which section the module sits in — a lage kast has fronts, not doors. */
   section: "high" | "low";
   slotIndex: number;
+  /** Layout id from Sanity, for looking up the scene's geometry config. */
+  layoutId: number | null;
   /** 1-based position as shown to the customer. */
   position: number;
   layoutName: string | null;
@@ -90,6 +92,7 @@ function toSpecModule(
   return {
     section,
     slotIndex: m.slotIndex,
+    layoutId: m.layoutId,
     position: m.slotIndex + 1,
     layoutName: m.layoutName,
     contents: m.layoutContents ?? null,

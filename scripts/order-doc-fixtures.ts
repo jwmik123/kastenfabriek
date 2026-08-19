@@ -57,8 +57,8 @@ export const kledingkast: ClosetConfigSnapshot = {
   topCabinetHeightCm: 64.5,
   modules: [
     mod(0, { layoutContents: { shelves: 4, rods: 0, drawers: 0 }, hasPowerHole: true }),
-    mod(1, { layoutName: 'Lades + planken', layoutContents: { shelves: 2, rods: 0, drawers: 3 } }),
-    mod(2, { layoutName: 'Dubbele roede', layoutContents: { shelves: 0, rods: 2, drawers: 0 } }),
+    mod(1, { layoutId: 2, layoutName: 'Lades + planken', layoutContents: { shelves: 2, rods: 0, drawers: 3 } }),
+    mod(2, { layoutId: 3, layoutName: 'Dubbele roede', layoutContents: { shelves: 0, rods: 2, drawers: 0 } }),
     mod(3, {
       layoutName: 'Open vak',
       hasDoor: false,
@@ -80,7 +80,7 @@ export const wasmachinekast: ClosetConfigSnapshot = {
   washerModules: [{ slotIndex: 0, layoutId: 11, section: 'low' }],
   modules: [
     mod(0, { layoutName: 'Planken', layoutContents: { shelves: 4, rods: 0, drawers: 0 } }),
-    mod(1, { layoutName: 'Roede + plank', layoutContents: { shelves: 1, rods: 1, drawers: 0 } }),
+    mod(1, { layoutId: 6, layoutName: 'Roede + plank', layoutContents: { shelves: 1, rods: 1, drawers: 0 } }),
   ],
   lowSection: {
     width: 120,
@@ -192,9 +192,9 @@ export const wideWasmachinekast: ClosetConfigSnapshot = {
   modules: [
     mod(0, { layoutName: '1 grote lade', fixedWidth: 68.6, layoutContents: { shelves: 2, rods: 0, drawers: 0 } }),
     mod(1, { layoutName: '1 grote lade', fixedWidth: 68.6, layoutContents: { shelves: 2, rods: 0, drawers: 0 } }),
-    mod(2, { layoutName: 'Desk', layoutContents: { shelves: 1, rods: 0, drawers: 0 } }),
-    mod(3, { layoutName: 'Drawers + shelves', layoutContents: { shelves: 3, rods: 0, drawers: 1 } }),
-    mod(4, { layoutName: 'Double Rod', hasDoor: false, layoutContents: { shelves: 0, rods: 2, drawers: 0 } }),
+    mod(2, { layoutId: 8, layoutName: 'Desk', layoutContents: { shelves: 1, rods: 0, drawers: 0 } }),
+    mod(3, { layoutId: 2, layoutName: 'Drawers + shelves', layoutContents: { shelves: 3, rods: 0, drawers: 1 } }),
+    mod(4, { layoutId: 3, layoutName: 'Double Rod', hasDoor: false, layoutContents: { shelves: 0, rods: 2, drawers: 0 } }),
   ],
   lowSection: {
     width: 261,
@@ -203,10 +203,10 @@ export const wideWasmachinekast: ClosetConfigSnapshot = {
     topPanelThicknessMm: 36,
     countertopMaterialId: 'zwart',
     modules: [
-      mod(0, { layoutName: 'Lage kast — enkel vak', layoutContents: { shelves: 0, rods: 0, drawers: 0 } }),
-      mod(1, { layoutName: 'Lage kast — plank', layoutContents: { shelves: 1, rods: 0, drawers: 0 } }),
-      mod(2, { layoutName: 'Drawers + shelves', layoutContents: { shelves: 3, rods: 0, drawers: 1 } }),
-      mod(3, { layoutName: 'Wasmachine (lage kast)', fixedWidth: 68.6, layoutContents: { shelves: 0, rods: 0, drawers: 0 } }),
+      mod(0, { layoutId: 21, layoutName: 'Lage kast — enkel vak', layoutContents: { shelves: 0, rods: 0, drawers: 0 } }),
+      mod(1, { layoutId: 20, layoutName: 'Lage kast — plank', layoutContents: { shelves: 1, rods: 0, drawers: 0 } }),
+      mod(2, { layoutId: 22, layoutName: 'Drawers + shelves', layoutContents: { shelves: 3, rods: 0, drawers: 1 } }),
+      mod(3, { layoutId: 23, layoutName: 'Wasmachine (lage kast)', fixedWidth: 68.6, layoutContents: { shelves: 0, rods: 0, drawers: 0 } }),
       mod(4, { layoutName: 'Full shelves', layoutContents: { shelves: 5, rods: 0, drawers: 0 } }),
     ],
   },

@@ -137,13 +137,42 @@ describe("buildWireframe", () => {
     expect(widths[0]).toBe("192.8");
   });
 
-  it("reports whether any interior was drawn schematically", () => {
-    expect(buildWireframe(base).hasSchematicInteriors).toBe(false);
-    const withContents = {
+  it("draws a known layout's interior exactly, from the scene's own config", () => {
+    // Layout 1 (Full shelves): shelf tops on the 0.368 m grid — real positions,
+    // not a schematic spread, so the drawing is marked exact.
+    const drawing = buildWireframe(base);
+    expect(drawing.hasSchematicInteriors).toBe(false);
+    const interior = drawing.lines.filter((l) => l.weight === "interior");
+    expect(interior.length).toBeGreaterThan(0);
+  });
+
+  it("falls back to a schematic sketch only for a layout without a config", () => {
+    const unknownLayout = {
       ...base,
-      modules: [mod(0, { layoutContents: { shelves: 3, rods: 0, drawers: 0 } }), mod(1)],
+      modules: [
+        mod(0, { layoutId: 999, layoutContents: { shelves: 3, rods: 0, drawers: 0 } }),
+        mod(1, { layoutId: 999, layoutContents: null as never }),
+      ],
     };
-    expect(buildWireframe(withContents).hasSchematicInteriors).toBe(true);
+    expect(buildWireframe(unknownLayout).hasSchematicInteriors).toBe(true);
+  });
+
+  it("places layout 1's shelves on the scene's 0.368 m grid", () => {
+    // 220 cm cabinet: interior 220 − 11.8 − 1.8 = 206.4 cm. Shelf tops at
+    // 36.8/73.6/110.4/147.2 cm above the module floor; drawn at top − 1.8
+    // (shelf thickness), measured from cabinet floor + 11.8.
+    const drawing = buildWireframe({ ...base, modules: [mod(0)], moduleCount: 1 });
+    const interiorYs = [
+      ...new Set(
+        drawing.lines.filter((l) => l.weight === "interior").map((l) => l.y1),
+      ),
+    ].sort((a, b) => a - b);
+    // dy(y) = marginTop + totalHeight − y, so convert back to cabinet space.
+    const marginTop = Math.min(...drawing.lines.map((l) => Math.min(l.y1, l.y2)));
+    const cabinetYs = interiorYs.map((y) => Math.round((marginTop + 220 - y) * 10) / 10);
+    for (const expected of [11.8 + 36.8 - 1.8, 11.8 + 73.6 - 1.8, 11.8 + 110.4 - 1.8]) {
+      expect(cabinetYs).toContain(Math.round(expected * 10) / 10);
+    }
   });
 
   it("keeps every drawn coordinate inside the view box", () => {
