@@ -477,60 +477,129 @@ describe('addWasherModule / removeWasherModule / clearWasherModules', () => {
   })
 })
 
-// ─── randomFill — washer slots preserved ─────────────────────────────────────
+// ─── randomFill — sections and washers ───────────────────────────────────────
 
-describe('randomFill — washer slots preserved', () => {
+describe('randomFill — sections and washers', () => {
   beforeEach(resetStore)
 
-  it('randomFill never changes layoutId of a washer slot', () => {
+  const slots = (n: number) =>
+    Array.from({ length: n }, (_, i) => ({
+      slotIndex: i,
+      layoutId: null,
+      hasDoor: true,
+      span: 1 as const,
+    }))
+
+  /**
+   * Dual cabinet: high section top-level, low section alongside it. 130 cm over
+   * two slots is the width where a 65 cm washer plus one variable slot at the
+   * 65 cm maximum still fits — anything wider leaves a slot over maxWidth and
+   * no washer can be placed at all.
+   */
+  function dualCabinet() {
     useWasmachinekastStore.setState({
-      moduleCount: 3,
-      washerModules: [{ slotIndex: 1, layoutId: 99, section: 'high' }],
-      modules: [
-        { slotIndex: 0, layoutId: null, hasDoor: true, span: 1 },
-        { slotIndex: 1, layoutId: 99, hasDoor: true, span: 1 },
-        { slotIndex: 2, layoutId: null, hasDoor: true, span: 1 },
-      ],
+      layout: 'low-left',
+      width: 130,
+      moduleCount: 2,
+      modules: slots(2),
+      lowSection: {
+        width: 130,
+        height: 90,
+        moduleCount: 2,
+        modules: slots(2),
+        topPanelThicknessMm: 18,
+        countertopMaterialId: 'premium-wit',
+      },
+      washerModules: [],
       moduleLayouts: basePricingData.modules,
+      constraints: baseConstraints,
     })
-    for (let i = 0; i < 20; i++) {
+  }
+
+  it('fills both sections of a dual layout, not just the high one', () => {
+    dualCabinet()
+    useWasmachinekastStore.getState().randomFill()
+    const s = useWasmachinekastStore.getState()
+    expect(s.modules.length).toBeGreaterThan(0)
+    expect(s.modules.every((m) => m.layoutId !== null)).toBe(true)
+    expect(s.lowSection!.modules.length).toBeGreaterThan(0)
+    expect(s.lowSection!.modules.every((m) => m.layoutId !== null)).toBe(true)
+  })
+
+  it('never places more than two washer modules', () => {
+    for (let i = 0; i < 30; i++) {
+      dualCabinet()
       useWasmachinekastStore.getState().randomFill()
-      expect(useWasmachinekastStore.getState().modules[1].layoutId).toBe(99)
+      expect(useWasmachinekastStore.getState().washerModules.length).toBeLessThanOrEqual(2)
     }
   })
 
-  it('randomFill still fills non-washer slots', () => {
+  it('keeps washers inside one section — never both', () => {
+    for (let i = 0; i < 30; i++) {
+      dualCabinet()
+      useWasmachinekastStore.getState().randomFill()
+      const sections = new Set(
+        useWasmachinekastStore.getState().washerModules.map((w) => w.section),
+      )
+      expect(sections.size).toBeLessThanOrEqual(1)
+    }
+  })
+
+  it('places at least one washer when the cabinet has room', () => {
+    for (let i = 0; i < 20; i++) {
+      dualCabinet()
+      useWasmachinekastStore.getState().randomFill()
+      expect(useWasmachinekastStore.getState().washerModules.length).toBeGreaterThan(0)
+    }
+  })
+
+  it('gives every washer slot the washer layout it was placed with', () => {
+    for (let i = 0; i < 20; i++) {
+      dualCabinet()
+      useWasmachinekastStore.getState().randomFill()
+      const s = useWasmachinekastStore.getState()
+      for (const w of s.washerModules) {
+        const modules = w.section === 'high' ? s.modules : s.lowSection!.modules
+        expect(modules[w.slotIndex].layoutId).toBe(w.layoutId)
+      }
+    }
+  })
+
+  it('re-draws washers instead of preserving the previous ones', () => {
+    // A washer parked in a slot that randomFill can also fill: after the draw
+    // the store must hold only washers this run placed, never the stale entry.
+    dualCabinet()
     useWasmachinekastStore.setState({
-      moduleCount: 2,
-      washerModules: [{ slotIndex: 0, layoutId: 99, section: 'high' }],
+      washerModules: [{ slotIndex: 1, layoutId: 11, section: 'high' }],
       modules: [
-        { slotIndex: 0, layoutId: 99, hasDoor: true, span: 1 },
-        { slotIndex: 1, layoutId: null, hasDoor: true, span: 1 },
+        { slotIndex: 0, layoutId: null, hasDoor: true, span: 1 },
+        { slotIndex: 1, layoutId: 11, hasDoor: true, span: 1, fixedWidth: 65 },
       ],
+    })
+    let moved = false
+    for (let i = 0; i < 20 && !moved; i++) {
+      useWasmachinekastStore.getState().randomFill()
+      const washers = useWasmachinekastStore.getState().washerModules
+      moved = washers.every((w) => w.section !== 'high' || w.slotIndex !== 1)
+    }
+    expect(moved).toBe(true)
+  })
+
+  it('fills the single section of a high-only cabinet', () => {
+    useWasmachinekastStore.setState({
+      layout: 'high-only',
+      width: 130,
+      moduleCount: 2,
+      modules: slots(2),
+      lowSection: null,
+      washerModules: [],
       moduleLayouts: basePricingData.modules,
+      constraints: baseConstraints,
     })
     useWasmachinekastStore.getState().randomFill()
-    expect(useWasmachinekastStore.getState().modules[1].layoutId).not.toBeNull()
-  })
-
-  it('randomFill preserves multiple washer slots', () => {
-    useWasmachinekastStore.setState({
-      moduleCount: 4,
-      washerModules: [{ slotIndex: 1, layoutId: 11, section: 'high' }, { slotIndex: 2, layoutId: 13, section: 'high' }],
-      modules: [
-        { slotIndex: 0, layoutId: null, hasDoor: true, span: 1 },
-        { slotIndex: 1, layoutId: 11, hasDoor: true, span: 1 },
-        { slotIndex: 2, layoutId: 13, hasDoor: true, span: 1 },
-        { slotIndex: 3, layoutId: null, hasDoor: true, span: 1 },
-      ],
-      moduleLayouts: basePricingData.modules,
-    })
-    for (let i = 0; i < 20; i++) {
-      useWasmachinekastStore.getState().randomFill()
-      const modules = useWasmachinekastStore.getState().modules
-      expect(modules[1].layoutId).toBe(11)
-      expect(modules[2].layoutId).toBe(13)
-    }
+    const s = useWasmachinekastStore.getState()
+    expect(s.modules.every((m) => m.layoutId !== null)).toBe(true)
+    expect(s.washerModules.every((w) => w.section === 'high')).toBe(true)
   })
 })
 

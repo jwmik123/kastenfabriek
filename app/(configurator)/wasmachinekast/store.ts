@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import type { FullPricingData } from '@/types/configurator-pricing'
 import type { BaseConfiguratorState, BaseModuleSlot } from '../_shared/store/types'
 import type { ClosetConfigSnapshot } from '@/lib/cart/types'
-import { WASHER_LAYOUTS } from './moduleLayouts'
+import { WASHER_LAYOUT_IDS } from './moduleLayouts'
 import { filterForSection } from './sections/wasmModuleLayoutFilter'
 import type { PopoverClickPoint } from '../_shared/components/popoverPlacement'
 import { validateHandleMaterial } from '../_shared/components/validateHandleMaterial'
@@ -165,6 +165,83 @@ function resizeModules(existing: BaseModuleSlot[], count: number): BaseModuleSlo
     hasPowerHole: m.hasPowerHole ?? false,
     span: (m.span === 2 && m.slotIndex + 1 >= count ? 1 : m.span) as 1 | 2,
   }))
+}
+
+/** Sections the current layout actually has, in cabinet order. */
+function sectionsPresent(s: WasmState): ('high' | 'low')[] {
+  const out: ('high' | 'low')[] = []
+  if (s.layout !== 'low-only') out.push('high')
+  if (s.layout === 'low-only' || s.lowSection !== null) out.push('low')
+  return out
+}
+
+function sectionModules(s: WasmState, section: 'high' | 'low'): BaseModuleSlot[] {
+  return section === topLevelSection(s.layout) ? s.modules : s.lowSection?.modules ?? []
+}
+
+function pickRandom<T>(items: T[]): T | undefined {
+  return items[Math.floor(Math.random() * items.length)]
+}
+
+/** Most washer modules randomFill puts in a cabinet. */
+const RANDOM_WASHER_MAX = 2
+
+/**
+ * Drop up to `target` washers into random free slots of one section.
+ *
+ * Reads the store fresh every round: a washer is fixed-width, so placing one
+ * can shrink the section (addWasherModule drops trailing modules), which
+ * changes both the slot count and which slots are still free. Slots that fail
+ * `canPlaceWasher` are remembered so the loop cannot spin on them.
+ *
+ * Returns how many landed.
+ */
+function placeRandomWashers(
+  get: () => WasmState,
+  section: 'high' | 'low',
+  target: number,
+): number {
+  const pool = filterForSection(
+    get().moduleLayouts.filter((l) => WASHER_LAYOUT_IDS.has(l.layoutId)),
+    section,
+  )
+  if (pool.length === 0) return 0
+
+  const tried = new Set<number>()
+  let placed = 0
+  while (placed < target) {
+    const s = get()
+    const taken = new Set(
+      s.washerModules.filter((w) => w.section === section).map((w) => w.slotIndex),
+    )
+    const free = sectionModules(s, section)
+      .map((_, i) => i)
+      .filter((i) => !tried.has(i) && !taken.has(i))
+    if (free.length === 0) break
+
+    const slot = free[Math.floor(Math.random() * free.length)]
+    tried.add(slot)
+    const layoutId = pickRandom(pool)!.layoutId
+    if (!s.canPlaceWasher(slot, layoutId, section)) continue
+    get().addWasherModule(slot, layoutId, section)
+    placed += 1
+  }
+  return placed
+}
+
+/** Random non-washer layout for every slot of a section; washer slots kept. */
+function fillSectionModules(s: WasmState, section: 'high' | 'low'): BaseModuleSlot[] {
+  const washerSlots = new Set(
+    s.washerModules.filter((w) => w.section === section).map((w) => w.slotIndex),
+  )
+  const pool = filterForSection(
+    s.moduleLayouts.filter((l) => !WASHER_LAYOUT_IDS.has(l.layoutId)),
+    section,
+  )
+  return sectionModules(s, section).map((m, i) => {
+    if (washerSlots.has(i)) return { ...m, slotIndex: i }
+    return { ...m, slotIndex: i, layoutId: pickRandom(pool)?.layoutId ?? null }
+  })
 }
 
 interface WasmState extends BaseConfiguratorState {
@@ -756,22 +833,28 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
   setHoveredSlot: (slot) => set({ hoveredSlot: slot }),
 
   randomFill: () => {
-    const { modules, moduleLayouts, washerModules, layout } = get()
-    const section = topLevelSection(layout)
-    const washerSlots = new Set(
-      washerModules.filter((w) => w.section === section).map((w) => w.slotIndex),
-    )
-    const washerLayoutIds = new Set(WASHER_LAYOUTS.map((l) => l.layoutId))
-    const pool = filterForSection(
-      moduleLayouts.filter((l) => !washerLayoutIds.has(l.layoutId)),
-      section,
-    )
-    const newModules: BaseModuleSlot[] = modules.map((m, i) => {
-      if (washerSlots.has(i)) return m
-      const layoutId = pool[Math.floor(Math.random() * pool.length)]?.layoutId ?? null
-      return { ...m, slotIndex: i, layoutId }
-    })
-    set({ modules: newModules })
+    // Washers go in first: one is fixed-width and may force the section to drop
+    // trailing modules, so the slots left to fill are only known afterwards.
+    get().clearWasherModules()
+
+    const sections = sectionsPresent(get())
+    // Washers stay in a single section — a cabinet never shows them in both.
+    // The other section is only tried when the first one has no room at all.
+    const order = Math.random() < 0.5 ? sections : [...sections].reverse()
+    const target = 1 + Math.floor(Math.random() * RANDOM_WASHER_MAX)
+    for (const section of order) {
+      if (placeRandomWashers(get, section, target) > 0) break
+    }
+
+    const s = get()
+    const patch: { modules?: BaseModuleSlot[]; lowSection?: Section } = {}
+    for (const section of sectionsPresent(s)) {
+      const filled = fillSectionModules(s, section)
+      if (filled.length === 0) continue
+      if (section === topLevelSection(s.layout)) patch.modules = filled
+      else if (s.lowSection) patch.lowSection = { ...s.lowSection, modules: filled }
+    }
+    set(patch)
   },
 
   restoreConfig: (config: ClosetConfigSnapshot) => {
