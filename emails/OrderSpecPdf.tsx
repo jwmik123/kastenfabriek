@@ -4,6 +4,7 @@ import {
   G,
   Line,
   Page,
+  Rect,
   StyleSheet,
   Svg,
   Text,
@@ -169,11 +170,22 @@ function formatDate(date: Date): string {
 // Drawing
 // ---------------------------------------------------------------------------
 
+const fitScale = (d: WireframeDrawing) =>
+  Math.min(PAGE_CONTENT_WIDTH / d.viewWidth, DRAWING_MAX_HEIGHT / d.viewHeight);
+
+/**
+ * Build the drawing twice: once to learn the scale it fits at, then again with
+ * the label height that scale implies. Label spacing is fixed on paper while
+ * the drawing scale is not, so a single pass has the text of a wide cabinet
+ * running through its own carcass.
+ */
+export function drawingFor(c: Parameters<typeof buildWireframe>[0]): WireframeDrawing {
+  const probe = buildWireframe(c);
+  return buildWireframe(c, { labelHeightCm: LABEL_PT.normal / fitScale(probe) });
+}
+
 function Wireframe({ drawing }: { drawing: WireframeDrawing }) {
-  const scale = Math.min(
-    PAGE_CONTENT_WIDTH / drawing.viewWidth,
-    DRAWING_MAX_HEIGHT / drawing.viewHeight,
-  );
+  const scale = fitScale(drawing);
   const width = drawing.viewWidth * scale;
   const height = drawing.viewHeight * scale;
 
@@ -202,26 +214,32 @@ function Wireframe({ drawing }: { drawing: WireframeDrawing }) {
       ))}
       {drawing.labels.map((l, i) => {
         const fontSize = LABEL_PT[l.size] / scale;
-        // Nudge clear of the line it belongs to: above a horizontal dimension,
-        // left of a rotated (vertical) one.
-        const gap = fontSize * 0.55;
-        const x = l.rotate ? l.x - gap : l.x;
-        const y = l.rotate ? l.y : l.y - gap;
-        const text = (
-          <SvgText
-            x={x}
-            y={y}
-            textAnchor={l.anchor}
-            fill={BRAND_GREEN}
-            style={{ fontSize, fontFamily: "Helvetica" }}
-          >
-            {l.text}
-          </SvgText>
+        // Knock a hole in whatever sits behind the text, so a carcass or
+        // dimension line can never be read as part of a number.
+        const w = l.text.length * fontSize * 0.58;
+        const body = (
+          <>
+            <Rect
+              x={l.x - w / 2}
+              y={l.y - fontSize * 0.82}
+              width={w}
+              height={fontSize * 1.1}
+              fill="#ffffff"
+            />
+            <SvgText
+              x={l.x}
+              y={l.y}
+              textAnchor={l.anchor}
+              fill={BRAND_GREEN}
+              style={{ fontSize, fontFamily: "Helvetica" }}
+            >
+              {l.text}
+            </SvgText>
+          </>
         );
-        if (!l.rotate) return <G key={`t${i}`}>{text}</G>;
         return (
-          <G key={`t${i}`} transform={`rotate(${l.rotate}, ${x}, ${y})`}>
-            {text}
+          <G key={`t${i}`} transform={l.rotate ? `rotate(${l.rotate}, ${l.x}, ${l.y})` : undefined}>
+            {body}
           </G>
         );
       })}
@@ -266,7 +284,7 @@ function ClosetBlock({
   total: number;
 }) {
   const spec: ClosetSpec = buildClosetSpec(line.configuration, line.priceSnapshot);
-  const drawing = buildWireframe(line.configuration);
+  const drawing = drawingFor(line.configuration);
 
   // `break` puts every cabinet on its own page, so a drawing is never separated
   // from the specs that go with it.

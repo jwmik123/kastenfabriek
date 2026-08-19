@@ -28,21 +28,39 @@ const PLINTH_CM = ONDERSTEL_HEIGHT * 100;
 const MODULE_FLOOR_CM = MODULE_FLOOR_Y * 100;
 /** Matches TOP_CABINET_THRESHOLD / mainHeight() in both stores. */
 const TOP_CABINET_MAIN_HEIGHT_CM = 225;
-const WASHER_HEIGHT_CM = 90;
+/** How far up an appliance front reaches, for drawing its drum. */
+const WASHER_FRONT_HEIGHT_CM = 90;
 
-/** Room for the height dimension line, the width lines and the labels. */
-const MARGIN_LEFT = 26;
-/** Sections after the first put their height line on the right of the assembly. */
-const MARGIN_RIGHT_SINGLE = 6;
-const MARGIN_RIGHT_MULTI = 26;
-const MARGIN_TOP = 8;
-const MARGIN_BOTTOM = 42;
-/** Dimension rows below the cabinet: modules, then section, then total. */
-const DIM_ROW_MODULES = 8;
-const DIM_ROW_SECTION = 22;
-const DIM_ROW_TOTAL = 35;
+/**
+ * Cap height of a dimension label, in drawing units (cm).
+ *
+ * Everything around the cabinet — the gap between a label and its line, the
+ * spacing of the dimension rows, the margins — is a multiple of this, because a
+ * label's size on paper is fixed while the drawing scale is not. A 542 cm
+ * cabinet is drawn at roughly half the scale of a 240 cm one, so a fixed
+ * spacing in centimetres that looks right for the small one has the text of the
+ * wide one running straight through the carcass.
+ */
+const DEFAULT_LABEL_HEIGHT_CM = 4.2;
+
 /** Gap between sections that stand next to each other. */
 const SECTION_GAP = 0;
+
+/** Margins and dimension-row offsets, all as multiples of the label height. */
+function layoutMetrics(labelHeightCm: number) {
+  const L = Math.max(1, labelHeightCm);
+  return {
+    labelGap: L * 0.5,
+    marginLeft: L * 3.2,
+    marginRightSingle: L * 1.5,
+    marginRightMulti: L * 3.2,
+    marginTop: L * 2,
+    marginBottom: L * 6.6,
+    rowModules: L * 1.9,
+    rowSection: L * 3.8,
+    rowTotal: L * 5.5,
+  };
+}
 
 export type LineWeight = "outline" | "panel" | "interior" | "dimension";
 
@@ -62,9 +80,8 @@ export interface WireCircle {
 
 export interface WireLabel {
   /**
-   * Sits exactly on the dimension line. The renderer nudges it clear by half
-   * its own font size — above the line, or to the left of a rotated one — so
-   * the gap stays right whatever size the drawing is scaled to.
+   * Already clear of the line it belongs to — the builder offsets it by a
+   * multiple of the label height it was given, so a renderer just draws it.
    */
   x: number;
   y: number;
@@ -116,19 +133,49 @@ function mainHeightCm(section: SpecSection, c: ClosetConfigSnapshot): number {
   return Math.min(TOP_CABINET_MAIN_HEIGHT_CM, section.heightCm - c.topCabinetHeightCm);
 }
 
-export function buildWireframe(c: ClosetConfigSnapshot): WireframeDrawing {
+export interface WireframeOptions {
+  /**
+   * Cap height of a dimension label in drawing units. Pass the renderer's own
+   * font size divided by the scale it will draw at, so spacing on paper stays
+   * constant across cabinets of very different widths.
+   */
+  labelHeightCm?: number;
+}
+
+export function buildWireframe(
+  c: ClosetConfigSnapshot,
+  opts: WireframeOptions = {},
+): WireframeDrawing {
   const sections = resolveSections(c);
   const sideWallCm = c.sidePanelThickness === "36mm" ? 3.6 : SIDE_WALL_CM;
+  const M = layoutMetrics(opts.labelHeightCm ?? DEFAULT_LABEL_HEIGHT_CM);
+
+  /**
+   * In a dual layout the sections meet as one cabinet and share a single panel
+   * at the seam: the high section keeps its panel and the low section drops the
+   * one facing it, widening its interior into the freed space. Mirrors
+   * `lowSharedSideWall` in WasmachinekastScene — without it every module in the
+   * low section comes out a little too narrow.
+   */
+  const sharedSeam: "left" | "right" | null =
+    sections.length > 1 ? (c.layout === "low-left" ? "right" : "left") : null;
+  const wallsOf = (section: SpecSection) => {
+    const shares = section.key === "low" ? sharedSeam : null;
+    return {
+      left: shares === "left" ? 0 : sideWallCm,
+      right: shares === "right" ? 0 : sideWallCm,
+    };
+  };
 
   const totalWidth =
     sections.reduce((sum, s) => sum + s.widthCm, 0) + SECTION_GAP * (sections.length - 1);
   const totalHeight = sections.reduce((max, s) => Math.max(max, s.heightCm), 0);
 
-  const marginRight = sections.length > 1 ? MARGIN_RIGHT_MULTI : MARGIN_RIGHT_SINGLE;
-  const viewWidth = MARGIN_LEFT + totalWidth + marginRight;
-  const viewHeight = MARGIN_TOP + totalHeight + MARGIN_BOTTOM;
+  const marginRight = sections.length > 1 ? M.marginRightMulti : M.marginRightSingle;
+  const viewWidth = M.marginLeft + totalWidth + marginRight;
+  const viewHeight = M.marginTop + totalHeight + M.marginBottom;
   /** cabinet y (cm, from the floor, up) -> drawing y (down). */
-  const dy = (y: number) => MARGIN_TOP + totalHeight - y;
+  const dy = (y: number) => M.marginTop + totalHeight - y;
 
   const lines: WireLine[] = [];
   const circles: WireCircle[] = [];
@@ -148,7 +195,7 @@ export function buildWireframe(c: ClosetConfigSnapshot): WireframeDrawing {
   const hLine = (x1: number, x2: number, y: number, weight: LineWeight) =>
     lines.push({ x1, y1: dy(y), x2, y2: dy(y), weight });
 
-  let cursorX = MARGIN_LEFT;
+  let cursorX = M.marginLeft;
 
   for (const section of sections) {
     const x0 = cursorX;
@@ -164,10 +211,11 @@ export function buildWireframe(c: ClosetConfigSnapshot): WireframeDrawing {
     if (mainH < H - 0.01) hLine(x0, x0 + W, mainH, "panel");
 
     // --- Modules ---
-    const innerW = W - sideWallCm * 2;
+    const walls = wallsOf(section);
+    const innerW = W - walls.left - walls.right;
     const slotWidths = computeSlotWidthsCm(section.modules, innerW);
     const moduleTop = mainH - SIDE_WALL_CM;
-    let slotX = x0 + sideWallCm;
+    let slotX = x0 + walls.left;
 
     for (let i = 0; i < section.modules.length; i++) {
       const m = section.modules[i];
@@ -185,22 +233,24 @@ export function buildWireframe(c: ClosetConfigSnapshot): WireframeDrawing {
       const openRight = slotX + spanW - MODULE_WALL_CM;
       const openW = openRight - openLeft;
       const openBottom = MODULE_FLOOR_CM;
-      const openTop = m.isWasher
-        ? Math.min(moduleTop, openBottom + WASHER_HEIGHT_CM)
-        : moduleTop;
+      // An appliance sits at the bottom of a full-height carcass — only the
+      // lage-kast bays are 90 cm tall, and there the section already is.
+      const openTop = moduleTop;
       const openH = openTop - openBottom;
 
       if (openW > 0 && openH > 0) {
         rect(openLeft, openBottom, openW, openH, "panel");
         if (m.isWasher) {
-          drawWasher(circles, lines, openLeft, openW, openBottom, openH, dy);
+          const frontH = Math.min(openH, WASHER_FRONT_HEIGHT_CM);
+          drawWasher(circles, lines, openLeft, openW, openBottom, frontH, dy);
+          if (frontH < openH - 0.01) hLine(openLeft, openRight, openBottom + frontH, "interior");
         } else if (m.contents) {
           const drew = drawInterior(hLine, m, openLeft, openRight, openBottom, openTop);
           hasSchematicInteriors = hasSchematicInteriors || drew;
         }
 
         // Top cabinet compartments line up with the modules below them.
-        if (mainH < H - 0.01 && openRight < x0 + W - sideWallCm - 0.01) {
+        if (mainH < H - 0.01 && openRight < x0 + W - walls.right - 0.01) {
           lines.push({
             x1: openRight + MODULE_WALL_CM / 2,
             y1: dy(H - SIDE_WALL_CM),
@@ -212,21 +262,21 @@ export function buildWireframe(c: ClosetConfigSnapshot): WireframeDrawing {
 
         // Module clear widths go under the cabinet rather than across the
         // plinth, so the labels never sit on top of the carcass lines.
-        dimensionH(lines, labels, openLeft, openRight, dy(0) + DIM_ROW_MODULES, fmtCm(openW));
+        dimensionH(lines, labels, openLeft, openRight, dy(0) + M.rowModules, fmtCm(openW), M.labelGap);
       }
       slotX += spanW;
     }
 
     // --- Section dimensions ---
-    dimensionH(lines, labels, x0, x0 + W, dy(0) + DIM_ROW_SECTION, `${fmtCm(W)} cm`);
+    dimensionH(lines, labels, x0, x0 + W, dy(0) + M.rowSection, `${fmtCm(W)} cm`, M.labelGap);
 
     // Height lines stay clear of the drawing: the first section measures on the
     // left of the assembly, any other on the right of it.
     const heightDimX =
       section === sections[0]
-        ? MARGIN_LEFT - 13
-        : MARGIN_LEFT + totalWidth + 13;
-    dimensionV(lines, labels, heightDimX, dy(H), dy(0), `${fmtCm(H)} cm`);
+        ? M.marginLeft - M.marginLeft * 0.45
+        : M.marginLeft + totalWidth + marginRight * 0.45;
+    dimensionV(lines, labels, heightDimX, dy(H), dy(0), `${fmtCm(H)} cm`, M.labelGap);
 
     cursorX += W + SECTION_GAP;
   }
@@ -236,10 +286,11 @@ export function buildWireframe(c: ClosetConfigSnapshot): WireframeDrawing {
     dimensionH(
       lines,
       labels,
-      MARGIN_LEFT,
-      MARGIN_LEFT + totalWidth,
-      dy(0) + DIM_ROW_TOTAL,
+      M.marginLeft,
+      M.marginLeft + totalWidth,
+      dy(0) + M.rowTotal,
       `totaal ${fmtCm(totalWidth)} cm`,
+      M.labelGap,
     );
   }
 
@@ -308,16 +359,19 @@ function dimensionH(
   x2: number,
   y: number,
   text: string,
+  gap: number,
 ): void {
+  const tick = gap * 0.5;
   lines.push({ x1, y1: y, x2, y2: y, weight: "dimension" });
-  lines.push({ x1, y1: y - 2, x2: x1, y2: y + 2, weight: "dimension" });
-  lines.push({ x1: x2, y1: y - 2, x2, y2: y + 2, weight: "dimension" });
+  lines.push({ x1, y1: y - tick, x2: x1, y2: y + tick, weight: "dimension" });
+  lines.push({ x1: x2, y1: y - tick, x2, y2: y + tick, weight: "dimension" });
   labels.push({
     x: (x1 + x2) / 2,
-    y,
+    y: y - gap,
     text,
     anchor: "middle",
-    size: x2 - x1 < 40 ? "small" : "normal",
+    // A label wider than its own dimension would run into its neighbours.
+    size: x2 - x1 < text.length * gap * 1.3 ? "small" : "normal",
   });
 }
 
@@ -329,12 +383,14 @@ function dimensionV(
   yTop: number,
   yBottom: number,
   text: string,
+  gap: number,
 ): void {
+  const tick = gap * 0.5;
   lines.push({ x1: x, y1: yTop, x2: x, y2: yBottom, weight: "dimension" });
-  lines.push({ x1: x - 2, y1: yTop, x2: x + 2, y2: yTop, weight: "dimension" });
-  lines.push({ x1: x - 2, y1: yBottom, x2: x + 2, y2: yBottom, weight: "dimension" });
+  lines.push({ x1: x - tick, y1: yTop, x2: x + tick, y2: yTop, weight: "dimension" });
+  lines.push({ x1: x - tick, y1: yBottom, x2: x + tick, y2: yBottom, weight: "dimension" });
   labels.push({
-    x,
+    x: x - gap,
     y: (yTop + yBottom) / 2,
     text,
     anchor: "middle",

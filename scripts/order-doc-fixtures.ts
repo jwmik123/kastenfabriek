@@ -171,6 +171,47 @@ export const address: AddressSnapshot = {
 export const captureDataUri =
   'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q=='
 
+/**
+ * ORD-20260819-WYS1: the widest real order so far — 542 cm over two sections,
+ * 36 mm side panels, appliances in both. Worth previewing because the drawing
+ * scale, and so the label spacing, is tightest here.
+ */
+export const wideWasmachinekast: ClosetConfigSnapshot = {
+  ...base,
+  productType: 'wasmachinekast',
+  sidePanelThickness: '36mm',
+  layout: 'low-right',
+  widthCm: 281,
+  heightCm: 240,
+  moduleCount: 5,
+  washerModules: [
+    { slotIndex: 0, layoutId: 11, section: 'high' },
+    { slotIndex: 1, layoutId: 11, section: 'high' },
+    { slotIndex: 3, layoutId: 23, section: 'low' },
+  ],
+  modules: [
+    mod(0, { layoutName: '1 grote lade', fixedWidth: 68.6, layoutContents: { shelves: 2, rods: 0, drawers: 0 } }),
+    mod(1, { layoutName: '1 grote lade', fixedWidth: 68.6, layoutContents: { shelves: 2, rods: 0, drawers: 0 } }),
+    mod(2, { layoutName: 'Desk', layoutContents: { shelves: 1, rods: 0, drawers: 0 } }),
+    mod(3, { layoutName: 'Drawers + shelves', layoutContents: { shelves: 3, rods: 0, drawers: 1 } }),
+    mod(4, { layoutName: 'Double Rod', hasDoor: false, layoutContents: { shelves: 0, rods: 2, drawers: 0 } }),
+  ],
+  lowSection: {
+    width: 261,
+    height: 90,
+    moduleCount: 5,
+    topPanelThicknessMm: 36,
+    countertopMaterialId: 'zwart',
+    modules: [
+      mod(0, { layoutName: 'Lage kast — enkel vak', layoutContents: { shelves: 0, rods: 0, drawers: 0 } }),
+      mod(1, { layoutName: 'Lage kast — plank', layoutContents: { shelves: 1, rods: 0, drawers: 0 } }),
+      mod(2, { layoutName: 'Drawers + shelves', layoutContents: { shelves: 3, rods: 0, drawers: 1 } }),
+      mod(3, { layoutName: 'Wasmachine (lage kast)', fixedWidth: 68.6, layoutContents: { shelves: 0, rods: 0, drawers: 0 } }),
+      mod(4, { layoutName: 'Full shelves', layoutContents: { shelves: 5, rods: 0, drawers: 0 } }),
+    ],
+  },
+}
+
 export const items: OrderLine[] = [
   {
     kind: 'closet',
@@ -191,6 +232,15 @@ export const items: OrderLine[] = [
       installationCost: 480,
       installationTierName: 'Middel project',
     }),
+    quantity: 1,
+  },
+  {
+    kind: 'closet',
+    configuration: wideWasmachinekast,
+    priceSnapshot: price({ moduleCost: 2879, doorCost: 1200, mechanismCost: 260, ledCost: 0,
+      powerHoleCost: 0, sidePanelCost: 175, subtotal: 4609, total: 4609,
+      installationCost: 0, installationTierName: 'Small Project',
+      freeMontageApplied: true, freeMontageDiscount: 720 }),
     quantity: 1,
   },
   { kind: 'product', configuration: paxProduct, priceSnapshot: paxPrice, quantity: 2 },

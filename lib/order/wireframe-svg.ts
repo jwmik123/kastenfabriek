@@ -43,13 +43,12 @@ export function renderWireframeSvg(
   const labels = drawing.labels
     .map((l) => {
       const fontSize = FONT_SIZE[l.size];
-      // Same nudge as the PDF: labels sit on their line and are moved clear by
-      // half their own size.
-      const gap = fontSize * 0.55;
-      const x = l.rotate ? l.x - gap : l.x;
-      const y = l.rotate ? l.y : l.y - gap;
-      const transform = l.rotate ? ` transform="rotate(${l.rotate} ${r(x)} ${r(y)})"` : "";
-      return `<text x="${r(x)}" y="${r(y)}" text-anchor="${l.anchor}" font-size="${fontSize}" fill="#34463a" font-family="Helvetica, Arial, sans-serif"${transform}>${escapeXml(l.text)}</text>`;
+      const transform = l.rotate ? ` transform="rotate(${l.rotate} ${r(l.x)} ${r(l.y)})"` : "";
+      // Knock a hole in whatever sits behind the text, as the PDF does.
+      const w = l.text.length * fontSize * 0.58;
+      const plate = `<rect x="${r(l.x - w / 2)}" y="${r(l.y - fontSize * 0.82)}" width="${r(w)}" height="${r(fontSize * 1.1)}" fill="#ffffff"/>`;
+      const text = `<text x="${r(l.x)}" y="${r(l.y)}" text-anchor="${l.anchor}" font-size="${fontSize}" fill="#34463a" font-family="Helvetica, Arial, sans-serif">${escapeXml(l.text)}</text>`;
+      return `<g${transform}>${plate}${text}</g>`;
     })
     .join("");
 
@@ -60,7 +59,9 @@ export function renderClosetWireframeSvg(
   c: ClosetConfigSnapshot,
   opts?: { maxWidth?: number },
 ): string {
-  return renderWireframeSvg(buildWireframe(c), opts);
+  // This renderer draws at a fixed font size in drawing units, so the builder
+  // can lay the dimension rows out for exactly that.
+  return renderWireframeSvg(buildWireframe(c, { labelHeightCm: FONT_SIZE.normal }), opts);
 }
 
 function r(n: number): string {
