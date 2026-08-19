@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "@/lib/auth-client";
-import Link from "next/link";
 
 export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
   const router = useRouter();
@@ -81,17 +80,13 @@ export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
         />
       </div>
 
-      <div className="flex items-center justify-between text-sm">
+      {/* Geen "wachtwoord vergeten" zolang /forgot-password niet bestaat — die
+          link gaf een 404. Terugzetten zodra de herstelstroom er is. */}
+      <div className="flex items-center text-sm">
         <label className="flex items-center gap-2">
           <input type="checkbox" className="rounded" />
           <span className="text-gray-600">Onthoud mij</span>
         </label>
-        <Link
-          href="/forgot-password"
-          className="text-primary hover:text-primary-dark"
-        >
-          Wachtwoord vergeten?
-        </Link>
       </div>
 
       <button
