@@ -12,6 +12,7 @@ import FillZone from './FillZone'
 import SpecialElement from './SpecialElement'
 import Door from '../objects/Door'
 import ClosetMaterial, { ModuleMaterialOverrideProvider } from '../materials/ClosetMaterial'
+import CarcassMesh, { BOX_FRONT_SLOT, BOX_SLOTS, EXTRUDE_FRONT_SLOT, EXTRUDE_SLOTS } from './CarcassMesh'
 import { trapShape, trapGeo, trapNaN } from '@/utils/debugGeometry'
 import { computeSlotWidthsM } from '../store/slotWidths'
 import type { BaseModuleSlot } from '../store/types'
@@ -204,6 +205,11 @@ export default function Module({
   // fronts close it off: the drawer boxes behind them are interior.
   const insideFinish = hasDoor || washerDoorAbove === true || drawerFronts === true
 
+  // Nothing covers this module's opening: the fronts of the GLB and the front
+  // edges of the carcass panels look straight into the room, so they finish in
+  // the buitenkant colour like the rest of the cabinet's visible outside.
+  const exposedFronts = insideFinish && !hasDoor
+
   const sideWallM    = p.sideWallThickness
   // A shared side wall belongs to the neighbouring section, so this section has
   // no panel of its own there and its interior runs out to the section edge.
@@ -354,6 +360,12 @@ export default function Module({
 
   const { elementYs, fillAbove, fillBelow } = resolveElementPositions(layout, roofY, elementBboxes)
 
+  // Bottom edge of a washer module's upper door. Every high-section washer GLB
+  // ends in an 18 mm plank (WM*Shelf2_ds); the door reaches one panel thickness
+  // under the content top so that plank's front edge sits behind the door
+  // instead of showing as a strip below it.
+  const washerDoorBottomY = Math.max(0, fillAbove.start - SHELF_THICKNESS)
+
   const roofProfile = useMemo(() => {
     if (isBackDiag) return []  // not used for back diagonal
     const profile = computeRoofProfile(leftWallXOuter, rightWallXOuter, p, effectiveFloorY)
@@ -488,7 +500,7 @@ export default function Module({
           positionY={elementYs[i]}
           hasDoor={hasDoor}
           insideFinish={insideFinish}
-          exposedFronts={insideFinish && !hasDoor}
+          exposedFronts={exposedFronts}
           extendFrontBottomY={
             doorsExtendToFloor && !hasDoor ? 0.02 - effectiveFloorY : null
           }
@@ -561,9 +573,15 @@ export default function Module({
         )
       ) : (
         leftWallGeo && (
-          <mesh key="left-wall-sd" position={[0, 0, centerZ - moduleDepth / 2]} geometry={leftWallGeo} castShadow receiveShadow>
-            <ClosetMaterial variant={insideFinish ? 'binnenkant' : 'buitenkant'} />
-          </mesh>
+          <CarcassMesh
+            key="left-wall-sd"
+            position={[0, 0, centerZ - moduleDepth / 2]}
+            geometry={leftWallGeo}
+            insideFinish={insideFinish}
+            frontEdgeExposed={exposedFronts}
+            frontSlot={EXTRUDE_FRONT_SLOT}
+            slots={EXTRUDE_SLOTS}
+          />
         )
       )}
 
@@ -576,18 +594,29 @@ export default function Module({
         )
       ) : (
         rightWallGeo && (
-          <mesh key="right-wall-sd" position={[0, 0, centerZ - moduleDepth / 2]} geometry={rightWallGeo} castShadow receiveShadow>
-            <ClosetMaterial variant={insideFinish ? 'binnenkant' : 'buitenkant'} />
-          </mesh>
+          <CarcassMesh
+            key="right-wall-sd"
+            position={[0, 0, centerZ - moduleDepth / 2]}
+            geometry={rightWallGeo}
+            insideFinish={insideFinish}
+            frontEdgeExposed={exposedFronts}
+            frontSlot={EXTRUDE_FRONT_SLOT}
+            slots={EXTRUDE_SLOTS}
+          />
         )
       )}
 
       {/* Floor — omitted for floor-mount slots (washer sits on the room floor) */}
       {!isFloorMount && (
-        <mesh position={[moduleWidth / 2, MODULE_WALL / 2, centerZ]} castShadow receiveShadow>
+        <CarcassMesh
+          position={[moduleWidth / 2, MODULE_WALL / 2, centerZ]}
+          insideFinish={insideFinish}
+          frontEdgeExposed={exposedFronts}
+          frontSlot={BOX_FRONT_SLOT}
+          slots={BOX_SLOTS}
+        >
           <boxGeometry args={[moduleWidth, MODULE_WALL, moduleDepth]} />
-          <ClosetMaterial variant={insideFinish ? 'binnenkant' : 'buitenkant'} />
-        </mesh>
+        </CarcassMesh>
       )}
 
       {/* Roof */}
@@ -598,9 +627,15 @@ export default function Module({
           </mesh>
         )
       ) : (
-        <mesh key="roof-sd" position={[0, 0, centerZ - moduleDepth / 2]} geometry={roofGeo!} castShadow receiveShadow>
-          <ClosetMaterial variant={insideFinish ? 'binnenkant' : 'buitenkant'} />
-        </mesh>
+        <CarcassMesh
+          key="roof-sd"
+          position={[0, 0, centerZ - moduleDepth / 2]}
+          geometry={roofGeo!}
+          insideFinish={insideFinish}
+          frontEdgeExposed={exposedFronts}
+          frontSlot={EXTRUDE_FRONT_SLOT}
+          slots={EXTRUDE_SLOTS}
+        />
       )}
 
       {/* Door(s) */}
@@ -688,7 +723,7 @@ export default function Module({
           doorHandleMeshId={doorHandleMeshId}
           doorHandleHeightCm={doorHandleHeightCm}
           mirror={mirrorDoor}
-          bottomYOverride={fillAbove.start}
+          bottomYOverride={washerDoorBottomY}
           topProfile={doorProfile}
         />
       )}
@@ -705,7 +740,7 @@ export default function Module({
             doorHandleBodyColor={doorHandleBodyColor}
             doorHandleMeshId={doorHandleMeshId}
             doorHandleHeightCm={doorHandleHeightCm}
-            bottomYOverride={fillAbove.start}
+            bottomYOverride={washerDoorBottomY}
             topProfile={leftDoorProfile}
           />
           <group position={[thisSlotW, 0, 0]}>
@@ -721,7 +756,7 @@ export default function Module({
               doorHandleMeshId={doorHandleMeshId}
               doorHandleHeightCm={doorHandleHeightCm}
               mirror
-              bottomYOverride={fillAbove.start}
+              bottomYOverride={washerDoorBottomY}
               topProfile={rightDoorProfile}
             />
           </group>
