@@ -5,7 +5,7 @@ import { getAddresses } from "@/lib/actions/address";
 import CheckoutForm from "./CheckoutForm";
 
 export const metadata = {
-  title: "Afrekenen | Kastenfabriek",
+  title: "Afrekenen",
 };
 
 export default async function CheckoutPage() {

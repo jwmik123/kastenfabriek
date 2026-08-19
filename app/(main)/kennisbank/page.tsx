@@ -8,7 +8,7 @@ import {
 } from '@/sanity/lib/kennisbank'
 
 export const metadata: Metadata = {
-  title: 'Kennisbank | Kastenfabriek',
+  title: 'Kennisbank',
   description:
     'Artikelen, video&apos;s en handleidingen over ontwerpen, bestellen en monteren van je kast.',
 }

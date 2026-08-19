@@ -3,7 +3,7 @@ import { getDbWishlistItems } from "@/lib/actions/wishlist";
 import WishlistView from "./WishlistView";
 
 export const metadata = {
-  title: "Verlanglijst | Kastenfabriek",
+  title: "Verlanglijst",
   description: "Bekijk je opgeslagen ontwerpen",
 };
 

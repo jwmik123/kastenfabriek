@@ -2,7 +2,7 @@ import { getOrders } from "@/lib/actions/order";
 import { Package } from "lucide-react";
 
 export const metadata = {
-  title: "Bestellingen | Kastenfabriek",
+  title: "Bestellingen",
   description: "Bekijk je bestelgeschiedenis",
 };
 

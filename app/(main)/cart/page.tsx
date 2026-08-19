@@ -3,7 +3,7 @@ import { getDbCartItems } from "@/lib/actions/cart";
 import CartView from "./CartView";
 
 export const metadata = {
-  title: "Winkelwagen | Kastenfabriek",
+  title: "Winkelwagen",
 };
 
 export default async function CartPage() {

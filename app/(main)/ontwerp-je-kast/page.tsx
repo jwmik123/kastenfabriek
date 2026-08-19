@@ -9,7 +9,7 @@ import { client } from "@/sanity/lib/client";
 import { getActiveProducts } from "@/sanity/lib/products";
 
 export const metadata = {
-  title: "Ontwerp je kast | Kastenfabriek",
+  title: "Ontwerp je kast",
   description:
     "Stel je kledingkast of wasmachinekast zelf samen in de configurator — direct zichtbaar wat hij kost.",
 };

@@ -33,9 +33,9 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params
   const item = await getKennisbankItem(slug)
-  if (!item) return { title: 'Niet gevonden | Kastenfabriek' }
+  if (!item) return { title: 'Niet gevonden' }
   return {
-    title: `${item.title} | Kennisbank | Kastenfabriek`,
+    title: `${item.title} | Kennisbank`,
     description: item.seoDescription ?? item.excerpt,
     openGraph: {
       title: item.title,

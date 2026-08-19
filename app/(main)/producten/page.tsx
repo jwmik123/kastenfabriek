@@ -2,7 +2,7 @@ import WebshopSection from "@/components/producten/WebshopSection";
 import { getActiveProducts } from "@/sanity/lib/products";
 
 export const metadata = {
-  title: "Producten | Kastenfabriek",
+  title: "Producten",
   description: "Kant-en-klare producten en onderdelen, direct te bestellen.",
 };
 

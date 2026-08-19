@@ -2,7 +2,7 @@ import { getAddresses } from "@/lib/actions/address";
 import { MapPin, Plus } from "lucide-react";
 
 export const metadata = {
-  title: "Adressen | Kastenfabriek",
+  title: "Adressen",
   description: "Beheer je adressen",
 };
 

@@ -3,7 +3,7 @@ import { RegisterForm } from "@/components/auth/RegisterForm";
 import { GoogleButton } from "@/components/auth/GoogleButton";
 
 export const metadata = {
-  title: "Registreren | Kastenfabriek",
+  title: "Registreren",
   description: "Maak een Kastenfabriek account aan",
 };
 

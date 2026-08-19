@@ -3,7 +3,7 @@ import { Package, Heart, MapPin } from "lucide-react";
 import Link from "next/link";
 
 export const metadata = {
-  title: "Mijn Account | Kastenfabriek",
+  title: "Mijn Account",
   description: "Beheer je Kastenfabriek account",
 };
 

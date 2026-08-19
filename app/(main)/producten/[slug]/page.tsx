@@ -11,6 +11,7 @@ import ProductImageGallery from "@/components/products/ProductImageGallery";
 import { getServerSession } from "@/lib/actions/auth";
 import { getDbCartItemById } from "@/lib/actions/cart";
 import type { ProductCartItem } from "@/lib/cart/types";
+import { OG_IMAGE, SITE_NAME } from "@/lib/site";
 
 export async function generateMetadata({
   params,
@@ -19,10 +20,32 @@ export async function generateMetadata({
 }) {
   const { slug } = await params;
   const product = await getProductBySlug(slug);
-  if (!product) return { title: "Product niet gevonden | Kastenfabriek" };
+  if (!product) return { title: "Product niet gevonden" };
+  const title = product.title;
+  const description = product.shortDescription;
+  // Share preview uses the product photo instead of the sitewide image.
+  const image = product.heroImage
+    ? urlFor(product.heroImage).width(1200).height(630).fit("crop").url()
+    : OG_IMAGE.url;
   return {
-    title: `${product.title} | Kastenfabriek`,
-    description: product.shortDescription,
+    title,
+    description,
+    alternates: { canonical: `/producten/${slug}` },
+    openGraph: {
+      type: "website",
+      locale: "nl_NL",
+      siteName: SITE_NAME,
+      url: `/producten/${slug}`,
+      title,
+      description,
+      images: [{ url: image, width: 1200, height: 630, alt: title }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [image],
+    },
   };
 }
 

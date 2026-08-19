@@ -3,7 +3,7 @@ import { LoginForm } from "@/components/auth/LoginForm";
 import { GoogleButton } from "@/components/auth/GoogleButton";
 
 export const metadata = {
-  title: "Inloggen | Kastenfabriek",
+  title: "Inloggen",
   description: "Log in op je Kastenfabriek account",
 };
 

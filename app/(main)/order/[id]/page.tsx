@@ -15,7 +15,7 @@ import type {
 } from "@/lib/cart/types";
 
 export const metadata = {
-  title: "Bestelling bevestigd | Kastenfabriek",
+  title: "Bestelling bevestigd",
 };
 
 const fmt = new Intl.NumberFormat("nl-NL", {

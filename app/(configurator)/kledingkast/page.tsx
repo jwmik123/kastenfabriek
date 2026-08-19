@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { client } from '@/sanity/lib/client'
 import { pricingDataQuery } from '@/lib/configurator/queries'
 import type { FullPricingData } from '@/types/configurator-pricing'
@@ -7,6 +8,32 @@ import ColorwayPreview from './components/ColorwayPreview'
 import { getServerSession } from '@/lib/actions/auth'
 import { getDbCartItemById } from '@/lib/actions/cart'
 import type { ClosetConfigSnapshot } from '@/lib/cart/types'
+import { OG_IMAGE, SITE_NAME } from '@/lib/site'
+
+export const metadata: Metadata = {
+  title: 'Kledingkast op maat ontwerpen',
+  description:
+    'Stel je kledingkast tot de millimeter samen: afmetingen, indeling, kleur of fineer en deuren — met de prijs direct in beeld.',
+  alternates: { canonical: '/kledingkast' },
+  openGraph: {
+    type: 'website',
+    locale: 'nl_NL',
+    siteName: SITE_NAME,
+    url: '/kledingkast',
+    title: 'Kledingkast op maat ontwerpen',
+    description:
+      'Stel je kledingkast tot de millimeter samen: afmetingen, indeling, kleur of fineer en deuren — met de prijs direct in beeld.',
+    images: [OG_IMAGE],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Kledingkast op maat ontwerpen',
+    description:
+      'Stel je kledingkast tot de millimeter samen: afmetingen, indeling, kleur of fineer en deuren — met de prijs direct in beeld.',
+    images: [OG_IMAGE.url],
+  },
+}
+
 
 export default async function KledingkastPage({
   searchParams,
