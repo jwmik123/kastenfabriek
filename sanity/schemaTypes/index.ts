@@ -8,6 +8,7 @@ import { handle } from "./handle";
 import { installationTier } from "./installationTier";
 import { pricingConfig } from "./pricingConfig";
 import { testimonial } from "./testimonial";
+import { hotspotSection } from "./hotspotSection";
 import { coupon } from "./coupon";
 import { productSchemaTypes } from "./product";
 import { kennisbankSchemaTypes } from "./kennisbank";
@@ -18,6 +19,7 @@ export const schema: { types: SchemaTypeDefinition[] } = {
     page,
     siteSettings,
     testimonial,
+    hotspotSection,
     ...kennisbankSchemaTypes,
     // Configurator Pricing
     moduleLayout,

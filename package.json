@@ -14,7 +14,8 @@
     "sanity:seed": "tsx scripts/seed-pricing-data.ts",
     "preview:order-docs": "tsx scripts/preview-order-docs.tsx",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "sanity:seed-hotspots": "tsx scripts/seed-hotspot-section.ts"
   },
   "dependencies": {
     "@gltf-transform/core": "^4.3.0",
