@@ -20,14 +20,27 @@ interface SectionInput {
   heightCm: number
   modules: BaseModuleSlot[]
   xOffsetM: number
+  /**
+   * The side this section has no panel of its own on, because it shares the
+   * neighbouring section's at the seam. Mirrors `sharedSideWall` in the scene —
+   * without it the interior, and so every module width, comes out too narrow.
+   */
+  sharedSideWall?: 'left' | 'right' | null
 }
 
 /**
  * Pure: build wasmachinekast measurement specs. Walks the resolved sections in
  * the same X-order and offsets the scene uses, so module-width lines land on the
  * actual modules in every layout (high-only, low-only, low-left, low-right).
+ *
+ * `sideWallM` is the chosen panel thickness, not a constant: an 18 mm reading on
+ * a cabinet built with 36 mm panels is off by 1.8 cm on every module.
  */
-export function buildWasmSpecs(sections: SectionInput[], depthCm: number): MeasurementSpec[] {
+export function buildWasmSpecs(
+  sections: SectionInput[],
+  depthCm: number,
+  sideWallM: number = WALL,
+): MeasurementSpec[] {
   const depthM = depthCm / 100
   const frontZ = depthM + 0.02
   const specs: MeasurementSpec[] = []
@@ -36,7 +49,9 @@ export function buildWasmSpecs(sections: SectionInput[], depthCm: number): Measu
   for (const section of sections) {
     const widthM = section.widthCm / 100
     const heightM = section.heightCm / 100
-    const innerW = widthM - WALL * 2
+    const leftWallM = section.sharedSideWall === 'left' ? 0 : sideWallM
+    const rightWallM = section.sharedSideWall === 'right' ? 0 : sideWallM
+    const innerW = widthM - leftWallM - rightWallM
     const leftEdge = section.xOffsetM - widthM / 2
     rightMostX = Math.max(rightMostX, section.xOffsetM + widthM / 2)
 
@@ -62,10 +77,11 @@ export function buildWasmSpecs(sections: SectionInput[], depthCm: number): Measu
 
     // Per-module clear widths.
     const slotWidthsM = computeSlotWidthsM(section.modules, innerW)
+    const interiorLeft = leftEdge + leftWallM
     let xOffset = 0
     for (let i = 0; i < section.modules.length; i++) {
       const slotW = slotWidthsM[i]
-      const slotLeft = section.xOffsetM - innerW / 2 + xOffset
+      const slotLeft = interiorLeft + xOffset
       const x1 = slotLeft + MODULE_WALL
       const x2 = slotLeft + slotW - MODULE_WALL
       specs.push({
@@ -102,8 +118,10 @@ function useWasmMeasurementSpecs(): MeasurementSpec[] {
   const topModules = useWasmachinekastStore((s) => s.modules)
   const depthCm = useWasmachinekastStore((s) => s.depth)
   const lowSection = useWasmachinekastStore((s) => s.lowSection)
+  const sidePanelThickness = useWasmachinekastStore((s) => s.sidePanelThickness)
 
   return useMemo(() => {
+    const sideWallM = sidePanelThickness === '36mm' ? 0.036 : WALL
     const isLowOnly = layout === 'low-only'
     const isDual = layout === 'low-left' || layout === 'low-right'
 
@@ -129,13 +147,19 @@ function useWasmMeasurementSpecs(): MeasurementSpec[] {
       lowSectionInput.xOffsetM = -totalW / 2 + highW + lowW / 2
     }
 
+    // The high section keeps its panel at the seam; the low one drops the panel
+    // facing it and widens into the freed space (WasmachinekastScene).
+    if (isDual && lowSectionInput) {
+      lowSectionInput.sharedSideWall = layout === 'low-left' ? 'right' : 'left'
+    }
+
     const sections: SectionInput[] = []
     if (highSection) sections.push(highSection)
     if (lowSectionInput && !isLowOnly) sections.push(lowSectionInput)
     if (isLowOnly && lowSectionInput) sections.push(lowSectionInput)
 
-    return buildWasmSpecs(sections, depthCm)
-  }, [layout, topWidth, topHeight, topModules, depthCm, lowSection])
+    return buildWasmSpecs(sections, depthCm, sideWallM)
+  }, [layout, topWidth, topHeight, topModules, depthCm, lowSection, sidePanelThickness])
 }
 
 export function WasmMeasurementProjectorLayer({
