@@ -6,7 +6,7 @@ import gsap from 'gsap'
 import { useClosetStore } from '../store'
 import ClosetMaterial from '../../_shared/materials/ClosetMaterial'
 import { Model as HingeModel } from '../../_shared/objects/Hinge'
-import { FILLER_FLAT_SEC_THRESHOLD, getBackDiagHeightAtZ } from './diagonalUtils'
+import { FILLER_FLAT_SEC_THRESHOLD, getBackDiagHeightAtZ, getFullDiagHeightAt } from './diagonalUtils'
 import type { DiagParams } from './diagonalUtils'
 import { trapShape, trapGeo, trapNaN } from '@/utils/debugGeometry'
 
@@ -17,36 +17,6 @@ const CLOSET_INSIDE_INSET = 0.025
 const SIDE_WALL_EXTRA = 0.005  // must match ClosetCorpus.tsx
 const HINGE_EDGE_OFFSET = 0.08
 
-// ---------------------------------------------------------------------------
-// Height of the TC ceiling outer face at x (from outer left).
-// Uses the OUTER face formula — same geometry as ClosetCorpus's diagonal
-// panel outer face and topRunLeft calculation — so the kink point lands at
-// exactly the same X as the corpus top panel left edge.
-// ---------------------------------------------------------------------------
-function getFullDiagHeightAt(x: number, p: DiagParams, closetH: number): number {
-  let h = closetH
-
-  if (p.diagonalSide === 'left' || p.diagonalSide === 'both') {
-    if (p.leftDiagTopWidth > 0 && p.mainHeight > p.leftDiagStartHeight) {
-      const fullRun = p.sideWallThickness + p.leftDiagTopWidth   // outer face runs from x=0 to fullRun at mainH
-      const t = x / fullRun
-      const hDiag = p.leftDiagStartHeight + (p.mainHeight - p.leftDiagStartHeight) * Math.max(0, t)
-      if (hDiag < closetH) h = Math.min(h, hDiag)
-    }
-  }
-
-  if (p.diagonalSide === 'right' || p.diagonalSide === 'both') {
-    if (p.rightDiagTopWidth > 0 && p.mainHeight > p.rightDiagStartHeight) {
-      const xFromRight = p.outerWidth - x
-      const fullRun = p.sideWallThickness + p.rightDiagTopWidth
-      const t = xFromRight / fullRun
-      const hDiag = p.rightDiagStartHeight + (p.mainHeight - p.rightDiagStartHeight) * Math.max(0, t)
-      if (hDiag < closetH) h = Math.min(h, hDiag)
-    }
-  }
-
-  return h
-}
 
 // TC wall height at x from outer left, in TC-local coords (y=0 = mainH world).
 // Mirrors wallHeightAt() in Module.tsx — subtracts floor (mainH) and one ceiling WALL.

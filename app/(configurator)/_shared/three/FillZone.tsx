@@ -18,7 +18,6 @@ interface FillZoneProps {
   centerZ: number // Z center of shelves within the module group
   /** Interior finish: closed modules take the binnenkant colour. */
   insideFinish: boolean
-  fillToTop?: boolean // skip gap-above check, fill right up to the ceiling
 }
 
 export default function FillZone({
@@ -30,11 +29,10 @@ export default function FillZone({
   centerX,
   centerZ,
   insideFinish,
-  fillToTop = false,
 }: FillZoneProps) {
   const shelfPositions = useMemo(
-    () => computeShelfPositions(config, startY, endY, fillToTop),
-    [config, startY, endY, fillToTop],
+    () => computeShelfPositions(config, startY, endY),
+    [config, startY, endY],
   )
 
   if (shelfPositions.length === 0) return null

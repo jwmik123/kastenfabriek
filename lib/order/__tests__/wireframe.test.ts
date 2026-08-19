@@ -298,3 +298,87 @@ describe("module widths agree with the scene's own slot maths", () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// Sloped walls
+// ---------------------------------------------------------------------------
+
+describe("sloped side walls", () => {
+  const sloped: ClosetConfigSnapshot = {
+    ...base,
+    heightCm: 250,
+    moduleCount: 4,
+    modules: [mod(0), mod(1), mod(2), mod(3)],
+    diagonalSide: "left",
+    leftDiagStartHeight: 130,
+    leftDiagTopWidth: 90,
+  };
+
+  const topEdge = (d: ReturnType<typeof buildWireframe>) =>
+    d.lines.filter((l) => l.weight === "outline");
+
+  it("cuts the outline at an angle instead of drawing a rectangle", () => {
+    const flat = buildWireframe({ ...sloped, diagonalSide: "none" });
+    const angled = buildWireframe(sloped);
+    // A rectangle has four axis-aligned edges; a slope adds a diagonal one.
+    const diagonals = topEdge(angled).filter(
+      (l) => Math.abs(l.x1 - l.x2) > 0.5 && Math.abs(l.y1 - l.y2) > 0.5,
+    );
+    expect(diagonals).toHaveLength(1);
+    expect(topEdge(flat).filter((l) => Math.abs(l.x1 - l.x2) > 0.5 && Math.abs(l.y1 - l.y2) > 0.5))
+      .toHaveLength(0);
+  });
+
+  it("starts the slope at the height the customer set", () => {
+    const outline = buildWireframe(sloped).lines.filter((l) => l.weight === "outline");
+    const leftX = Math.min(...outline.map((l) => Math.min(l.x1, l.x2)));
+    const leftEdge = outline.find(
+      (l) => Math.abs(l.x1 - leftX) < 0.01 && Math.abs(l.x2 - leftX) < 0.01,
+    )!;
+    // The cabinet's left edge runs from the floor up to the slope's start.
+    expect(Math.round(Math.abs(leftEdge.y1 - leftEdge.y2))).toBe(130);
+  });
+
+  it("shortens the modules that stand under the slope", () => {
+    const flat = buildWireframe({ ...sloped, diagonalSide: "none" });
+    const angled = buildWireframe(sloped);
+    const heights = (d: ReturnType<typeof buildWireframe>) => {
+      const panels = d.lines.filter((l) => l.weight === "panel" && Math.abs(l.x1 - l.x2) < 0.01);
+      return panels.map((l) => Math.round(Math.abs(l.y1 - l.y2)));
+    };
+    const flatH = heights(flat);
+    const angledH = heights(angled);
+    // Under a left slope the leftmost module is the shortest, and every module
+    // is at most as tall as it would be without the slope.
+    expect(Math.min(...angledH)).toBeLessThan(Math.min(...flatH));
+    expect(Math.max(...angledH)).toBeLessThanOrEqual(Math.max(...flatH) + 0.5);
+  });
+
+  it("drops the top-cabinet dividers the slope has cut away", () => {
+    const withTopCabinet = {
+      ...sloped,
+      heightCm: 290,
+      hasTopCabinet: true,
+      topCabinetHeightCm: 64.5,
+      diagonalSide: "right" as const,
+      rightDiagStartHeight: 140,
+      rightDiagTopWidth: 100,
+    };
+    // A top cabinet over four modules has three dividers when the roof is flat.
+    const flat = buildWireframe({ ...withTopCabinet, diagonalSide: "none" });
+    const angled = buildWireframe(withTopCabinet);
+    const dividers = (d: ReturnType<typeof buildWireframe>) =>
+      d.lines.filter(
+        (l) =>
+          l.weight === "panel" &&
+          Math.abs(l.x1 - l.x2) < 0.01 &&
+          Math.min(l.y1, l.y2) < d.viewHeight * 0.4,
+      ).length;
+    expect(dividers(flat)).toBeGreaterThan(dividers(angled));
+    // And nothing pokes outside the drawing.
+    for (const l of angled.lines) {
+      expect(Math.min(l.y1, l.y2)).toBeGreaterThanOrEqual(0);
+      expect(Math.max(l.y1, l.y2)).toBeLessThanOrEqual(angled.viewHeight);
+    }
+  });
+});

@@ -69,7 +69,8 @@ export type ElementBbox = { minY: number; maxY: number }
 
 export const SHELF_SPACING = 0.368
 export const SHELF_THICKNESS = 0.018
-// Min gap between top shelf and roof. Below this, drop the last shelf.
+// Min gap between the top shelf and whatever closes the zone off — module roof,
+// or the structural kink shelf on a slanted module. Below this, drop the last shelf.
 export const MIN_TOP_CLEARANCE = 0.30
 
 const DRAWER_GLB = '/objects/mainmodules/DrawerModule.glb'
@@ -300,14 +301,15 @@ function applyOverrides(
  *  - `shelves` without explicit `startY`: shelf tops snap to multiples of
  *    spacing strictly above startY.
  *
- * `fillToTop` only matters for `shelves`. When false, drops the last shelf if
- * its gap to endY is below `spacing`.
+ * For `shelves` the last shelf is dropped when its gap to endY is below
+ * `MIN_TOP_CLEARANCE`. endY is the underside of whatever closes the zone off:
+ * the module roof on a straight module, the structural kink shelf on a slanted
+ * one (roofY already equals that underside), so both get the same clearance.
  */
 export function computeShelfPositions(
   config: FillZoneConfig,
   startY: number,
   endY: number,
-  fillToTop: boolean,
 ): number[] {
   if (config.type === 'open') return []
   if (config.type === 'fixedShelves') return [...config.positions]
@@ -335,10 +337,11 @@ export function computeShelfPositions(
     y += config.spacing
   }
 
-  if (!fillToTop && positions.length > 0) {
+  if (positions.length > 0) {
     const lastY = positions[positions.length - 1]
     const gapAbove = endY - lastY
-    if (gapAbove < MIN_TOP_CLEARANCE) {
+    // Epsilon: an exactly-30cm gap comes out of the float math as 0.29999999...
+    if (gapAbove < MIN_TOP_CLEARANCE - 1e-6) {
       positions.pop()
     }
   }

@@ -389,8 +389,10 @@ export function buildClosetSpec(
     (c.sidePanelThickness ?? "18mm") === "36mm" ? "Zijpanelen 36 mm (upgrade)" : null,
     c.hasTopCabinet ? `Bovenkast (${c.topCabinetHeightCm} cm)` : null,
     c.doorsExtendToFloor ? "Deuren doorlopend tot de vloer" : null,
-    c.diagonalSide !== "none" ? `Schuine zijwand ${diagonalLabel(c.diagonalSide)}` : null,
-    c.backDiagonal ? "Schuine achterwand" : null,
+    c.diagonalSide !== "none" ? describeDiagonal(c) : null,
+    c.backDiagonal
+      ? `Schuine achterwand (knik op ${c.backDiagKinkHeight ?? 0} cm)`
+      : null,
   ].filter((v): v is string => v !== null);
 
   return {
@@ -413,12 +415,22 @@ function handleLabel(id: string, name: string | null | undefined): string {
   return id === "none" ? "Greeploos (push-to-open)" : id;
 }
 
-function diagonalLabel(side: string): string {
-  if (side === "left") return "links";
-  if (side === "right") return "rechts";
-  if (side === "both") return "links en rechts";
-  return side;
+/**
+ * A joiner needs the two numbers that define the slope, not just which side it
+ * is on: where it starts against the wall and how far it reaches horizontally.
+ */
+function describeDiagonal(c: ClosetConfigSnapshot): string {
+  const parts: string[] = [];
+  const reach = (w?: number) => w ?? c.diagTopWidth ?? 0;
+  if (c.diagonalSide === "left" || c.diagonalSide === "both") {
+    parts.push(`links vanaf ${c.leftDiagStartHeight} cm over ${reach(c.leftDiagTopWidth)} cm`);
+  }
+  if (c.diagonalSide === "right" || c.diagonalSide === "both") {
+    parts.push(`rechts vanaf ${c.rightDiagStartHeight} cm over ${reach(c.rightDiagTopWidth)} cm`);
+  }
+  return `Schuine zijwand: ${parts.join(", ")}`;
 }
+
 
 /** One-line description of a module for spec lists. */
 export function describeModule(m: SpecModule): string {

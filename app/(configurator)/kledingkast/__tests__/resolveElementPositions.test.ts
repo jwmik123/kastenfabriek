@@ -3,6 +3,7 @@ import {
   resolveElementPositions,
   computeShelfPositions,
   SHELF_THICKNESS,
+  SHELF_SPACING,
   MIN_TOP_CLEARANCE,
   MODULE_LAYOUTS,
   getLayoutById,
@@ -156,18 +157,18 @@ describe('computeShelfPositions', () => {
   const open: FillZoneConfig = { type: 'open' }
 
   it('open returns []', () => {
-    expect(computeShelfPositions(open, 0, 2, false)).toEqual([])
+    expect(computeShelfPositions(open, 0, 2)).toEqual([])
   })
 
   it('fixedShelves returns positions verbatim', () => {
     const cfg: FillZoneConfig = { type: 'fixedShelves', positions: [0.35, 1.05] }
-    expect(computeShelfPositions(cfg, 0, 2, false)).toEqual([0.35, 1.05])
+    expect(computeShelfPositions(cfg, 0, 2)).toEqual([0.35, 1.05])
   })
 
   it('shelves without explicit startY: shelf TOPS snap to multiples of spacing strictly above startY', () => {
     const cfg: FillZoneConfig = { type: 'shelves', spacing: 0.35 }
     // startY = 0.7 (drawer top) → first shelf top strictly above = 1.05
-    const out = computeShelfPositions(cfg, 0.7, 2.4, true)
+    const out = computeShelfPositions(cfg, 0.7, 2.4)
     expect(out[0]).toBeCloseTo(1.05, 5)
     expect(out[1]).toBeCloseTo(1.4, 5)
   })
@@ -175,7 +176,7 @@ describe('computeShelfPositions', () => {
   it('shelves: top at 70cm aligns with a 70cm drawer (full-shelves L1 case)', () => {
     const cfg: FillZoneConfig = { type: 'shelves', spacing: 0.35 }
     // startY = 0 (module floor) → shelf tops at 0.35, 0.70, 1.05 ...
-    const out = computeShelfPositions(cfg, 0, 2.4, true)
+    const out = computeShelfPositions(cfg, 0, 2.4)
     expect(out[0]).toBeCloseTo(0.35, 5)
     expect(out[1]).toBeCloseTo(0.70, 5)
     expect(out[2]).toBeCloseTo(1.05, 5)
@@ -183,23 +184,39 @@ describe('computeShelfPositions', () => {
 
   it('shelves with explicit startY: first shelf at exactly startY', () => {
     const cfg: FillZoneConfig = { type: 'shelves', spacing: 0.35, startY: 1.75 }
-    const out = computeShelfPositions(cfg, 1.75, 2.4, true)
+    const out = computeShelfPositions(cfg, 1.75, 2.4)
     expect(out[0]).toBe(1.75)
     expect(out[1]).toBeCloseTo(2.1, 5)
   })
 
-  it('shelves: !fillToTop keeps last when gap to endY >= MIN_TOP_CLEARANCE', () => {
+  it('shelves: keeps last when gap to endY >= MIN_TOP_CLEARANCE', () => {
     const cfg: FillZoneConfig = { type: 'shelves', spacing: 0.35 }
     // endY = 1.75; positions: [0.35, 0.7, 1.05, 1.4]; gap above 1.4 = 0.35 >= 0.30 → kept.
-    const out = computeShelfPositions(cfg, 0, 1.75, false)
+    const out = computeShelfPositions(cfg, 0, 1.75)
     expect(out[out.length - 1]).toBeCloseTo(1.4, 5)
   })
 
-  it('shelves: !fillToTop drops last when gap to endY < MIN_TOP_CLEARANCE', () => {
+  it('shelves: drops last when gap to endY < MIN_TOP_CLEARANCE', () => {
     const cfg: FillZoneConfig = { type: 'shelves', spacing: 0.35 }
     // endY = 1.5; positions before drop: [0.35, 0.7, 1.05, 1.4]; gap = 0.1 < 0.30 → drop.
-    const out = computeShelfPositions(cfg, 0, 1.5, false)
+    const out = computeShelfPositions(cfg, 0, 1.5)
     expect(out[out.length - 1]).toBeCloseTo(1.05, 5)
+  })
+
+  it('slanted module: drops the shelf that would sit under the kink shelf', () => {
+    const cfg: FillZoneConfig = { type: 'shelves', spacing: SHELF_SPACING }
+    // Left diagonal starting at 60 cm: roofY = 0.60 - 0.118 (module floor) - 0.018 (wall)
+    // = 0.464, the underside of the structural kink shelf. Grid puts a shelf at 0.368,
+    // 9.6 cm below it → dropped.
+    expect(computeShelfPositions(cfg, 0, 0.464)).toEqual([])
+  })
+
+  it('slanted module: keeps the shelf when the kink shelf clears it by 30 cm', () => {
+    const cfg: FillZoneConfig = { type: 'shelves', spacing: SHELF_SPACING }
+    // roofY = 0.70 → gap above the 0.368 shelf is 0.332 >= MIN_TOP_CLEARANCE.
+    const out = computeShelfPositions(cfg, 0, 0.70)
+    expect(out).toHaveLength(1)
+    expect(out[0]).toBeCloseTo(SHELF_SPACING, 5)
   })
 
   it('MIN_TOP_CLEARANCE constant is 0.30', () => {
@@ -208,7 +225,7 @@ describe('computeShelfPositions', () => {
 
   it('shelves: zone height below 2*SHELF_THICKNESS returns []', () => {
     const cfg: FillZoneConfig = { type: 'shelves', spacing: 0.35 }
-    expect(computeShelfPositions(cfg, 0, SHELF_THICKNESS, false)).toEqual([])
+    expect(computeShelfPositions(cfg, 0, SHELF_THICKNESS)).toEqual([])
   })
 })
 

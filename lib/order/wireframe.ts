@@ -12,6 +12,13 @@ import {
   type ModuleLayoutConfig,
 } from "@/app/(configurator)/kledingkast/scene/moduleLayouts";
 import { getWasmLayoutConfig } from "@/app/(configurator)/wasmachinekast/moduleLayoutConfigs";
+import {
+  computeModuleCapY,
+  getBackDiagHeightAtZ,
+  getDiagHeightAt,
+  getFullDiagHeightAt,
+  type DiagParams,
+} from "@/app/(configurator)/kledingkast/scene/diagonalUtils";
 import glbBboxes from "./glb-bboxes.json";
 import type { ClosetConfigSnapshot } from "@/lib/cart/types";
 import { resolveSections, type SpecModule, type SpecSection } from "./closet-spec";
@@ -136,6 +143,87 @@ function fmtCm(cm: number): string {
 }
 
 /**
+ * The snapshot's sloped-wall settings, in the shape and units the scene's own
+ * diagonal maths expects. Mirrors the DiagParams builder in ClosetScene,
+ * including its clamp of the start height to 20 cm below the corpus top.
+ */
+function diagParamsFor(
+  c: ClosetConfigSnapshot,
+  section: SpecSection,
+  mainHCm: number,
+  sideWallCm: number,
+): DiagParams {
+  const base: DiagParams = {
+    diagonalSide: c.diagonalSide,
+    leftDiagStartHeight: Math.min(c.leftDiagStartHeight, mainHCm - 20) / 100,
+    rightDiagStartHeight: Math.min(c.rightDiagStartHeight, mainHCm - 20) / 100,
+    leftDiagTopWidth: (c.leftDiagTopWidth ?? c.diagTopWidth ?? 0) / 100,
+    rightDiagTopWidth: (c.rightDiagTopWidth ?? c.diagTopWidth ?? 0) / 100,
+    outerWidth: section.widthCm / 100,
+    mainHeight: mainHCm / 100,
+    closetHeight: section.heightCm / 100,
+    backDiagonal: c.backDiagonal ?? false,
+    backDiagKinkHeight: (c.backDiagKinkHeight ?? 0) / 100,
+    backDiagFlatSectionDepth: (c.backDiagFlatSectionDepth ?? 0) / 100,
+    outerDepth: c.depthCm / 100,
+    moduleCapY: mainHCm / 100,
+    sideWallThickness: sideWallCm / 100,
+  };
+  return { ...base, moduleCapY: computeModuleCapY(base, c.hasTopCabinet) };
+}
+
+/** True when this snapshot has any slope at all. */
+function hasSlope(c: ClosetConfigSnapshot): boolean {
+  return c.diagonalSide !== "none" || c.backDiagonal === true;
+}
+
+/**
+ * Interior roof height of one module, in cm above the module floor.
+ *
+ * Straight from Module.tsx: the usable height is the lower of the two side
+ * walls, and the outermost module under a slope gains the sliver the angled
+ * panel leaves behind.
+ */
+function moduleRoofCm(
+  p: DiagParams,
+  leftXOuterCm: number,
+  rightXOuterCm: number,
+  isFirst: boolean,
+  isLast: boolean,
+): number {
+  const floorY = MODULE_FLOOR_Y;
+  if (p.backDiagonal) {
+    const hBack = Math.min(getBackDiagHeightAtZ(WALL, p), p.moduleCapY) - floorY - WALL;
+    return Math.max(0, hBack) * 100;
+  }
+
+  const wallH = (xCm: number) =>
+    Math.max(0, getDiagHeightAt(xCm / 100, p) - floorY - WALL);
+
+  const hasLeftDiag = (p.diagonalSide === "left" || p.diagonalSide === "both") && isFirst;
+  const hasRightDiag = (p.diagonalSide === "right" || p.diagonalSide === "both") && isLast;
+
+  const sliver = (rise: number, run: number) => {
+    if (run <= 0) return 0;
+    const len = Math.sqrt(rise * rise + run * run);
+    return (WALL * (rise + run - len)) / run;
+  };
+
+  const leftH =
+    wallH(leftXOuterCm) +
+    (hasLeftDiag
+      ? sliver(p.mainHeight - p.leftDiagStartHeight, p.sideWallThickness + p.leftDiagTopWidth)
+      : 0);
+  const rightH =
+    wallH(rightXOuterCm) +
+    (hasRightDiag
+      ? sliver(p.mainHeight - p.rightDiagStartHeight, p.sideWallThickness + p.rightDiagTopWidth)
+      : 0);
+
+  return Math.min(leftH, rightH) * 100;
+}
+
+/**
  * A section's carcass height below any top cabinet. Above 275 cm both stores
  * cap the main body at 225 cm and put a top cabinet on it.
  */
@@ -215,12 +303,22 @@ export function buildWireframe(
     const H = section.heightCm;
     const mainH = mainHeightCm(section, c);
 
+    const diag = diagParamsFor(c, section, mainH, sideWallCm);
+    const sloped = c.diagonalSide !== "none";
+
     // --- Carcass ---
-    rect(x0, 0, W, H, "outline");
+    if (sloped) {
+      drawSlopedOutline(lines, dy, x0, W, H, diag);
+    } else {
+      rect(x0, 0, W, H, "outline");
+    }
     // Plinth.
     hLine(x0, x0 + W, PLINTH_CM, "panel");
-    // Top cabinet divider.
-    if (mainH < H - 0.01) hLine(x0, x0 + W, mainH, "panel");
+    // Top cabinet divider — only where the cabinet still reaches that height.
+    if (mainH < H - 0.01) {
+      const [dl, dr] = flatSpanAt(mainH, W, diag);
+      if (dr - dl > 0.01) hLine(x0 + dl, x0 + dr, mainH, "panel");
+    }
 
     // --- Modules ---
     const walls = wallsOf(section);
@@ -247,7 +345,17 @@ export function buildWireframe(
       const openBottom = MODULE_FLOOR_CM;
       // An appliance sits at the bottom of a full-height carcass — only the
       // lage-kast bays are 90 cm tall, and there the section already is.
-      const openTop = moduleTop;
+      // Under a slope the roof drops per module, exactly as in Module.tsx.
+      const openTop = hasSlope(c)
+        ? openBottom +
+          moduleRoofCm(
+            diag,
+            slotX - x0,
+            slotX - x0 + spanW,
+            i === 0,
+            i + m.span >= section.modules.length,
+          )
+        : moduleTop;
       const openH = openTop - openBottom;
 
       if (openW > 0 && openH > 0) {
@@ -271,15 +379,23 @@ export function buildWireframe(
           }
         }
 
-        // Top cabinet compartments line up with the modules below them.
+        // Top cabinet compartments line up with the modules below them, but
+        // stop at the sloped roof instead of running on into open air.
         if (mainH < H - 0.01 && openRight < x0 + W - walls.right - 0.01) {
-          lines.push({
-            x1: openRight + MODULE_WALL_CM / 2,
-            y1: dy(H - SIDE_WALL_CM),
-            x2: openRight + MODULE_WALL_CM / 2,
-            y2: dy(mainH),
-            weight: "panel",
-          });
+          const dividerX = openRight + MODULE_WALL_CM / 2;
+          const roofHere = sloped
+            ? getFullDiagHeightAt((dividerX - x0) / 100, diag, H / 100) * 100
+            : H;
+          const dividerTop = Math.min(roofHere, H) - SIDE_WALL_CM;
+          if (dividerTop > mainH + 0.01) {
+            lines.push({
+              x1: dividerX,
+              y1: dy(dividerTop),
+              x2: dividerX,
+              y2: dy(mainH),
+              weight: "panel",
+            });
+          }
         }
 
         // Module clear widths go under the cabinet rather than across the
@@ -436,13 +552,86 @@ function drawInteriorFromConfig(
     { config: config.fillZone.above, span: fillAbove },
     { config: config.fillZone.below, span: fillBelow },
   ]) {
-    for (const shelfTop of computeShelfPositions(zone.config, zone.span.start, zone.span.end, false)) {
+    for (const shelfTop of computeShelfPositions(zone.config, zone.span.start, zone.span.end)) {
       const y = bottom + (shelfTop - SHELF_THICKNESS) * 100;
       if (inBand(y)) ops.hLine(left, right, y, "interior");
     }
   }
 
   return true;
+}
+
+/**
+ * The outer silhouette of a cabinet against a sloped wall.
+ *
+ * The slope does not stop at the corpus top: `getFullDiagHeightAt` extends the
+ * same line up to the full cabinet height, which is what the side panel and any
+ * top cabinet are actually cut to. The outline is that profile — left edge, up
+ * along the slope to the kink, flat across, down the other side.
+ */
+function drawSlopedOutline(
+  lines: WireLine[],
+  dy: (y: number) => number,
+  x0: number,
+  W: number,
+  H: number,
+  p: DiagParams,
+): void {
+  const heightAt = (xCm: number) => getFullDiagHeightAt(xCm / 100, p, H / 100) * 100;
+  const [kl, kr] = flatSpanAt(H, W, p);
+
+  const profile: Array<{ x: number; y: number }> = [
+    { x: 0, y: heightAt(0) },
+    { x: kl, y: H },
+    { x: kr, y: H },
+    { x: W, y: heightAt(W) },
+  ];
+
+  const pts = profile.filter((pt, i, all) => i === 0 || Math.abs(pt.x - all[i - 1].x) > 0.01);
+  for (let i = 0; i < pts.length - 1; i++) {
+    lines.push({
+      x1: x0 + pts[i].x,
+      y1: dy(pts[i].y),
+      x2: x0 + pts[i + 1].x,
+      y2: dy(pts[i + 1].y),
+      weight: "outline",
+    });
+  }
+  // Sides and floor.
+  lines.push(
+    { x1: x0, y1: dy(pts[0].y), x2: x0, y2: dy(0), weight: "outline" },
+    { x1: x0, y1: dy(0), x2: x0 + W, y2: dy(0), weight: "outline" },
+    { x1: x0 + W, y1: dy(0), x2: x0 + W, y2: dy(pts[pts.length - 1].y), weight: "outline" },
+  );
+}
+
+/**
+ * The x-range, in cm from the section's left edge, over which the cabinet still
+ * reaches `heightCm`. Outside it the slope has already cut the carcass away, so
+ * a horizontal line drawn there would hang in mid-air.
+ */
+function flatSpanAt(heightCm: number, W: number, p: DiagParams): [number, number] {
+  let left = 0;
+  let right = W;
+  const h = heightCm / 100;
+
+  if (
+    (p.diagonalSide === "left" || p.diagonalSide === "both") &&
+    p.leftDiagTopWidth > 0 &&
+    p.mainHeight > p.leftDiagStartHeight
+  ) {
+    const scale = (h - p.leftDiagStartHeight) / (p.mainHeight - p.leftDiagStartHeight);
+    left = Math.max(0, (p.sideWallThickness + p.leftDiagTopWidth) * scale * 100);
+  }
+  if (
+    (p.diagonalSide === "right" || p.diagonalSide === "both") &&
+    p.rightDiagTopWidth > 0 &&
+    p.mainHeight > p.rightDiagStartHeight
+  ) {
+    const scale = (h - p.rightDiagStartHeight) / (p.mainHeight - p.rightDiagStartHeight);
+    right = Math.min(W, W - (p.sideWallThickness + p.rightDiagTopWidth) * scale * 100);
+  }
+  return [Math.min(left, W), Math.max(0, right)];
 }
 
 /** Appliance front: a drum circle inside the opening. */

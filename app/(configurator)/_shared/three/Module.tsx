@@ -449,16 +449,10 @@ export default function Module({
 
   const moduleHasDiag    = !isFullHeight(leftWallXOuter, rightWallXOuter, p)
 
-  const hasKinkInRange =
-    ((p.diagonalSide === 'left' || p.diagonalSide === 'both') &&
-      p.leftDiagTopWidth > 0 &&
-      p.sideWallThickness + p.leftDiagTopWidth > leftWallXOuter &&
-      p.sideWallThickness + p.leftDiagTopWidth < rightWallXOuter) ||
-    ((p.diagonalSide === 'right' || p.diagonalSide === 'both') &&
-      p.rightDiagTopWidth > 0 &&
-      p.outerWidth - p.sideWallThickness - p.rightDiagTopWidth > leftWallXOuter &&
-      p.outerWidth - p.sideWallThickness - p.rightDiagTopWidth < rightWallXOuter)
-  const fillToTop = moduleHasDiag && !hasKinkInRange
+  // No fill-to-top escape hatch on slanted modules: a module under a diagonal is
+  // closed off by its structural kink shelf, and roofY already sits at that
+  // shelf's underside — so MIN_TOP_CLEARANCE applies there exactly as it does
+  // against a straight module's roof.
   const mirrorDoor = mirrorProp ?? (isBackDiag
     ? (index % 2 === 1 || isLastModule)
     : (moduleHasDiag ? leftWallH < rightWallH : (index % 2 === 1 || isLastModule)))
@@ -522,7 +516,6 @@ export default function Module({
           centerX={centerX}
           centerZ={centerZ}
           insideFinish={insideFinish}
-          fillToTop={fillToTop}
         />
       )}
 
@@ -536,7 +529,6 @@ export default function Module({
           centerX={centerX}
           centerZ={centerZ}
           insideFinish={insideFinish}
-          fillToTop={fillToTop}
         />
       )}
 
