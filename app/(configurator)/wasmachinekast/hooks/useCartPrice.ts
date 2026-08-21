@@ -63,12 +63,8 @@ export function useCartPrice() {
 
   const moduleCost = allModules.reduce((sum, module) => {
     if (module.layoutId === null || !engine) return sum
-    try {
-      const type = module.span === 2 ? 'double' : 'single'
-      return sum + engine.getModulePrice(module.layoutId, type)
-    } catch {
-      return sum
-    }
+    const type = module.span === 2 ? 'double' : 'single'
+    return sum + engine.getModulePrice(module.layoutId, type)
   }, 0)
 
   // Doors carry the door handle; only the door above the washer and the top

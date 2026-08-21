@@ -220,4 +220,46 @@ describe('getWasmModuleLayouts', () => {
     expect(entry.minSlotWidth).toBe(68.6)
     expect(entry.name).toBe(WASHER_SINGLE.name)
   })
+
+  // layoutId 14 exists twice in the catalogue: the high washer-with-plank and a
+  // low-section module. The section decides which price applies.
+  it('picks the Sanity doc whose sectionType matches when one ID exists twice', () => {
+    const lowDoc: ModuleLayout = {
+      ...baseLayout,
+      layoutId: WASHER_PLANK.layoutId,
+      name: 'Low Drawer',
+      sectionType: 'low',
+      priceSingle: 650,
+      priceDouble: 850,
+    }
+    const highDoc: ModuleLayout = {
+      ...baseLayout,
+      layoutId: WASHER_PLANK.layoutId,
+      name: 'Wasmachine met plank',
+      sectionType: 'high',
+      priceSingle: 1250,
+      priceDouble: 1250,
+    }
+    // Whatever order Sanity returns them in, the high washer takes the high price.
+    for (const docs of [[lowDoc, highDoc], [highDoc, lowDoc]]) {
+      const entry = getWasmModuleLayouts(docs).find(
+        (l) => l.layoutId === WASHER_PLANK.layoutId,
+      )!
+      expect(entry.priceSingle).toBe(1250)
+      expect(entry.priceDouble).toBe(1250)
+    }
+  })
+
+  it('falls back to the ID alone when the Sanity doc has no sectionType', () => {
+    const noSection: ModuleLayout = {
+      ...baseLayout,
+      layoutId: WASHER_PLANK.layoutId,
+      priceSingle: 111,
+      priceDouble: 222,
+    }
+    const entry = getWasmModuleLayouts([noSection]).find(
+      (l) => l.layoutId === WASHER_PLANK.layoutId,
+    )!
+    expect(entry.priceSingle).toBe(111)
+  })
 })

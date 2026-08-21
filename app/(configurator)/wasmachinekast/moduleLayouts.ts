@@ -103,8 +103,18 @@ export function isLayoutAvailable(layout: ModuleLayout, moduleWidthCm: number): 
   return moduleWidthCm >= layout.minSlotWidth
 }
 
+/**
+ * Pull the price out of Sanity; name, description and contents stay code-owned
+ * because they describe geometry the GLB fixes.
+ *
+ * A layoutId is not unique in the catalogue — 14 exists twice, once per
+ * section. Match on the section as well so the right one wins, and fall back to
+ * the id alone for layouts whose Sanity doc has no sectionType set.
+ */
 function mergeSanityPricing(hardcoded: ModuleLayout, sanityLayouts: ModuleLayout[]): ModuleLayout {
-  const sanity = sanityLayouts.find((l) => l.layoutId === hardcoded.layoutId)
+  const sameId = sanityLayouts.filter((l) => l.layoutId === hardcoded.layoutId)
+  const sanity =
+    sameId.find((l) => l.sectionType === hardcoded.sectionType) ?? sameId[0]
   return sanity
     ? { ...hardcoded, priceSingle: sanity.priceSingle, priceDouble: sanity.priceDouble }
     : hardcoded

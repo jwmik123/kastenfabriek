@@ -105,9 +105,7 @@ export function computeDebugGlobal(params: {
 
   const moduleCost = modules.reduce((sum, m) => {
     if (m.layoutId === null) return sum
-    try {
-      return sum + engine.getModulePrice(m.layoutId, m.span === 2 ? 'double' : 'single')
-    } catch { return sum }
+    return sum + engine.getModulePrice(m.layoutId, m.span === 2 ? 'double' : 'single')
   }, 0)
 
   let moduleDoorCost = 0
@@ -214,10 +212,7 @@ export function computeDebugSlots(params: {
     }
 
     const pricingTier = m.span === 2 ? 'double' : 'single'
-    let interiorCost = 0
-    try {
-      interiorCost = engine.getModulePrice(m.layoutId, pricingTier)
-    } catch { /* unknown layout — cost stays 0 */ }
+    const interiorCost = engine.getModulePrice(m.layoutId, pricingTier)
 
     const layoutEntry = moduleLayouts.find((l) => l.layoutId === m.layoutId)
     const layoutName = layoutEntry?.name ?? null

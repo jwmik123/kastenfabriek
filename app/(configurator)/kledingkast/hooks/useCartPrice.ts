@@ -60,12 +60,8 @@ export function useCartPrice() {
   // --- Module interior costs ---
   const moduleCost = modules.reduce((sum, module) => {
     if (module.layoutId === null || !engine) return sum
-    try {
-      const type = module.span === 2 ? 'double' : 'single'
-      return sum + engine.getModulePrice(module.layoutId, type)
-    } catch {
-      return sum
-    }
+    const type = module.span === 2 ? 'double' : 'single'
+    return sum + engine.getModulePrice(module.layoutId, type)
   }, 0)
 
   // --- Door panel costs ---

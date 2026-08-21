@@ -24,6 +24,16 @@ export interface SurchargeBreakdown {
 export const DEFAULT_SLOPED_BACK_WALL_SURCHARGE = 1100;
 export const DEFAULT_SLOPED_SIDE_WALL_SURCHARGE_PER_SIDE = 1100;
 
+const warnedMissingModules = new Set<number>();
+
+function warnMissingModuleOnce(layoutId: number): void {
+  if (warnedMissingModules.has(layoutId)) return;
+  warnedMissingModules.add(layoutId);
+  console.error(
+    `[pricing] Module layout ${layoutId} has no moduleLayout document — priced at 0.`,
+  );
+}
+
 export class PricingEngine {
   constructor(private data: FullPricingData) {}
 
@@ -60,12 +70,20 @@ export class PricingEngine {
     return this.data.modules.find((m) => m.layoutId === layoutId);
   }
 
+  /**
+   * Price of a module, or 0 when the catalogue has no document for it.
+   *
+   * A configurator cannot crash over one unknown layout, but a layout silently
+   * costing nothing is how an unpriced module ends up free in a quote — so the
+   * gap is logged, once per layout, rather than swallowed by the caller.
+   */
   getModulePrice(layoutId: number, type: CorpusType): number {
-    const module = this.getModule(layoutId);
-    if (!module) {
-      throw new Error(`Module layout ${layoutId} not found`);
+    const layout = this.getModule(layoutId);
+    if (!layout) {
+      warnMissingModuleOnce(layoutId);
+      return 0;
     }
-    return type === "double" ? module.priceDouble : module.priceSingle;
+    return type === "double" ? layout.priceDouble : layout.priceSingle;
   }
 
   getDoor(variant: DoorVariant): Accessory | undefined {

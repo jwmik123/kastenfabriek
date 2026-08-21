@@ -22,11 +22,7 @@ function priceSection(section: Section, engine: PricingEngine): number {
   let total = 0
   for (const m of section.modules) {
     if (m.layoutId === null) continue
-    try {
-      total += engine.getModulePrice(m.layoutId, corpusType)
-    } catch {
-      // module no longer in catalogue — skip
-    }
+    total += engine.getModulePrice(m.layoutId, corpusType)
   }
   return total
 }
