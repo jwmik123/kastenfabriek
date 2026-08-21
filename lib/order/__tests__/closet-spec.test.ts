@@ -3,7 +3,7 @@ import {
   buildPriceRows,
   buildClosetSpec,
   closetLineSubtotal,
-  describeModule,
+  describeModuleRow,
   resolveClosetKind,
   resolveSections,
   summarizeCloset,
@@ -231,22 +231,63 @@ describe("buildClosetSpec", () => {
 });
 
 describe("describeModule", () => {
-  it("calls a low-section front a front and a high-section one a deur", () => {
-    const [low, high] = [
-      resolveSections({ ...base, layout: "low-left", lowSection }).find((s) => s.key === "low")!,
-      resolveSections(base)[0],
-    ];
-    expect(describeModule(low.modules[1])).toContain("met front");
-    expect(describeModule(high.modules[0])).toContain("met deur");
-  });
-
   it("uses singular forms for a count of one", () => {
     const section = resolveSections({
       ...base,
       modules: [mod(0, { layoutContents: { shelves: 1, rods: 1, drawers: 1 } })],
     })[0];
-    expect(describeModule(section.modules[0])).toContain("1 plank");
-    expect(describeModule(section.modules[0])).toContain("1 roede");
-    expect(describeModule(section.modules[0])).toContain("1 lade");
+    const row = describeModuleRow(section.modules[0]);
+    expect(row.description).toContain("1 plank");
+    expect(row.description).toContain("1 roede");
+    expect(row.description).toContain("1 lade");
+  });
+});
+
+describe("describeModuleRow", () => {
+  const rowFor = (o: Partial<ModuleSlotSnapshot>, section: "high" | "low" = "high") => {
+    const c: ClosetConfigSnapshot =
+      section === "low"
+        ? { ...base, layout: "low-left", lowSection: { ...lowSection, modules: [mod(0, o)] } }
+        : { ...base, modules: [mod(0, o)] };
+    const spec = resolveSections(c).find((s) => s.key === section)!;
+    return describeModuleRow(spec.modules[0]);
+  };
+
+  it("keeps the position and the layout id apart", () => {
+    const row = rowFor({ slotIndex: 0, layoutId: 11 });
+    expect(row.position).toBe(1);
+    expect(row.layoutId).toBe(11);
+  });
+
+  it("carries the layout's own name and description", () => {
+    const row = rowFor({ layoutId: 3, layoutName: "Dubbele roede", layoutDescription: "Twee roeden boven elkaar" });
+    expect(row.name).toBe("Dubbele roede");
+    expect(row.description).toContain("Twee roeden boven elkaar");
+  });
+
+  it("falls back to the configurator's description on older snapshots", () => {
+    // Layout 11 is the wasmachinekast's single-washer module.
+    const row = rowFor({ layoutId: 11, layoutDescription: undefined });
+    expect(row.description).toContain("wasmachine");
+  });
+
+  it("calls out push-to-open on the module that has it", () => {
+    expect(rowFor({ pushToOpen: true }).execution).toContain("push-to-open");
+    expect(rowFor({ pushToOpen: false }).execution).not.toContain("push-to-open");
+  });
+
+  it("lists accessories separately from how the module is built", () => {
+    const row = rowFor({ hasPowerHole: true });
+    expect(row.accessories).toBe("kabeldoorvoer");
+    expect(row.execution).not.toContain("kabeldoorvoer");
+  });
+
+  it("says front in a lage kast and deur in a hoge kast", () => {
+    expect(rowFor({}, "low").execution).toContain("met front");
+    expect(rowFor({}).execution).toContain("met deur");
+  });
+
+  it("names an empty slot instead of leaving it blank", () => {
+    expect(rowFor({ layoutId: null, layoutName: null }).name).toBe("— leeg —");
   });
 });

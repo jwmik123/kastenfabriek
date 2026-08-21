@@ -1,4 +1,5 @@
 import { MATERIALS } from "@/app/(configurator)/kledingkast/materials";
+import { getWasmLayoutConfig } from "@/app/(configurator)/wasmachinekast/moduleLayoutConfigs";
 import type {
   ClosetConfigSnapshot,
   ClosetProductType,
@@ -46,6 +47,7 @@ export interface SpecModule {
   slotIndex: number;
   /** Layout id from Sanity, for looking up the scene's geometry config. */
   layoutId: number | null;
+  description: string | null;
   /** 1-based position as shown to the customer. */
   position: number;
   layoutName: string | null;
@@ -95,6 +97,11 @@ function toSpecModule(
     layoutId: m.layoutId,
     position: m.slotIndex + 1,
     layoutName: m.layoutName,
+    // Snapshots from before the description was stored fall back to the
+    // configurator's own copy of the layout.
+    description:
+      m.layoutDescription ??
+      (m.layoutId != null ? getWasmLayoutConfig(m.layoutId)?.description ?? null : null),
     contents: m.layoutContents ?? null,
     hasDoor: m.hasDoor,
     span: m.span,
@@ -432,20 +439,62 @@ function describeDiagonal(c: ClosetConfigSnapshot): string {
 }
 
 
-/** One-line description of a module for spec lists. */
-export function describeModule(m: SpecModule): string {
+/**
+ * One module as the order documents list it.
+ *
+ * Split into named fields rather than one sentence, because the position in the
+ * cabinet and the Sanity layout id are both numbers and must never be read as
+ * one another — they get their own labelled columns.
+ */
+export interface SpecModuleRow {
+  /** 1-based position, left to right. */
+  position: number;
+  /** Sanity layout id, or null for an empty slot. */
+  layoutId: number | null;
+  name: string;
+  description: string | null;
+  /** How the module is built: span, appliance, front, push-to-open. */
+  execution: string;
+  /** Ordered extras that sit in this module. */
+  accessories: string;
+}
+
+export function describeModuleRow(m: SpecModule): SpecModuleRow {
   const front = m.section === "low" ? "front" : "deur";
-  const parts: string[] = [];
-  if (m.span === 2) parts.push("dubbel");
-  if (m.isWasher) parts.push("wasmachine");
-  if (m.fixedWidthCm) parts.push(`${m.fixedWidthCm} cm breed`);
-  if (m.hasDoor) parts.push(m.pushToOpen ? `${front} push-to-open` : `met ${front}`);
-  else parts.push("open");
-  if (m.hasPowerHole) parts.push("kabeldoorvoer");
+
+  const execution: string[] = [];
+  if (m.span === 2) execution.push("dubbele module");
+  if (m.isWasher) execution.push("wasmachine");
+  if (m.fixedWidthCm) execution.push(`vaste breedte ${m.fixedWidthCm} cm`);
+  execution.push(m.hasDoor ? `met ${front}` : "open, zonder front");
+  if (m.pushToOpen) execution.push("push-to-open");
+
+  const accessories: string[] = [];
+  if (m.hasPowerHole) accessories.push("kabeldoorvoer");
+
+  const contents: string[] = [];
   if (m.contents) {
-    if (m.contents.shelves > 0) parts.push(plural(m.contents.shelves, "plank", "planken"));
-    if (m.contents.rods > 0) parts.push(plural(m.contents.rods, "roede", "roeden"));
-    if (m.contents.drawers > 0) parts.push(plural(m.contents.drawers, "lade", "lades"));
+    if (m.contents.shelves > 0) contents.push(plural(m.contents.shelves, "plank", "planken"));
+    if (m.contents.rods > 0) contents.push(plural(m.contents.rods, "roede", "roeden"));
+    if (m.contents.drawers > 0) contents.push(plural(m.contents.drawers, "lade", "lades"));
   }
-  return parts.join(" · ");
+
+  const description = [m.description, contents.join(" · ")]
+    .filter((part) => part && part.length > 0)
+    .join(" — ");
+
+  return {
+    position: m.position,
+    layoutId: m.layoutId,
+    name: m.layoutName ?? "— leeg —",
+    description: description.length > 0 ? description : null,
+    execution: execution.join(" · "),
+    accessories: accessories.join(" · "),
+  };
+}
+
+/** Compact one-line form, for places without room for a table. */
+export function describeModule(m: SpecModule): string {
+  const row = describeModuleRow(m);
+  return [row.execution, row.accessories].filter((p) => p.length > 0).join(" · ");
 }

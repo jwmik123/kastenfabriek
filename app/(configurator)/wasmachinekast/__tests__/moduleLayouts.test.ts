@@ -167,7 +167,7 @@ describe('getWasmModuleLayouts', () => {
     expect(lowIdx).toBeGreaterThan(sanityIdx)
   })
 
-  it('merges Sanity pricing into non-washer low module when IDs match', () => {
+  it('takes name, description and pricing from Sanity for a low module', () => {
     const sanityLow: ModuleLayout = {
       ...baseLayout,
       layoutId: 20,
@@ -179,7 +179,9 @@ describe('getWasmModuleLayouts', () => {
     const entry = result.find((l) => l.layoutId === 20)!
     expect(entry.priceSingle).toBe(77)
     expect(entry.priceDouble).toBe(88)
-    expect(entry.name).toBe('Lage kast — plank')
+    // Sanity owns the editorial fields; the code keeps only what the GLB needs.
+    expect(entry.name).toBe('Sanity low plank')
+    expect(entry.sectionType).toBe('low')
   })
 
   it('deduplicates: Sanity layout with same ID as low module is not included twice', () => {
@@ -206,7 +208,7 @@ describe('getWasmModuleLayouts', () => {
     expect(matches).toHaveLength(1)
   })
 
-  it('merges Sanity pricing into washer layout when IDs match', () => {
+  it('takes name and pricing from Sanity for a washer layout, keeping its geometry', () => {
     const sanityWasher: ModuleLayout = {
       ...baseLayout,
       layoutId: WASHER_SINGLE.layoutId,
@@ -218,6 +220,11 @@ describe('getWasmModuleLayouts', () => {
     const entry = result.find((l) => l.layoutId === WASHER_SINGLE.layoutId)!
     expect(entry.priceSingle).toBe(99)
     expect(entry.minSlotWidth).toBe(68.6)
+    expect(entry.name).toBe('Sanity washer')
+  })
+
+  it('falls back to the hardcoded name when Sanity has no document', () => {
+    const entry = getWasmModuleLayouts([]).find((l) => l.layoutId === WASHER_SINGLE.layoutId)!
     expect(entry.name).toBe(WASHER_SINGLE.name)
   })
 

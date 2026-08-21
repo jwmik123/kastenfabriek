@@ -6,6 +6,8 @@ export interface ModuleSlotSnapshot {
   slotIndex: number;
   layoutId: number | null;
   layoutName: string | null; // snapshot of name from Sanity
+  /** Snapshot of the layout's description from Sanity, for the order spec. */
+  layoutDescription?: string | null;
   /**
    * Snapshot of the layout's interior from Sanity, so order specs and the
    * production drawing do not need the pricing data to describe the module.

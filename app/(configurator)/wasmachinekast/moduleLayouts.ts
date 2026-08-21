@@ -111,13 +111,31 @@ export function isLayoutAvailable(layout: ModuleLayout, moduleWidthCm: number): 
  * section. Match on the section as well so the right one wins, and fall back to
  * the id alone for layouts whose Sanity doc has no sectionType set.
  */
-function mergeSanityPricing(hardcoded: ModuleLayout, sanityLayouts: ModuleLayout[]): ModuleLayout {
+/**
+ * Fold the Sanity document for this layout into the hardcoded entry.
+ *
+ * Sanity is the source of truth for everything editorial — the name, the
+ * description and the interior counts, which all end up on the order
+ * confirmation and the spec sheet. Only what the 3D scene needs to build the
+ * module stays in code: the section it belongs to, its minimum slot width and
+ * whether a top cabinet may use it, since those go hand in hand with the GLB.
+ *
+ * Two documents can share a layoutId (14 exists as a high and a low module), so
+ * the one matching this entry's section wins.
+ */
+function mergeSanityContent(hardcoded: ModuleLayout, sanityLayouts: ModuleLayout[]): ModuleLayout {
   const sameId = sanityLayouts.filter((l) => l.layoutId === hardcoded.layoutId)
   const sanity =
     sameId.find((l) => l.sectionType === hardcoded.sectionType) ?? sameId[0]
-  return sanity
-    ? { ...hardcoded, priceSingle: sanity.priceSingle, priceDouble: sanity.priceDouble }
-    : hardcoded
+  if (!sanity) return hardcoded
+  return {
+    ...hardcoded,
+    priceSingle: sanity.priceSingle,
+    priceDouble: sanity.priceDouble,
+    name: sanity.name ?? hardcoded.name,
+    description: sanity.description ?? hardcoded.description,
+    contents: sanity.contents ?? hardcoded.contents,
+  }
 }
 
 export function getWasmModuleLayouts(sanityLayouts: ModuleLayout[]): ModuleLayout[] {
@@ -126,7 +144,7 @@ export function getWasmModuleLayouts(sanityLayouts: ModuleLayout[]): ModuleLayou
     ...WASM_LOW_MODULE_LAYOUTS.map((l) => l.layoutId),
   ])
   const nonHardcoded = sanityLayouts.filter((l) => !hardcodedIds.has(l.layoutId))
-  const mergedWashers = WASHER_LAYOUTS.map((l) => mergeSanityPricing(l, sanityLayouts))
-  const mergedLowModules = WASM_LOW_MODULE_LAYOUTS.map((l) => mergeSanityPricing(l, sanityLayouts))
+  const mergedWashers = WASHER_LAYOUTS.map((l) => mergeSanityContent(l, sanityLayouts))
+  const mergedLowModules = WASM_LOW_MODULE_LAYOUTS.map((l) => mergeSanityContent(l, sanityLayouts))
   return [...nonHardcoded, ...mergedWashers, ...mergedLowModules]
 }

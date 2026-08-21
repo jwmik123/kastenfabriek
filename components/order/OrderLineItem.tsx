@@ -1,4 +1,4 @@
-import { buildClosetSpec, describeModule, plural } from "@/lib/order/closet-spec";
+import { buildClosetSpec, describeModuleRow, plural } from "@/lib/order/closet-spec";
 import { renderClosetWireframeSvg } from "@/lib/order/wireframe-svg";
 import {
   describeProductLine,
@@ -125,12 +125,24 @@ function ClosetLine({ item }: { item: Extract<OrderLine, { kind: "closet" }> }) 
               {plural(section.moduleCount, "module", "modules")} · {section.widthCm} ×{" "}
               {section.heightCm} cm
             </span>
-            {section.modules.map((m) => (
-              <span key={m.slotIndex} className="block text-gray-500">
-                {m.position}. {m.layoutName ?? "— leeg —"}
-                {describeModule(m) ? ` · ${describeModule(m)}` : ""}
-              </span>
-            ))}
+            {section.modules.map((m) => {
+              const row = describeModuleRow(m);
+              return (
+                <span key={m.slotIndex} className="block border-t border-gray-100 pt-1 mt-1">
+                  <span className="text-gray-900">
+                    Plaats {row.position} · {row.name}
+                    {row.layoutId != null ? ` · layout #${row.layoutId}` : ""}
+                  </span>
+                  {row.description && (
+                    <span className="block text-gray-500">{row.description}</span>
+                  )}
+                  <span className="block text-gray-500">{row.execution}</span>
+                  {row.accessories && (
+                    <span className="block text-gray-500">Accessoires: {row.accessories}</span>
+                  )}
+                </span>
+              );
+            })}
           </dd>
         </dl>
       ))}

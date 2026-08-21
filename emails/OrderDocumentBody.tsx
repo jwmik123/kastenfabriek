@@ -14,7 +14,7 @@ import {
 } from "@react-email/components";
 import {
   buildClosetSpec,
-  describeModule,
+  describeModuleRow,
   plural,
   type SpecSection,
 } from "@/lib/order/closet-spec";
@@ -337,12 +337,35 @@ function ModuleList({ section, showLabel }: { section: SpecSection; showLabel: b
             {plural(section.moduleCount, "module", "modules")} · {section.widthCm} ×{" "}
             {section.heightCm} cm
           </Text>
-          {section.modules.map((m) => (
-            <Text key={m.slotIndex} style={featureText}>
-              {m.position}. {m.layoutName ?? "— leeg —"}
-              {describeModule(m) ? ` · ${describeModule(m)}` : ""}
-            </Text>
-          ))}
+          {section.modules.map((m) => {
+            const row = describeModuleRow(m);
+            return (
+              <table
+                key={m.slotIndex}
+                width="100%"
+                cellPadding="0"
+                cellSpacing="0"
+                style={moduleRow}
+              >
+                <tr>
+                  <td style={modulePlace}>
+                    <Text style={modulePlaceText}>Plaats {row.position}</Text>
+                  </td>
+                  <td>
+                    <Text style={moduleName}>
+                      {row.name}
+                      {row.layoutId != null ? ` · layout #${row.layoutId}` : ""}
+                    </Text>
+                    {row.description && <Text style={featureText}>{row.description}</Text>}
+                    <Text style={featureText}>{row.execution}</Text>
+                    {row.accessories && (
+                      <Text style={featureText}>Accessoires: {row.accessories}</Text>
+                    )}
+                  </td>
+                </tr>
+              </table>
+            );
+          })}
         </td>
       </tr>
     </table>
@@ -465,6 +488,31 @@ const text: React.CSSProperties = {
   color: "#374151",
   margin: "0 0 4px 0",
   lineHeight: "1.5",
+};
+
+const moduleRow: React.CSSProperties = {
+  borderTop: "1px solid #eef2ef",
+  marginTop: "6px",
+  paddingTop: "6px",
+};
+
+const modulePlace: React.CSSProperties = {
+  width: "78px",
+  verticalAlign: "top",
+};
+
+const modulePlaceText: React.CSSProperties = {
+  fontSize: "12px",
+  fontWeight: "600",
+  color: "#34463a",
+  margin: "0",
+};
+
+const moduleName: React.CSSProperties = {
+  fontSize: "13px",
+  fontWeight: "600",
+  color: "#111827",
+  margin: "0 0 2px 0",
 };
 
 const featureText: React.CSSProperties = {

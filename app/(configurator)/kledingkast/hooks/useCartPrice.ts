@@ -154,6 +154,7 @@ export function useCartPrice() {
           slotIndex: m.slotIndex,
           layoutId: m.layoutId,
           layoutName: layout?.name ?? null,
+          layoutDescription: layout?.description ?? null,
           layoutContents: layout
             ? {
                 shelves: layout.contents.shelves,

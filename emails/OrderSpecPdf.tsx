@@ -14,7 +14,7 @@ import {
 } from "@react-pdf/renderer";
 import {
   buildClosetSpec,
-  describeModule,
+  describeModuleRow,
   plural,
   type ClosetSpec,
   type SpecSection,
@@ -45,7 +45,7 @@ const MUTED = "#6b7280";
 
 const PAGE_CONTENT_WIDTH = 515;
 /** Keeps drawing + written spec + prices of one cabinet on a single page. */
-const DRAWING_MAX_HEIGHT = 200;
+const DRAWING_MAX_HEIGHT = 150;
 
 const styles = StyleSheet.create({
   page: {
@@ -103,11 +103,17 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     borderBottomWidth: 0.4,
     borderBottomColor: BRAND_LIGHT,
-    paddingVertical: 2.5,
+    paddingVertical: 2,
   },
-  cellNum: { width: 26 },
-  cellName: { width: 120 },
-  cellDesc: { flexGrow: 1, flexBasis: 0 },
+  // Position and layout id are both numbers, so each gets its own labelled
+  // column — never a bare "#" that could be read as either.
+  cellPos: { width: 34 },
+  cellId: { width: 46 },
+  cellName: { width: 104 },
+  cellDesc: { flexGrow: 1, flexBasis: 0, paddingRight: 6 },
+  cellExec: { width: 118 },
+  cellAcc: { width: 66 },
+  cellMuted: { color: MUTED },
   priceRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 1.5 },
   priceTotalRow: {
     flexDirection: "row",
@@ -140,7 +146,7 @@ const styles = StyleSheet.create({
   captureCell: { flexGrow: 1, flexBasis: 0 },
   capture: {
     width: "100%",
-    maxHeight: 150,
+    maxHeight: 100,
     objectFit: "contain",
     borderWidth: 0.5,
     borderColor: BRAND_LIGHT,
@@ -271,17 +277,28 @@ function ModuleTable({ section }: { section: SpecSection }) {
         cm · {plural(section.moduleCount, "module", "modules")})
       </Text>
       <View style={styles.tableHeader}>
-        <Text style={[styles.cellNum, styles.bold]}>#</Text>
+        <Text style={[styles.cellPos, styles.bold]}>Plaats</Text>
+        <Text style={[styles.cellId, styles.bold]}>Layout</Text>
         <Text style={[styles.cellName, styles.bold]}>Module</Text>
-        <Text style={[styles.cellDesc, styles.bold]}>Uitvoering</Text>
+        <Text style={[styles.cellDesc, styles.bold]}>Omschrijving</Text>
+        <Text style={[styles.cellExec, styles.bold]}>Uitvoering</Text>
+        <Text style={[styles.cellAcc, styles.bold]}>Accessoires</Text>
       </View>
-      {section.modules.map((m) => (
-        <View key={m.slotIndex} style={styles.tableRow} wrap={false}>
-          <Text style={styles.cellNum}>{m.position}</Text>
-          <Text style={styles.cellName}>{m.layoutName ?? "— leeg —"}</Text>
-          <Text style={styles.cellDesc}>{describeModule(m)}</Text>
-        </View>
-      ))}
+      {section.modules.map((m) => {
+        const row = describeModuleRow(m);
+        return (
+          <View key={m.slotIndex} style={styles.tableRow} wrap={false}>
+            <Text style={styles.cellPos}>{row.position}</Text>
+            <Text style={styles.cellId}>
+              {row.layoutId != null ? `#${row.layoutId}` : "—"}
+            </Text>
+            <Text style={styles.cellName}>{row.name}</Text>
+            <Text style={[styles.cellDesc, styles.cellMuted]}>{row.description ?? "—"}</Text>
+            <Text style={styles.cellExec}>{row.execution}</Text>
+            <Text style={styles.cellAcc}>{row.accessories || "—"}</Text>
+          </View>
+        );
+      })}
     </View>
   );
 }
