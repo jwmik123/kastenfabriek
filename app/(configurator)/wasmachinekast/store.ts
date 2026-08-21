@@ -192,7 +192,8 @@ const RANDOM_WASHER_MAX = 2
  * Reads the store fresh every round: a washer is fixed-width, so placing one
  * can shrink the section (addWasherModule drops trailing modules), which
  * changes both the slot count and which slots are still free. Slots that fail
- * `canPlaceWasher` are remembered so the loop cannot spin on them.
+ * `canPlaceWasher` are remembered so the loop cannot spin on them. Slots
+ * covered by a dubbele module are skipped — a washer there would collapse it.
  *
  * Returns how many landed.
  */
@@ -214,9 +215,10 @@ function placeRandomWashers(
     const taken = new Set(
       s.washerModules.filter((w) => w.section === section).map((w) => w.slotIndex),
     )
-    const free = sectionModules(s, section)
+    const slotsHere = sectionModules(s, section)
+    const free = slotsHere
       .map((_, i) => i)
-      .filter((i) => !tried.has(i) && !taken.has(i))
+      .filter((i) => !tried.has(i) && !taken.has(i) && !isCoveredSlot(slotsHere, i))
     if (free.length === 0) break
 
     const slot = free[Math.floor(Math.random() * free.length)]
@@ -229,7 +231,52 @@ function placeRandomWashers(
   return placed
 }
 
-/** Random non-washer layout for every slot of a section; washer slots kept. */
+/** A dubbele module is refused on a fixed-width slot (the wasmachine modules). */
+function isFixedWidthSlot(
+  modules: BaseModuleSlot[],
+  slotIndex: number,
+  span: 1 | 2,
+): boolean {
+  return span === 2 && modules[slotIndex]?.fixedWidth !== undefined
+}
+
+/**
+ * Apply a layout to one slot, keeping the two span invariants:
+ *
+ * - a fixed-width layout (the wasmachine modules, 68.6 cm) can never be a
+ *   dubbele module — its width is the machine's, not the slot's, so it drops
+ *   back to a single slot and frees the vak it covered;
+ * - the slot before it gives up its span, because this vak is now in use.
+ */
+function applyLayoutToSlot(
+  modules: BaseModuleSlot[],
+  slotIndex: number,
+  layoutId: number,
+  fixedWidth: number | undefined,
+): BaseModuleSlot[] {
+  const wasDouble = modules[slotIndex]?.span === 2
+  const collapse = wasDouble && fixedWidth !== undefined
+  return modules.map((m) => {
+    if (m.slotIndex === slotIndex) {
+      return { ...m, layoutId, fixedWidth, span: (collapse ? 1 : m.span) as 1 | 2 }
+    }
+    if (m.slotIndex === slotIndex - 1 && m.span === 2) return { ...m, span: 1 as const }
+    return m
+  })
+}
+
+/** True when the slot before this one spans two, so this slot is covered. */
+function isCoveredSlot(modules: BaseModuleSlot[], index: number): boolean {
+  return index > 0 && modules[index - 1].span === 2
+}
+
+/**
+ * Random non-washer layout for every slot of a section; washer slots kept.
+ *
+ * A slot covered by a dubbele module keeps its empty layout — the same
+ * invariant `setModuleSpan` and `setModuleLayout` hold. Filling it would draw a
+ * second module inside the double one.
+ */
 function fillSectionModules(s: WasmState, section: 'high' | 'low'): BaseModuleSlot[] {
   const washerSlots = new Set(
     s.washerModules.filter((w) => w.section === section).map((w) => w.slotIndex),
@@ -238,7 +285,11 @@ function fillSectionModules(s: WasmState, section: 'high' | 'low'): BaseModuleSl
     s.moduleLayouts.filter((l) => !WASHER_LAYOUT_IDS.has(l.layoutId)),
     section,
   )
-  return sectionModules(s, section).map((m, i) => {
+  const modules = sectionModules(s, section)
+  return modules.map((m, i) => {
+    if (isCoveredSlot(modules, i)) {
+      return { ...m, slotIndex: i, layoutId: null, span: 1 as const, fixedWidth: undefined }
+    }
     if (washerSlots.has(i)) return { ...m, slotIndex: i }
     return { ...m, slotIndex: i, layoutId: pickRandom(pool)?.layoutId ?? null }
   })
@@ -459,21 +510,22 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
     const s = get()
     if (!s.lowSection) return
     const layout = s.moduleLayouts.find((l) => l.layoutId === layoutId)
-    const fixedWidth = layout?.minSlotWidth
     set({
       lowSection: {
         ...s.lowSection,
-        modules: s.lowSection.modules.map((m) => {
-          if (m.slotIndex === slotIndex) return { ...m, layoutId, fixedWidth }
-          if (m.slotIndex === slotIndex - 1 && m.span === 2) return { ...m, span: 1 as const }
-          return m
-        }),
+        modules: applyLayoutToSlot(
+          s.lowSection.modules,
+          slotIndex,
+          layoutId,
+          layout?.minSlotWidth,
+        ),
       },
     })
   },
   setLowSectionModuleSpan: (slotIndex, span) => {
     const s = get()
     if (!s.lowSection) return
+    if (isFixedWidthSlot(s.lowSection.modules, slotIndex, span)) return
     set({
       lowSection: {
         ...s.lowSection,
@@ -735,25 +787,25 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
 
   setModuleLayout: (slotIndex: number, layoutId: number) => {
     const layout = get().moduleLayouts.find((l) => l.layoutId === layoutId)
-    const fixedWidth = layout?.minSlotWidth
     set((s) => ({
-      modules: s.modules.map((m) => {
-        if (m.slotIndex === slotIndex) return { ...m, layoutId, fixedWidth }
-        if (m.slotIndex === slotIndex - 1 && m.span === 2) return { ...m, span: 1 as const }
-        return m
-      }),
+      modules: applyLayoutToSlot(s.modules, slotIndex, layoutId, layout?.minSlotWidth),
     }))
   },
 
-  setModuleSpan: (slotIndex: number, span: 1 | 2) =>
-    set((s) => ({
+  setModuleSpan: (slotIndex: number, span: 1 | 2) => {
+    const s = get()
+    // A fixed-width module carries the machine's width, not the slot's — it can
+    // never span two vakken.
+    if (isFixedWidthSlot(s.modules, slotIndex, span)) return
+    set({
       modules: s.modules.map((m) => {
         if (m.slotIndex === slotIndex) return { ...m, span }
         if (span === 2 && m.slotIndex === slotIndex + 1) return { ...m, layoutId: null, span: 1 as const, fixedWidth: undefined }
         if (span === 2 && m.slotIndex === slotIndex - 1 && m.span === 2) return { ...m, span: 1 as const }
         return m
       }),
-    })),
+    })
+  },
 
   toggleModuleDoor: (slotIndex) =>
     set((s) => ({

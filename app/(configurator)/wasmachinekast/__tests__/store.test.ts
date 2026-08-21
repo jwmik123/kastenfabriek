@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { useWasmachinekastStore } from '../store'
 import type { ClosetConfigSnapshot } from '@/lib/cart/types'
 import type { FullPricingData, PricingConstraints } from '@/types/configurator-pricing'
+import type { BaseModuleSlot } from '../../_shared/store/types'
 
 function resetStore() {
   useWasmachinekastStore.setState(useWasmachinekastStore.getInitialState())
@@ -600,6 +601,115 @@ describe('randomFill — sections and washers', () => {
     const s = useWasmachinekastStore.getState()
     expect(s.modules.every((m) => m.layoutId !== null)).toBe(true)
     expect(s.washerModules.every((w) => w.section === 'high')).toBe(true)
+  })
+
+  // A dubbele module covers the slot after it. Filling that slot draws a second
+  // module inside the double one — the invariant setModuleSpan holds.
+  it('leaves the slot covered by a dubbele module empty', () => {
+    for (let i = 0; i < 20; i++) {
+      useWasmachinekastStore.setState({
+        layout: 'high-only',
+        width: 200,
+        moduleCount: 3,
+        modules: [
+          { slotIndex: 0, layoutId: null, hasDoor: true, span: 2 },
+          { slotIndex: 1, layoutId: null, hasDoor: true, span: 1 },
+          { slotIndex: 2, layoutId: null, hasDoor: true, span: 1 },
+        ],
+        lowSection: null,
+        washerModules: [],
+        moduleLayouts: basePricingData.modules,
+        constraints: baseConstraints,
+      })
+      useWasmachinekastStore.getState().randomFill()
+      const s = useWasmachinekastStore.getState()
+      const covered = s.modules.filter((m, i) => i > 0 && s.modules[i - 1].span === 2)
+      expect(covered.every((m) => m.layoutId === null)).toBe(true)
+    }
+  })
+
+  it('keeps the dubbele module the customer set', () => {
+    useWasmachinekastStore.setState({
+      layout: 'high-only',
+      width: 200,
+      moduleCount: 3,
+      modules: [
+        { slotIndex: 0, layoutId: null, hasDoor: true, span: 2 },
+        { slotIndex: 1, layoutId: null, hasDoor: true, span: 1 },
+        { slotIndex: 2, layoutId: null, hasDoor: true, span: 1 },
+      ],
+      lowSection: null,
+      washerModules: [],
+      moduleLayouts: basePricingData.modules,
+      constraints: baseConstraints,
+    })
+    useWasmachinekastStore.getState().randomFill()
+    const s = useWasmachinekastStore.getState()
+    expect(s.modules[0].span).toBe(2)
+    expect(s.modules[0].layoutId).not.toBeNull()
+  })
+})
+
+// ─── dubbele module vs. the fixed-width machine modules ─────────────────────
+
+describe('dubbele module — fixed-width modules stay single', () => {
+  beforeEach(resetStore)
+
+  // 130 cm over two slots: the 65 cm washer plus one variable slot at its
+  // 65 cm maximum — the width where a washer still fits.
+  function twoSlots(first: Partial<BaseModuleSlot> = {}) {
+    useWasmachinekastStore.setState({
+      layout: 'high-only',
+      width: 130,
+      moduleCount: 2,
+      modules: [
+        { slotIndex: 0, layoutId: null, hasDoor: true, span: 1, ...first },
+        { slotIndex: 1, layoutId: null, hasDoor: true, span: 1 },
+      ],
+      lowSection: null,
+      washerModules: [],
+      moduleLayouts: basePricingData.modules,
+      constraints: baseConstraints,
+    })
+  }
+
+  it('refuses a dubbele module on a slot holding a machine', () => {
+    twoSlots({ layoutId: 11, fixedWidth: 65 })
+    useWasmachinekastStore.getState().setModuleSpan(0, 2)
+    const s = useWasmachinekastStore.getState()
+    expect(s.modules[0].span).toBe(1)
+    // The vak next to it stays usable rather than being swallowed.
+    expect(s.modules).toHaveLength(2)
+  })
+
+  // The popover hides the toggle on a washer slot, but the reverse order was
+  // open: make a vak double first, then pick the machine in it.
+  it('collapses a dubbele module when a machine is picked in it', () => {
+    twoSlots()
+    useWasmachinekastStore.getState().setModuleSpan(0, 2)
+    expect(useWasmachinekastStore.getState().modules[0].span).toBe(2)
+
+    useWasmachinekastStore.getState().setModuleLayout(0, 11)
+    const s = useWasmachinekastStore.getState()
+    expect(s.modules[0].span).toBe(1)
+    expect(s.modules[0].fixedWidth).toBe(65)
+  })
+
+  it('leaves a dubbele module alone for a layout without a fixed width', () => {
+    twoSlots()
+    useWasmachinekastStore.getState().setModuleSpan(0, 2)
+    useWasmachinekastStore.getState().setModuleLayout(0, 1)
+    const s = useWasmachinekastStore.getState()
+    expect(s.modules[0].span).toBe(2)
+  })
+
+  it('collapses the dubbele module when a washer is placed in it', () => {
+    twoSlots()
+    useWasmachinekastStore.getState().setModuleSpan(0, 2)
+    useWasmachinekastStore.getState().addWasherModule(0, 11, 'high')
+    const s = useWasmachinekastStore.getState()
+    expect(s.modules[0].span).toBe(1)
+    expect(s.washerModules).toHaveLength(1)
   })
 })
 
