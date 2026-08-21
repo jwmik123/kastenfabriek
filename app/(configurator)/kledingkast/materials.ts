@@ -17,11 +17,11 @@ export type Material = ColorMaterial | TextureMaterial
 
 export const MATERIALS: Material[] = [
   // Textures (outside & inside)
-  { id: 'h1199-thermo-eik', name: 'Thermo Eik Zwartbruin', type: 'texture', preview: '/materials/H1199 ST12 Thermo eik zwartbruin.webp' },
-  { id: 'h3165-vicenza-eik-licht', name: 'Vicenza Eik Licht', type: 'texture', preview: '/materials/H3165 ST12 Vicenza eik licht.webp' },
-  { id: 'h3158-vicenza-eik-grijs', name: 'Vicenza Eik Grijs', type: 'texture', preview: '/materials/H3158 ST19 Vicenza eik grijs.webp' },
+  { id: 'h1199-thermo-eik', name: 'Thermo Eik Zwartbruin', type: 'texture', preview: '/materials/H1199 ST12 Thermo eik zwartbruin.jpg' },
+  { id: 'h3165-vicenza-eik-licht', name: 'Vicenza Eik Licht', type: 'texture', preview: '/materials/H3165 ST12 Vicenza eik licht.jpg' },
+  { id: 'h3158-vicenza-eik-grijs', name: 'Vicenza Eik Grijs', type: 'texture', preview: '/materials/H3158 ST19 Vicenza eik grijs.jpg' },
   { id: 'h1714-lincoln-notelaar', name: 'Lincoln Notelaar', type: 'texture', preview: '/materials/H1714 ST19 Lincoln notelaar.jpg' },
-  { id: 'h3190-fineline-antraciet', name: 'Fineline Metallic Antraciet', type: 'texture', preview: '/materials/H3190 ST19 Fineline metallic antraciet.webp' },
+  { id: 'h3190-fineline-antraciet', name: 'Fineline Metallic Antraciet', type: 'texture', preview: '/materials/H3190 ST19 Fineline metallic antraciet.jpg' },
   // Colors — outside & inside
   { id: 'zwart', name: 'Zwart', type: 'color', color: '#050407' },
   { id: 'premium-wit', name: 'Premium Wit', type: 'color', color: '#FBFDF5' },

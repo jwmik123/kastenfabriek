@@ -14,6 +14,13 @@ const INNER_OUTER_R = 95
 
 const COLOR_GAP_DEG = 2
 
+const SELECT_STROKE = 3
+
+/** Halve streekbreedte omgerekend naar graden, zodat de outline binnen de ring blijft. */
+function strokeInsetDeg(r: number) {
+  return ((SELECT_STROKE / 2) / r) * (180 / Math.PI)
+}
+
 function polarToCartesian(r: number, angleDeg: number) {
   const rad = ((angleDeg - 90) * Math.PI) / 180
   return { x: CX + r * Math.cos(rad), y: CY + r * Math.sin(rad) }
@@ -97,7 +104,6 @@ export default function MaterialColorWheel({ materialId, onSelect, size = 300, h
       {textureMats.map((mat, i) => {
         const startAngle = (i / textureMats.length) * 360
         const endAngle = ((i + 1) / textureMats.length) * 360
-        const isSelected = materialId === mat.id
 
         return (
           <g key={mat.id} onClick={() => onSelect(mat.id)} className="cursor-pointer">
@@ -115,13 +121,37 @@ export default function MaterialColorWheel({ materialId, onSelect, size = 300, h
                 fill={`url(#mat-pat-${mat.id})`}
               />
             )}
-            {isSelected && (
-              <>
-                <circle cx={CX} cy={CY} r={INNER_OUTER_R - 2} fill="none" stroke="white" strokeWidth="3" />
-                <circle cx={CX} cy={CY} r={INNER_INNER_R + 2} fill="none" stroke="white" strokeWidth="3" />
-              </>
-            )}
           </g>
+        )
+      })}
+
+      {/* Inner ring — selectie-outline, boven alle segmenten zodat buren hem niet overtekenen */}
+      {textureMats.map((mat, i) => {
+        if (materialId !== mat.id) return null
+
+        if (textureMats.length === 1) {
+          return (
+            <g key={`sel-${mat.id}`} pointerEvents="none">
+              <circle cx={CX} cy={CY} r={INNER_OUTER_R - SELECT_STROKE / 2} fill="none" stroke="white" strokeWidth={SELECT_STROKE} />
+              <circle cx={CX} cy={CY} r={INNER_INNER_R + SELECT_STROKE / 2} fill="none" stroke="white" strokeWidth={SELECT_STROKE} />
+            </g>
+          )
+        }
+
+        const inset = strokeInsetDeg(INNER_INNER_R)
+        const startAngle = (i / textureMats.length) * 360 + inset
+        const endAngle = ((i + 1) / textureMats.length) * 360 - inset
+
+        return (
+          <path
+            key={`sel-${mat.id}`}
+            d={donutSegmentPath(INNER_INNER_R + SELECT_STROKE / 2, INNER_OUTER_R - SELECT_STROKE / 2, startAngle, endAngle)}
+            fill="none"
+            stroke="white"
+            strokeWidth={SELECT_STROKE}
+            strokeLinejoin="round"
+            pointerEvents="none"
+          />
         )
       })}
     </svg>
