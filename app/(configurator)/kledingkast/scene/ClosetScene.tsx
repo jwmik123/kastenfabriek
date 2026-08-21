@@ -14,7 +14,7 @@ import OnderstelPlinth from './OnderstelPlinth'
 import Module from '../../_shared/three/Module'
 import StructuralKinkShelf from './StructuralKinkShelf'
 import StructuralSideKinkShelf from './StructuralSideKinkShelf'
-import InstancedLightStrips from './InstancedLightStrips'
+import LightStrips from '../../_shared/three/LightStrips'
 import { getLayoutById } from './moduleLayouts'
 import { WALL, ONDERSTEL_HEIGHT, ONDERSTEL_GAP, CLOSET_INSIDE_INSET, MODULE_FLOOR_Y } from './closetConstants'
 // import { StripWarmthProvider } from '../../_shared/materials/StripWarmthContext'
@@ -215,7 +215,14 @@ export default function ClosetScene() {
   return (
     <ClosetMaterialProvider buitenkantMaterialId={buitenkantMaterialId} binnenkantMaterialId={binnenkantMaterialId} lightStripsEnabled={lightStripsEnabled}>
       <ClosetCorpus diagParams={diagParams} />
-      {lightStripsEnabled && doorsOpen && <InstancedLightStrips diagParams={diagParams} />}
+      {lightStripsEnabled && doorsOpen && (
+        <LightStrips
+          modules={modules}
+          widthM={outerWidth / 100}
+          depthM={outerDepthCm / 100}
+          diagParams={diagParams}
+        />
+      )}
       <TopCabinet />
       <OnderstelPlinth />
       {modules

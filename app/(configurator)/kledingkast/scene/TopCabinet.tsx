@@ -561,7 +561,7 @@ function BackDiagTCSlot({
 }
 
 // ---------------------------------------------------------------------------
-// TC LED strip constants (match InstancedLightStrips.tsx)
+// TC LED strip constants (match _shared/three/LightStrips.tsx)
 // ---------------------------------------------------------------------------
 const STRIP_DEPTH_FROM_FRONT = 0.10
 const STRIP_WIDTH  = 0.015

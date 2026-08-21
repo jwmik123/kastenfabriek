@@ -7,6 +7,7 @@ import { useWasmachinekastStore } from '../store'
 import { ClosetMaterialProvider } from '../../_shared/materials/ClosetMaterial'
 import ClosetCorpus from '../../_shared/three/ClosetCorpus'
 import Module from '../../_shared/three/Module'
+import LightStrips, { StripMesh, stripPair, STRIP_DEPTH_FROM_FRONT } from '../../_shared/three/LightStrips'
 import { TopCabinetSlot } from '../../kledingkast/scene/TopCabinet'
 import type { DiagParams } from '../../kledingkast/scene/diagonalUtils'
 import { WALL, ONDERSTEL_HEIGHT, ONDERSTEL_GAP, CLOSET_INSIDE_INSET, MODULE_FLOOR_Y } from '../../kledingkast/scene/closetConstants'
@@ -358,6 +359,7 @@ function WasmTopCabinet({
   sideWallThicknessM: number
 }) {
   const doorsOpen = useWasmachinekastStore((s) => s.doorsOpen)
+  const lightStripsEnabled = useWasmachinekastStore((s) => s.lightStripsEnabled)
 
   const SIDE_WALL_EXTRA_M = 0.005
   const innerW = widthM - sideWallThicknessM * 2
@@ -366,6 +368,28 @@ function WasmTopCabinet({
   const flatH = ceilH - mainHeightM - WALL
 
   const slotWidthsM = useMemo(() => computeSlotWidthsM(modules, innerW), [modules, innerW])
+
+  // The top cabinet belongs to the high section, so it lights up with it. Slot
+  // space is flat here: both strips of a slot take the same height.
+  const tcStrips = useMemo(() => {
+    if (!lightStripsEnabled || !doorsOpen || flatH <= WALL * 2) return []
+    const stripZ = moduleDepth - STRIP_DEPTH_FROM_FRONT
+    let x = -innerW / 2
+    return modules.flatMap((_, i) => {
+      const slotW = slotWidthsM[i] ?? 0
+      const at = x
+      x += slotW
+      if (slotW <= WALL * 2) return []
+      return stripPair({
+        x: at,
+        moduleWidth: slotW,
+        floorY: 0,
+        leftHeight: flatH,
+        rightHeight: flatH,
+        stripZ,
+      })
+    })
+  }, [lightStripsEnabled, doorsOpen, flatH, moduleDepth, innerW, modules, slotWidthsM])
 
   if (flatH <= WALL * 2) return null
 
@@ -399,6 +423,8 @@ function WasmTopCabinet({
           </group>
         )
       })}
+
+      <StripMesh strips={tcStrips} />
     </group>
   )
 }
@@ -436,6 +462,8 @@ function SectionGroup({
   const isLow = kind === 'low'
 
   const doorsExtendToFloor = useWasmachinekastStore((s) => s.doorsExtendToFloor)
+  const lightStripsEnabled = useWasmachinekastStore((s) => s.lightStripsEnabled)
+  const doorsOpen = useWasmachinekastStore((s) => s.doorsOpen)
   const selectedHandleId = useWasmachinekastStore((s) => s.doorHandleId)
   // One handle covers doors and drawers; Sanity says whether it fits a low module.
   const selectedHandleFitsLowModule = useWasmachinekastStore(
@@ -484,6 +512,17 @@ function SectionGroup({
   return (
     <group position={[xOffsetM, 0, 0]}>
       <ClosetCorpus diagParams={diagParams} hideTopPanel={isLow} sharedSideWall={sharedSideWall} />
+      {/* LED strips light the high cabinet only — a low section under a
+          werkblad has no strips, whatever the accessory toggle says. */}
+      {!isLow && lightStripsEnabled && doorsOpen && (
+        <LightStrips
+          modules={section.modules}
+          widthM={widthM}
+          depthM={depthM}
+          diagParams={diagParams}
+          sharedSideWall={sharedSideWall}
+        />
+      )}
       <SectionPlinth
         widthM={widthM}
         depthM={depthM}
@@ -582,6 +621,7 @@ export default function WasmachinekastScene() {
   const lowSection = useWasmachinekastStore((s) => s.lowSection)
   const buitenkantMaterialId = useWasmachinekastStore((s) => s.buitenkantMaterialId)
   const binnenkantMaterialId = useWasmachinekastStore((s) => s.binnenkantMaterialId)
+  const lightStripsEnabled = useWasmachinekastStore((s) => s.lightStripsEnabled)
   const topPanelThicknessMm = useWasmachinekastStore((s) => s.topPanelThicknessMm)
   const countertopMaterialId = useWasmachinekastStore((s) => s.countertopMaterialId)
   const sidePanelThickness = useWasmachinekastStore((s) => s.sidePanelThickness)
@@ -625,7 +665,11 @@ export default function WasmachinekastScene() {
   const lowSharedSideWall = !isDual ? null : layout === 'low-left' ? 'right' : 'left'
 
   return (
-    <ClosetMaterialProvider buitenkantMaterialId={buitenkantMaterialId} binnenkantMaterialId={binnenkantMaterialId}>
+    <ClosetMaterialProvider
+      buitenkantMaterialId={buitenkantMaterialId}
+      binnenkantMaterialId={binnenkantMaterialId}
+      lightStripsEnabled={lightStripsEnabled}
+    >
       <group>
         {highSection && (
           <SectionGroup

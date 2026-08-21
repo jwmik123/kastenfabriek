@@ -11,7 +11,7 @@ import { ssgi } from 'three/addons/tsl/display/SSGINode.js'
 import { bloom } from 'three/addons/tsl/display/BloomNode.js'
 import { UnsignedByteType } from 'three'
 import { useThree, useFrame } from '@react-three/fiber'
-import { useClosetStore } from '../../kledingkast/store'
+import { useConfiguratorStore } from '../store/context'
 
 export default function PostProcessing() {
   const { gl, scene, camera } = useThree()
@@ -19,8 +19,10 @@ export default function PostProcessing() {
   const giIntensityRef    = useRef<{ value: number } | null>(null)
   const bloomStrengthRef  = useRef<{ value: number } | null>(null)
   const aoBlendRef        = useRef<{ value: number } | null>(null)
-  const lightStripsEnabled = useClosetStore((s) => s.lightStripsEnabled)
-  const doorsOpen          = useClosetStore((s) => s.doorsOpen)
+  // Reads the active configurator's store, not the kledingkast one: the same
+  // pass runs in the wasmachinekast canvas and has to follow its strips.
+  const lightStripsEnabled = useConfiguratorStore((s) => s.lightStripsEnabled)
+  const doorsOpen          = useConfiguratorStore((s) => s.doorsOpen)
 
   // Rebuild the entire post-processing pipeline when lightStripsEnabled changes.
   // OFF pipeline: baseline composition (raw ao, no bloom, giIntensity=0.3 fixed).

@@ -4,6 +4,7 @@ import { Info, Plug, Zap } from 'lucide-react'
 import type { BaseModuleSlot } from '../../_shared/store/types'
 import { useWasmachinekastStore } from '../store'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
+import { Toggle } from '@/components/ui/Toggle'
 import { cn } from '@/lib/utils'
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
@@ -57,10 +58,14 @@ export default function AccessoiresStep() {
   const dismissLowOnlyAccessoryNotice = useWasmachinekastStore((s) => s.dismissLowOnlyAccessoryNotice)
   const sidePanelThickness = useWasmachinekastStore((s) => s.sidePanelThickness)
   const setSidePanelThickness = useWasmachinekastStore((s) => s.setSidePanelThickness)
+  const lightStripsEnabled = useWasmachinekastStore((s) => s.lightStripsEnabled)
+  const setLightStripsEnabled = useWasmachinekastStore((s) => s.setLightStripsEnabled)
 
   const powerOutlet = accessories?.find((a) => a.id === 'power-outlet')
   const socketHidden = layout === 'low-only' && powerOutlet?.availableForLowSection === false
   const isDual = layout === 'low-left' || layout === 'low-right'
+  // Strips sit in the high cabinet, so a low-only cabinet is not offered them.
+  const lightingAvailable = layout !== 'low-only'
   const anySocket =
     modules.some((m) => m.hasPowerHole) ||
     (lowSection?.modules.some((m) => m.hasPowerHole) ?? false)
@@ -81,6 +86,35 @@ export default function AccessoiresStep() {
             Begrepen
           </button>
         </div>
+      )}
+
+      {/* ── Verlichting ── */}
+      {lightingAvailable && (
+        <section className="space-y-5">
+          <div>
+            <h2 className="text-base font-semibold">Verlichting</h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Voeg LED-lichtstrips toe aan de binnenzijde van de modules.
+            </p>
+          </div>
+
+          <div className="flex items-center justify-between gap-4 p-4 rounded-md border">
+            <div>
+              <p className="text-sm font-medium">LED-lichtstrips</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Warm wit licht, 10 cm van de voorzijde ingebouwd in de zijwanden.
+                {isDual && ' Alleen in de hoge kast.'}
+              </p>
+            </div>
+            <Toggle checked={lightStripsEnabled} onCheckedChange={setLightStripsEnabled} />
+          </div>
+          {lightStripsEnabled && mainsNotice && (
+            <div className="flex items-start gap-2 rounded-md bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800">
+              <Zap className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>{mainsNotice}</span>
+            </div>
+          )}
+        </section>
       )}
 
       {/* ── Zijpanelen dikte ── */}

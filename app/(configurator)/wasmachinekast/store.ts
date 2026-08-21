@@ -167,6 +167,17 @@ function resizeModules(existing: BaseModuleSlot[], count: number): BaseModuleSlo
   }))
 }
 
+/**
+ * LED strips light the high cabinet, so a low-only layout cannot carry them.
+ * Returns the patch that switches them off, or null when nothing changes.
+ */
+function clearLightStripsForLowOnly(
+  s: Pick<WasmState, 'layout' | 'lightStripsEnabled'>,
+): { lightStripsEnabled: false; lowOnlyAccessoryNotice: true } | null {
+  if (s.layout !== 'low-only' || !s.lightStripsEnabled) return null
+  return { lightStripsEnabled: false, lowOnlyAccessoryNotice: true }
+}
+
 /** Sections the current layout actually has, in cabinet order. */
 function sectionsPresent(s: WasmState): ('high' | 'low')[] {
   const out: ('high' | 'low')[] = []
@@ -452,6 +463,8 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
       lastClickPoint: null,
     })
     const post = get()
+    const stripPatch = clearLightStripsForLowOnly(post)
+    if (stripPatch) set(stripPatch)
     if (powerOutletHiddenForLowOnly(post.pricingData, post.layout)) {
       const top = clearPowerHoles(post.modules)
       const low = post.lowSection
@@ -641,6 +654,8 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
       doorHandleMaterial: validatedMaterial,
     })
     const post = get()
+    const stripPatch = clearLightStripsForLowOnly(post)
+    if (stripPatch) set(stripPatch)
     if (powerOutletHiddenForLowOnly(post.pricingData, post.layout)) {
       const top = clearPowerHoles(post.modules)
       const low = post.lowSection
@@ -977,6 +992,8 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
       lastClickPoint: null,
     })
     const post = get()
+    const stripPatch = clearLightStripsForLowOnly(post)
+    if (stripPatch) set(stripPatch)
     if (powerOutletHiddenForLowOnly(post.pricingData, post.layout)) {
       const top = clearPowerHoles(post.modules)
       const low = post.lowSection

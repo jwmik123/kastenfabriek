@@ -1326,3 +1326,67 @@ describe('canPlaceWasher / addWasherModule — capacity gate', () => {
     expect(useWasmachinekastStore.getState().canPlaceWasher(0, 99)).toBe(true)
   })
 })
+
+// ─── LED strips — high cabinet only ──────────────────────────────────────────
+
+describe('LED strips — high cabinet only', () => {
+  beforeEach(resetStore)
+
+  const lowSectionState = {
+    width: 120,
+    height: 90,
+    moduleCount: 2,
+    modules: [
+      { slotIndex: 0, layoutId: null, hasDoor: true, span: 1 as const },
+      { slotIndex: 1, layoutId: null, hasDoor: true, span: 1 as const },
+    ],
+    topPanelThicknessMm: 18 as const,
+    countertopMaterialId: 'premium-wit',
+  }
+
+  const highSectionState = {
+    width: 120,
+    height: 240,
+    moduleCount: 2,
+    modules: [
+      { slotIndex: 0, layoutId: null, hasDoor: true, span: 1 as const },
+      { slotIndex: 1, layoutId: null, hasDoor: true, span: 1 as const },
+    ],
+    topPanelThicknessMm: 18 as const,
+    countertopMaterialId: 'premium-wit',
+  }
+
+  it('switches the strips off when the cabinet turns low-only', () => {
+    useWasmachinekastStore.setState({ lightStripsEnabled: true })
+    useWasmachinekastStore.getState().applySectionsState({
+      layout: 'low-only',
+      highSection: null,
+      lowSection: lowSectionState,
+    })
+    const s = useWasmachinekastStore.getState()
+    expect(s.lightStripsEnabled).toBe(false)
+    expect(s.lowOnlyAccessoryNotice).toBe(true)
+  })
+
+  it('keeps the strips when the cabinet still has a high section', () => {
+    useWasmachinekastStore.setState({ lightStripsEnabled: true })
+    useWasmachinekastStore.getState().applySectionsState({
+      layout: 'low-left',
+      highSection: highSectionState,
+      lowSection: lowSectionState,
+    })
+    expect(useWasmachinekastStore.getState().lightStripsEnabled).toBe(true)
+  })
+
+  it('leaves the notice alone when the strips were already off', () => {
+    useWasmachinekastStore.setState({ lightStripsEnabled: false })
+    useWasmachinekastStore.getState().applySectionsState({
+      layout: 'low-only',
+      highSection: null,
+      lowSection: lowSectionState,
+    })
+    const s = useWasmachinekastStore.getState()
+    expect(s.lightStripsEnabled).toBe(false)
+    expect(s.lowOnlyAccessoryNotice).toBe(false)
+  })
+})

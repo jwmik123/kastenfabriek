@@ -59,7 +59,6 @@ export function useCartPrice() {
   const engine = pricingData ? new PricingEngine(pricingData) : null
 
   const allModules = lowSection ? [...modules, ...lowSection.modules] : modules
-  const allModuleCount = lowSection ? moduleCount + lowSection.moduleCount : moduleCount
 
   const moduleCost = allModules.reduce((sum, module) => {
     if (module.layoutId === null || !engine) return sum
@@ -117,7 +116,13 @@ export function useCartPrice() {
       (pushDoorCount + topCabinetDoorCount) * engine.getHandlePrice('none') +
       drawerFrontCount * engine.getHandlePrice(drawerHandleId)
     : 0
-  const ledCost = lightStripsEnabled && engine ? engine.calculateLedPrice(allModuleCount) : 0
+  // LED strips light the high cabinet only, so they are priced over the high
+  // section's modules — a low-only cabinet cannot carry them at all.
+  const ledModuleCount = layout === 'low-only' ? 0 : moduleCount
+  const ledCost =
+    lightStripsEnabled && engine && ledModuleCount > 0
+      ? engine.calculateLedPrice(ledModuleCount)
+      : 0
 
   const powerHoleCount = allModules.filter((m) => m.hasPowerHole).length
   const powerHoleCost = powerHoleCount > 0 && engine ? powerHoleCount * engine.getAccessoryPrice('power-outlet') : 0
