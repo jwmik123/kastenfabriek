@@ -510,7 +510,7 @@ function drawInteriorFromConfig(
 
   // Lage-kast fronts: the GLB is a run of kitchen fronts covering the opening.
   if (config.lowFronts) {
-    const count = config.lowFrontCount ?? 1;
+    const count = config.drawerFrontCount ?? 1;
     for (let i = 1; i < count; i++) {
       ops.hLine(left, right, bottom + ((top - bottom) / count) * i, "interior");
     }

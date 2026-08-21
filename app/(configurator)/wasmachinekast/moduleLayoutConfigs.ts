@@ -24,6 +24,8 @@ const WASHER_SINGLE_CONFIG: ModuleLayoutConfig = {
     below: { type: 'open' },
   },
   minSlotHeight: WASHER_HEIGHT,
+  // WMSingleFront_extend — one drawer under the machine.
+  drawerFrontCount: 1,
 }
 
 const WASHER_DOUBLE_GLB_CONFIG: ModuleLayoutConfig = {
@@ -46,6 +48,8 @@ const WASHER_DOUBLE_GLB_CONFIG: ModuleLayoutConfig = {
     below: { type: 'open' },
   },
   minSlotHeight: WASHER_HEIGHT,
+  // WMDoubleFront1_extend + WMDoubleFront2 — two drawers under the machine.
+  drawerFrontCount: 2,
 }
 
 const WASHER_PLANK_CONFIG: ModuleLayoutConfig = {
@@ -68,6 +72,8 @@ const WASHER_PLANK_CONFIG: ModuleLayoutConfig = {
     below: { type: 'open' },
   },
   minSlotHeight: WASHER_HEIGHT,
+  // WMPlankFront1_extend + WMPlankFront2 — two drawers under the machine.
+  drawerFrontCount: 2,
 }
 
 const WASHER_WMOPEN_CONFIG: ModuleLayoutConfig = {
@@ -121,7 +127,7 @@ const WASM_LOW_PLANK_CONFIG: ModuleLayoutConfig = {
   },
   minSlotHeight: LOW_MODULE_HEIGHT,
   lowFronts: true,
-  lowFrontCount: 2,
+  drawerFrontCount: 2,
 }
 
 const WASM_LOW_SINGLE_CONFIG: ModuleLayoutConfig = {
@@ -150,7 +156,7 @@ const WASM_LOW_SINGLE_CONFIG: ModuleLayoutConfig = {
   },
   minSlotHeight: LOW_MODULE_HEIGHT,
   lowFronts: true,
-  lowFrontCount: 1,
+  drawerFrontCount: 1,
 }
 
 const WASM_LOW_DOUBLE_CONFIG: ModuleLayoutConfig = {
@@ -182,7 +188,7 @@ const WASM_LOW_DOUBLE_CONFIG: ModuleLayoutConfig = {
   },
   minSlotHeight: LOW_MODULE_HEIGHT,
   lowFronts: true,
-  lowFrontCount: 2,
+  drawerFrontCount: 2,
 }
 
 const WASM_HARDCODED_CONFIGS: Record<number, ModuleLayoutConfig> = {

@@ -12,6 +12,9 @@
  * - Wasmachinekast doors (high section AND lage-kast deurtjes) carry the
  *   selected door handle. Only the door above the washer (and the top
  *   cabinet, which never has handles) is push-to-open.
+ * - The drawers under a washing machine (high section) carry the selected
+ *   handle, mounted horizontally — same rule as the lage-kast fronts. Only the
+ *   door above the machine stays push-to-open.
  * - Low-section-specific layouts (lage kast 20/21/22, `lowFronts` on their
  *   config) show their GLB fronts directly — no door in front. Those fronts
  *   carry the same handle as the doors, mounted horizontally. Shared layouts
@@ -58,7 +61,10 @@ export type FrontPlan = {
   showDrawerFronts: boolean
   /** Handle on door(s); 'none' = push-to-open, no handle mesh. */
   doorHandleId: string
-  /** Handle on drawer fronts (horizontal); null when no drawer fronts show. */
+  /**
+   * Handle on the layout's drawer fronts (horizontal); null when the layout
+   * shows none. 'none' = the fronts stay push-to-open.
+   */
   drawerHandleId: string | null
   /** Bottom edge of fronts: resting on the plinth top, or 2 cm above floor. */
   bottom: 'plinth' | 'floor'
@@ -80,14 +86,21 @@ export function resolveFrontPlan(ctx: FrontPolicyContext): FrontPlan {
     }
   }
 
-  // Washer modules: only the door above the washer, always push-to-open.
+  // Washer modules: only the door above the washer, always push-to-open. The
+  // drawers under the machine (high section) are ordinary lades and carry the
+  // cabinet's handle, horizontally, like the lage-kast fronts do.
   if (ctx.isWasher) {
+    const high = ctx.sectionKind === 'high'
     return {
       showDoor: false,
-      showWasherDoorAbove: ctx.sectionKind === 'high',
+      showWasherDoorAbove: high,
       showDrawerFronts: false,
       doorHandleId: 'none',
-      drawerHandleId: null,
+      drawerHandleId: high
+        ? ctx.selectedHandleFitsLowModule === false
+          ? 'none'
+          : handleId
+        : null,
       bottom,
     }
   }

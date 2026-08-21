@@ -61,8 +61,10 @@ export type ModuleLayoutConfig = {
   // meshes are the visible front — no door renders, fronts sit flush with
   // the door plane and carry the horizontal drawer handle.
   lowFronts?: boolean
-  // Number of handle-bearing fronts in the GLB (drives handle pricing).
-  lowFrontCount?: number
+  // Number of handle-bearing drawer fronts in the GLB. Drives handle pricing
+  // and the handle-fit rule — for lage kast fronts and for the drawers under a
+  // washing machine alike.
+  drawerFrontCount?: number
 }
 
 export type ElementBbox = { minY: number; maxY: number }

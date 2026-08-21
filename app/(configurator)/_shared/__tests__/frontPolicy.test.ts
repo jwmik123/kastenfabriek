@@ -75,6 +75,40 @@ describe('resolveFrontPlan — washer modules (push-to-open)', () => {
     expect(plan.showDoor).toBe(false)
     expect(plan.showWasherDoorAbove).toBe(false)
     expect(plan.showDrawerFronts).toBe(false)
+    expect(plan.drawerHandleId).toBeNull()
+  })
+})
+
+describe('resolveFrontPlan — drawers under a washing machine', () => {
+  it('carry the selected handle while the door above stays push-to-open', () => {
+    const plan = resolveFrontPlan({ ...base, isWasher: true, selectedHandleId: '12' })
+    expect(plan.drawerHandleId).toBe('12')
+    expect(plan.doorHandleId).toBe('none')
+  })
+
+  it('follow a greeploos cabinet', () => {
+    const plan = resolveFrontPlan({ ...base, isWasher: true, selectedHandleId: 'none' })
+    expect(plan.drawerHandleId).toBe('none')
+  })
+
+  it('stay push-to-open when the handle does not fit a drawer front', () => {
+    const plan = resolveFrontPlan({
+      ...base,
+      isWasher: true,
+      selectedHandleId: '12',
+      selectedHandleFitsLowModule: false,
+    })
+    expect(plan.drawerHandleId).toBe('none')
+  })
+
+  it('drop the handle when the module is set to push-to-open', () => {
+    const plan = resolveFrontPlan({
+      ...base,
+      isWasher: true,
+      selectedHandleId: '12',
+      modulePushToOpen: true,
+    })
+    expect(plan.drawerHandleId).toBe('none')
   })
 })
 

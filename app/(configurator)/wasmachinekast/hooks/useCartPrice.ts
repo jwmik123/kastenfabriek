@@ -10,7 +10,7 @@ import { addWishlistItem } from '@/lib/wishlist/wishlist-store'
 import { requestCapture, resetToFrontView } from '@/lib/canvas-capture'
 import { PricingEngine } from '@/lib/configurator/pricing-engine'
 import { computeFreeMontage } from '@/lib/configurator/free-montage'
-import { countLowDrawerFronts } from '../sections/lowDrawerFronts'
+import { countDrawerFronts } from '../sections/drawerFronts'
 import { getWasmLayoutConfig } from '../moduleLayoutConfigs'
 import { WASHER_LAYOUT_IDS } from '../moduleLayouts'
 import { buildWasmConfigSnapshot, resolveHandleName } from '../wasmSnapshot'
@@ -104,13 +104,14 @@ export function useCartPrice() {
   const topCabinetDoorCost = topCabinetDoorCount * (engine?.getDoorPrice('small') ?? 0)
   const doorCost = moduleDoorCost + topCabinetDoorCost
 
-  const drawerFrontCount = countLowDrawerFronts({
+  const drawerFrontCount = countDrawerFronts({
     layout,
     topLevelModules: modules,
     lowSection,
   })
-  // Drawer fronts carry the same handle as the doors, unless that handle does
-  // not fit a low module — then they stay push-to-open.
+  // Drawer fronts — lage kast and the drawers under a washing machine alike —
+  // carry the same handle as the doors, unless that handle does not fit a
+  // drawer front, then they stay push-to-open.
   const drawerHandleId =
     pricingData?.handles.find((h) => h.id === doorHandleId)?.fitsLowModule === false
       ? 'none'

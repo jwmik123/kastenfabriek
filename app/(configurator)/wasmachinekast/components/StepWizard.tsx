@@ -9,7 +9,7 @@ import ModulesStep from '../steps/ModulesStep'
 import MaterialStep from '../steps/MaterialStep'
 import DoorHandlesStep from '../../_shared/steps/DoorHandlesStep'
 import AccessoiresStep from '../steps/AccessoiresStep'
-import { hasLowDrawerFronts } from '../sections/lowDrawerFronts'
+import { hasDrawerFronts } from '../sections/drawerFronts'
 import { STEP, STEP_COUNT } from '../steps/steps'
 import ModuleMaterialPanel from './ModuleMaterialPanel'
 import StepHeader from '../../_shared/components/StepHeader'
@@ -50,30 +50,31 @@ const STEP_META: Record<number, { eyebrow: string; title: string; subtitle: stri
   },
 }
 
-function useHasLowDrawerFronts(): boolean {
+function useHasDrawerFronts(): boolean {
   const layout = useWasmachinekastStore((s) => s.layout)
   const topLevelModules = useWasmachinekastStore((s) => s.modules)
   const lowSection = useWasmachinekastStore((s) => s.lowSection)
-  return hasLowDrawerFronts({ layout, topLevelModules, lowSection })
+  return hasDrawerFronts({ layout, topLevelModules, lowSection })
 }
 
 // One handle for the whole cabinet: doors, lage-kast deurtjes and drawer
-// fronts. With a low section present, handles that do not fit a drawer front
+// fronts — the lage kast fronts and the drawers under a washing machine alike.
+// Once the cabinet has any of those, handles that do not fit a drawer front
 // are out of reach — the picker disables them.
 function HandlesStep() {
   const layout = useWasmachinekastStore((s) => s.layout)
   const lowSection = useWasmachinekastStore((s) => s.lowSection)
   const hasLowSection = layout === 'low-only' || lowSection !== null
-  const drawerFronts = useHasLowDrawerFronts()
+  const drawerFronts = useHasDrawerFronts()
 
   return (
     <div className="space-y-4">
       {drawerFronts && (
         <p className="text-xs text-muted-foreground/60">
-          Deze greep komt op de deuren én op de ladefronten van de lage kast.
+          Deze greep komt op de deuren én op de ladefronten.
         </p>
       )}
-      <DoorHandlesStep requireLowModuleFit={hasLowSection} />
+      <DoorHandlesStep requireLowModuleFit={hasLowSection || drawerFronts} />
     </div>
   )
 }

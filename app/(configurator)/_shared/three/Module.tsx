@@ -52,7 +52,9 @@ interface ModuleProps {
   // Handle override from the front policy ('none' = push-to-open). When
   // undefined the store's doorHandleId applies.
   doorHandleIdOverride?: string
-  // Handle rendered horizontally on each front (kitchen style).
+  // Handle rendered horizontally on each Front* mesh of the layout's GLB —
+  // kitchen-style lage kast fronts and the drawers under a washing machine.
+  // Null when the layout has no drawer fronts, 'none' for push-to-open.
   drawerHandleId?: string | null
   // Side where this section has no side panel of its own because it shares the
   // neighbouring section's (wasmachinekast dual layouts). The interior widens
@@ -505,7 +507,7 @@ export default function Module({
             doorsExtendToFloor && !hasDoor ? 0.02 - effectiveFloorY : null
           }
           drawerHandle={
-            drawerFronts && drawerHandleId && drawerHandleId !== 'none'
+            drawerHandleId && drawerHandleId !== 'none'
               ? {
                   id: drawerHandleId,
                   meshId: resolvedDrawerHandle?.meshId,
