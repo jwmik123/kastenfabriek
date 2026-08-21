@@ -291,3 +291,52 @@ describe("describeModuleRow", () => {
     expect(rowFor({ layoutId: null, layoutName: null }).name).toBe("— leeg —");
   });
 });
+
+// ---------------------------------------------------------------------------
+// LED strips
+// ---------------------------------------------------------------------------
+
+/**
+ * LED is a wasmachinekast option too. It has to survive the whole way: the
+ * store writes it to the snapshot, the price snapshot carries its cost, and
+ * both the mail and the PDF read those through this module.
+ */
+describe("LED strips reach the order documents", () => {
+  const wasmWithLed: ClosetConfigSnapshot = {
+    ...base,
+    productType: "wasmachinekast",
+    layout: "low-left",
+    lowSection,
+    lightStripsEnabled: true,
+  };
+
+  it("lists LED strips among the extras", () => {
+    const spec = buildClosetSpec(wasmWithLed, price);
+    expect(spec.extras).toContain("LED-strips");
+  });
+
+  it("keeps them out of the extras when they were not ordered", () => {
+    const spec = buildClosetSpec({ ...wasmWithLed, lightStripsEnabled: false }, price);
+    expect(spec.extras).not.toContain("LED-strips");
+  });
+
+  it("gives them their own price row", () => {
+    const withLed = { ...price, ledCost: 120, subtotal: price.subtotal + 120, total: price.total + 120 };
+    const rows = buildPriceRows(wasmWithLed, withLed);
+    expect(rows.find((r) => r.label === "LED-strips")?.amount).toBe(120);
+  });
+
+  it("still adds up to the line subtotal with LED in it", () => {
+    const withLed = { ...price, ledCost: 120, subtotal: price.subtotal + 120, total: price.total + 120 };
+    const sum = buildPriceRows(wasmWithLed, withLed).reduce((t, r) => t + r.amount, 0);
+    expect(sum).toBeCloseTo(closetLineSubtotal(withLed), 2);
+  });
+
+  it("shows no price row for a low-only cabinet, which cannot carry them", () => {
+    // The store switches the toggle off when the layout becomes low-only, so
+    // the snapshot never claims lighting the cabinet does not have.
+    const lowOnly = { ...wasmWithLed, layout: "low-only" as const, lightStripsEnabled: false };
+    expect(buildClosetSpec(lowOnly, price).extras).not.toContain("LED-strips");
+    expect(buildPriceRows(lowOnly, price).find((r) => r.label === "LED-strips")).toBeUndefined();
+  });
+});

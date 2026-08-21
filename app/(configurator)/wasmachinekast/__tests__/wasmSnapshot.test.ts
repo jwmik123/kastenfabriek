@@ -126,6 +126,11 @@ describe('buildWasmConfigSnapshot', () => {
     expect(snap.lowSection!.countertopMaterialId).toBe('zwart')
   })
 
+  it('carries the LED choice into the snapshot', () => {
+    expect(buildWasmConfigSnapshot(input({ lightStripsEnabled: true })).lightStripsEnabled).toBe(true)
+    expect(buildWasmConfigSnapshot(input()).lightStripsEnabled).toBe(false)
+  })
+
   it('records the placement the customer chose', () => {
     expect(buildWasmConfigSnapshot(input({ placementType: 'vrijstaand' })).placementType).toBe(
       'vrijstaand',

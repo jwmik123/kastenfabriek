@@ -303,3 +303,30 @@ describe("OrderAdminNotification", () => {
     expect(admin).toContain("Totaal betaald");
   });
 });
+
+describe("LED strips on a wasmachinekast", () => {
+  const wasm: ClosetConfigSnapshot = {
+    ...baseConfig,
+    productType: "wasmachinekast",
+    layout: "high-only",
+    lightStripsEnabled: true,
+  };
+
+  const item: ClosetOrderLine = {
+    kind: "closet",
+    configuration: wasm,
+    priceSnapshot: { ...basePrice, ledCost: 120, subtotal: 1215, total: 1215 },
+    quantity: 1,
+  };
+
+  it("reaches the confirmation mail as both an extra and a price row", async () => {
+    const html = await render(<OrderConfirmation {...props([item])} />);
+    expect(html).toContain("LED-strips");
+    expect(html).toContain("120,00");
+  });
+
+  it("reaches the admin mail too", async () => {
+    const html = await render(<OrderAdminNotification {...props([item])} />);
+    expect(html).toContain("LED-strips");
+  });
+});
