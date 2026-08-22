@@ -1,6 +1,29 @@
 import Link from 'next/link'
-import { Mail, Phone, MapPin, Star } from 'lucide-react'
-import Image from 'next/image'
+import { Mail, Phone, MapPin } from 'lucide-react'
+import {
+  CONFIGURATORS,
+  CONFIGURATORS_HREF,
+  CONTACT_EMAIL,
+  UPCOMING_CONFIGURATORS,
+} from '@/lib/configurators'
+
+/**
+ * Every footer link points at a route that exists — the configurators come
+ * from `lib/configurators`, so a new cabinet shows up here automatically and
+ * the "Binnenkort" placeholders stay in step with the products page.
+ */
+const NAV_LINKS = [
+  { href: '/', label: 'Home' },
+  { href: CONFIGURATORS_HREF, label: 'Onze kasten' },
+  { href: '/producten', label: 'Producten' },
+  { href: '/producten/materiaalstalen', label: 'Materialen' },
+  { href: '/kennisbank', label: 'Kennisbank' },
+]
+
+const CLOSET_LINKS = [
+  ...CONFIGURATORS.map((c) => ({ href: c.href, label: c.title })),
+  { href: '/producten/ikea-pax-deur', label: 'IKEA PAX deuren' },
+]
 
 const Footer = () => {
   return (
@@ -26,26 +49,13 @@ const Footer = () => {
           <div>
             <h3 className="text-lg font-semibold mb-4">Navigatie</h3>
             <ul className="space-y-2">
-              <li>
-                <Link href="/" className="text-white hover:text-white transition-colors">
-                  Home
-                </Link>
-              </li>
-              <li>
-                <Link href="/about" className="text-white hover:text-white transition-colors">
-                  Onze kasten
-                </Link>
-              </li>
-              <li>
-                <Link href="/projects" className="text-white hover:text-white transition-colors">
-                  Materialen
-                </Link>
-              </li>
-              <li>
-                <Link href="/kennisbank" className="text-white hover:text-white transition-colors">
-                  Kennisbank
-                </Link>
-              </li>
+              {NAV_LINKS.map(({ href, label }) => (
+                <li key={href}>
+                  <Link href={href} className="text-white hover:text-white transition-colors">
+                    {label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
@@ -53,27 +63,18 @@ const Footer = () => {
           <div>
             <h3 className="text-lg font-semibold mb-4">Onze Kasten</h3>
             <ul className="space-y-2">
-              <li>
-                <Link href="/kledingkast" className="text-white hover:text-white transition-colors">
-                  Kledingkast
-                </Link>
-              </li>
-              <li>
-                <Link href="/wasmachinekast" className="text-white hover:text-white transition-colors">
-                  Wasmachinekast
-                </Link>
-              </li>
-              <li>
-                <Link href="/ikea-pax" className="text-white hover:text-white transition-colors">
-                  IKEA PAX Deuren
-                </Link>
-              </li>
-              <li>
-                <span className="text-white/50">TV Meubel (Binnenkort)</span>
-              </li>
-              <li>
-                <span className="text-white/50">Badkamermeubel (Binnenkort)</span>
-              </li>
+              {CLOSET_LINKS.map(({ href, label }) => (
+                <li key={href}>
+                  <Link href={href} className="text-white hover:text-white transition-colors">
+                    {label}
+                  </Link>
+                </li>
+              ))}
+              {UPCOMING_CONFIGURATORS.map(({ id, title }) => (
+                <li key={id}>
+                  <span className="text-white/50">{title} (Binnenkort)</span>
+                </li>
+              ))}
             </ul>
           </div>
 
@@ -83,8 +84,8 @@ const Footer = () => {
             <ul className="space-y-3">
               <li className="flex items-start gap-2">
                 <Mail size={18} className="text-white mt-1 flex-shrink-0" />
-                <a href="mailto:info@kasten-fabriek.nl" className="text-white hover:text-white transition-colors">
-                  info@kasten-fabriek.nl
+                <a href={`mailto:${CONTACT_EMAIL}`} className="text-white hover:text-white transition-colors">
+                  {CONTACT_EMAIL}
                 </a>
               </li>
               <li className="flex items-start gap-2">
@@ -120,18 +121,6 @@ const Footer = () => {
               </div>
             </div>
 
-            {/* <h3 className="text-lg font-semibold mb-3">Beoordelingen</h3>
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <div className="flex">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} size={16} fill="#FFC107" className="text-[#FFC107]" />
-                  ))}
-                </div>
-                <span className="text-sm text-white">4,9/5</span>
-              </div>
-              <p className="text-xs text-white/50">700+ reviews op Trustpilot</p>
-            </div> */}
           </div>
         </div>
 
