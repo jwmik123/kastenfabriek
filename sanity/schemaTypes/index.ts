@@ -1,5 +1,6 @@
 import { type SchemaTypeDefinition } from "sanity";
 import { page } from "./page";
+import { richText } from "./richText";
 import { siteSettings } from "./siteSettings";
 import { moduleLayout } from "./moduleLayout";
 import { accessory } from "./accessory";
@@ -16,6 +17,7 @@ import { kennisbankSchemaTypes } from "./kennisbank";
 export const schema: { types: SchemaTypeDefinition[] } = {
   types: [
     // Site/CMS
+    richText,
     page,
     siteSettings,
     testimonial,

@@ -6,6 +6,12 @@ import {
   CONTACT_EMAIL,
   UPCOMING_CONFIGURATORS,
 } from '@/lib/configurators'
+import {
+  filledLegalDocuments,
+  getSiteSettings,
+  type SiteAddress,
+  type SiteSocialMedia,
+} from '@/sanity/lib/siteSettings'
 
 /**
  * Every footer link points at a route that exists — the configurators come
@@ -25,7 +31,64 @@ const CLOSET_LINKS = [
   { href: '/producten/ikea-pax-deur', label: 'IKEA PAX deuren' },
 ]
 
-const Footer = () => {
+const PAYMENT_METHODS = ['iDEAL', 'Visa', 'Mastercard', 'PayPal']
+
+/** Shown when Sanity has no slogan yet. */
+const DEFAULT_TAGLINE =
+  'Maatwerk dat niet alleen opbergt, maar ook sfeer brengt.'
+const DEFAULT_SITE_NAME = 'Kasten Fabriek'
+
+const SOCIAL_LABELS: Record<keyof SiteSocialMedia, string> = {
+  instagram: 'Instagram',
+  facebook: 'Facebook',
+  pinterest: 'Pinterest',
+  linkedin: 'LinkedIn',
+}
+
+/** "Straat 1, 1689ZX Zwaag" — skips whatever the editor left empty. */
+function addressLines(address: SiteAddress | undefined): string[] {
+  if (!address) return []
+  const place = [address.postalCode, address.city].filter(Boolean).join(' ')
+  return [address.street, place, address.country].filter(
+    (line): line is string => Boolean(line?.trim()),
+  )
+}
+
+function socialLinks(socialMedia: SiteSocialMedia | undefined) {
+  if (!socialMedia) return []
+  return (Object.keys(SOCIAL_LABELS) as (keyof SiteSocialMedia)[])
+    .map((platform) => ({
+      platform,
+      label: SOCIAL_LABELS[platform],
+      href: socialMedia[platform],
+    }))
+    .filter(
+      (link): link is { platform: keyof SiteSocialMedia; label: string; href: string } =>
+        Boolean(link.href),
+    )
+}
+
+/**
+ * The company details all come from the `siteSettings` document in Sanity —
+ * anything an editor hasn't filled in is left out rather than shown as a
+ * placeholder, so the footer never states a phone number or address that isn't
+ * real. Legal links only appear once their document actually has content.
+ */
+const Footer = async () => {
+  const settings = await getSiteSettings()
+
+  const siteName = settings.siteName?.trim() || DEFAULT_SITE_NAME
+  const tagline = settings.tagline?.trim() || DEFAULT_TAGLINE
+  const email = settings.contactEmail?.trim() || CONTACT_EMAIL
+  const phone = settings.contactPhone?.trim()
+  const address = addressLines(settings.address)
+  const socials = socialLinks(settings.socialMedia)
+  const legalLinks = filledLegalDocuments(settings)
+  const companyNumbers = [
+    settings.kvkNumber?.trim() && `KvK ${settings.kvkNumber.trim()}`,
+    settings.vatNumber?.trim() && `BTW ${settings.vatNumber.trim()}`,
+  ].filter(Boolean) as string[]
+
   return (
     <footer className="bg-primary text-white font-poppins">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 pb-0">
@@ -39,7 +102,7 @@ const Footer = () => {
         {/* Slogan */}
         <div className="mb-20">
           <p className="text-xl md:text-6xl text-white font-semibold leading-tighter tracking-tight">
-            Maatwerk dat niet alleen opbergt, maar ook sfeer brengt.
+            {tagline}
           </p>
         </div>
 
@@ -84,59 +147,96 @@ const Footer = () => {
             <ul className="space-y-3">
               <li className="flex items-start gap-2">
                 <Mail size={18} className="text-white mt-1 flex-shrink-0" />
-                <a href={`mailto:${CONTACT_EMAIL}`} className="text-white hover:text-white transition-colors">
-                  {CONTACT_EMAIL}
+                <a href={`mailto:${email}`} className="text-white hover:text-white transition-colors">
+                  {email}
                 </a>
               </li>
-              <li className="flex items-start gap-2">
-                <Phone size={18} className="text-white mt-1 flex-shrink-0" />
-                <a href="tel:+31612345678" className="text-white hover:text-white transition-colors">
-                  +31 6 1234 5678
-                </a>
-              </li>
-              <li className="flex items-start gap-2">
-                <MapPin size={18} className="text-white mt-1 flex-shrink-0" />
-                <span className="text-white">
-                  Amsterdam, Nederland
-                </span>
-              </li>
+              {phone && (
+                <li className="flex items-start gap-2">
+                  <Phone size={18} className="text-white mt-1 flex-shrink-0" />
+                  <a
+                    href={`tel:${phone.replace(/[^+\d]/g, '')}`}
+                    className="text-white hover:text-white transition-colors"
+                  >
+                    {phone}
+                  </a>
+                </li>
+              )}
+              {address.length > 0 && (
+                <li className="flex items-start gap-2">
+                  <MapPin size={18} className="text-white mt-1 flex-shrink-0" />
+                  <address className="not-italic text-white">
+                    {address.map((line) => (
+                      <span key={line} className="block">
+                        {line}
+                      </span>
+                    ))}
+                  </address>
+                </li>
+              )}
             </ul>
+
+            {socials.length > 0 && (
+              <>
+                <h3 className="text-lg font-semibold mt-8 mb-4">Volg ons</h3>
+                <ul className="flex flex-wrap gap-2">
+                  {socials.map(({ platform, label, href }) => (
+                    <li key={platform}>
+                      <a
+                        href={href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-block rounded-full border border-white/30 px-3 py-1 text-sm text-white transition-colors hover:border-white"
+                      >
+                        {label}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
           </div>
 
-          {/* Column 4: Payment & Reviews */}
+          {/* Column 4: Payment & legal */}
           <div>
             <h3 className="text-lg font-semibold mb-4">Betaalmethoden</h3>
             <div className="flex flex-wrap gap-2 mb-6">
-              <div className="bg-white rounded px-3 py-2 text-xs font-semibold text-gray-800">
-                iDEAL
-              </div>
-              <div className="bg-white rounded px-3 py-2 text-xs font-semibold text-gray-800">
-                Visa
-              </div>
-              <div className="bg-white rounded px-3 py-2 text-xs font-semibold text-gray-800">
-                Mastercard
-              </div>
-              <div className="bg-white rounded px-3 py-2 text-xs font-semibold text-gray-800">
-                PayPal
-              </div>
+              {PAYMENT_METHODS.map((method) => (
+                <div
+                  key={method}
+                  className="bg-white rounded px-3 py-2 text-xs font-semibold text-gray-800"
+                >
+                  {method}
+                </div>
+              ))}
             </div>
 
+            {legalLinks.length > 0 && (
+              <>
+                <h3 className="text-lg font-semibold mb-4">Voorwaarden</h3>
+                <ul className="space-y-2">
+                  {legalLinks.map(({ key, href, title }) => (
+                    <li key={key}>
+                      <Link href={href} className="text-white hover:text-white transition-colors">
+                        {title}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+
+            {companyNumbers.length > 0 && (
+              <p className="mt-6 text-sm text-white/50">{companyNumbers.join(' · ')}</p>
+            )}
           </div>
         </div>
-
-        {/* Bottom Logo Section */}
-        {/* <div className="pt-8 mb-8">
-          <div className="flex items-center justify-center gap-3">
-            
-            <h2 className="text-3xl md:text-4xl lg:text-7xl font-bold">Kasten-fabriek.nl</h2>
-          </div>
-        </div> */}
       </div>
 
       {/* Copyright - Full Width */}
       <div className="w-full bg-primary-dark">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between">
-          <p className="text-sm text-white/50">&copy; {new Date().getFullYear()} Kasten Fabriek. Alle rechten voorbehouden.</p>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col gap-2 sm:flex-row sm:justify-between">
+          <p className="text-sm text-white/50">&copy; {new Date().getFullYear()} {siteName}. Alle rechten voorbehouden.</p>
           <p className="text-sm text-white/50">Website gerealiseerd door Mik Development</p>
         </div>
       </div>
