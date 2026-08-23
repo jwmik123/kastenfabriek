@@ -11,6 +11,7 @@ import { addItem } from '@/lib/cart/cart-store'
 import { getWishlist, removeWishlistItem } from '@/lib/wishlist/wishlist-store'
 import { syncLocalWishlistToServer } from '@/lib/wishlist/wishlist-sync'
 import { removeDbWishlistItem, moveDbWishlistItemToCart } from '@/lib/actions/wishlist'
+import ShowroomCta, { type ShowroomCtaProps } from '@/components/ShowroomCta'
 
 const COLORWAY_SLUGS: Record<string, string> = {
   'h1199-thermo-eik': 'thermo-eik-zwartbruin',
@@ -25,9 +26,10 @@ const fmt = new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR',
 interface WishlistViewProps {
   isAuthenticated: boolean
   initialDbItems: CartItem[]
+  showroom: ShowroomCtaProps
 }
 
-export default function WishlistView({ isAuthenticated, initialDbItems }: WishlistViewProps) {
+export default function WishlistView({ isAuthenticated, initialDbItems, showroom }: WishlistViewProps) {
   const router = useRouter()
   const [items, setItems] = useState<CartItem[]>(initialDbItems)
   const [synced, setSynced] = useState(false)
@@ -144,6 +146,8 @@ export default function WishlistView({ isAuthenticated, initialDbItems }: Wishli
           )
         )}
       </div>
+
+      <ShowroomCta {...showroom} />
     </div>
   )
 }

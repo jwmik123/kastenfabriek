@@ -11,6 +11,7 @@ import { getCart, removeItem, clearCart } from '@/lib/cart/cart-store'
 import { syncCartItems, removeDbCartItem } from '@/lib/actions/cart'
 import { getDeliveryWindow } from '@/lib/delivery-window'
 import { calcCartTotals } from '@/lib/cart/totals'
+import ShowroomCta, { type ShowroomCtaProps } from '@/components/ShowroomCta'
 
 const PRODUCT_SIDE_LABELS: Record<string, string> = {
   left: 'linkerdeur',
@@ -31,9 +32,10 @@ const fmt = new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR',
 interface CartViewProps {
   isAuthenticated: boolean
   initialDbItems: CartItem[]
+  showroom: ShowroomCtaProps
 }
 
-export default function CartView({ isAuthenticated, initialDbItems }: CartViewProps) {
+export default function CartView({ isAuthenticated, initialDbItems, showroom }: CartViewProps) {
   const router = useRouter()
   const [items, setItems] = useState<CartItem[]>(initialDbItems)
   const [synced, setSynced] = useState(false)
@@ -199,6 +201,8 @@ export default function CartView({ isAuthenticated, initialDbItems }: CartViewPr
           </Link>
         </div>
       </div>
+
+      <ShowroomCta {...showroom} />
     </div>
   )
 }
