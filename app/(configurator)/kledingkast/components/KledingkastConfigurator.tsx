@@ -36,7 +36,7 @@ export default function KledingkastConfigurator({ pricingData, editConfig, editI
   const restoreConfig = useClosetStore((s) => s.restoreConfig)
   const step = useClosetStore((s) => s.step)
   const setStep = useClosetStore((s) => s.setStep)
-  const { totalPrice } = useCartPrice()
+  const { grandTotal } = useCartPrice()
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // 1. Hydrate pricing data, then restore config (priority: URL cart item > localStorage draft)
@@ -119,7 +119,11 @@ export default function KledingkastConfigurator({ pricingData, editConfig, editI
     <ConfiguratorStoreContext.Provider value={useClosetStore}>
       <ConfiguratorTourProvider steps={kledingkastTourSteps}>
         <div className="w-full h-[100dvh] md:h-[95vh] flex flex-col">
-          <ConfiguratorMobileHeader price={totalPrice} productName="Kledingkast" />
+          <ConfiguratorMobileHeader
+            price={grandTotal}
+            productName="Kledingkast"
+            priceNote="incl. levering & montage"
+          />
           <div className="hidden md:block">
             <ConfiguratorTopBar
               steps={TOP_BAR_STEPS}

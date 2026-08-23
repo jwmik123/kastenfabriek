@@ -10,6 +10,7 @@ import { addWishlistItem } from '@/lib/wishlist/wishlist-store'
 import { requestCapture, resetToFrontView } from '@/lib/canvas-capture'
 import { PricingEngine } from '@/lib/configurator/pricing-engine'
 import { computeFreeMontage } from '@/lib/configurator/free-montage'
+import { computeInstallationBasis } from '@/lib/configurator/installation-basis'
 import { countDrawerFronts } from '../sections/drawerFronts'
 import { getWasmLayoutConfig } from '../moduleLayoutConfigs'
 import { WASHER_LAYOUT_IDS } from '../moduleLayouts'
@@ -134,7 +135,8 @@ export function useCartPrice() {
 
   const deliveryCost = engine?.deliveryPrice ?? 95
   const subtotal = moduleCost + doorCost + mechanismCost + ledCost + powerHoleCost + sidePanelCost + deliveryCost
-  const installationTier = engine?.getInstallationTier(subtotal) ?? null
+  const installationBasis = computeInstallationBasis({ subtotal, deliveryCost, ledCost })
+  const installationTier = engine?.getInstallationTier(installationBasis) ?? null
   const freeMontage = pricingData?.config.freeMontage ?? false
   const { effectiveInstallationCost, freeMontageDiscount, freeMontageApplied, originalPrice, grandTotal } =
     computeFreeMontage({ subtotal, installationTier, freeMontage })
@@ -183,6 +185,7 @@ export function useCartPrice() {
       powerHoleCost,
       deliveryCost,
       subtotal,
+      installationBasis,
       installationTierName: installationTier?.name ?? null,
       installationCost,
       slopedBackWallSurcharge: 0,
@@ -244,6 +247,10 @@ export function useCartPrice() {
     totalPrice,
     grandTotal,
     originalPrice,
+    deliveryCost,
+    installationCost,
+    installationTier,
+    freeMontageApplied,
     pricingData,
     editItemId,
     handleAddToCart,

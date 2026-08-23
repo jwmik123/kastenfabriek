@@ -544,6 +544,8 @@ De variant wordt bepaald door het buitenkantmateriaal van die module: fineer →
 
 Onder €2.000 of boven €18.000 valt er geen staffel → montagekosten €0.
 
+De staffel wordt gekozen op de **montagebasis** (`lib/configurator/installation-basis.ts`): het subtotaal **min bezorgkosten en LED**. Die twee zeggen niets over het werk ter plaatse en zouden een configuratie anders over een staffelgrens duwen. Ze blijven wel in het subtotaal en in het eindtotaal staan.
+
 ### Berekening (kledingkast)
 
 ```
@@ -559,7 +561,8 @@ deliveryCost    = 95
 
 subtotal        = moduleCost + doorCost + mechanismCost + ledCost
                   + powerHoleCost + sidePanelCost + surcharges + deliveryCost
-installation    = staffel(subtotal)
+montagebasis    = subtotal − deliveryCost − ledCost
+installation    = staffel(montagebasis)
 grandTotal      = subtotal + installation
 ```
 

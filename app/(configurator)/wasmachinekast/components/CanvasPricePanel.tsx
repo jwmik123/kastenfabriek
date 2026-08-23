@@ -5,7 +5,17 @@ import { useCartPrice } from '../hooks/useCartPrice'
 import { useWasmachinekastStore } from '../store'
 
 export default function CanvasPricePanel() {
-  const { totalPrice, originalPrice, handleAddToWishlist, isCapturing } = useCartPrice()
+  const {
+    totalPrice,
+    grandTotal,
+    originalPrice,
+    deliveryCost,
+    installationCost,
+    installationTier,
+    freeMontageApplied,
+    handleAddToWishlist,
+    isCapturing,
+  } = useCartPrice()
 
   const step = useWasmachinekastStore((s) => s.step)
   const moduleCount = useWasmachinekastStore((s) => s.moduleCount)
@@ -32,8 +42,17 @@ export default function CanvasPricePanel() {
 
   return (
     <SharedCanvasPricePanel
-      totalPrice={totalPrice}
+      totalPrice={grandTotal}
       originalPrice={originalPrice}
+      breakdown={{
+        cabinet: totalPrice,
+        delivery: deliveryCost,
+        installation: installationCost,
+        installationTierName: installationTier?.name ?? null,
+        installationDays: installationTier?.days,
+        installationPeople: installationTier?.people,
+        freeMontageApplied,
+      }}
       stepSummary={stepSummary}
       onSave={handleAddToWishlist}
       isSaving={isCapturing}

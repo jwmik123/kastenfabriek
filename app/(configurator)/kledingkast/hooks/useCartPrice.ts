@@ -10,6 +10,7 @@ import { addWishlistItem } from '@/lib/wishlist/wishlist-store'
 import { requestCapture, resetToFrontView } from '@/lib/canvas-capture'
 import { PricingEngine } from '@/lib/configurator/pricing-engine'
 import { computeFreeMontage } from '@/lib/configurator/free-montage'
+import { computeInstallationBasis } from '@/lib/configurator/installation-basis'
 import type { CartItem, ClosetConfigSnapshot, PriceSnapshot } from '@/lib/cart/types'
 
 export const formatter = new Intl.NumberFormat('nl-NL', {
@@ -119,7 +120,8 @@ export function useCartPrice() {
     slopedBackWallSurcharge +
     slopedSideWallSurcharge +
     deliveryCost
-  const installationTier = engine?.getInstallationTier(subtotal) ?? null
+  const installationBasis = computeInstallationBasis({ subtotal, deliveryCost, ledCost })
+  const installationTier = engine?.getInstallationTier(installationBasis) ?? null
   const freeMontage = pricingData?.config.freeMontage ?? false
   const { effectiveInstallationCost, freeMontageDiscount, freeMontageApplied, originalPrice, grandTotal } =
     computeFreeMontage({ subtotal, installationTier, freeMontage })
@@ -202,6 +204,7 @@ export function useCartPrice() {
       powerHoleCost,
       deliveryCost,
       subtotal,
+      installationBasis,
       installationTierName: installationTier?.name ?? null,
       installationCost,
       slopedBackWallSurcharge,
@@ -263,6 +266,10 @@ export function useCartPrice() {
     totalPrice,
     grandTotal,
     originalPrice,
+    deliveryCost,
+    installationCost,
+    installationTier,
+    freeMontageApplied,
     pricingData,
     editItemId,
     handleAddToCart,

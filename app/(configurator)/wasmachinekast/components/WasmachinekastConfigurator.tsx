@@ -39,7 +39,7 @@ export default function WasmachinekastConfigurator({ pricingData, editConfig, ed
   const restoreConfig = useWasmachinekastStore((s) => s.restoreConfig)
   const step = useWasmachinekastStore((s) => s.step)
   const setStep = useWasmachinekastStore((s) => s.setStep)
-  const { totalPrice } = useCartPrice()
+  const { grandTotal } = useCartPrice()
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   function handleTopBarStep(target: number) {
@@ -116,7 +116,11 @@ export default function WasmachinekastConfigurator({ pricingData, editConfig, ed
     <ConfiguratorStoreContext.Provider value={useWasmachinekastStore}>
       <ConfiguratorTourProvider steps={wasmachinekastTourSteps}>
         <div className="w-full h-[100dvh] md:h-[95vh] flex flex-col">
-          <ConfiguratorMobileHeader price={totalPrice} productName="Wasmachinekast" />
+          <ConfiguratorMobileHeader
+            price={grandTotal}
+            productName="Wasmachinekast"
+            priceNote="incl. levering & montage"
+          />
           <div className="hidden md:block">
             <ConfiguratorTopBar
               steps={TOP_BAR_STEPS}

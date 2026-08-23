@@ -2,6 +2,15 @@ import { describe, it, expect } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 import CanvasPricePanel from '../CanvasPricePanel'
 
+const breakdown = {
+  cabinet: 2752,
+  delivery: 95,
+  installation: 750,
+  installationTierName: 'Middelgroot project',
+  installationDays: 1,
+  installationPeople: 2,
+}
+
 const baseProps = {
   totalPrice: 3597,
   pricingData: {} as unknown,
@@ -63,5 +72,30 @@ describe('CanvasPricePanel', () => {
     const html = renderToStaticMarkup(<CanvasPricePanel {...baseProps} />)
     const match = html.match(/<[^>]*data-testid="price-total"[^>]*>/)!
     expect(match[0]).toMatch(/text-(2xl|3xl|4xl)/)
+  })
+
+  it('labels the headline total as including delivery and montage', () => {
+    const html = renderToStaticMarkup(<CanvasPricePanel {...baseProps} />)
+    expect(html).toMatch(/incl\. levering &(amp;|nbsp;)? ?montage/i)
+  })
+
+  it('summarises cabinet, delivery and montage under the total', () => {
+    const html = renderToStaticMarkup(<CanvasPricePanel {...baseProps} breakdown={breakdown} />)
+    expect(html).toMatch(/data-testid="price-breakdown-toggle"/)
+    expect(html).toMatch(/2\.752/)
+    expect(html).toMatch(/95/)
+    expect(html).toMatch(/750/)
+  })
+
+  it('shows montage as gratis when the free-montage promo applies', () => {
+    const html = renderToStaticMarkup(
+      <CanvasPricePanel {...baseProps} breakdown={{ ...breakdown, installation: 0, freeMontageApplied: true }} />,
+    )
+    expect(html).toContain('gratis')
+  })
+
+  it('hides the breakdown toggle when no breakdown is supplied', () => {
+    const html = renderToStaticMarkup(<CanvasPricePanel {...baseProps} />)
+    expect(html).not.toMatch(/data-testid="price-breakdown-toggle"/)
   })
 })

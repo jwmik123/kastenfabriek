@@ -26,9 +26,12 @@ const ICON_LINKS = [
 ]
 
 interface Props {
-  /** Running total in euros; shown on the left of the header. */
+  /** Running grand total in euros — cabinet, delivery and montage; shown on the left. */
   price: number
   productName?: string
+  /** Appended to the label, e.g. "incl. levering & montage", so the mobile
+   *  header never quotes a lower number than the desktop panel. */
+  priceNote?: string
 }
 
 /**
@@ -37,7 +40,7 @@ interface Props {
  * site `Navigation` hamburger). The draft is autosaved, so navigating away does
  * not lose the configuration.
  */
-export default function ConfiguratorMobileHeader({ price, productName }: Props) {
+export default function ConfiguratorMobileHeader({ price, productName, priceNote }: Props) {
   const [open, setOpen] = useState(false)
 
   // Lock body scroll while the overlay is open.
@@ -65,6 +68,7 @@ export default function ConfiguratorMobileHeader({ price, productName }: Props) 
         <div className="flex flex-col leading-none">
           <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-0.5">
             {productName ?? 'Totaalprijs'}
+            {priceNote ? ` · ${priceNote}` : ''}
           </span>
           <span className="text-lg font-medium leading-none">{priceFormatter.format(price)}</span>
         </div>

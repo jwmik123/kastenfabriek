@@ -162,6 +162,12 @@ export interface PriceSnapshot {
   deliveryCost: number; // €95 flat
   subtotal: number; // all of the above combined
 
+  /**
+   * Amount the tier was looked up against: subtotal minus delivery and LED, so
+   * neither can shove a configuration into a higher band. Optional for
+   * back-compat with snapshots written before that rule existed.
+   */
+  installationBasis?: number;
   installationTierName: string | null; // e.g. "Groot project"
   installationCost: number; // €720 | €1440 | €2160
 
