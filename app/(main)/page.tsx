@@ -11,8 +11,13 @@ import WerkwijzeSection from "@/components/WerkwijzeSection";
 import MaterialsSection from "@/components/MaterialsSection";
 import ModulesScrollSection from "@/components/ModulesScrollSection";
 import HotspotSection from "@/components/HotspotSection";
+import PromoText from "@/components/PromoText";
+import { getSiteSettings } from "@/sanity/lib/siteSettings";
 
-export default function Home() {
+export default async function Home() {
+  const settings = await getSiteSettings();
+  const promo = settings.promoBanner?.homepage;
+
   return (
     <>
       {/* Promo Strip */}
@@ -60,11 +65,15 @@ export default function Home() {
       </div>
     </div>
 
-    {/* Promo Strip */}
-    <div className="w-full bg-amber-500 text-white py-6 px-6 flex items-center justify-center gap-3 text-xl font-semibold">
-      <Hammer size={22} className="flex-shrink-0" />
-      <span>Alle kasten nu met <b>gratis montage</b> bij oplevering! Tot wel <b className="text-primary">€2160,-</b> korting!</span>
-    </div>
+    {/* Promo Strip — leeg in Sanity betekent geen lopende actie */}
+    {promo?.length ? (
+      <div className="w-full bg-amber-500 text-white py-6 px-6 flex items-center justify-center gap-3 text-xl font-semibold">
+        <Hammer size={22} className="flex-shrink-0" />
+        <span>
+          <PromoText value={promo} accentClassName="text-primary" />
+        </span>
+      </div>
+    ) : null}
 
     <ProductOptionsSection
       title="Waar ben je naar op zoek?"

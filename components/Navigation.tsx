@@ -3,7 +3,9 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { User, ShoppingBasket, Heart, Hammer } from 'lucide-react'
+import type { PortableTextBlock } from '@portabletext/types'
 import { CONFIGURATORS_HREF } from '@/lib/configurators'
+import PromoText from '@/components/PromoText'
 import { useEffect, useState, useRef } from 'react'
 import gsap from 'gsap'
 
@@ -20,7 +22,11 @@ const ICON_LINKS = [
   { href: '/account', icon: User, label: 'Account' },
 ]
 
-const Navigation = () => {
+/**
+ * `promoText` comes from Sanity via the layout — an empty field means there is
+ * no running promotion, and the strip disappears entirely.
+ */
+const Navigation = ({ promoText }: { promoText?: PortableTextBlock[] }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [activeNavHref, setActiveNavHref] = useState<string | null>(null)
   const mobileMenuRef = useRef<HTMLDivElement>(null)
@@ -82,10 +88,14 @@ const Navigation = () => {
 
   return (
     <div className="fixed top-0 left-0 right-0 z-30 font-poppins pointer-events-none">
-      <div className="w-full bg-primary text-white py-2.5 px-6 flex items-center justify-center gap-2 text-sm font-medium pointer-events-auto">
-        <Hammer size={14} className="flex-shrink-0" />
-        <span>Alle kasten nu met <strong>gratis montage</strong> bij oplevering!</span>
-      </div>
+      {promoText?.length ? (
+        <div className="w-full bg-primary text-white py-2.5 px-6 flex items-center justify-center gap-2 text-sm font-medium pointer-events-auto">
+          <Hammer size={14} className="flex-shrink-0" />
+          <span>
+            <PromoText value={promoText} accentClassName="text-amber-400" />
+          </span>
+        </div>
+      ) : null}
       <div className="flex items-center justify-between bg-[#f1ede4] px-4 py-3 pointer-events-auto lg:bg-transparent lg:pointer-events-none sm:px-8 lg:px-24 lg:py-0 lg:pt-6">
 
         {/* Logo — floating independently */}

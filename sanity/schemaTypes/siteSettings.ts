@@ -12,6 +12,7 @@ export const siteSettings = defineType({
   groups: [
     { name: "general", title: "Algemeen", default: true },
     { name: "contact", title: "Contact" },
+    { name: "banner", title: "Actiebanner" },
     { name: "commerce", title: "Verkoop" },
     { name: "legal", title: "Juridisch" },
   ],
@@ -72,6 +73,28 @@ export const siteSettings = defineType({
         { name: "facebook", title: "Facebook URL", type: "url" },
         { name: "pinterest", title: "Pinterest URL", type: "url" },
         { name: "linkedin", title: "LinkedIn URL", type: "url" },
+      ],
+    }),
+    defineField({
+      name: "promoBanner",
+      title: "Actiebanner",
+      description:
+        "Een regel leegmaken verbergt die balk — zo haal je de actie weg zonder een developer.",
+      type: "object",
+      group: "banner",
+      fields: [
+        defineField({
+          name: "topBar",
+          title: "Balk bovenaan elke pagina",
+          type: "promoText",
+        }),
+        defineField({
+          name: "homepage",
+          title: "Balk onder de homepage-hero",
+          description:
+            "Meer ruimte dan de bovenste balk — hier past bijvoorbeeld het kortingsbedrag bij.",
+          type: "promoText",
+        }),
       ],
     }),
     defineField({

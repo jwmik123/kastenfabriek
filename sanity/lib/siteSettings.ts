@@ -24,6 +24,13 @@ export interface SiteSocialMedia {
   linkedin?: string;
 }
 
+export interface PromoBanner {
+  /** The strip above the navigation, on every page. */
+  topBar?: PortableTextBlock[];
+  /** The wider strip under the homepage hero. */
+  homepage?: PortableTextBlock[];
+}
+
 export interface SiteSettings {
   siteName?: string;
   tagline?: string;
@@ -33,6 +40,7 @@ export interface SiteSettings {
   socialMedia?: SiteSocialMedia;
   kvkNumber?: string;
   vatNumber?: string;
+  promoBanner?: PromoBanner;
   /** Which legal documents an editor has actually written — see `lib/legal`. */
   legalFilled: Record<LegalDocumentKey, boolean>;
 }
@@ -57,6 +65,7 @@ const siteSettingsQuery = groq`
     socialMedia,
     kvkNumber,
     vatNumber,
+    promoBanner,
     "legalFilled": {
     ${legalPresenceProjection}
     }
