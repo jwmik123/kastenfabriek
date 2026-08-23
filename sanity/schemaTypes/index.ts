@@ -1,6 +1,7 @@
 import { type SchemaTypeDefinition } from "sanity";
 import { page } from "./page";
 import { promoText } from "./promoText";
+import { configuratorServices } from "./configuratorServices";
 import { richText } from "./richText";
 import { siteSettings } from "./siteSettings";
 import { moduleLayout } from "./moduleLayout";
@@ -26,6 +27,7 @@ export const schema: { types: SchemaTypeDefinition[] } = {
     hotspotSection,
     ...kennisbankSchemaTypes,
     // Configurator Pricing
+    configuratorServices,
     moduleLayout,
     accessory,
     doorType,

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { client } from '@/sanity/lib/client'
+import { getConfiguratorServices } from '@/sanity/lib/configuratorServices'
 import { pricingDataQuery } from '@/lib/configurator/queries'
 import type { FullPricingData } from '@/types/configurator-pricing'
 import WasmachinekastConfigurator from './components/WasmachinekastConfigurator'
@@ -48,7 +49,10 @@ export default async function WasmachinekastPage({
   searchParams: Promise<{ edit?: string }>
 }) {
   const { edit } = await searchParams
-  const pricingData: FullPricingData = await client.fetch(pricingDataQuery)
+  const [pricingData, services] = await Promise.all([
+    client.fetch<FullPricingData>(pricingDataQuery),
+    getConfiguratorServices(),
+  ])
 
   let editConfig: ClosetConfigSnapshot | null = null
   if (edit) {
@@ -68,7 +72,7 @@ export default async function WasmachinekastPage({
       />
       <div className="hidden md:block">
         <ColorwayPreview />
-        <WasmSummarySection />
+        <WasmSummarySection services={services} />
       </div>
     </>
   )

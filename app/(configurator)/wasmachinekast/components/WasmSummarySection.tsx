@@ -5,6 +5,7 @@ import type { Section } from '../sections/types'
 import type { WasmLayout } from '../sections/types'
 import type { HandleType } from '@/types/configurator-pricing'
 import ConfiguratorServicesBar from '../../_shared/components/ConfiguratorServicesBar'
+import type { ConfiguratorService } from '@/lib/configurator/services'
 import { SpecRow, MaterialSwatch } from '../../_shared/components/SpecList'
 
 const LAYOUT_LABELS: Record<WasmLayout, string> = {
@@ -56,7 +57,7 @@ function SectionSpecs({
   )
 }
 
-export default function WasmSummarySection() {
+export default function WasmSummarySection({ services }: { services: ConfiguratorService[] }) {
   const layout = useWasmachinekastStore((s) => s.layout)
   const depth = useWasmachinekastStore((s) => s.depth)
   const highSection = useWasmachinekastStore((s) => s.highSection)
@@ -77,7 +78,7 @@ export default function WasmSummarySection() {
   return (
     <>
       {/* Services bar — full width, directly under configurator */}
-      <ConfiguratorServicesBar />
+      <ConfiguratorServicesBar services={services} />
 
       {/* Specifications */}
       <section className="w-full container mx-auto px-4 py-12 md:py-24">

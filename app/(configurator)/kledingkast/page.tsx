@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { client } from '@/sanity/lib/client'
+import { getConfiguratorServices } from '@/sanity/lib/configuratorServices'
 import { pricingDataQuery } from '@/lib/configurator/queries'
 import type { FullPricingData } from '@/types/configurator-pricing'
 import KledingkastConfigurator from './components/KledingkastConfigurator'
@@ -41,7 +42,10 @@ export default async function KledingkastPage({
   searchParams: Promise<{ edit?: string }>
 }) {
   const { edit } = await searchParams
-  const pricingData: FullPricingData = await client.fetch(pricingDataQuery)
+  const [pricingData, services] = await Promise.all([
+    client.fetch<FullPricingData>(pricingDataQuery),
+    getConfiguratorServices(),
+  ])
 
   // If editing a specific cart item, fetch its config server-side (authenticated users only)
   let editConfig: ClosetConfigSnapshot | null = null
@@ -63,7 +67,7 @@ export default async function KledingkastPage({
       />
       <div className="hidden md:block">
         <ColorwayPreview />
-        <ClosetSummarySection />
+        <ClosetSummarySection services={services} />
       </div>
     </>
   )

@@ -57,6 +57,7 @@ export const structure: StructureResolver = (S) =>
             .title('Configurator')
             .items([
               singleton(S, 'pricingConfig', 'Prijsconfiguratie'),
+              singleton(S, 'configuratorServices', 'Servicesbalk'),
               S.divider(),
               S.listItem()
                 .title('Onderdelen')

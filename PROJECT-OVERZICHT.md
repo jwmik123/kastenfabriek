@@ -203,7 +203,7 @@ Beide configurators delen `app/(configurator)/_shared/`.
 - **Modulepopover** — klik op een module in 3D → popover op de klikpositie (`popoverPlacement`)
 - **Per-module materiaalpaneel** — buiten-/binnenkant per module overschrijven
 - **Rondleiding** (`@reactour/tour`): 4 stappen — Bedieningsbalk → Bekijk je kast → Pas modules aan → Volgende stap. Status in localStorage; help-knop om opnieuw te starten.
-- **Services-balk** — Optionele Inmeetservice · Optionele Montageservice
+- **Services-balk** — inhoud uit Sanity (`configuratorServices`), met ingebouwde standaardteksten als het document nog niet bestaat
 - **Colorway-preview** + **samenvattingssectie** onder de configurator (alleen desktop)
 - **Autosave**: concept in localStorage onder `kf-config-draft-<product>`; wordt hersteld bij terugkomst
 - **Screenshots**: bij toevoegen aan winkelwagen worden twee canvas-captures gemaakt (deuren dicht + open) en meegestuurd naar cart/order/e-mail
@@ -752,6 +752,7 @@ Inhoud
 | `accessory` | Accessory | accessoryId, name, nameNl, price, category, perUnit, maxPerCorpus, availableForLowSection |
 | `installationTier` | Installation Tier | name, minTotal, maxTotal, price, days, people |
 | `pricingConfig` | Pricing Configuration | freeMontage, currency, led, deliveryPrice, schuinte-toeslagen, constraints |
+| `configuratorServices` | Servicesbalk (configurator) | services[] (icoon, titel, toelichting) — max 4 |
 | `coupon` | Coupon | code, discountType, discountValue, expiresAt, maxUses, currentUses |
 | `product` | Product | title, slug, productType (pax-doors/samples), isActive, omschrijvingen, hero + galerij, productInfo, deliveryFee, paxConfig, sampleConfig |
 
@@ -886,7 +887,7 @@ npx vitest run "app/(configurator)/kledingkast/__tests__/resolveElementPositions
 2. **Contactgegevens zijn placeholders** — telefoonnummer `+31 6 1234 5678` in de footer; `siteSettings` in Sanity heeft `contactEmail`, `contactPhone`, `kvkNumber`, `vatNumber` en `shippingInfo` nog leeg.
 3. **`requireEmailVerification: false`** in Better Auth — aanzetten zodra e-mailverificatie gewenst is.
 4. **`freeMontage` staat op `false`** in Sanity, terwijl de navigatie- en homepage-promostrips *"gratis montage"* aankondigen. Zet de vlag aan (of pas de copy aan) vóór livegang.
-5. **Services-balk** toont Inmeetservice/Montageservice tweemaal (duplicaat in `ConfiguratorServicesBar.tsx`).
+5. **Services-balk** is redactioneel geworden (`configuratorServices`); het document staat nog niet in Sanity, dus de balk toont de standaardteksten uit `lib/configurator/services.ts`.
 6. **`invoice`- en `review`-tabellen** bestaan wel in de database maar hebben nog geen UI of flow.
 7. **Openstaande werkkopie** — 10 gewijzigde bestanden nog niet gecommit (order-spec, order-documenten, wasmachinekast-moduleLayouts, cart-types).
 8. **Schema-naamgeving** — `singleCorpus`/`doubleCorpus`/`maxPerCorpus` slaan feitelijk op een *module*. Bewust zo gelaten; hernoemen vereist een Sanity-migratie.

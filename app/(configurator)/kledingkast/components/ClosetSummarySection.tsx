@@ -2,6 +2,7 @@
 
 import { useClosetStore } from '../store'
 import ConfiguratorServicesBar from '../../_shared/components/ConfiguratorServicesBar'
+import type { ConfiguratorService } from '@/lib/configurator/services'
 import { SpecRow, MaterialSwatch } from '../../_shared/components/SpecList'
 
 // ─── Module summary ───────────────────────────────────────────────────────────
@@ -35,7 +36,7 @@ function ModulesSummary() {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export default function ClosetSummarySection() {
+export default function ClosetSummarySection({ services }: { services: ConfiguratorService[] }) {
   const width = useClosetStore((s) => s.width)
   const height = useClosetStore((s) => s.height)
   const depth = useClosetStore((s) => s.depth)
@@ -56,7 +57,7 @@ export default function ClosetSummarySection() {
   return (
     <>
       {/* Services bar — full width, directly under configurator */}
-      <ConfiguratorServicesBar />
+      <ConfiguratorServicesBar services={services} />
 
       {/* Specifications */}
       <section className="w-full container mx-auto px-4 py-12 md:py-24">
