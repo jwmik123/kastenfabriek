@@ -36,6 +36,13 @@
       "when": 1784727643907,
       "tag": "0004_stale_squirrel_girl",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1787570668470,
+      "tag": "0005_closed_serpent_society",
+      "breakpoints": true
     }
   ]
 }

@@ -28,10 +28,17 @@ function generateOrderNumber(): string {
 
 export async function createCheckoutSession(
   shippingAddressId: string,
+  termsAccepted: boolean,
   coupon?: { couponCode: string; discountAmount: number }
 ): Promise<{ url: string }> {
   const user = await getCurrentUser();
   if (!user) throw new Error("Not authenticated");
+
+  // The checkbox is enforced here too, not just in the form: the acceptance is
+  // recorded on the order, so an order may never exist without one.
+  if (!termsAccepted) {
+    throw new Error("Ga akkoord met de algemene voorwaarden om af te rekenen.");
+  }
 
   // Fetch cart items
   const cartRows = await db.query.cartItem.findMany({
@@ -96,6 +103,7 @@ export async function createCheckoutSession(
     billingAddressSnapshot: shippingAddr,
     couponCode: coupon?.couponCode ?? null,
     discountAmount: coupon ? discountCents : null,
+    termsAcceptedAt: new Date(),
   });
 
   // Create order items (dispatch by kind)

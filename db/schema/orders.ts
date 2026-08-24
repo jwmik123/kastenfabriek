@@ -27,6 +27,9 @@ export const order = pgTable("order", {
   stripePaymentIntentId: text("stripe_payment_intent_id"),
   couponCode: text("coupon_code"),
   discountAmount: integer("discount_amount"), // in cents, nullable
+  // When the customer ticked the terms checkbox at checkout. Null on orders
+  // placed before the checkbox existed.
+  termsAcceptedAt: timestamp("terms_accepted_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
   paidAt: timestamp("paid_at"),

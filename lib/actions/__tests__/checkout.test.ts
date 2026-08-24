@@ -132,8 +132,24 @@ beforeEach(() => {
 });
 
 describe("createCheckoutSession", () => {
+  it("refuses to create an order when the terms were not accepted", async () => {
+    await expect(createCheckoutSession("addr_1", false)).rejects.toThrow(
+      /algemene voorwaarden/
+    );
+
+    expect(mockInsertValues).not.toHaveBeenCalled();
+    expect(mockSessionsCreate).not.toHaveBeenCalled();
+  });
+
+  it("records when the terms were accepted", async () => {
+    await createCheckoutSession("addr_1", true);
+
+    const orderData = mockInsertValues.mock.calls[0][0];
+    expect(orderData.termsAcceptedAt).toBeInstanceOf(Date);
+  });
+
   it("attaches a Stripe coupon for the discount", async () => {
-    await createCheckoutSession("addr_1", { couponCode: "SAVE10", discountAmount: 1000 });
+    await createCheckoutSession("addr_1", true, { couponCode: "SAVE10", discountAmount: 1000 });
 
     expect(mockCouponsCreate).toHaveBeenCalledWith(
       expect.objectContaining({ amount_off: 1000, currency: "eur", name: "Korting (SAVE10)" })
@@ -142,21 +158,21 @@ describe("createCheckoutSession", () => {
   });
 
   it("writes couponCode and discountAmount to order record", async () => {
-    await createCheckoutSession("addr_1", { couponCode: "SAVE10", discountAmount: 1000 });
+    await createCheckoutSession("addr_1", true, { couponCode: "SAVE10", discountAmount: 1000 });
 
     const orderData = mockInsertValues.mock.calls[0][0];
     expect(orderData).toMatchObject({ couponCode: "SAVE10", discountAmount: 1000 });
   });
 
   it("attaches no discount when there is no coupon", async () => {
-    await createCheckoutSession("addr_1");
+    await createCheckoutSession("addr_1", true);
 
     expect(mockCouponsCreate).not.toHaveBeenCalled();
     expect(mockSessionsCreate.mock.calls[0][0].discounts).toBeUndefined();
   });
 
   it("writes null coupon fields to order when no coupon", async () => {
-    await createCheckoutSession("addr_1");
+    await createCheckoutSession("addr_1", true);
 
     const orderData = mockInsertValues.mock.calls[0][0];
     expect(orderData).toMatchObject({ couponCode: null, discountAmount: null });
@@ -165,7 +181,7 @@ describe("createCheckoutSession", () => {
   it("caps the discount at the order total", async () => {
     const oversizedDiscount = TOTAL_CENTS + 5000;
 
-    await createCheckoutSession("addr_1", { couponCode: "BIG10", discountAmount: oversizedDiscount });
+    await createCheckoutSession("addr_1", true, { couponCode: "BIG10", discountAmount: oversizedDiscount });
 
     expect(mockCouponsCreate).toHaveBeenCalledWith(
       expect.objectContaining({ amount_off: TOTAL_CENTS })
@@ -174,7 +190,7 @@ describe("createCheckoutSession", () => {
   });
 
   it("names the order line after the configurator the item came from", async () => {
-    await createCheckoutSession("addr_1");
+    await createCheckoutSession("addr_1", true);
 
     const itemRow = mockInsertValues.mock.calls[1][0];
     expect(itemRow).toMatchObject({
@@ -208,7 +224,7 @@ describe("createCheckoutSession", () => {
       },
     ]);
 
-    await createCheckoutSession("addr_1");
+    await createCheckoutSession("addr_1", true);
 
     expect(mockInsertValues.mock.calls[1][0]).toMatchObject({
       productName: "Wasmachinekast",
@@ -217,7 +233,7 @@ describe("createCheckoutSession", () => {
   });
 
   it("does not stamp the order-level coupon onto the line snapshot", async () => {
-    await createCheckoutSession("addr_1", { couponCode: "SAVE10", discountAmount: 1000 });
+    await createCheckoutSession("addr_1", true, { couponCode: "SAVE10", discountAmount: 1000 });
 
     const snapshot = mockInsertValues.mock.calls[1][0].configurationSnapshot;
     expect(snapshot.priceSnapshot.discountCode).toBeUndefined();

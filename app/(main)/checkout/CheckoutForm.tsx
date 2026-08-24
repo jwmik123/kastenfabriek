@@ -11,6 +11,7 @@ import type { CartItem, ClosetConfigSnapshot } from '@/lib/cart/types'
 import { getDeliveryWindow } from '@/lib/delivery-window'
 import { calcCartTotals } from '@/lib/cart/totals'
 import { summarizeCloset } from '@/lib/order/closet-spec'
+import { LEGAL_DOCUMENTS, type LegalDocumentKey } from '@/lib/legal'
 
 type Address = {
   id: string
@@ -31,6 +32,36 @@ type Address = {
 interface CheckoutFormProps {
   addresses: Address[]
   cartItems: CartItem[]
+  /** Which legal documents an editor has written — unwritten ones 404, so they stay unlinked. */
+  legalFilled: Record<LegalDocumentKey, boolean>
+}
+
+/**
+ * "de algemene voorwaarden, privacyverklaring en het retourbeleid" — each
+ * document links to its page once an editor has actually written it.
+ */
+function LegalDocumentList({ legalFilled }: { legalFilled: Record<LegalDocumentKey, boolean> }) {
+  return (
+    <>
+      {LEGAL_DOCUMENTS.map((doc, i) => (
+        <span key={doc.key}>
+          {i > 0 && (i === LEGAL_DOCUMENTS.length - 1 ? ' en ' : ', ')}
+          {legalFilled[doc.key] ? (
+            <a
+              href={doc.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary underline underline-offset-2 hover:no-underline"
+            >
+              {doc.title.toLowerCase()}
+            </a>
+          ) : (
+            doc.title.toLowerCase()
+          )}
+        </span>
+      ))}
+    </>
+  )
 }
 
 const fmt = new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 })
@@ -56,7 +87,7 @@ type AppliedCoupon = {
   discountValue: number
 }
 
-export default function CheckoutForm({ addresses, cartItems }: CheckoutFormProps) {
+export default function CheckoutForm({ addresses, cartItems, legalFilled }: CheckoutFormProps) {
   const [step, setStep] = useState<Step>('address')
   const [selectedAddressId, setSelectedAddressId] = useState<string>(
     addresses.find((a) => a.isDefault)?.id ?? addresses[0]?.id ?? ''
@@ -65,6 +96,7 @@ export default function CheckoutForm({ addresses, cartItems }: CheckoutFormProps
   const [isPending, startTransition] = useTransition()
   const [couponIsPending, startCouponTransition] = useTransition()
   const [error, setError] = useState('')
+  const [termsAccepted, setTermsAccepted] = useState(false)
 
   // Coupon state
   const [couponInput, setCouponInput] = useState('')
@@ -148,11 +180,16 @@ export default function CheckoutForm({ addresses, cartItems }: CheckoutFormProps
   }
 
   const handleStartPayment = () => {
+    if (!termsAccepted) {
+      setError('Ga akkoord met de algemene voorwaarden om af te rekenen.')
+      return
+    }
     setError('')
     startTransition(async () => {
       try {
         const { url } = await createCheckoutSession(
           selectedAddressId,
+          termsAccepted,
           appliedCoupon ? { couponCode: appliedCoupon.code, discountAmount: discountAmountCents } : undefined
         )
         window.location.href = url
@@ -455,10 +492,22 @@ export default function CheckoutForm({ addresses, cartItems }: CheckoutFormProps
             </div>
           </div>
 
+          <label className="flex items-start gap-3 text-left cursor-pointer">
+            <input
+              type="checkbox"
+              checked={termsAccepted}
+              onChange={(e) => setTermsAccepted(e.target.checked)}
+              className="mt-0.5 w-4 h-4 shrink-0 accent-primary cursor-pointer"
+            />
+            <span className="text-sm text-gray-600">
+              Ik ga akkoord met de <LegalDocumentList legalFilled={legalFilled} />.
+            </span>
+          </label>
+
           <button
             onClick={handleStartPayment}
-            disabled={isPending}
-            className="w-full py-4 bg-primary text-white rounded-xl font-semibold text-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
+            disabled={isPending || !termsAccepted}
+            className="w-full py-4 bg-primary text-white rounded-xl font-semibold text-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {isPending ? 'Doorsturen naar Stripe...' : `Betaal ${fmt.format(discountedTotal)}`}
           </button>

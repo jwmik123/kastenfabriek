@@ -1,0 +1,1 @@
+ALTER TABLE "order" ADD COLUMN "terms_accepted_at" timestamp;

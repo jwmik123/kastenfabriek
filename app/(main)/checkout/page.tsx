@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "@/lib/actions/auth";
 import { getDbCartItems } from "@/lib/actions/cart";
 import { getAddresses } from "@/lib/actions/address";
+import { getSiteSettings } from "@/sanity/lib/siteSettings";
 import CheckoutForm from "./CheckoutForm";
 
 export const metadata = {
@@ -14,9 +15,10 @@ export default async function CheckoutPage() {
     redirect("/login?callbackUrl=/checkout");
   }
 
-  const [cartItems, addresses] = await Promise.all([
+  const [cartItems, addresses, settings] = await Promise.all([
     getDbCartItems(),
     getAddresses(),
+    getSiteSettings(),
   ]);
 
   if (cartItems.length === 0) {
@@ -27,6 +29,7 @@ export default async function CheckoutPage() {
     <CheckoutForm
       addresses={addresses}
       cartItems={cartItems}
+      legalFilled={settings.legalFilled}
     />
   );
 }
