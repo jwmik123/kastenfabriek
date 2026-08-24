@@ -16,6 +16,7 @@ import WasmachinekastScene from './WasmachinekastScene'
 import WasmRoomWalls from './WasmRoomWalls'
 import CanvasToolbar from '../../_shared/components/CanvasToolbar'
 import CanvasPricePanel from '../components/CanvasPricePanel'
+import DebugPricePanel from '../components/DebugPricePanel'
 import ModulePopover from '../components/ModulePopover'
 import {
   WasmachinekastModuleSpotlightTracker,
@@ -174,6 +175,7 @@ export default function WasmachinekastCanvas() {
       <CanvasToolbar showRandomize={step >= 3} />
       <ModulePopover />
       <CanvasPricePanel />
+      <DebugPricePanel />
       <ThreeLoader />
     </div>
   )
