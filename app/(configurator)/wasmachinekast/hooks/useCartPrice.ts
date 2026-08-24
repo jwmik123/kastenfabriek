@@ -4,16 +4,10 @@ import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useSession } from '@/lib/auth-client'
 import { useWasmachinekastStore } from '../store'
-import { MATERIALS } from '../../kledingkast/materials'
 import { addItem } from '@/lib/cart/cart-store'
 import { addWishlistItem } from '@/lib/wishlist/wishlist-store'
 import { requestCapture, resetToFrontView } from '@/lib/canvas-capture'
-import { PricingEngine } from '@/lib/configurator/pricing-engine'
-import { computeFreeMontage } from '@/lib/configurator/free-montage'
-import { computeInstallationBasis } from '@/lib/configurator/installation-basis'
-import { countDrawerFronts } from '../sections/drawerFronts'
-import { getWasmLayoutConfig } from '../moduleLayoutConfigs'
-import { WASHER_LAYOUT_IDS } from '../moduleLayouts'
+import { useWasmPricing } from './useWasmPricing'
 import { buildWasmConfigSnapshot, resolveHandleName } from '../wasmSnapshot'
 import type { CartItem, PriceSnapshot } from '@/lib/cart/types'
 
@@ -57,92 +51,27 @@ export function useCartPrice() {
   const hasTopCabinet = needsTopCabinet()
   const topCabinetHeightCm = topCabinetHeight()
 
-  const engine = pricingData ? new PricingEngine(pricingData) : null
+  const pricing = useWasmPricing()
 
-  const allModules = lowSection ? [...modules, ...lowSection.modules] : modules
-
-  const moduleCost = allModules.reduce((sum, module) => {
-    if (module.layoutId === null || !engine) return sum
-    const type = module.span === 2 ? 'double' : 'single'
-    return sum + engine.getModulePrice(module.layoutId, type)
-  }, 0)
-
-  // Doors carry the door handle; only the door above the washer and the top
-  // cabinet are push-to-open. Lage-kast lowFronts layouts render drawer
-  // fronts instead of a door (no door cost) with their own handle choice.
-  const isLowOnly = layout === 'low-only'
-  const sectionedModules = [
-    ...(isLowOnly ? [] : modules).map((m) => ({ module: m, low: false })),
-    ...(isLowOnly ? modules : lowSection?.modules ?? []).map((m) => ({ module: m, low: true })),
-  ]
-
-  let moduleDoorCost = 0
-  let regularDoorCount = 0
-  let pushDoorCount = 0
-
-  for (const { module, low } of sectionedModules) {
-    if (!module.hasDoor || module.layoutId === null || !engine) continue
-    const cfg = getWasmLayoutConfig(module.layoutId)
-    const isWasher = WASHER_LAYOUT_IDS.has(module.layoutId)
-    if (low && (isWasher || cfg?.lowFronts)) continue
-    const effectiveMaterialId = module.buitenkantMaterialId ?? buitenkantMaterialId
-    const material = MATERIALS.find((m) => m.id === effectiveMaterialId)
-    const variant = material?.type === 'texture' ? 'veneer' : 'standard'
-    const count = module.span === 2 ? 2 : 1
-    moduleDoorCost += engine.getDoorPrice(variant) * count
-    // A washer door and a module the customer set to push-to-open both go
-    // without a handle.
-    if ((!low && isWasher) || module.pushToOpen) pushDoorCount += count
-    else regularDoorCount += count
-  }
-
-  const topCabinetDoorCount = hasTopCabinet ? moduleCount : 0
-  const topCabinetDoorCost = topCabinetDoorCount * (engine?.getDoorPrice('small') ?? 0)
-  const doorCost = moduleDoorCost + topCabinetDoorCost
-
-  const drawerFrontCount = countDrawerFronts({
-    layout,
-    topLevelModules: modules,
-    lowSection,
-  })
-  // Drawer fronts — lage kast and the drawers under a washing machine alike —
-  // carry the same handle as the doors, unless that handle does not fit a
-  // drawer front, then they stay push-to-open.
-  const drawerHandleId =
-    pricingData?.handles.find((h) => h.id === doorHandleId)?.fitsLowModule === false
-      ? 'none'
-      : doorHandleId
-  const mechanismCost = engine
-    ? regularDoorCount * engine.getHandlePrice(doorHandleId) +
-      (pushDoorCount + topCabinetDoorCount) * engine.getHandlePrice('none') +
-      drawerFrontCount * engine.getHandlePrice(drawerHandleId)
-    : 0
-  // LED strips light the high cabinet only, so they are priced over the high
-  // section's modules — a low-only cabinet cannot carry them at all.
-  const ledModuleCount = layout === 'low-only' ? 0 : moduleCount
-  const ledCost =
-    lightStripsEnabled && engine && ledModuleCount > 0
-      ? engine.calculateLedPrice(ledModuleCount)
-      : 0
-
-  const powerHoleCount = allModules.filter((m) => m.hasPowerHole).length
-  const powerHoleCost = powerHoleCount > 0 && engine ? powerHoleCount * engine.getAccessoryPrice('power-outlet') : 0
-
-  // --- Side panels upgrade — 18mm = standard, 36mm = paid upgrade ---
-  const sidePanelCost = sidePanelThickness === '36mm' && engine
-    ? engine.getAccessoryPrice('side-panels-36mm')
-    : 0
-
-  const deliveryCost = engine?.deliveryPrice ?? 95
-  const subtotal = moduleCost + doorCost + mechanismCost + ledCost + powerHoleCost + sidePanelCost + deliveryCost
-  const installationBasis = computeInstallationBasis({ subtotal, deliveryCost, ledCost })
-  const installationTier = engine?.getInstallationTier(installationBasis) ?? null
-  const freeMontage = pricingData?.config.freeMontage ?? false
-  const { effectiveInstallationCost, freeMontageDiscount, freeMontageApplied, originalPrice, grandTotal } =
-    computeFreeMontage({ subtotal, installationTier, freeMontage })
-  const installationCost = effectiveInstallationCost
-
-  const totalPrice = moduleCost + doorCost + mechanismCost + ledCost + powerHoleCost + sidePanelCost
+  const {
+    moduleCost,
+    doorCost,
+    mechanismCost,
+    ledCost,
+    powerHoleCost,
+    sidePanelCost,
+    deliveryCost,
+    cabinetCost: totalPrice,
+    subtotal,
+    installationBasis,
+    installationTier,
+    installationCost,
+    freeMontageApplied,
+    freeMontageDiscount,
+    originalPrice,
+    grandTotal,
+  } = pricing.totals
+  const drawerHandleId = pricing.handles.drawerHandleId
 
   // Builds the full cart item for the current configuration, including the
   // two 3D captures (doors closed + open). Shared by cart and wishlist saves.

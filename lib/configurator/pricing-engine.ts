@@ -6,6 +6,7 @@ import type {
   Accessory,
   InstallationTier,
   HandleType,
+  SectionType,
 } from "@/types/configurator-pricing";
 
 export type DiagonalSideValue = "none" | "left" | "right" | "both";
@@ -66,8 +67,24 @@ export class PricingEngine {
     };
   }
 
-  getModule(layoutId: number): ModuleLayout | undefined {
-    return this.data.modules.find((m) => m.layoutId === layoutId);
+  /**
+   * The catalogue document for a layout, for the section it is placed in.
+   *
+   * A layoutId is not unique: the same interior exists as a high and a low
+   * module, priced apart (layout 14 is the standing example). Matching on the
+   * id alone hands out whichever document the query happened to return first,
+   * so a wasmachinekast could price its low modules at high-module rates. Pass
+   * the section and the document for that section wins; a shared ("both") or
+   * unmarked document is the fallback, and only then the first one found.
+   */
+  getModule(layoutId: number, section?: SectionType): ModuleLayout | undefined {
+    const candidates = this.data.modules.filter((m) => m.layoutId === layoutId);
+    if (candidates.length <= 1 || !section) return candidates[0];
+    return (
+      candidates.find((m) => m.sectionType === section) ??
+      candidates.find((m) => m.sectionType === "both" || m.sectionType == null) ??
+      candidates[0]
+    );
   }
 
   /**
@@ -77,8 +94,8 @@ export class PricingEngine {
    * costing nothing is how an unpriced module ends up free in a quote — so the
    * gap is logged, once per layout, rather than swallowed by the caller.
    */
-  getModulePrice(layoutId: number, type: CorpusType): number {
-    const layout = this.getModule(layoutId);
+  getModulePrice(layoutId: number, type: CorpusType, section?: SectionType): number {
+    const layout = this.getModule(layoutId, section);
     if (!layout) {
       warnMissingModuleOnce(layoutId);
       return 0;

@@ -16,15 +16,20 @@ import type { Section, WasmLayout } from './types'
  * above a washing machine is always push-to-open and never counted here.
  */
 
-type SectionedModule = { module: BaseModuleSlot; section: 'high' | 'low' }
+export type SectionedModule = { module: BaseModuleSlot; section: 'high' | 'low' }
 
-type DrawerFrontArgs = {
+export type DrawerFrontArgs = {
   layout: WasmLayout
   topLevelModules: BaseModuleSlot[]
   lowSection: Section | null
 }
 
-function sectionedModules({
+/**
+ * Every module in the cabinet, tagged with the section it sits in. Top-level
+ * `modules` hold the low section in low-only layouts, so `lowSection` is only
+ * appended when the top level stands for the high section.
+ */
+export function sectionedModules({
   layout,
   topLevelModules,
   lowSection,
@@ -40,7 +45,8 @@ function sectionedModules({
   ]
 }
 
-function frontsInModule({ module, section }: SectionedModule): number {
+/** Drawer fronts this module renders, ignoring whether they carry a handle. */
+export function frontsInModule({ module, section }: SectionedModule): number {
   if (module.layoutId === null) return 0
   const config = getWasmLayoutConfig(module.layoutId)
   if (!config) return 0

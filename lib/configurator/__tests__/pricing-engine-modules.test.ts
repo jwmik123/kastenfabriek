@@ -28,7 +28,39 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
+// The same layoutId exists once per section, priced apart — matching on the id
+// alone would price a low module at the high module's rate.
+const plankHigh: ModuleLayout = { ...plank, sectionType: 'high', priceSingle: 900, priceDouble: 1200 }
+const plankLow: ModuleLayout = { ...plank, sectionType: 'low', priceSingle: 340, priceDouble: 560 }
+const plankBoth: ModuleLayout = { ...plank, sectionType: 'both', priceSingle: 500, priceDouble: 700 }
+
+describe('getModule — duplicate layoutIds', () => {
+  it('picks the document for the section asked for, whatever the order', () => {
+    expect(engineWith([plankHigh, plankLow]).getModule(20, 'low')?.priceSingle).toBe(340)
+    expect(engineWith([plankLow, plankHigh]).getModule(20, 'low')?.priceSingle).toBe(340)
+    expect(engineWith([plankLow, plankHigh]).getModule(20, 'high')?.priceSingle).toBe(900)
+  })
+
+  it('falls back to the shared document when the section has none', () => {
+    expect(engineWith([plankHigh, plankBoth]).getModule(20, 'low')?.priceSingle).toBe(500)
+  })
+
+  it('falls back to a document without a section over an unrelated one', () => {
+    expect(engineWith([plankHigh, plank]).getModule(20, 'low')?.priceSingle).toBe(340)
+  })
+
+  it('keeps the only document there is, section or not', () => {
+    expect(engineWith([plankHigh]).getModule(20, 'low')?.priceSingle).toBe(900)
+  })
+})
+
 describe('getModulePrice', () => {
+  it('prices per section when the catalogue holds both', () => {
+    const engine = engineWith([plankHigh, plankLow])
+    expect(engine.getModulePrice(20, 'single', 'low')).toBe(340)
+    expect(engine.getModulePrice(20, 'double', 'high')).toBe(1200)
+  })
+
   it('returns the price for the corpus type', () => {
     const engine = engineWith([plank])
     expect(engine.getModulePrice(20, 'single')).toBe(340)
