@@ -14,6 +14,14 @@ import HotspotSection from "@/components/HotspotSection";
 import PromoText from "@/components/PromoText";
 import { getSiteSettings } from "@/sanity/lib/siteSettings";
 
+/** Scherpe poster, ~60 kB webp. Wordt getoond tot de video echt speelt. */
+const HERO_POSTER =
+  "https://image.mux.com/WA3XeDIo9bziQXqSasFMl5N02gWCtRAlnul4v69n9t00U/thumbnail.webp?width=1280&time=11";
+
+/** Zelfde frame op 48px (480 B) als data-URI: staat in de HTML, dus meteen zichtbaar. */
+const HERO_PLACEHOLDER =
+  "data:image/webp;base64,UklGRtgBAABXRUJQVlA4IMwBAAAQCQCdASowABsAPkUciUQioaEdXMwAKAREs4BhRgnE+maZEj1mcsn6k66diVZD6nSr/rhb+gU8gZVgPR3esiKm0f7bcgHtfjSFUZ3fDLScrQAA/vwuuhODErz7uPciwNgp22UDyI77mcyV6+QuH0ySlu8Nvp34Jlys7LOL/UP/tb0efdTutkFqM9QAwSAlvpf1GfvlAx+qW7SIs0nWgCafUJuUfTzWPNpLtEHblxOhel/R8tOr8WhgnaMH+Db1rZAurfkKkRoHRpng8OgkXHDAMoWeYirKIwBxjO+rZNcYTns1UljqO/XQPiMITjQfiXb12GN/+yWQhuJphAKfegIY28bhYyz/fXqGYKgo0w/uEdS8eWo0IwC6rCJXoY/rctpMTx+qRKFIhswchM/LVLYEXogthO4qhJFVtXR151wpmYohaDlmULDMAPqP6dzuFTVTb8QnNB4MI16MM6IAF+u12W2FtewWbvpWtjH5OMYH0Be2ncNKyM0WBiIX+DfWnK8qhcX6Iazn0rTAD0rcPPae4gq2nycb/j0fgW57qFQ51Igq1GcKTPjyeTA0mVxENxHYRSlPdaTpWtPsWpygMshAr05W41w8nYIMAAAA";
+
 export default async function Home() {
   const settings = await getSiteSettings();
   const promo = settings.promoBanner?.homepage;
@@ -28,7 +36,8 @@ export default async function Home() {
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <HeroBackgroundVideo
           playbackId={process.env.NEXT_PUBLIC_MUX_HERO_PLAYBACK_ID!}
-            poster="https://image.mux.com/XDs012DOlQKPSETiCMAe4Mf00V1LzktQF8Cj3ClBcDjBs/thumbnail.webp?width=1920&time=0"
+          poster={HERO_POSTER}
+          placeholder={HERO_PLACEHOLDER}
         />
       </div>
       <div className="absolute inset-0 bg-black/10 z-10" />
