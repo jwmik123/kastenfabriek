@@ -147,9 +147,9 @@ export default function PaxDoorConfigurator({
   const availableTypes = useMemo<PaxDoorType[]>(() => {
     const types: PaxDoorType[] = ['deuren']
     if ((cfg?.hoekVariants?.length ?? 0) > 0) types.push('hoekdeuren')
-    if ((cfg?.afwerkVariants?.length ?? 0) > 0) types.push('afwerkpaneel')
+    if (cfg?.afwerkEnabled && cfg?.pricePerM2 != null) types.push('afwerkpaneel')
     return types
-  }, [cfg?.hoekVariants, cfg?.afwerkVariants])
+  }, [cfg?.hoekVariants, cfg?.afwerkEnabled, cfg?.pricePerM2])
 
   const verlengdeMinHeight = cfg?.verlengdeMinHeightCm ?? 200
   const verlengdeMaxHeight = cfg?.verlengdeMaxHeightCm ?? 300
@@ -175,23 +175,36 @@ export default function PaxDoorConfigurator({
   )
   const afwerkMinDepth = cfg?.afwerkMinDepthCm ?? 20
   const afwerkMaxDepth = cfg?.afwerkMaxDepthCm ?? 120
+  const afwerkMinHeight = cfg?.afwerkMinHeightCm ?? 50
+  const afwerkMaxHeight = cfg?.afwerkMaxHeightCm ?? 300
   const [depthCm, setDepthCm] = useState<number>(
     seed?.configuration.depthCm ?? cfg?.afwerkMinDepthCm ?? 20,
   )
 
   const isHoek = doorType === 'hoekdeuren'
+  const isAfwerk = doorType === 'afwerkpaneel'
   // Hinge side is a door thing; a corner set and a side panel have none.
   const sideApplies = doorType === 'deuren'
-  const depthApplies = doorType === 'afwerkpaneel'
+  const depthApplies = isAfwerk
+  // A zijpaneel has no width to pick: the customer enters a depth instead.
+  const widthApplies = !isAfwerk
   const activeDoorSide = sideApplies ? doorSide : undefined
   const hoekVariants = useMemo(() => cfg?.hoekVariants ?? [], [cfg?.hoekVariants])
 
-  // Verlengde is per-width for numeric types, a flat price for hoekdeuren.
+  // A zijpaneel is always cut to size, so it has no separate "verlengd" toggle:
+  // its height field is free to begin with.
   const verlengdeAvailable = isHoek
     ? cfg?.verlengdeHoekPrice != null
-    : (cfg?.verlengdePrices?.length ?? 0) > 0
+    : isAfwerk
+      ? false
+      : cfg?.pricePerM2 != null || (cfg?.verlengdePrices?.length ?? 0) > 0
+  // Both the zijpaneel and a verlengde deur take a typed-in height.
+  const heightIsCustom = isAfwerk || isVerlengd
+  const minHeight = isAfwerk ? afwerkMinHeight : verlengdeMinHeight
+  const maxHeight = isAfwerk ? afwerkMaxHeight : verlengdeMaxHeight
 
-  // Numeric matrix for deuren/afwerk. Hoekdeuren use hoekVariants (label-keyed).
+  // Numeric matrix for deuren. Hoekdeuren use hoekVariants (label-keyed) and a
+  // zijpaneel has no matrix at all.
   const numericVariants = useMemo(
     () => (cfg ? numericVariantsForType(cfg, doorType) : []),
     [cfg, doorType],
@@ -200,21 +213,36 @@ export default function PaxDoorConfigurator({
   // Width options for the current selection. `key` is a number for numeric
   // types, a label string for hoekdeuren.
   const widthOptions = useMemo<{ key: string | number; label: string }[]>(() => {
+    if (isAfwerk) return []
     if (isHoek) {
       return uniqueStrings(hoekVariants.map((v) => v.widthLabel)).map((l) => ({
         key: l,
         label: l,
       }))
     }
-    const nums = isVerlengd
-      ? (cfg?.verlengdePrices ?? []).map((p) => p.widthCm)
-      : numericVariants.map((v) => v.widthCm)
+    // With a m² rate every standard width can be made in a custom height, so
+    // only the older flat-price products limit the verlengde widths.
+    const nums =
+      isVerlengd && cfg?.pricePerM2 == null
+        ? (cfg?.verlengdePrices ?? []).map((p) => p.widthCm)
+        : numericVariants.map((v) => v.widthCm)
     return sortedUnique(nums).map((n) => ({ key: n, label: `${n} cm` }))
-  }, [isHoek, isVerlengd, hoekVariants, cfg?.verlengdePrices, numericVariants])
+  }, [
+    isAfwerk,
+    isHoek,
+    isVerlengd,
+    hoekVariants,
+    cfg?.verlengdePrices,
+    cfg?.pricePerM2,
+    numericVariants,
+  ])
 
-  // Heights available for a given width key (standard matrix only).
+  // Heights available for a given width key (standard matrix only). A zijpaneel
+  // has no matrix at all — its height is typed in.
   const heightsForWidth = (key: string | number) =>
-    isHoek
+    isAfwerk
+      ? []
+      : isHoek
       ? sortedUnique(
           hoekVariants
             .filter((v) => v.widthLabel === key)
@@ -292,10 +320,10 @@ export default function PaxDoorConfigurator({
       setWidthKey(widthOptions[0].key)
       return
     }
-    if (isVerlengd) {
-      // Custom height: clamp into bounds on first switch.
-      if (heightCm < verlengdeMinHeight || heightCm > verlengdeMaxHeight) {
-        setHeightCm(verlengdeMinHeight)
+    if (heightIsCustom) {
+      // Typed-in height: clamp into bounds on first switch.
+      if (heightCm < minHeight || heightCm > maxHeight) {
+        setHeightCm(minHeight)
       }
       return
     }
@@ -305,7 +333,7 @@ export default function PaxDoorConfigurator({
       if (next != null) setHeightCm(next)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [widthKey, doorType, isVerlengd, widthOptions, verlengdeAvailable])
+  }, [widthKey, doorType, isVerlengd, widthOptions, verlengdeAvailable, heightIsCustom])
 
   const priceSnapshot = useMemo(() => {
     try {
@@ -319,17 +347,16 @@ export default function PaxDoorConfigurator({
         doorType,
         isVerlengd,
         doorSide: activeDoorSide,
+        depthCm: depthApplies ? depthCm : undefined,
       })
     } catch {
       return null
     }
-  }, [product, widthCm, widthLabel, heightCm, materialId, qty, doorType, isVerlengd, activeDoorSide])
+  }, [product, widthCm, widthLabel, heightCm, materialId, qty, doorType, isVerlengd, activeDoorSide, depthApplies, depthCm])
 
   const verlengdHeightValid =
-    !isVerlengd ||
-    (Number.isFinite(heightCm) &&
-      heightCm >= verlengdeMinHeight &&
-      heightCm <= verlengdeMaxHeight)
+    !heightIsCustom ||
+    (Number.isFinite(heightCm) && heightCm >= minHeight && heightCm <= maxHeight)
   const depthValid =
     !depthApplies ||
     (Number.isFinite(depthCm) &&
@@ -363,8 +390,8 @@ export default function PaxDoorConfigurator({
         productType: product.productType,
         productSlug: product.slug,
         productName: product.title,
-        widthCm,
-        widthLabel,
+        widthCm: isAfwerk ? 0 : widthCm,
+        widthLabel: isAfwerk ? undefined : widthLabel,
         heightCm,
         materialId: activeMaterial.id,
         materialName: activeMaterial.name,
@@ -543,33 +570,35 @@ export default function PaxDoorConfigurator({
             </div>
           )}
 
-          {/* Width */}
-          <div>
-            <h3 className="text-sm font-medium mb-2">Breedte</h3>
-            <div className="flex flex-wrap gap-2">
-              {widthOptions.map((o) => (
-                <PillButton
-                  key={o.key}
-                  active={o.key === widthKey}
-                  onClick={() => setWidthKey(o.key)}
-                >
-                  {o.label}
-                </PillButton>
-              ))}
+          {/* Width — every type but the zijpaneel */}
+          {widthApplies && (
+            <div>
+              <h3 className="text-sm font-medium mb-2">Breedte</h3>
+              <div className="flex flex-wrap gap-2">
+                {widthOptions.map((o) => (
+                  <PillButton
+                    key={o.key}
+                    active={o.key === widthKey}
+                    onClick={() => setWidthKey(o.key)}
+                  >
+                    {o.label}
+                  </PillButton>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Height */}
           <div>
             <h3 className="text-sm font-medium mb-2">Hoogte</h3>
-            {isVerlengd ? (
+            {heightIsCustom ? (
               <div>
                 <div className="inline-flex items-center gap-2">
                   <input
                     type="number"
                     inputMode="numeric"
-                    min={verlengdeMinHeight}
-                    max={verlengdeMaxHeight}
+                    min={minHeight}
+                    max={maxHeight}
                     value={heightCm || ''}
                     onChange={(e) => setHeightCm(Number(e.target.value))}
                     className="h-10 w-28 rounded-md border border-border bg-background px-3 text-sm"
@@ -577,7 +606,7 @@ export default function PaxDoorConfigurator({
                   <span className="text-sm text-muted-foreground">cm</span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Tussen {verlengdeMinHeight} en {verlengdeMaxHeight} cm.
+                  Tussen {minHeight} en {maxHeight} cm.
                 </p>
               </div>
             ) : (
@@ -613,8 +642,8 @@ export default function PaxDoorConfigurator({
                 <span className="text-sm text-muted-foreground">cm</span>
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                Tussen {afwerkMinDepth} en {afwerkMaxDepth} cm. De diepte verandert de
-                prijs niet.
+                Tussen {afwerkMinDepth} en {afwerkMaxDepth} cm. Hoogte × diepte
+                bepalen samen de prijs.
               </p>
             </div>
           )}
@@ -629,7 +658,11 @@ export default function PaxDoorConfigurator({
                 onChange={(e) => setIsVerlengd(e.target.checked)}
               />
               <span className="text-sm font-medium">
-                {isHoek ? 'Hoekdeuren tot plafond' : 'Verlengde deuren'}{' '}
+                {isHoek
+                  ? 'Hoekdeuren tot plafond'
+                  : isAfwerk
+                    ? 'Zijpaneel tot plafond'
+                    : 'Verlengde deuren'}{' '}
                 <span className="text-muted-foreground font-normal">
                   — eigen hoogte invoeren
                 </span>

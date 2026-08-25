@@ -45,12 +45,19 @@ export interface PaxConfig {
   variants: PaxVariant[];
   /** Price matrix for the "hoekdeuren" type (width is a free label). Absent/empty = type unavailable. */
   hoekVariants?: PaxHoekVariant[];
-  /** Price matrix for the "afwerkpaneel" type. Absent/empty = type unavailable. */
-  afwerkVariants?: PaxVariant[];
-  /** Per-width price for custom-height ("verlengde") deuren/afwerk. Absent/empty = option hidden. */
+  /** Offer the "afwerkpaneel" type. Its size is fully custom and priced from `pricePerM2`. */
+  afwerkEnabled?: boolean;
+  /** Per-width price for custom-height ("verlengde") deuren. Absent/empty = option hidden. */
   verlengdePrices?: PaxVerlengdePrice[];
   /** Flat "tot plafond" (custom-height) price for hoekdeuren. Absent = option hidden for hoek. */
   verlengdeHoekPrice?: number;
+  /** Rate for custom sizes: (widthOrDepth × height / 10 000) × this. Drives zijpanelen and verlengde deuren. */
+  pricePerM2?: number;
+  /** Floor under a custom-size price, for panels too small to pay for their own sawing. */
+  minCustomPrice?: number;
+  /** Bounds for the zijpaneel height input. Default 50–300. */
+  afwerkMinHeightCm?: number;
+  afwerkMaxHeightCm?: number;
   verlengdeMinHeightCm?: number;
   verlengdeMaxHeightCm?: number;
   /** Bounds for the zijpaneel depth input. Depth is a production detail, not priced. */

@@ -73,11 +73,27 @@ export const PRODUCT_SIDE_LABELS: Record<string, string> = {
   pair: "set links + rechts",
 };
 
+/**
+ * The size as a customer picked it. A zijpaneel has no width — it is a height
+ * plus a depth the customer typed in — so it never reads "0 cm × 236 cm".
+ */
+export function formatProductSize(c: ProductConfigSnapshot): string {
+  const verlengd = c.isVerlengd ? " (tot plafond)" : "";
+  if ((c.doorType ?? "deuren") === "afwerkpaneel") {
+    const depth = c.depthCm != null ? `${c.depthCm} cm diep · ` : "";
+    return `${depth}${c.heightCm} cm hoog${verlengd}`;
+  }
+  return `${c.widthLabel ?? `${c.widthCm} cm`} × ${c.heightCm} cm${verlengd}`;
+}
+
 /** The spec lines for a non-configurator product (PAX doors and friends). */
 export function describeProductLine(c: ProductConfigSnapshot): string[] {
+  const isAfwerk = (c.doorType ?? "deuren") === "afwerkpaneel";
   return [
     `Type: ${PRODUCT_DOOR_TYPE_LABELS[c.doorType ?? "deuren"]}`,
-    `Maat: ${c.widthLabel ?? `${c.widthCm} cm`} × ${c.heightCm} cm${c.isVerlengd ? " (verlengd)" : ""}`,
+    isAfwerk
+      ? `Maat: ${c.heightCm} cm hoog${c.isVerlengd ? " (tot plafond)" : ""}`
+      : `Maat: ${c.widthLabel ?? `${c.widthCm} cm`} × ${c.heightCm} cm${c.isVerlengd ? " (verlengd)" : ""}`,
     c.depthCm != null ? `Diepte: ${c.depthCm} cm` : null,
     c.doorSide ? `Uitvoering: ${PRODUCT_SIDE_LABELS[c.doorSide]}` : null,
     `Materiaal: ${c.materialName}`,

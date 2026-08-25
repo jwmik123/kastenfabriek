@@ -7,6 +7,7 @@ import Image from 'next/image'
 import { Trash2, ShoppingBag, ArrowRight, Pencil } from 'lucide-react'
 import type { CartItem, ClosetCartItem, ProductCartItem } from '@/lib/cart/types'
 import { summarizeCloset } from '@/lib/order/closet-spec'
+import { formatProductSize } from '@/lib/order/types'
 import { getCart, removeItem, clearCart } from '@/lib/cart/cart-store'
 import { syncCartItems, removeDbCartItem } from '@/lib/actions/cart'
 import { getDeliveryWindow } from '@/lib/delivery-window'
@@ -340,8 +341,7 @@ function ProductItemCard({
           <div>
             <h3 className="font-semibold text-gray-900 text-lg">{cfg.productName}</h3>
             <p className="text-sm text-gray-500 mt-0.5">
-              {cfg.widthLabel ?? `${cfg.widthCm} cm`} × {cfg.heightCm} cm
-              {cfg.depthCm != null ? ` · ${cfg.depthCm} cm diep` : ''}
+              {formatProductSize(cfg)}
               {cfg.doorSide ? ` · ${PRODUCT_SIDE_LABELS[cfg.doorSide]}` : ''}
               {' · '}{cfg.materialName}
               {' · '}{quantity} {quantity === 1 ? 'stuk' : 'stuks'}

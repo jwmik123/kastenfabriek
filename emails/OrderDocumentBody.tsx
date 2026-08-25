@@ -21,6 +21,7 @@ import {
 import {
   describeProductLine,
   formatAddressLines,
+  formatProductSize,
   type ClosetOrderLine,
   type OrderDocumentProps,
   type ProductOrderLine,
@@ -387,7 +388,7 @@ function ProductLine({
     <Section style={itemSection}>
       <Heading as="h3" style={h3}>
         {total > 1 ? `${index + 1}. ` : ""}
-        {c.productName} — {c.widthLabel ?? `${c.widthCm} cm`} × {c.heightCm} cm
+        {c.productName} — {formatProductSize(c)}
       </Heading>
       <table width="100%" cellPadding="0" cellSpacing="0" style={{ marginTop: "8px" }}>
         {describeProductLine(c).map((l) => {

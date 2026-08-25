@@ -14,6 +14,7 @@ import {
   getMaterialName,
   resolveClosetKind,
 } from "@/lib/order/closet-spec";
+import { formatProductSize } from "@/lib/order/types";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2026-02-25.clover",
@@ -152,7 +153,7 @@ export async function createCheckoutSession(
             currency: "eur",
             product_data: {
               name: cfg.productName,
-              description: `${cfg.widthCm}×${cfg.heightCm} cm · ${cfg.materialName}`,
+              description: `${formatProductSize(cfg)} · ${cfg.materialName}`,
             },
             unit_amount: unitAmount,
           },

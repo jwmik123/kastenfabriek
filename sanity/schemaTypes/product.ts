@@ -181,12 +181,12 @@ const paxConfig = defineType({
         "Prijsmatrix voor type 'Hoekdeuren'. Leeg laten = type niet beschikbaar. Breedte is een vrij label (bv. \"27cm & 50cm\").",
     }),
     defineField({
-      name: "afwerkVariants",
-      title: "Varianten — Zijpaneel",
-      type: "array",
-      of: [{ type: "paxVariant" }],
+      name: "afwerkEnabled",
+      title: "Zijpaneel aanbieden",
+      type: "boolean",
+      initialValue: false,
       description:
-        "Prijsmatrix voor type 'Zijpaneel'. Leeg laten = type niet beschikbaar. Eigen breedtes/hoogtes — hoeft niet gelijk te zijn aan Deuren.",
+        "Zet het type 'Zijpaneel' aan. Een zijpaneel heeft geen breedte- of hoogtekeuze: de klant vult zelf hoogte en diepte in en de prijs volgt uit de maatwerkprijs per m² hieronder.",
     }),
     defineField({
       name: "allowedMaterialIds",
@@ -229,6 +229,36 @@ const paxConfig = defineType({
       description:
         "Vaste prijs voor hoekdeuren tot plafond (eigen hoogte, ongeacht breedte). Leeg laten = optie verborgen bij Hoekdeuren.",
       validation: (Rule) => Rule.min(0),
+    }),
+    defineField({
+      name: "pricePerM2",
+      title: "Maatwerkprijs per m² (€)",
+      type: "number",
+      description:
+        "Rekenprijs voor maatwerk: prijs = (breedte of diepte × hoogte ÷ 10.000) × dit bedrag. Geldt voor zijpanelen en voor verlengde deuren. Leeg laten = zijpaneel niet mogelijk en verlengde deuren vallen terug op de vaste prijs per breedte.",
+      validation: (Rule) => Rule.positive(),
+    }),
+    defineField({
+      name: "minCustomPrice",
+      title: "Maatwerk — minimumprijs (€)",
+      type: "number",
+      description:
+        "Ondergrens voor een maatwerkprijs, voor kleine panelen waar zagen en kantenband de kosten bepalen. Leeg laten = geen ondergrens.",
+      validation: (Rule) => Rule.min(0),
+    }),
+    defineField({
+      name: "afwerkMinHeightCm",
+      title: "Zijpaneel — min. hoogte (cm)",
+      type: "number",
+      description: "Ondergrens voor het hoogte-invoerveld bij Zijpaneel. Standaard 50.",
+      validation: (Rule) => Rule.positive(),
+    }),
+    defineField({
+      name: "afwerkMaxHeightCm",
+      title: "Zijpaneel — max. hoogte (cm)",
+      type: "number",
+      description: "Bovengrens voor het hoogte-invoerveld bij Zijpaneel. Standaard 300.",
+      validation: (Rule) => Rule.positive(),
     }),
     defineField({
       name: "afwerkMinDepthCm",

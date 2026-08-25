@@ -136,7 +136,9 @@ describe('calcProductPrice', () => {
         { widthLabel: '27cm & 50cm', heightCm: 194, priceEur: 300 },
         { widthLabel: '27cm & 50cm', heightCm: 200, priceEur: 320 },
       ],
-      afwerkVariants: [{ widthCm: 25, heightCm: 194, priceEur: 80 }],
+      afwerkEnabled: true,
+      pricePerM2: 200,
+      minCustomPrice: 60,
       verlengdePrices: [
         { widthCm: 25, priceEur: 475.2 },
         { widthCm: 37, priceEur: 600 },
@@ -172,23 +174,70 @@ describe('calcProductPrice', () => {
     ).toThrow()
   })
 
-  it('uses afwerkpaneel matrix for doorType afwerkpaneel', () => {
+  it('prices a zijpaneel on depth × height at the m² rate', () => {
     const snap = calcProductPrice({
       product: typedProduct,
-      widthCm: 25,
-      heightCm: 194,
+      widthCm: 0,
+      heightCm: 250,
+      depthCm: 60,
       materialId: 'zwart',
       qty: 1,
       doorType: 'afwerkpaneel',
     })
-    expect(snap.unitPrice).toBe(80)
+    // 0.60 × 2.50 m = 1.5 m² × €200
+    expect(snap.unitPrice).toBe(300)
   })
 
-  it('uses verlengde per-width price and ignores height when isVerlengd', () => {
+  it('never prices a small zijpaneel under the minimum', () => {
+    const snap = calcProductPrice({
+      product: typedProduct,
+      widthCm: 0,
+      heightCm: 60,
+      depthCm: 20,
+      materialId: 'zwart',
+      qty: 1,
+      doorType: 'afwerkpaneel',
+    })
+    // 0.12 m² × €200 = €24, floored at €60
+    expect(snap.unitPrice).toBe(60)
+  })
+
+  it('throws on a zijpaneel without a depth', () => {
+    expect(() =>
+      calcProductPrice({
+        product: typedProduct,
+        widthCm: 0,
+        heightCm: 236,
+        materialId: 'zwart',
+        qty: 1,
+        doorType: 'afwerkpaneel',
+      }),
+    ).toThrow()
+  })
+
+  it('prices a verlengde deur on width × height at the m² rate', () => {
     const snap = calcProductPrice({
       product: typedProduct,
       widthCm: 25,
       heightCm: 262, // custom, not in any matrix
+      materialId: 'zwart',
+      qty: 1,
+      doorType: 'deuren',
+      isVerlengd: true,
+    })
+    // 0.25 × 2.62 m = 0.655 m² × €200
+    expect(snap.unitPrice).toBe(131)
+  })
+
+  it('falls back to the flat verlengde price when no m² rate is set', () => {
+    const flat: Product = {
+      ...typedProduct,
+      paxConfig: { ...typedProduct.paxConfig!, pricePerM2: undefined },
+    }
+    const snap = calcProductPrice({
+      product: flat,
+      widthCm: 25,
+      heightCm: 262,
       materialId: 'zwart',
       qty: 1,
       doorType: 'deuren',
@@ -211,10 +260,14 @@ describe('calcProductPrice', () => {
     expect(snap.unitPrice).toBe(700)
   })
 
-  it('throws when verlengde width has no price', () => {
+  it('throws on a flat-price product when the verlengde width has no price', () => {
+    const flat: Product = {
+      ...typedProduct,
+      paxConfig: { ...typedProduct.paxConfig!, pricePerM2: undefined },
+    }
     expect(() =>
       calcProductPrice({
-        product: typedProduct,
+        product: flat,
         widthCm: 50,
         heightCm: 280,
         materialId: 'zwart',
