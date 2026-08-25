@@ -26,9 +26,11 @@ export const testimonial = defineType({
     }),
     defineField({
       name: "image",
-      title: "Photo",
+      title: "Foto",
       type: "image",
       options: { hotspot: true },
+      description:
+        "Optioneel. Staat groot bovenaan de kaart in de slider — een projectfoto werkt beter dan een pasfoto.",
     }),
     defineField({
       name: "order",

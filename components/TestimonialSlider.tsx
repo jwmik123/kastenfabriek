@@ -205,32 +205,47 @@ export default function TestimonialSlider({
               data-overlap-slider-item
               className="flex-none mr-6"
             >
-              {/* Card */}
+              {/* Card — with a photo it leads with the picture, without one the
+                  quote keeps the whole card and the initial stands in. */}
               <div
-                className="flex aspect-[3/4] w-[24em] max-w-[85vw] flex-col justify-between gap-8 rounded-2xl border-[3px] border-primary bg-white px-8 pt-12 pb-8 text-primary"
+                className={`flex min-h-[32em] w-[24em] max-w-[85vw] flex-col justify-between rounded-2xl border-[3px] border-primary bg-white text-primary ${
+                  t.image ? "gap-6 p-6" : "gap-8 px-8 pt-12 pb-8"
+                }`}
                 style={{ fontSize: "clamp(0.65rem, 1.6vw, 1rem)" }}
               >
-                <h3 className="m-0 text-[1.5em] font-semibold leading-[1.3]">
+                {t.image && (
+                  <div className="relative aspect-[4/3] w-full flex-none overflow-hidden rounded-xl bg-primary-200">
+                    <Image
+                      src={urlFor(t.image).width(900).height(675).url()}
+                      alt={`Project van ${t.name}`}
+                      fill
+                      sizes="(max-width: 768px) 85vw, 384px"
+                      draggable={false}
+                      className="object-cover"
+                    />
+                  </div>
+                )}
+
+                {/* Never clipped: the card grows past its 3/4 minimum when a
+                    long quote needs the room. */}
+                <h3
+                  className={
+                    t.image
+                      ? "m-0 text-[1.25em] font-semibold leading-[1.35]"
+                      : "m-0 text-[1.5em] font-semibold leading-[1.3]"
+                  }
+                >
                   &ldquo;{t.quote}&rdquo;
                 </h3>
 
                 <div className="flex flex-row items-center gap-3">
-                  <div className="size-[3em] flex-none overflow-hidden rounded-full bg-primary-200">
-                    {t.image ? (
-                      <Image
-                        src={urlFor(t.image).width(160).height(160).url()}
-                        alt={t.name}
-                        width={80}
-                        height={80}
-                        draggable={false}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
+                  {!t.image && (
+                    <div className="size-[3em] flex-none overflow-hidden rounded-full bg-primary-200">
                       <div className="flex h-full w-full items-center justify-center bg-amber-500 text-[1.25em] font-semibold text-white">
                         {t.name.charAt(0)}
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
 
                   <div className="flex flex-col">
                     <span className="text-[1.25em] font-semibold leading-none">
