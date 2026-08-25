@@ -248,7 +248,7 @@ describe('calcProductPrice', () => {
     expect(snap.unitPrice).toBe(475.2)
   })
 
-  it('prices hoekdeuren tot plafond over both panels at the hoek m² rate', () => {
+  it('prices verlengde hoekdeuren over both panels at the hoek m² rate', () => {
     const snap = calcProductPrice({
       product: typedProduct,
       widthCm: 0,

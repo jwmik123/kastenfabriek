@@ -72,7 +72,7 @@ const paxHoekVariant = defineType({
       title: "Totale breedte (cm)",
       type: "number",
       description:
-        "Samen genomen breedte van beide panelen, gebruikt om de prijs tot plafond te berekenen. Leeg laten = de getallen uit het label worden opgeteld (\"27cm & 51cm\" → 78).",
+        "Samen genomen breedte van beide panelen, gebruikt om de prijs van verlengde hoekdeuren te berekenen. Leeg laten = de getallen uit het label worden opgeteld (\"27cm & 51cm\" → 78).",
       validation: (Rule) => Rule.positive(),
     }),
     defineField({
@@ -194,7 +194,7 @@ const paxConfig = defineType({
       type: "boolean",
       initialValue: false,
       description:
-        "Zet het type 'Zijpaneel' aan. Een zijpaneel heeft geen breedte- of hoogtekeuze: de klant vult zelf hoogte en diepte in en de prijs volgt uit de maatwerkprijs per m² voor zijpanelen hieronder.",
+        "Zet het type 'Zijpaneel' aan. Een zijpaneel heeft geen breedtekeuze: de klant kiest een standaardhoogte (of een eigen hoogte via 'Verlengde zijpanelen') en vult de diepte zelf in. De prijs volgt uit de maatwerkprijs per m² voor zijpanelen hieronder.",
     }),
     defineField({
       name: "allowedMaterialIds",
@@ -232,10 +232,10 @@ const paxConfig = defineType({
     }),
     defineField({
       name: "verlengdeHoekPrice",
-      title: "Hoekdeuren tot plafond — prijs (vast)",
+      title: "Verlengde hoekdeuren — prijs (vast)",
       type: "number",
       description:
-        "Vaste prijs voor hoekdeuren tot plafond, ongeacht maat. Alleen gebruikt als er geen maatwerkprijs per m² voor hoekdeuren is ingevuld. Beide leeg = optie verborgen bij Hoekdeuren.",
+        "Vaste prijs voor verlengde hoekdeuren, ongeacht maat. Alleen gebruikt als er geen maatwerkprijs per m² voor hoekdeuren is ingevuld. Beide leeg = optie verborgen bij Hoekdeuren.",
       validation: (Rule) => Rule.min(0),
     }),
     defineField({
@@ -251,7 +251,7 @@ const paxConfig = defineType({
       title: "Maatwerkprijs per m² — Hoekdeuren (€)",
       type: "number",
       description:
-        "Rekenprijs voor hoekdeuren tot plafond: prijs = (totale breedte × hoogte ÷ 10.000) × dit bedrag. Leeg laten = terugval op de vaste prijs hierboven.",
+        "Rekenprijs voor verlengde hoekdeuren: prijs = (totale breedte × hoogte ÷ 10.000) × dit bedrag. Leeg laten = terugval op de vaste prijs hierboven.",
       validation: (Rule) => Rule.positive(),
     }),
     defineField({
@@ -271,17 +271,28 @@ const paxConfig = defineType({
       validation: (Rule) => Rule.min(0),
     }),
     defineField({
+      name: "afwerkHeightsCm",
+      title: "Zijpaneel — standaardhoogtes (cm)",
+      type: "array",
+      of: [{ type: "number" }],
+      description:
+        "De hoogtes die een klant bij Zijpaneel kan aanklikken. Leeg laten = dezelfde hoogtes als bij Deuren.",
+      validation: (Rule) => Rule.unique(),
+    }),
+    defineField({
       name: "afwerkMinHeightCm",
-      title: "Zijpaneel — min. hoogte (cm)",
+      title: "Verlengde zijpanelen — min. hoogte (cm)",
       type: "number",
-      description: "Ondergrens voor het hoogte-invoerveld bij Zijpaneel. Standaard 50.",
+      description:
+        "Ondergrens voor de eigen hoogte bij verlengde zijpanelen. Standaard 200.",
       validation: (Rule) => Rule.positive(),
     }),
     defineField({
       name: "afwerkMaxHeightCm",
-      title: "Zijpaneel — max. hoogte (cm)",
+      title: "Verlengde zijpanelen — max. hoogte (cm)",
       type: "number",
-      description: "Bovengrens voor het hoogte-invoerveld bij Zijpaneel. Standaard 300.",
+      description:
+        "Bovengrens voor de eigen hoogte bij verlengde zijpanelen. Standaard 300.",
       validation: (Rule) => Rule.positive(),
     }),
     defineField({

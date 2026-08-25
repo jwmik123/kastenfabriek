@@ -176,7 +176,7 @@ export default function PaxDoorConfigurator({
   )
   const afwerkMinDepth = cfg?.afwerkMinDepthCm ?? 20
   const afwerkMaxDepth = cfg?.afwerkMaxDepthCm ?? 120
-  const afwerkMinHeight = cfg?.afwerkMinHeightCm ?? 50
+  const afwerkMinHeight = cfg?.afwerkMinHeightCm ?? 200
   const afwerkMaxHeight = cfg?.afwerkMaxHeightCm ?? 300
   const [depthCm, setDepthCm] = useState<number>(
     seed?.configuration.depthCm ?? cfg?.afwerkMinDepthCm ?? 20,
@@ -192,15 +192,15 @@ export default function PaxDoorConfigurator({
   const activeDoorSide = sideApplies ? doorSide : undefined
   const hoekVariants = useMemo(() => cfg?.hoekVariants ?? [], [cfg?.hoekVariants])
 
-  // A zijpaneel is always cut to size, so it has no separate "verlengd" toggle:
-  // its height field is free to begin with.
+  // Every type offers the same deal: standard heights, or a verlengde variant
+  // with a height of your own. A zijpaneel is always priced per m², so its
+  // verlengde option needs no extra price to be configured.
   const verlengdeAvailable = isHoek
     ? cfg?.pricePerM2Hoek != null || cfg?.verlengdeHoekPrice != null
     : isAfwerk
-      ? false
+      ? cfg?.pricePerM2Afwerk != null
       : cfg?.pricePerM2Deuren != null || (cfg?.verlengdePrices?.length ?? 0) > 0
-  // Both the zijpaneel and a verlengde deur take a typed-in height.
-  const heightIsCustom = isAfwerk || isVerlengd
+  const heightIsCustom = isVerlengd
   const minHeight = isAfwerk ? afwerkMinHeight : verlengdeMinHeight
   const maxHeight = isAfwerk ? afwerkMaxHeight : verlengdeMaxHeight
 
@@ -239,10 +239,17 @@ export default function PaxDoorConfigurator({
   ])
 
   // Heights available for a given width key (standard matrix only). A zijpaneel
-  // has no matrix at all — its height is typed in.
+  // has no matrix — it has its own list of heights, or the deuren heights.
+  const afwerkStandardHeights = useMemo(() => {
+    const own = cfg?.afwerkHeightsCm ?? []
+    return sortedUnique(
+      own.length > 0 ? own : (cfg?.variants ?? []).map((v) => v.heightCm),
+    )
+  }, [cfg?.afwerkHeightsCm, cfg?.variants])
+
   const heightsForWidth = (key: string | number) =>
     isAfwerk
-      ? []
+      ? afwerkStandardHeights
       : isHoek
       ? sortedUnique(
           hoekVariants
@@ -649,7 +656,7 @@ export default function PaxDoorConfigurator({
             </div>
           )}
 
-          {/* Verlengde deuren / hoekdeuren tot plafond */}
+          {/* Verlengde deuren / hoekdeuren / zijpanelen — eigen hoogte */}
           {verlengdeAvailable && (
             <label className="flex items-center gap-3 cursor-pointer select-none">
               <input
@@ -660,9 +667,9 @@ export default function PaxDoorConfigurator({
               />
               <span className="text-sm font-medium">
                 {isHoek
-                  ? 'Hoekdeuren tot plafond'
+                  ? 'Verlengde hoekdeuren'
                   : isAfwerk
-                    ? 'Zijpaneel tot plafond'
+                    ? 'Verlengde zijpanelen'
                     : 'Verlengde deuren'}{' '}
                 <span className="text-muted-foreground font-normal">
                   — eigen hoogte invoeren

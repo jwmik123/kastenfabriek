@@ -78,7 +78,7 @@ export const PRODUCT_SIDE_LABELS: Record<string, string> = {
  * plus a depth the customer typed in — so it never reads "0 cm × 236 cm".
  */
 export function formatProductSize(c: ProductConfigSnapshot): string {
-  const verlengd = c.isVerlengd ? " (tot plafond)" : "";
+  const verlengd = c.isVerlengd ? " (verlengd)" : "";
   if ((c.doorType ?? "deuren") === "afwerkpaneel") {
     const depth = c.depthCm != null ? `${c.depthCm} cm diep · ` : "";
     return `${depth}${c.heightCm} cm hoog${verlengd}`;
@@ -92,7 +92,7 @@ export function describeProductLine(c: ProductConfigSnapshot): string[] {
   return [
     `Type: ${PRODUCT_DOOR_TYPE_LABELS[c.doorType ?? "deuren"]}`,
     isAfwerk
-      ? `Maat: ${c.heightCm} cm hoog${c.isVerlengd ? " (tot plafond)" : ""}`
+      ? `Maat: ${c.heightCm} cm hoog${c.isVerlengd ? " (verlengd)" : ""}`
       : `Maat: ${c.widthLabel ?? `${c.widthCm} cm`} × ${c.heightCm} cm${c.isVerlengd ? " (verlengd)" : ""}`,
     c.depthCm != null ? `Diepte: ${c.depthCm} cm` : null,
     c.doorSide ? `Uitvoering: ${PRODUCT_SIDE_LABELS[c.doorSide]}` : null,
