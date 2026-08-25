@@ -1,3 +1,4 @@
+import GoogleAnalytics from '@/components/GoogleAnalytics'
 import LockViewport from './_shared/components/LockViewport'
 import MobileDesktopNotice from './_shared/components/MobileDesktopNotice'
 
@@ -15,6 +16,7 @@ export default function ConfiguratorLayout({
       <LockViewport />
       <MobileDesktopNotice />
       {children}
+      <GoogleAnalytics />
     </main>
   )
 }

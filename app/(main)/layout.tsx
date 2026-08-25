@@ -1,3 +1,4 @@
+import GoogleAnalytics from "@/components/GoogleAnalytics";
 import Navigation from "@/components/Navigation";
 import IntroAnimation from "@/components/IntroAnimation";
 import Footer from "@/components/Footer";
@@ -17,6 +18,7 @@ export default async function MainLayout({
       <Navigation promoText={settings.promoBanner?.topBar} />
       <main className="flex-1">{children}</main>
       <Footer />
+      <GoogleAnalytics />
     </SmoothScroll>
   );
 }
