@@ -14,7 +14,7 @@ export const SITE_NAME = "Kastenfabriek";
 export const SITE_TITLE = "Kastenfabriek — kasten op maat, tot de millimeter";
 
 export const SITE_DESCRIPTION =
-  "Kledingkasten, wasmachinekasten en IKEA PAX-deuren volledig op maat. Ontwerp je kast zelf in 3D, kies uit onze kleuren en fineers en zie direct wat het kost.";
+  "Kledingkasten, wasmachinekasten en IKEA PAX-deuren volledig op maat. Ontwerp je kast zelf in 3D, kies uit onze kleuren en houtlooks en zie direct wat het kost.";
 
 /** 1200x630 share image; kept as a static file so scrapers can always fetch it. */
 export const OG_IMAGE = {

@@ -28,7 +28,7 @@ export default function MaterialsSection() {
           <div>
             <h2 className="font-poppins text-5xl md:text-6xl font-bold leading-[1.05]">
               {colors.length} kleuren.<br />
-              <span className="text-[var(--color-secondary)]">{textures.length} fineers.</span><br />
+              <span className="text-[var(--color-secondary)]">{textures.length} houtlooks.</span><br />
             </h2>
           </div>
           <div className="md:max-w-[480px] self-start">
@@ -49,10 +49,10 @@ export default function MaterialsSection() {
         {/* Card */}
         <div className="bg-white rounded-2xl px-4 sm:px-8 py-8 sm:py-10">
 
-          {/* Fineers */}
+          {/* Houtlooks */}
           <div className="flex flex-col md:flex-row md:gap-10">
             <div className="md:w-36 md:flex-shrink-0 pt-1 mb-4 md:mb-0">
-              <p className="font-semibold text-sm text-primary-900">Fineers</p>
+              <p className="font-semibold text-sm text-primary-900">Houtlooks</p>
               <p className="text-sm text-gray-400 mt-0.5">{textures.length} opties</p>
             </div>
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3 sm:gap-5 flex-1">

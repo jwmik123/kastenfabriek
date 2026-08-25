@@ -31,7 +31,7 @@ export const doorType = defineType({
         list: [
           { title: "Standard (Large)", value: "standard" },
           { title: "Small", value: "small" },
-          { title: "Veneer (Fineer)", value: "veneer" },
+          { title: "Veneer (Houtlook)", value: "veneer" },
         ],
       },
       validation: (Rule) => Rule.required(),

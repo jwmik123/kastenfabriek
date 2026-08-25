@@ -86,7 +86,7 @@ export default function MaterialLightbox({
 
         <div className="p-6">
           <p className="text-xs font-medium uppercase tracking-wider text-gray-400">
-            {isTexture ? 'Fineer' : 'Kleur'}
+            {isTexture ? 'Houtlook' : 'Kleur'}
           </p>
           <h3 className="mt-1 text-2xl font-semibold text-gray-900">{material.name}</h3>
           <p className="mt-2 text-sm text-gray-600">

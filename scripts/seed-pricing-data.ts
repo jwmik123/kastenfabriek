@@ -233,7 +233,7 @@ const pricingData = {
     {
       id: "veneer-interior",
       name: "Veneer Interior Upgrade",
-      nameNl: "Corpus in Fineer (meerprijs)",
+      nameNl: "Corpus in Houtlook (meerprijs)",
       price: 425,
       category: "upgrade",
       perUnit: false,
@@ -290,7 +290,7 @@ const pricingData = {
     {
       id: "veneer",
       name: "Veneer Door",
-      nameNl: "Deur Fineer",
+      nameNl: "Deur Houtlook",
       price: 200,
       variant: "veneer",
     },

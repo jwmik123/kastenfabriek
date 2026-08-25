@@ -47,6 +47,6 @@ export const DEFAULT_CONFIGURATOR_SERVICES: ConfiguratorService[] = [
   {
     icon: 'palette',
     title: 'Gratis materiaalstalen',
-    description: 'Bekijk kleur en fineer eerst thuis, in je eigen licht.',
+    description: 'Bekijk kleur en houtlook eerst thuis, in je eigen licht.',
   },
 ]

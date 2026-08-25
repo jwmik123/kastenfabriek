@@ -14,7 +14,7 @@ import { OG_IMAGE, SITE_NAME } from '@/lib/site'
 export const metadata: Metadata = {
   title: 'Kledingkast op maat ontwerpen',
   description:
-    'Stel je kledingkast tot de millimeter samen: afmetingen, indeling, kleur of fineer en deuren — met de prijs direct in beeld.',
+    'Stel je kledingkast tot de millimeter samen: afmetingen, indeling, kleur of houtlook en deuren — met de prijs direct in beeld.',
   alternates: { canonical: '/kledingkast' },
   openGraph: {
     type: 'website',
@@ -23,14 +23,14 @@ export const metadata: Metadata = {
     url: '/kledingkast',
     title: 'Kledingkast op maat ontwerpen',
     description:
-      'Stel je kledingkast tot de millimeter samen: afmetingen, indeling, kleur of fineer en deuren — met de prijs direct in beeld.',
+      'Stel je kledingkast tot de millimeter samen: afmetingen, indeling, kleur of houtlook en deuren — met de prijs direct in beeld.',
     images: [OG_IMAGE],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Kledingkast op maat ontwerpen',
     description:
-      'Stel je kledingkast tot de millimeter samen: afmetingen, indeling, kleur of fineer en deuren — met de prijs direct in beeld.',
+      'Stel je kledingkast tot de millimeter samen: afmetingen, indeling, kleur of houtlook en deuren — met de prijs direct in beeld.',
     images: [OG_IMAGE.url],
   },
 }

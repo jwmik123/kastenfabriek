@@ -120,7 +120,7 @@ export default function SampleConfigurator({
           </span>
         </div>
 
-        <p className="mb-2 text-sm font-medium text-gray-700">Fineers</p>
+        <p className="mb-2 text-sm font-medium text-gray-700">Houtlooks</p>
         <div className="mb-8 grid grid-cols-3 gap-3 sm:grid-cols-4">
           {textures.map((m) => (
             <SwatchTile
