@@ -21,6 +21,8 @@ export interface PaxVariant {
 
 export interface PaxHoekVariant {
   widthLabel: string;
+  /** Both panels together, in cm. Falls back to the numbers in `widthLabel` when absent. */
+  widthTotalCm?: number;
   heightCm: number;
   priceEur: number;
 }
@@ -51,8 +53,14 @@ export interface PaxConfig {
   verlengdePrices?: PaxVerlengdePrice[];
   /** Flat "tot plafond" (custom-height) price for hoekdeuren. Absent = option hidden for hoek. */
   verlengdeHoekPrice?: number;
-  /** Rate for custom sizes: (widthOrDepth × height / 10 000) × this. Drives zijpanelen and verlengde deuren. */
-  pricePerM2?: number;
+  /**
+   * Rates for custom sizes: (widthOrDepth × height / 10 000) × the rate for the
+   * type. Deuren and hoekdeuren fall back to their flat prices when unset; a
+   * zijpaneel is unavailable without one, since it is always made to measure.
+   */
+  pricePerM2Deuren?: number;
+  pricePerM2Hoek?: number;
+  pricePerM2Afwerk?: number;
   /** Floor under a custom-size price, for panels too small to pay for their own sawing. */
   minCustomPrice?: number;
   /** Bounds for the zijpaneel height input. Default 50–300. */

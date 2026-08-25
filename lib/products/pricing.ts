@@ -39,20 +39,37 @@ export function numericVariantsForType(
 }
 
 /**
- * Maatwerk price: the panel's surface times the per-m² rate, never under the
- * configured floor. Both dimensions are in cm, so a 60 × 240 panel is 1.44 m².
+ * Maatwerk price: the panel's surface times the per-m² rate for its type, never
+ * under the configured floor. Both dimensions are in cm, so a 60 × 240 panel is
+ * 1.44 m².
  */
 export function customPanelPrice(
   cfg: NonNullable<Product['paxConfig']>,
+  rateEurPerM2: number,
   otherSideCm: number,
   heightCm: number,
 ): number {
-  if (cfg.pricePerM2 == null) {
-    throw new Error('No pricePerM2 configured')
-  }
   const areaM2 = (otherSideCm * heightCm) / 10_000
-  const price = Math.max(areaM2 * cfg.pricePerM2, cfg.minCustomPrice ?? 0)
+  const price = Math.max(areaM2 * rateEurPerM2, cfg.minCustomPrice ?? 0)
   return Math.round(price * 100) / 100
+}
+
+/**
+ * How wide a hoekdeur set is in total. Editors may state it outright; otherwise
+ * it is the numbers in the label added up, so "27cm & 51cm" is 78 cm.
+ */
+export function hoekTotalWidthCm(
+  variants: NonNullable<Product['paxConfig']>['hoekVariants'],
+  widthLabel: string | undefined,
+): number {
+  const stated = (variants ?? []).find(
+    (v) => v.widthLabel === widthLabel && v.widthTotalCm != null,
+  )?.widthTotalCm
+  if (stated != null) return stated
+  return (widthLabel?.match(/\d+(?:[.,]\d+)?/g) ?? []).reduce(
+    (sum, n) => sum + Number(n.replace(',', '.')),
+    0,
+  )
 }
 
 export function calcProductPrice({
@@ -74,24 +91,34 @@ export function calcProductPrice({
   let unitPrice: number
   if (doorType === 'afwerkpaneel') {
     // A zijpaneel is cut to size: height × depth decide the price, always.
-    if (cfg.pricePerM2 == null) {
-      throw new Error(`No maatwerk m² price on product ${product.slug}`)
+    if (cfg.pricePerM2Afwerk == null) {
+      throw new Error(`No maatwerk m² price for zijpanelen on product ${product.slug}`)
     }
     if (!depthCm) {
       throw new Error(`A zijpaneel needs a depth on product ${product.slug}`)
     }
-    unitPrice = customPanelPrice(cfg, depthCm, heightCm)
+    unitPrice = customPanelPrice(cfg, cfg.pricePerM2Afwerk, depthCm, heightCm)
   } else if (isVerlengd) {
     if (doorType === 'hoekdeuren') {
-      if (cfg.verlengdeHoekPrice == null) {
+      // Priced over both panels together; the label carries their widths.
+      if (cfg.pricePerM2Hoek != null) {
+        const totalWidth = hoekTotalWidthCm(cfg.hoekVariants, widthLabel)
+        if (!totalWidth) {
+          throw new Error(
+            `No total width for hoekdeuren "${widthLabel}" on product ${product.slug}`,
+          )
+        }
+        unitPrice = customPanelPrice(cfg, cfg.pricePerM2Hoek, totalWidth, heightCm)
+      } else if (cfg.verlengdeHoekPrice != null) {
+        unitPrice = cfg.verlengdeHoekPrice
+      } else {
         throw new Error(`No verlengde hoek price on product ${product.slug}`)
       }
-      unitPrice = cfg.verlengdeHoekPrice
-    } else if (cfg.pricePerM2 != null) {
+    } else if (cfg.pricePerM2Deuren != null) {
       // A verlengde deur is cut to the customer's own height, so it is priced
       // by surface like a zijpaneel. Products without a rate keep the old
       // flat price per width.
-      unitPrice = customPanelPrice(cfg, widthCm, heightCm)
+      unitPrice = customPanelPrice(cfg, cfg.pricePerM2Deuren, widthCm, heightCm)
     } else {
       const vp = cfg.verlengdePrices?.find((p) => p.widthCm === widthCm)
       if (!vp) {

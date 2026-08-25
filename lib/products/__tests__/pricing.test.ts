@@ -137,7 +137,9 @@ describe('calcProductPrice', () => {
         { widthLabel: '27cm & 50cm', heightCm: 200, priceEur: 320 },
       ],
       afwerkEnabled: true,
-      pricePerM2: 200,
+      pricePerM2Deuren: 200,
+      pricePerM2Hoek: 234,
+      pricePerM2Afwerk: 133,
       minCustomPrice: 60,
       verlengdePrices: [
         { widthCm: 25, priceEur: 475.2 },
@@ -184,8 +186,8 @@ describe('calcProductPrice', () => {
       qty: 1,
       doorType: 'afwerkpaneel',
     })
-    // 0.60 × 2.50 m = 1.5 m² × €200
-    expect(snap.unitPrice).toBe(300)
+    // 0.60 × 2.50 m = 1.5 m² × €133
+    expect(snap.unitPrice).toBe(199.5)
   })
 
   it('never prices a small zijpaneel under the minimum', () => {
@@ -198,7 +200,7 @@ describe('calcProductPrice', () => {
       qty: 1,
       doorType: 'afwerkpaneel',
     })
-    // 0.12 m² × €200 = €24, floored at €60
+    // 0.12 m² × €133 = €15.96, floored at €60
     expect(snap.unitPrice).toBe(60)
   })
 
@@ -232,7 +234,7 @@ describe('calcProductPrice', () => {
   it('falls back to the flat verlengde price when no m² rate is set', () => {
     const flat: Product = {
       ...typedProduct,
-      paxConfig: { ...typedProduct.paxConfig!, pricePerM2: undefined },
+      paxConfig: { ...typedProduct.paxConfig!, pricePerM2Deuren: undefined },
     }
     const snap = calcProductPrice({
       product: flat,
@@ -246,9 +248,53 @@ describe('calcProductPrice', () => {
     expect(snap.unitPrice).toBe(475.2)
   })
 
-  it('uses flat verlengde hoek price for hoekdeuren', () => {
+  it('prices hoekdeuren tot plafond over both panels at the hoek m² rate', () => {
     const snap = calcProductPrice({
       product: typedProduct,
+      widthCm: 0,
+      widthLabel: '27cm & 50cm',
+      heightCm: 280,
+      materialId: 'zwart',
+      qty: 1,
+      doorType: 'hoekdeuren',
+      isVerlengd: true,
+    })
+    // 27 + 50 = 77 cm read from the label; 0.77 × 2.80 m = 2.156 m² × €234
+    expect(snap.unitPrice).toBe(504.5)
+  })
+
+  it('prefers a stated total width over the label sum', () => {
+    const stated: Product = {
+      ...typedProduct,
+      paxConfig: {
+        ...typedProduct.paxConfig!,
+        hoekVariants: (typedProduct.paxConfig!.hoekVariants ?? []).map((v) => ({
+          ...v,
+          widthTotalCm: 80,
+        })),
+      },
+    }
+    const snap = calcProductPrice({
+      product: stated,
+      widthCm: 0,
+      widthLabel: '27cm & 50cm',
+      heightCm: 280,
+      materialId: 'zwart',
+      qty: 1,
+      doorType: 'hoekdeuren',
+      isVerlengd: true,
+    })
+    // 0.80 × 2.80 m = 2.24 m² × €234
+    expect(snap.unitPrice).toBe(524.16)
+  })
+
+  it('falls back to the flat hoek price when no hoek m² rate is set', () => {
+    const flat: Product = {
+      ...typedProduct,
+      paxConfig: { ...typedProduct.paxConfig!, pricePerM2Hoek: undefined },
+    }
+    const snap = calcProductPrice({
+      product: flat,
       widthCm: 0,
       widthLabel: '27cm & 50cm',
       heightCm: 280,
@@ -263,7 +309,7 @@ describe('calcProductPrice', () => {
   it('throws on a flat-price product when the verlengde width has no price', () => {
     const flat: Product = {
       ...typedProduct,
-      paxConfig: { ...typedProduct.paxConfig!, pricePerM2: undefined },
+      paxConfig: { ...typedProduct.paxConfig!, pricePerM2Deuren: undefined },
     }
     expect(() =>
       calcProductPrice({

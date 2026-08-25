@@ -147,9 +147,10 @@ export default function PaxDoorConfigurator({
   const availableTypes = useMemo<PaxDoorType[]>(() => {
     const types: PaxDoorType[] = ['deuren']
     if ((cfg?.hoekVariants?.length ?? 0) > 0) types.push('hoekdeuren')
-    if (cfg?.afwerkEnabled && cfg?.pricePerM2 != null) types.push('afwerkpaneel')
+    if (cfg?.afwerkEnabled && cfg?.pricePerM2Afwerk != null)
+      types.push('afwerkpaneel')
     return types
-  }, [cfg?.hoekVariants, cfg?.afwerkEnabled, cfg?.pricePerM2])
+  }, [cfg?.hoekVariants, cfg?.afwerkEnabled, cfg?.pricePerM2Afwerk])
 
   const verlengdeMinHeight = cfg?.verlengdeMinHeightCm ?? 200
   const verlengdeMaxHeight = cfg?.verlengdeMaxHeightCm ?? 300
@@ -194,10 +195,10 @@ export default function PaxDoorConfigurator({
   // A zijpaneel is always cut to size, so it has no separate "verlengd" toggle:
   // its height field is free to begin with.
   const verlengdeAvailable = isHoek
-    ? cfg?.verlengdeHoekPrice != null
+    ? cfg?.pricePerM2Hoek != null || cfg?.verlengdeHoekPrice != null
     : isAfwerk
       ? false
-      : cfg?.pricePerM2 != null || (cfg?.verlengdePrices?.length ?? 0) > 0
+      : cfg?.pricePerM2Deuren != null || (cfg?.verlengdePrices?.length ?? 0) > 0
   // Both the zijpaneel and a verlengde deur take a typed-in height.
   const heightIsCustom = isAfwerk || isVerlengd
   const minHeight = isAfwerk ? afwerkMinHeight : verlengdeMinHeight
@@ -223,7 +224,7 @@ export default function PaxDoorConfigurator({
     // With a m² rate every standard width can be made in a custom height, so
     // only the older flat-price products limit the verlengde widths.
     const nums =
-      isVerlengd && cfg?.pricePerM2 == null
+      isVerlengd && cfg?.pricePerM2Deuren == null
         ? (cfg?.verlengdePrices ?? []).map((p) => p.widthCm)
         : numericVariants.map((v) => v.widthCm)
     return sortedUnique(nums).map((n) => ({ key: n, label: `${n} cm` }))
@@ -233,7 +234,7 @@ export default function PaxDoorConfigurator({
     isVerlengd,
     hoekVariants,
     cfg?.verlengdePrices,
-    cfg?.pricePerM2,
+    cfg?.pricePerM2Deuren,
     numericVariants,
   ])
 
