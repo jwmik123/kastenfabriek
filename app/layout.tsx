@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Geist, Geist_Mono, IBM_Plex_Mono, Poppins } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/components/auth";
@@ -21,6 +22,9 @@ const plexMono = IBM_Plex_Mono({
   subsets: ["latin"],
   weight: ["400", "500"],
 });
+
+/** Google Analytics 4 measurement ID. */
+const GA_MEASUREMENT_ID = "G-F831ZPZTVG";
 
 const poppins = Poppins({
   variable: "--font-poppins",
@@ -75,6 +79,18 @@ export default function RootLayout({
             {children}
           </TooltipProvider>
         </AuthProvider>
+        <Script
+          src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '${GA_MEASUREMENT_ID}');
+          `}
+        </Script>
       </body>
     </html>
   );
