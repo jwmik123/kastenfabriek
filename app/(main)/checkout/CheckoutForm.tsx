@@ -11,7 +11,7 @@ import type { CartItem, ClosetConfigSnapshot } from '@/lib/cart/types'
 import { getDeliveryWindow } from '@/lib/delivery-window'
 import { calcCartTotals } from '@/lib/cart/totals'
 import { summarizeCloset } from '@/lib/order/closet-spec'
-import { formatProductSize } from '@/lib/order/types'
+import { summarizeProductLine } from '@/lib/order/types'
 import { LEGAL_DOCUMENTS, type LegalDocumentKey } from '@/lib/legal'
 
 type Address = {
@@ -367,7 +367,7 @@ export default function CheckoutForm({ addresses, cartItems, legalFilled }: Chec
                     <div>
                       <p className="font-medium text-sm text-gray-900">{item.configuration.productName}</p>
                       <p className="text-xs text-gray-500">
-                        {formatProductSize(item.configuration)} · {item.configuration.materialName}
+                        {summarizeProductLine(item.configuration)}
                         {item.quantity > 1 ? ` · ${item.quantity}×` : ''}
                       </p>
                     </div>

@@ -7,6 +7,7 @@ import Image from 'next/image'
 import { Trash2, Heart, ShoppingCart, Pencil } from 'lucide-react'
 import type { CartItem, ClosetCartItem, ProductCartItem } from '@/lib/cart/types'
 import { summarizeCloset } from '@/lib/order/closet-spec'
+import { summarizeProductLine } from '@/lib/order/types'
 import { addItem } from '@/lib/cart/cart-store'
 import { getWishlist, removeWishlistItem } from '@/lib/wishlist/wishlist-store'
 import { syncLocalWishlistToServer } from '@/lib/wishlist/wishlist-sync'
@@ -249,14 +250,18 @@ function ProductWishCard({
   editHref: string
 }) {
   const { configuration: cfg, priceSnapshot: price } = item
-  const slug = COLORWAY_SLUGS[cfg.materialId] ?? cfg.materialId
+  // A configured panel is shown by its colorway; a simple article by its own photo.
+  const imageUrl =
+    cfg.imageUrl ??
+    `/colorways/${COLORWAY_SLUGS[cfg.materialId ?? ''] ?? cfg.materialId}-1.webp`
+  const summary = summarizeProductLine(cfg)
 
   return (
     <div className="bg-white rounded-2xl shadow-sm overflow-hidden flex gap-0">
       <div className="shrink-0 w-1/4 self-stretch bg-gray-100 relative min-h-[160px]">
         <Image
-          src={`/colorways/${slug}-1.webp`}
-          alt={cfg.materialName}
+          src={imageUrl}
+          alt={cfg.materialName ?? cfg.productName}
           fill
           sizes="(max-width: 768px) 25vw, 200px"
           className="object-cover"
@@ -267,9 +272,9 @@ function ProductWishCard({
         <div className="flex items-start justify-between mb-4">
           <div>
             <h3 className="font-semibold text-gray-900 text-lg">{cfg.productName}</h3>
-            <p className="text-sm text-gray-500 mt-0.5">
-              {cfg.widthCm} × {cfg.heightCm} cm · {cfg.materialName}
-            </p>
+            {summary && (
+              <p className="text-sm text-gray-500 mt-0.5">{summary}</p>
+            )}
           </div>
           <div className="flex items-center gap-1">
             <Link

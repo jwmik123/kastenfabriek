@@ -7,6 +7,7 @@ import { getProductBySlug } from "@/sanity/lib/products";
 import { urlFor } from "@/sanity/lib/image";
 import PaxDoorConfigurator from "@/components/products/PaxDoorConfigurator";
 import SampleConfigurator from "@/components/products/SampleConfigurator";
+import SimpleProductConfigurator from "@/components/products/SimpleProductConfigurator";
 import ProductImageGallery from "@/components/products/ProductImageGallery";
 import { getServerSession } from "@/lib/actions/auth";
 import { getDbCartItemById } from "@/lib/actions/cart";
@@ -66,6 +67,7 @@ export default async function ProductPage({
 
   const isPax = product.productType === "pax-doors";
   const isSamples = product.productType === "samples";
+  const isSimple = product.productType === "simple";
 
   // If editing, fetch existing line server-side for authed users.
   let editItem: ProductCartItem | null = null;
@@ -105,6 +107,12 @@ export default async function ProductPage({
         />
       ) : isPax ? (
         <PaxDoorConfigurator
+          product={product}
+          editItemId={edit ?? null}
+          editItem={editItem}
+        />
+      ) : isSimple ? (
+        <SimpleProductConfigurator
           product={product}
           editItemId={edit ?? null}
           editItem={editItem}

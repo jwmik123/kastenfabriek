@@ -126,14 +126,20 @@ export interface ProductConfigSnapshot {
   capturedAt: string; // ISO timestamp
 
   sanityProductId: string;
-  productType: string; // e.g. 'pax-doors'
+  productType: string; // e.g. 'pax-doors', 'simple'
   productSlug: string;
   productName: string;
 
-  widthCm: number;
-  heightCm: number;
-  materialId: string;
-  materialName: string;
+  // Size and material describe a configured panel. A 'simple' product (a
+  // drawer, a hanger, a doorstop) has neither — it is ordered as-is.
+  widthCm?: number;
+  heightCm?: number;
+  materialId?: string;
+  materialName?: string;
+  /** Simple products: the hero image, so the cart can show the article itself. */
+  imageUrl?: string;
+  /** Simple products: the article number from Sanity, for the order spec. */
+  sku?: string;
 
   // PAX door type (issue: pax extra options). Absent on old cart entries → treat as 'deuren'.
   doorType?: "deuren" | "hoekdeuren" | "afwerkpaneel";

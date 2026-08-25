@@ -5,7 +5,7 @@ import type { PortableTextBlock } from "@portabletext/react";
 
 import { client } from "./client";
 
-export type ProductType = "pax-doors" | "samples";
+export type ProductType = "pax-doors" | "samples" | "simple";
 
 export interface SanityImageRef {
   asset: { _ref: string; _type: "reference" };
@@ -82,6 +82,14 @@ export interface SampleConfig {
   maxSelections: number;
 }
 
+/** A plain webshop article — no configurator, one price, pick a quantity. */
+export interface SimpleConfig {
+  priceEur: number;
+  sku?: string;
+  /** Ceiling for the quantity stepper. Absent = 10. */
+  maxQuantity?: number;
+}
+
 export interface ProductListItem {
   _id: string;
   _createdAt: string;
@@ -112,6 +120,7 @@ export interface Product {
   deliveryFee?: number;
   paxConfig?: PaxConfig;
   sampleConfig?: SampleConfig;
+  simpleConfig?: SimpleConfig;
 }
 
 const productListProjection = groq`
@@ -122,8 +131,9 @@ const productListProjection = groq`
   productType,
   shortDescription,
   heroImage,
-  "fromPrice": math::min(paxConfig.variants[].priceEur),
-  "singlePrice": count(paxConfig.variants[].priceEur) == 1 ||
+  "fromPrice": coalesce(simpleConfig.priceEur, math::min(paxConfig.variants[].priceEur)),
+  "singlePrice": defined(simpleConfig.priceEur) ||
+    count(paxConfig.variants[].priceEur) == 1 ||
     math::min(paxConfig.variants[].priceEur) == math::max(paxConfig.variants[].priceEur),
   "maxSamples": sampleConfig.maxSelections
 `;
@@ -141,7 +151,8 @@ const productProjection = groq`
   productInfo,
   deliveryFee,
   paxConfig,
-  sampleConfig
+  sampleConfig,
+  simpleConfig
 `;
 
 export const activeProductsQuery = groq`

@@ -170,3 +170,22 @@ export function calcProductPrice({
     total,
   }
 }
+
+/**
+ * A simple product's price: one number from Sanity, no material surcharge and
+ * no size to look up. Delivery stays a per-line cost, same as PAX doors.
+ */
+export function calcSimpleProductPrice(product: Product): ProductPriceSnapshot {
+  const cfg = product.simpleConfig
+  if (!cfg) {
+    throw new Error(`Product ${product.slug} has no simpleConfig`)
+  }
+  return {
+    calculatedAt: new Date().toISOString(),
+    currency: 'EUR',
+    unitPrice: cfg.priceEur,
+    materialSurcharge: 0,
+    deliveryCost: product.deliveryFee ?? 0,
+    total: cfg.priceEur,
+  }
+}

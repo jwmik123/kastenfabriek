@@ -388,7 +388,8 @@ function ProductLine({
     <Section style={itemSection}>
       <Heading as="h3" style={h3}>
         {total > 1 ? `${index + 1}. ` : ""}
-        {c.productName} — {formatProductSize(c)}
+        {c.productName}
+        {formatProductSize(c) ? ` — ${formatProductSize(c)}` : ""}
       </Heading>
       <table width="100%" cellPadding="0" cellSpacing="0" style={{ marginTop: "8px" }}>
         {describeProductLine(c).map((l) => {

@@ -264,12 +264,12 @@ export default function PaxDoorConfigurator({
 
   const [widthKey, setWidthKey] = useState<string | number>(() => {
     if (seed)
-      return seed.configuration.widthLabel ?? seed.configuration.widthCm
+      return seed.configuration.widthLabel ?? seed.configuration.widthCm ?? 0
     const deuren = cfg?.variants ?? []
     return sortedUnique(deuren.map((v) => v.widthCm))[0] ?? 0
   })
   const [heightCm, setHeightCm] = useState<number>(() => {
-    if (seed) return seed.configuration.heightCm
+    if (seed) return seed.configuration.heightCm ?? 0
     const deuren = cfg?.variants ?? []
     const w = sortedUnique(deuren.map((v) => v.widthCm))[0] ?? 0
     return (
@@ -303,10 +303,12 @@ export default function PaxDoorConfigurator({
       setDoorType(found.configuration.doorType ?? 'deuren')
       setIsVerlengd(found.configuration.isVerlengd ?? false)
       setWidthKey(
-        found.configuration.widthLabel ?? found.configuration.widthCm,
+        found.configuration.widthLabel ?? found.configuration.widthCm ?? 0,
       )
-      setHeightCm(found.configuration.heightCm)
-      setMaterialId(found.configuration.materialId)
+      setHeightCm(found.configuration.heightCm ?? 0)
+      if (found.configuration.materialId) {
+        setMaterialId(found.configuration.materialId)
+      }
       setDoorSide(found.configuration.doorSide ?? 'left')
       if (found.configuration.depthCm != null) setDepthCm(found.configuration.depthCm)
       setQty(found.quantity)

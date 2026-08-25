@@ -10,6 +10,7 @@ import WebshopGrid, { type WebshopProduct } from './WebshopGrid'
 const CATEGORY_LABELS: Record<ProductType, string> = {
   'pax-doors': 'Deuren & fronten',
   samples: 'Stalen',
+  simple: 'Losse producten',
 }
 
 export function toWebshopProduct(p: ProductListItem): WebshopProduct {

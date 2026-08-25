@@ -321,15 +321,26 @@ function ProductItemCard({
   editHref: string
 }) {
   const { configuration: cfg, priceSnapshot: price, quantity } = item
-  const slug = COLORWAY_SLUGS[cfg.materialId] ?? cfg.materialId
+  // A configured panel is shown by its colorway; a simple article by its own photo.
+  const imageUrl =
+    cfg.imageUrl ??
+    `/colorways/${COLORWAY_SLUGS[cfg.materialId ?? ''] ?? cfg.materialId}-1.webp`
+  // Size, hinge side and material are absent on a simple article — drop what it
+  // has not got instead of printing "undefined".
+  const details = [
+    formatProductSize(cfg),
+    cfg.doorSide ? PRODUCT_SIDE_LABELS[cfg.doorSide] : '',
+    cfg.materialName ?? '',
+    `${quantity} ${quantity === 1 ? 'stuk' : 'stuks'}`,
+  ].filter(Boolean)
   const lineTotal = (price.total + price.deliveryCost) * quantity
 
   return (
     <div className="bg-white rounded-2xl shadow-sm overflow-hidden flex gap-0">
       <div className="shrink-0 w-1/4 self-stretch bg-gray-100 relative min-h-[160px]">
         <Image
-          src={`/colorways/${slug}-1.webp`}
-          alt={cfg.materialName}
+          src={imageUrl}
+          alt={cfg.materialName ?? cfg.productName}
           fill
           sizes="(max-width: 768px) 25vw, 200px"
           className="object-cover"
@@ -340,12 +351,7 @@ function ProductItemCard({
         <div className="flex items-start justify-between mb-4">
           <div>
             <h3 className="font-semibold text-gray-900 text-lg">{cfg.productName}</h3>
-            <p className="text-sm text-gray-500 mt-0.5">
-              {formatProductSize(cfg)}
-              {cfg.doorSide ? ` · ${PRODUCT_SIDE_LABELS[cfg.doorSide]}` : ''}
-              {' · '}{cfg.materialName}
-              {' · '}{quantity} {quantity === 1 ? 'stuk' : 'stuks'}
-            </p>
+            <p className="text-sm text-gray-500 mt-0.5">{details.join(' · ')}</p>
           </div>
           <div className="flex items-center gap-1">
             <Link

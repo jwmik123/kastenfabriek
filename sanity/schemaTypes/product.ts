@@ -166,6 +166,37 @@ const sampleConfig = defineType({
   ],
 });
 
+const simpleConfig = defineType({
+  name: "simpleConfig",
+  title: "Product Configuratie",
+  type: "object",
+  description:
+    "Voor losse producten zonder configurator: een lade, een hanger, een deurstop.",
+  fields: [
+    defineField({
+      name: "priceEur",
+      title: "Prijs (\u20ac)",
+      type: "number",
+      description: "Stuksprijs, exclusief bezorgkosten.",
+      validation: (Rule) => Rule.required().min(0),
+    }),
+    defineField({
+      name: "sku",
+      title: "Artikelnummer",
+      type: "string",
+      description: "Optioneel. Komt mee op de orderbon en pakbon.",
+    }),
+    defineField({
+      name: "maxQuantity",
+      title: "Max. aantal per bestelling",
+      type: "number",
+      initialValue: 10,
+      description: "Bovengrens van de aantal-teller. Leeg laten = 10.",
+      validation: (Rule) => Rule.integer().min(1),
+    }),
+  ],
+});
+
 const paxConfig = defineType({
   name: "paxConfig",
   title: "PAX Configuratie",
@@ -365,6 +396,7 @@ export const product = defineType({
         list: [
           { title: "PAX Deuren", value: "pax-doors" },
           { title: "Materiaalstalen", value: "samples" },
+          { title: "Los product", value: "simple" },
         ],
         layout: "radio",
       },
@@ -443,6 +475,21 @@ export const product = defineType({
       hidden: ({ document }) => document?.productType !== "samples",
     }),
     defineField({
+      name: "simpleConfig",
+      title: "Product Configuratie",
+      type: "simpleConfig",
+      hidden: ({ document }) => document?.productType !== "simple",
+      validation: (Rule) =>
+        Rule.custom((value, context) => {
+          const productType = (context.document as { productType?: string } | undefined)
+            ?.productType;
+          if (productType === "simple" && !value) {
+            return "Product Configuratie is vereist voor losse producten.";
+          }
+          return true;
+        }),
+    }),
+    defineField({
       name: "paxConfig",
       title: "PAX Configuratie",
       type: "paxConfig",
@@ -482,5 +529,6 @@ export const productSchemaTypes = [
   paxVerlengdePrice,
   paxConfig,
   sampleConfig,
+  simpleConfig,
   product,
 ];
