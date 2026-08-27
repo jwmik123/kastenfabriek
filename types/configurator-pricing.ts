@@ -71,6 +71,8 @@ export interface TopCabinetConstraints {
 }
 
 export interface PricingConstraints {
+  /** Widest cabinet the configurators allow, in cm — the width slider's upper bound. */
+  maxTotalWidth?: number;
   singleCorpus: DimensionConstraints;
   doubleCorpus: DimensionConstraints;
   topCabinet: TopCabinetConstraints;

@@ -5,6 +5,7 @@ import { useWasmachinekastStore, WASM_MIN_DEPTH_CM, type PlacementType } from '.
 import { Slider } from '@/components/ui/slider'
 import { Info } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { maxTotalWidthCm } from '@/lib/configurator/dimensions'
 
 function clamp(v: number, min: number, max: number) {
   return Math.max(min, Math.min(max, v))
@@ -122,7 +123,7 @@ export default function DimensionsStep() {
   const sc = constraints?.singleCorpus
   const topMax = constraints?.topCabinet.maxHeight ?? 110
   const minW = sc?.minWidth ?? 15
-  const maxW = (sc?.maxWidth ?? 65) * 8
+  const maxW = maxTotalWidthCm(constraints)
   const minDepth = Math.max(WASM_MIN_DEPTH_CM, sc?.minDepth ?? WASM_MIN_DEPTH_CM)
   const isLowOnly = layout === 'low-only'
   const isDual = layout === 'low-left' || layout === 'low-right'

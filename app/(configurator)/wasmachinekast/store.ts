@@ -6,6 +6,7 @@ import { WASHER_LAYOUT_IDS } from './moduleLayouts'
 import { filterForSection } from './sections/wasmModuleLayoutFilter'
 import type { PopoverClickPoint } from '../_shared/components/popoverPlacement'
 import { validateHandleMaterial } from '../_shared/components/validateHandleMaterial'
+import { maxTotalWidthCm } from '@/lib/configurator/dimensions'
 import { fitVariableSlotCount, FALLBACK_MODULE_MIN_WIDTH_CM } from '../_shared/store/slotWidths'
 import { restore as restoreWasmSnapshot } from './sections/wasmSnapshotMigration'
 import type {
@@ -488,7 +489,7 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
     const c = s.constraints?.singleCorpus
     const minW = c?.minWidth ?? FALLBACK_MODULE_MIN_WIDTH
     const maxW = c?.maxWidth ?? FALLBACK_MODULE_MAX_WIDTH
-    const maxTotal = maxW * Math.floor(600 / minW)
+    const maxTotal = maxTotalWidthCm(s.constraints)
     const width = Math.max(minW, Math.min(maxTotal, cm))
     const minMods = Math.max(1, Math.ceil(width / maxW))
     const maxMods = Math.floor(width / minW)
@@ -749,8 +750,7 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
 
   setWidth: (width) => {
     const minW = get().constraints?.singleCorpus.minWidth ?? FALLBACK_MODULE_MIN_WIDTH
-    const maxW = get().constraints?.singleCorpus.maxWidth ?? FALLBACK_MODULE_MAX_WIDTH
-    const maxTotal = maxW * Math.floor(600 / minW)
+    const maxTotal = maxTotalWidthCm(get().constraints)
     const clamped = Math.max(minW, Math.min(maxTotal, width))
     set({ width: clamped })
 

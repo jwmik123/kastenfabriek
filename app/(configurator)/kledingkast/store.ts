@@ -9,6 +9,7 @@ import type { ClosetConfigSnapshot } from '@/lib/cart/types'
 import type { PopoverClickPoint } from '../_shared/components/popoverPlacement'
 import type { HandleMaterial } from '../_shared/constants/handleMaterials'
 import { validateHandleMaterial } from '../_shared/components/validateHandleMaterial'
+import { maxTotalWidthCm } from '@/lib/configurator/dimensions'
 
 export interface ModuleSlot {
   slotIndex: number
@@ -507,8 +508,7 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
 
   setWidth: (width) => {
     const minW = get().constraints?.singleCorpus.minWidth ?? FALLBACK_MODULE_MIN_WIDTH
-    const maxW = get().constraints?.singleCorpus.maxWidth ?? FALLBACK_MODULE_MAX_WIDTH
-    const maxTotal = maxW * Math.floor(600 / minW) // reasonable upper bound
+    const maxTotal = maxTotalWidthCm(get().constraints)
     const clamped = Math.max(minW, Math.min(maxTotal, width))
     set({ width: clamped })
 

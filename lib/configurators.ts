@@ -4,6 +4,8 @@
  * The site nav, the homepage hero and the configurators' own back button all
  * point at CONFIGURATORS_HREF — change it here and they follow.
  */
+import { maxTotalWidthCm } from '@/lib/configurator/dimensions'
+
 export const CONFIGURATORS_HREF = '/ontwerp-je-kast'
 
 export const CONFIGURATORS_ANCHOR = 'opmaat'
@@ -34,6 +36,7 @@ export interface ConfiguratorItem {
  * the products page reads — the configurators read the full object.
  */
 export interface DimensionConstraints {
+  maxTotalWidth?: number
   singleCorpus?: {
     minWidth?: number
     maxWidth?: number
@@ -44,9 +47,6 @@ export interface DimensionConstraints {
   }
   topCabinet?: { maxHeight?: number }
 }
-
-/** Modules a cabinet can be split into — mirrors the width slider's upper bound. */
-const MAX_MODULES = 8
 
 function range(min: number, max: number, unit = 'cm') {
   return `${min} – ${max} ${unit}`
@@ -66,7 +66,7 @@ export function configuratorsWithSpecs(
 ): ConfiguratorItem[] {
   const sc = constraints?.singleCorpus
   const minW = sc?.minWidth ?? 15
-  const maxW = (sc?.maxWidth ?? 65) * MAX_MODULES
+  const maxW = maxTotalWidthCm(constraints)
   const minH = sc?.minHeight ?? 200
   const maxH = (sc?.maxHeight ?? 275) + (constraints?.topCabinet?.maxHeight ?? 110)
   const minD = sc?.minDepth ?? 15

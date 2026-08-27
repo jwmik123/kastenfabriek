@@ -5,6 +5,7 @@ import { useClosetStore } from '../store'
 import { Slider } from '@/components/ui/slider'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { cn } from '@/lib/utils'
+import { maxTotalWidthCm } from '@/lib/configurator/dimensions'
 import { Info } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import type { DiagonalSide } from '../scene/diagonalUtils'
@@ -266,7 +267,7 @@ export default function DimensionsStep() {
   const sc     = constraints?.singleCorpus
   const topMax = constraints?.topCabinet.maxHeight ?? 110
   const minW   = sc?.minWidth  ?? 15
-  const maxW   = (sc?.maxWidth ?? 65) * 8
+  const maxW   = maxTotalWidthCm(constraints)
 
   // Mutual-exclusion state
   const backDiagDisabled = hasDiagonal // Zijwand active → disable Achterwand toggle

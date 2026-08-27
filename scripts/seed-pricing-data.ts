@@ -21,6 +21,7 @@ const pricingData = {
     slopedBackWallSurcharge: 1100,
     slopedSideWallSurchargePerSide: 1100,
     constraints: {
+      maxTotalWidth: 1000,
       singleCorpus: {
         minWidth: 30,
         maxWidth: 65,

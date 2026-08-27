@@ -81,6 +81,15 @@ export const pricingConfig = defineType({
       type: "object",
       fields: [
         defineField({
+          name: "maxTotalWidth",
+          title: "Max Totale Breedte (cm)",
+          type: "number",
+          description:
+            "Breedste kast die de configurator toestaat — de bovengrens van de breedte-schuif. Wordt over meerdere modules verdeeld.",
+          initialValue: 1000,
+          validation: (Rule) => Rule.min(50).max(5000),
+        }),
+        defineField({
           name: "singleCorpus",
           title: "Single Corpus",
           type: "object",
