@@ -1,18 +1,12 @@
 'use client'
 
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { useClosetStore } from '../store'
 import { useIsMobile } from '../../_shared/components/useIsMobile'
-import { getDiagHeightAt, getBackDiagHeightAtZ } from '../scene/diagonalUtils'
 import { Toggle } from '@/components/ui/Toggle'
 import { cn } from '@/lib/utils'
 import { Minus, Plus } from 'lucide-react'
 import ModuleConfigCard from '../components/ModuleConfigCard'
-
-const WALL = 0.018
-const ONDERSTEL_HEIGHT = 0.108
-const ONDERSTEL_GAP = 0.010
-const MODULE_FLOOR_Y = ONDERSTEL_HEIGHT + ONDERSTEL_GAP
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
@@ -35,61 +29,6 @@ export default function ModulesStep() {
   const configCardRef       = useRef<HTMLDivElement>(null)
   const doorsExtendToFloor  = useClosetStore((s) => s.doorsExtendToFloor)
   const setDoorsExtendToFloor = useClosetStore((s) => s.setDoorsExtendToFloor)
-
-  const diagonalSide          = useClosetStore((s) => s.diagonalSide)
-  const leftDiagStartHeight   = useClosetStore((s) => s.leftDiagStartHeight)
-  const rightDiagStartHeight  = useClosetStore((s) => s.rightDiagStartHeight)
-  const leftDiagTopWidth      = useClosetStore((s) => s.leftDiagTopWidth)
-  const rightDiagTopWidth     = useClosetStore((s) => s.rightDiagTopWidth)
-  const widthCm               = useClosetStore((s) => s.width)
-  const mainHeightCm          = useClosetStore((s) => s.mainHeight())
-  const widthM                = widthCm / 100
-  const mainHeightM           = mainHeightCm / 100
-  const closetHeightCm        = useClosetStore((s) => s.height)
-  const backDiagonal          = useClosetStore((s) => s.backDiagonal)
-  const sidePanelThickness    = useClosetStore((s) => s.sidePanelThickness)
-  const backDiagKinkHeight    = useClosetStore((s) => s.backDiagKinkHeight)
-  const backDiagFlatSectionDepth = useClosetStore((s) => s.backDiagFlatSectionDepth)
-  const depthCm               = useClosetStore((s) => s.depth)
-
-  const diagParams = useMemo(() => ({
-    diagonalSide,
-    leftDiagStartHeight:  Math.min(leftDiagStartHeight,  mainHeightCm - 20) / 100,
-    rightDiagStartHeight: Math.min(rightDiagStartHeight, mainHeightCm - 20) / 100,
-    leftDiagTopWidth:  leftDiagTopWidth  / 100,
-    rightDiagTopWidth: rightDiagTopWidth / 100,
-    outerWidth:        widthCm           / 100,
-    mainHeight:        mainHeightM,
-    closetHeight:      closetHeightCm    / 100,
-    backDiagonal,
-    backDiagKinkHeight:       backDiagKinkHeight       / 100,
-    backDiagFlatSectionDepth: backDiagFlatSectionDepth / 100,
-    outerDepth:               depthCm                  / 100,
-    moduleCapY:               mainHeightM,
-    sideWallThickness:        sidePanelThickness === '36mm' ? 0.036 : 0.018,
-  }), [diagonalSide, leftDiagStartHeight, rightDiagStartHeight, leftDiagTopWidth, rightDiagTopWidth, widthCm, mainHeightCm, mainHeightM, closetHeightCm, backDiagonal, backDiagKinkHeight, backDiagFlatSectionDepth, depthCm, sidePanelThickness])
-
-  // Retained for ModulePopover parity; not consumed in this panel after the
-  // config card was lifted into the canvas popover (issue 031).
-  const selectedSlotEffectiveHeightM = (() => {
-    if (selectedSlot === null) return mainHeightM
-    if (diagParams.backDiagonal) {
-      return Math.max(0, Math.min(getBackDiagHeightAtZ(WALL, diagParams), diagParams.mainHeight) - MODULE_FLOOR_Y - WALL)
-    }
-    if (diagParams.diagonalSide === 'none') return mainHeightM
-    const innerW = widthM - WALL * 2
-    const slotW  = innerW / moduleCount
-    const span   = modules[selectedSlot]?.span ?? 1
-    const leftX  = WALL + selectedSlot * slotW
-    const rightX = WALL + (selectedSlot + span) * slotW
-    const leftH  = Math.max(0, getDiagHeightAt(leftX,  diagParams) - MODULE_FLOOR_Y - WALL)
-    const rightH = Math.max(0, getDiagHeightAt(rightX, diagParams) - MODULE_FLOOR_Y - WALL)
-    return Math.min(leftH, rightH)
-  })()
-
-  const isUnderDiagonal = selectedSlotEffectiveHeightM < mainHeightM - 0.01
-  const canBeDouble = selectedSlot !== null && selectedSlot < modules.length - 1 &&
-    (diagParams.backDiagonal || !isUnderDiagonal)
 
   // The indeling step is about the interior — open the doors on entry so the
   // slots are visible. Closing them again while on this step stays respected.

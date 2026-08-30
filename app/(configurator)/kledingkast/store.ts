@@ -806,9 +806,10 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
     let i = 0
     while (i < moduleCount) {
       const effectiveHeight = getEffectiveHeight(i)
-      const isUnderDiag = effectiveHeight < mainHeightM - 0.01
-
-      const canDouble = i + 1 < moduleCount && !isUnderDiag && isFullHeight(sideWallM + i * slotW, sideWallM + (i + 2) * slotW, diagParams)
+      // isFullHeight over both covered slots is the whole test — comparing the
+      // interior clear height against mainHeightM would never pass (it is short
+      // by the plinth + top wall) and blocked every double under a diagonal.
+      const canDouble = i + 1 < moduleCount && isFullHeight(sideWallM + i * slotW, sideWallM + (i + 2) * slotW, diagParams)
       const isDouble = canDouble && Math.random() < 0.3
       const span: 1 | 2 = isDouble ? 2 : 1
 

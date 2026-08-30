@@ -5,7 +5,7 @@ import { X } from 'lucide-react'
 import { useClosetStore } from '../store'
 import { MODULE_LAYOUTS } from '../scene/moduleLayouts'
 import { LAYOUT_SVGS } from './LayoutSvgs'
-import { getDiagHeightAt, getBackDiagHeightAtZ } from '../scene/diagonalUtils'
+import { getDiagHeightAt, getBackDiagHeightAtZ, isFullHeight } from '../scene/diagonalUtils'
 import { Toggle } from '@/components/ui/Toggle'
 import { cn } from '@/lib/utils'
 
@@ -74,24 +74,29 @@ export default function ModuleConfigCard({ className }: { className?: string }) 
     selectedSlot > 0 && modules[selectedSlot - 1]?.span === 2
   const isDouble = modules[selectedSlot]?.span === 2
 
+  const sideWallM = diagParams.sideWallThickness
+  const slotW     = (widthM - sideWallM * 2) / moduleCount
+  const slotXAt   = (slot: number) => sideWallM + slot * slotW
+
   const selectedSlotEffectiveHeightM = (() => {
     if (diagParams.backDiagonal) {
       return Math.max(0, Math.min(getBackDiagHeightAtZ(WALL, diagParams), diagParams.mainHeight) - MODULE_FLOOR_Y - WALL)
     }
     if (diagParams.diagonalSide === 'none') return mainHeightM
-    const innerW = widthM - WALL * 2
-    const slotW  = innerW / moduleCount
     const span   = modules[selectedSlot]?.span ?? 1
-    const leftX  = WALL + selectedSlot * slotW
-    const rightX = WALL + (selectedSlot + span) * slotW
-    const leftH  = Math.max(0, getDiagHeightAt(leftX,  diagParams) - MODULE_FLOOR_Y - WALL)
-    const rightH = Math.max(0, getDiagHeightAt(rightX, diagParams) - MODULE_FLOOR_Y - WALL)
+    const leftH  = Math.max(0, getDiagHeightAt(slotXAt(selectedSlot),        diagParams) - MODULE_FLOOR_Y - WALL)
+    const rightH = Math.max(0, getDiagHeightAt(slotXAt(selectedSlot + span), diagParams) - MODULE_FLOOR_Y - WALL)
     return Math.min(leftH, rightH)
   })()
 
-  const isUnderDiagonal = selectedSlotEffectiveHeightM < mainHeightM - 0.01
+  // Use the same predicate as the store (isFullHeight) instead of comparing the
+  // interior clear height against mainHeight — that comparison also subtracted
+  // the plinth + top wall, so every slot read as "under the diagonal" as soon as
+  // a side diagonal was active, which hid the double toggle everywhere.
+  const isUnderDiagonal = !isFullHeight(slotXAt(selectedSlot), slotXAt(selectedSlot + (modules[selectedSlot]?.span ?? 1)), diagParams)
+  // A double must clear the slope across BOTH slots it covers, not only its own.
   const canBeDouble = selectedSlot < modules.length - 1 &&
-    (diagParams.backDiagonal || !isUnderDiagonal)
+    isFullHeight(slotXAt(selectedSlot), slotXAt(selectedSlot + 2), diagParams)
 
   const availableLayouts = MODULE_LAYOUTS.filter(
     (l) => (l.minSlotHeight ?? 0) <= selectedSlotEffectiveHeightM

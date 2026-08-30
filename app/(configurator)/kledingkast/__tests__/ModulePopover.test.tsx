@@ -119,6 +119,43 @@ describe('ModulePopover (kledingkast)', () => {
     expect(html).not.toContain('data-testid="module-popover-double-toggle"')
   })
 
+  it('keeps the dubbele toggle on full-height slots when a left diagonal is active', async () => {
+    // width 200, sidewall 1.8 → slot width 49.1cm. Left diagonal reaches 60cm,
+    // so slots 0 and 1 sit under the slope and slots 2/3 are full height.
+    mockState.diagonalSide = 'left'
+    mockState.leftDiagStartHeight = 100
+    mockState.leftDiagTopWidth = 60
+    mockState.selectedSlot = 2
+    const { default: ModulePopover } = await import('../components/ModulePopover')
+    const html = renderToStaticMarkup(<ModulePopover />)
+    expect(html).toContain('data-testid="module-popover-double-toggle"')
+    expect(html).not.toContain('Schuin vak')
+  })
+
+  it('hides the dubbele toggle for a slot under the left diagonal', async () => {
+    mockState.diagonalSide = 'left'
+    mockState.leftDiagStartHeight = 100
+    mockState.leftDiagTopWidth = 60
+    mockState.selectedSlot = 0
+    const { default: ModulePopover } = await import('../components/ModulePopover')
+    const html = renderToStaticMarkup(<ModulePopover />)
+    expect(html).not.toContain('data-testid="module-popover-double-toggle"')
+    expect(html).toContain('Schuin vak')
+  })
+
+  it('hides the dubbele toggle when only the second covered slot hits the diagonal', async () => {
+    // Right diagonal reaches 60cm → zone starts at x=138.2cm. Slot 1 itself is
+    // full height, but the double would extend to 149.1cm, into the slope.
+    mockState.diagonalSide = 'right'
+    mockState.rightDiagStartHeight = 100
+    mockState.rightDiagTopWidth = 60
+    mockState.selectedSlot = 1
+    const { default: ModulePopover } = await import('../components/ModulePopover')
+    const html = renderToStaticMarkup(<ModulePopover />)
+    expect(html).toContain('data-testid="module-popover-layout-picker"')
+    expect(html).not.toContain('data-testid="module-popover-double-toggle"')
+  })
+
   it('omits layouts incompatible with diagonal-constrained effective height', async () => {
     // Right diagonal that aggressively limits the rightmost slot — selected slot 3
     // mainHeight 2.40m. Set right diag start at 0.20m and top width covering full slot
