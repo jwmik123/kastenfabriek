@@ -11,6 +11,7 @@ export type ToolbarItem =
   | 'zoomOut'
   | 'measurements'
   | 'doors'
+  | 'floor'
   | 'randomize'
   | 'help'
 
@@ -45,7 +46,7 @@ export function getToolbarLayout({
     items.push('zoomIn', 'zoomOut')
   }
 
-  items.push('measurements', 'doors')
+  items.push('measurements', 'doors', 'floor')
 
   if (showRandomize) {
     items.push('randomize')

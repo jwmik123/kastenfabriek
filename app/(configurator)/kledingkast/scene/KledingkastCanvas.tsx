@@ -14,6 +14,7 @@ import RoomWalls from './RoomWalls'
 import SilhouettePlane from './SilhouettePlane'
 import { MeasurementProjectorLayer, MeasurementsOverlayLayer, type ProjectedMap } from '../components/Measurements'
 import CanvasToolbar from '../../_shared/components/CanvasToolbar'
+import FloorCta from '../../_shared/components/FloorCta'
 import CanvasPricePanel from '../components/CanvasPricePanel'
 import DebugPricePanel from '../components/DebugPricePanel'
 import ModulePopover from '../components/ModulePopover'
@@ -169,6 +170,7 @@ export default function KledingkastCanvas() {
 
       <MeasurementsOverlayLayer projectedRef={projectedRef} />
       <CanvasToolbar />
+      <FloorCta />
       <ModulePopover />
       <CanvasPricePanel />
       <DebugPricePanel />

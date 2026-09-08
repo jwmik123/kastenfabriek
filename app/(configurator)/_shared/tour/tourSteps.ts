@@ -37,6 +37,14 @@ function buildConfiguratorTourSteps(): StepType[] {
       position: 'right',
     },
     {
+      selector: '[data-tour="floor-picker"]',
+      content: stepContent({
+        title: 'Kies je vloer',
+        body: 'Bekijk je kast op jouw eigen vloer: visgraat, eiken, betonlook en meer.',
+      }),
+      position: 'right',
+    },
+    {
       selector: '[data-tour="canvas-area"]',
       content: stepContent({
         title: 'Bekijk je kast',

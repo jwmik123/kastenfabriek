@@ -15,6 +15,7 @@ import WebGPURenderGuard from '../../_shared/effects/WebGPURenderGuard'
 import WasmachinekastScene from './WasmachinekastScene'
 import WasmRoomWalls from './WasmRoomWalls'
 import CanvasToolbar from '../../_shared/components/CanvasToolbar'
+import FloorCta from '../../_shared/components/FloorCta'
 import CanvasPricePanel from '../components/CanvasPricePanel'
 import DebugPricePanel from '../components/DebugPricePanel'
 import ModulePopover from '../components/ModulePopover'
@@ -173,6 +174,7 @@ export default function WasmachinekastCanvas() {
 
       <WasmMeasurementsOverlayLayer projectedRef={projectedRef} />
       <CanvasToolbar showRandomize={step >= 3} />
+      <FloorCta />
       <ModulePopover />
       <CanvasPricePanel />
       <DebugPricePanel />

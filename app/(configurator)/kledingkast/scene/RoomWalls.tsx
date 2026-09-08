@@ -3,6 +3,7 @@
 import { useMemo } from 'react'
 import * as THREE from 'three/webgpu'
 import { useClosetStore } from '../store'
+import { useFloorMaterial } from '../../_shared/materials/useFloorMaterial'
 import { getDiagHeightAt } from './diagonalUtils'
 import type { DiagParams } from './diagonalUtils'
 
@@ -394,10 +395,8 @@ export default function RoomWalls() {
     }),
     [],
   )
-  const floorMat = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.9, metalness: 0 }),
-    [],
-  )
+  // Floor finish is user-selectable (toolbar → Vloer); see _shared/materials/floors.
+  const floorMat = useFloorMaterial()
 
   // Key strings encode the geometry-type branch so React unmounts + remounts
   // the mesh when the branch changes. This is required to avoid the WebGPU
@@ -450,6 +449,7 @@ export default function RoomWalls() {
 
       {/* Floor — spans z[-T … D+RF], x[-floorW/2 … floorW/2] */}
       <mesh
+        key={floorMat.uuid}
         position={[0, -T / 2, (D + RF - T) / 2]}
         receiveShadow
         castShadow={false}

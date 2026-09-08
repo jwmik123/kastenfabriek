@@ -3,6 +3,7 @@
 import { useMemo } from 'react'
 import * as THREE from 'three/webgpu'
 import { useWasmachinekastStore } from '../store'
+import { useFloorMaterial } from '../../_shared/materials/useFloorMaterial'
 
 const T  = 0.01  // wall thickness (m)
 const LOW_ONLY_ROOM_HEIGHT_M = 2.6  // typical NL plafond ~260cm
@@ -91,10 +92,8 @@ export default function WasmRoomWalls() {
     () => new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.9, metalness: 0, side: THREE.FrontSide }),
     [],
   )
-  const floorMat = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.9, metalness: 0 }),
-    [],
-  )
+  // Floor finish is user-selectable (toolbar → Vloer); see _shared/materials/floors.
+  const floorMat = useFloorMaterial()
 
   return (
     <group>
@@ -107,7 +106,7 @@ export default function WasmRoomWalls() {
 
       <mesh geometry={backWallGeo} material={wallMat} receiveShadow castShadow={false} />
 
-      <mesh position={[0, -T / 2, (D + RF - T) / 2]} receiveShadow castShadow={false}>
+      <mesh key={floorMat.uuid} position={[0, -T / 2, (D + RF - T) / 2]} receiveShadow castShadow={false}>
         <boxGeometry args={[floorW, T, D + T + RF]} />
         <primitive object={floorMat} attach="material" />
       </mesh>

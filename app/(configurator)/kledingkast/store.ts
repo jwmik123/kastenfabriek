@@ -10,6 +10,7 @@ import type { PopoverClickPoint } from '../_shared/components/popoverPlacement'
 import type { HandleMaterial } from '../_shared/constants/handleMaterials'
 import { validateHandleMaterial } from '../_shared/components/validateHandleMaterial'
 import { maxTotalWidthCm } from '@/lib/configurator/dimensions'
+import { DEFAULT_FLOOR_ID, FLOOR_IDS } from '../_shared/materials/floors'
 
 export interface ModuleSlot {
   slotIndex: number
@@ -66,6 +67,7 @@ interface ClosetState {
   doorsOpen: boolean
   showMeasurements: boolean
   userZoom: number
+  floorId: string
 
   // Selection (shared between 3D scene and step panels)
   selectedSlot: number | null
@@ -116,6 +118,7 @@ interface ClosetState {
   setSidePanelThickness: (v: SidePanelThickness) => void
   toggleDoors: () => void
   toggleMeasurements: () => void
+  setFloorId: (id: string) => void
   zoomIn: () => void
   zoomOut: () => void
   setSelectedSlot: (slot: number | null, clickPoint?: PopoverClickPoint) => void
@@ -224,6 +227,7 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
   doorsOpen: true,
   showMeasurements: false,
   userZoom: 0.5,
+  floorId: DEFAULT_FLOOR_ID,
   selectedSlot: null,
   hoveredSlot: null,
   lastClickPoint: null,
@@ -720,6 +724,7 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
   },
   toggleDoors: () => set((s) => ({ doorsOpen: !s.doorsOpen })),
   toggleMeasurements: () => set((s) => ({ showMeasurements: !s.showMeasurements })),
+  setFloorId: (floorId) => set({ floorId: FLOOR_IDS.includes(floorId) ? floorId : DEFAULT_FLOOR_ID }),
   zoomIn: () => set((s) => ({ userZoom: Math.max(0, s.userZoom - 0.1) })),
   zoomOut: () => set((s) => ({ userZoom: Math.min(1, s.userZoom + 0.1) })),
   setSelectedSlot: (slot, clickPoint) =>

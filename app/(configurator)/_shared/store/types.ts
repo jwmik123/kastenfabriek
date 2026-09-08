@@ -49,6 +49,8 @@ export interface BaseConfiguratorState {
   doorsOpen: boolean
   showMeasurements: boolean
   userZoom: number
+  /** Floor finish under the cabinet (id from _shared/materials/floors). Visual only. */
+  floorId: string
 
   // Selection
   selectedSlot: number | null
@@ -84,6 +86,7 @@ export interface BaseConfiguratorState {
   setLightStripsEnabled: (v: boolean) => void
   toggleDoors: () => void
   toggleMeasurements: () => void
+  setFloorId: (id: string) => void
   zoomIn: () => void
   zoomOut: () => void
   setSelectedSlot: (slot: number | null) => void

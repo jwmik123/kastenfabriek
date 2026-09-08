@@ -7,6 +7,7 @@ import { filterForSection } from './sections/wasmModuleLayoutFilter'
 import type { PopoverClickPoint } from '../_shared/components/popoverPlacement'
 import { validateHandleMaterial } from '../_shared/components/validateHandleMaterial'
 import { maxTotalWidthCm } from '@/lib/configurator/dimensions'
+import { DEFAULT_FLOOR_ID, FLOOR_IDS } from '../_shared/materials/floors'
 import { fitVariableSlotCount, FALLBACK_MODULE_MIN_WIDTH_CM } from '../_shared/store/slotWidths'
 import { restore as restoreWasmSnapshot } from './sections/wasmSnapshotMigration'
 import type {
@@ -621,6 +622,7 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
   doorsOpen: true,
   showMeasurements: false,
   userZoom: 0.5,
+  floorId: DEFAULT_FLOOR_ID,
   selectedSlot: null,
   hoveredSlot: null,
   lastClickPoint: null,
@@ -877,6 +879,7 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
   setLightStripsEnabled: (lightStripsEnabled) => set({ lightStripsEnabled }),
   toggleDoors: () => set((s) => ({ doorsOpen: !s.doorsOpen })),
   toggleMeasurements: () => set((s) => ({ showMeasurements: !s.showMeasurements })),
+  setFloorId: (floorId) => set({ floorId: FLOOR_IDS.includes(floorId) ? floorId : DEFAULT_FLOOR_ID }),
   zoomIn: () => set((s) => ({ userZoom: Math.max(0, s.userZoom - 0.1) })),
   zoomOut: () => set((s) => ({ userZoom: Math.min(1, s.userZoom + 0.1) })),
   // A slot index alone is ambiguous in a dual layout — high vak 2 and low vak 2

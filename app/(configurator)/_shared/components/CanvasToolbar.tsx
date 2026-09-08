@@ -3,50 +3,13 @@
 import { Fragment } from 'react'
 import { useConfiguratorStore } from '../store/context'
 import { Separator } from '@/components/ui/separator'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { ZoomIn, ZoomOut, Ruler, DoorOpen, DoorClosed, Dices } from 'lucide-react'
 import HelpButton from '../tour/HelpButton'
+import ToolBtn from './ToolBtn'
+import FloorPicker from './FloorPicker'
 import { useIsMobile } from './useIsMobile'
 import { getToolbarLayout, type ToolbarItem } from './toolbarLayout'
-
-function ToolBtn({
-  onClick,
-  disabled,
-  active,
-  tooltip,
-  tooltipSide,
-  children,
-}: {
-  onClick: () => void
-  disabled?: boolean
-  active?: boolean
-  tooltip: string
-  tooltipSide: 'right' | 'bottom'
-  children: React.ReactNode
-}) {
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <button
-          onClick={onClick}
-          disabled={disabled}
-          className={cn(
-            'flex items-center justify-center w-11 h-11 rounded-lg transition-colors cursor-pointer',
-            'hover:bg-primary hover:text-background',
-            'disabled:opacity-30 disabled:cursor-not-allowed disabled:pointer-events-none',
-            active && 'bg-primary text-background hover:bg-primary hover:text-background',
-          )}
-        >
-          {children}
-        </button>
-      </TooltipTrigger>
-      <TooltipContent side={tooltipSide} sideOffset={8}>
-        {tooltip}
-      </TooltipContent>
-    </Tooltip>
-  )
-}
 
 export default function CanvasToolbar({ showRandomize = true }: { showRandomize?: boolean } = {}) {
   const doorsOpen = useConfiguratorStore((s) => s.doorsOpen)
@@ -95,6 +58,8 @@ export default function CanvasToolbar({ showRandomize = true }: { showRandomize?
             {doorsOpen ? <DoorOpen className="size-5" /> : <DoorClosed className="size-5" />}
           </ToolBtn>
         )
+      case 'floor':
+        return <FloorPicker key="floor" tooltipSide={tooltipSide} />
       case 'randomize':
         return (
           <ToolBtn key="randomize" onClick={randomFill} tooltip="Willekeurige indeling" tooltipSide={tooltipSide}>
