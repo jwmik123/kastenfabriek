@@ -86,6 +86,7 @@ export default function WasmachinekastConfigurator({ pricingData, editConfig, ed
           layout: state.layout,
           lowSection: state.lowSection,
           washerModules: state.washerModules,
+          fillerPanels: { high: state.fillerPanel('high'), low: state.fillerPanel('low') },
           topPanelThicknessMm: state.topPanelThicknessMm,
           countertopMaterialId: state.countertopMaterialId,
           buitenkantMaterialId: state.buitenkantMaterialId,

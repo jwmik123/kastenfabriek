@@ -2,6 +2,7 @@
 
 import { useWasmachinekastStore } from '../store'
 import { computeWasmPricing } from '../pricing/computeWasmPricing'
+import { useFillerPanel } from './useFillerPanel'
 import type { WasmPricingResult } from '../pricing/computeWasmPricing'
 
 /**
@@ -19,6 +20,8 @@ export function useWasmPricing(): WasmPricingResult {
   const lightStripsEnabled = useWasmachinekastStore((s) => s.lightStripsEnabled)
   const needsTopCabinet = useWasmachinekastStore((s) => s.needsTopCabinet)
   const sidePanelThickness = useWasmachinekastStore((s) => s.sidePanelThickness)
+  const highFiller = useFillerPanel('high')
+  const lowFiller = useFillerPanel('low')
 
   return computeWasmPricing({
     pricingData,
@@ -31,5 +34,9 @@ export function useWasmPricing(): WasmPricingResult {
     lightStripsEnabled,
     hasTopCabinet: needsTopCabinet(),
     sidePanelThickness,
+    fillerPanels: [
+      ...(highFiller ? [{ section: 'high' as const, ...highFiller }] : []),
+      ...(lowFiller ? [{ section: 'low' as const, ...lowFiller }] : []),
+    ],
   })
 }

@@ -274,3 +274,35 @@ describe('computeWasmPricing — cabinet-wide lines', () => {
     expect(result.totals.grandTotal).toBe(95)
   })
 })
+
+describe('computeWasmPricing — afwerkpaneel', () => {
+  it('prices a panel as one door in the cabinet material', () => {
+    const result = computeWasmPricing(
+      input({
+        modules: [slot({ slotIndex: 0, layoutId: 11, fixedWidth: 68.6 })],
+        moduleCount: 1,
+        fillerPanels: [{ section: 'high', side: 'right', widthCm: 9.2 }],
+      }),
+    )
+    expect(result.fillerPanels).toEqual([
+      { section: 'high', side: 'right', widthCm: 9.2, doorVariant: 'standard', cost: 120 },
+    ])
+    expect(result.totals.fillerPanelCost).toBe(120)
+    expect(result.totals.cabinetCost).toBe(result.totals.moduleCost + result.totals.doorCost + result.totals.mechanismCost + 120)
+  })
+
+  it('prices a veneer panel as a veneer door', () => {
+    const result = computeWasmPricing(
+      input({
+        buitenkantMaterialId: 'h1199-thermo-eik',
+        fillerPanels: [{ section: 'low', side: 'left', widthCm: 5 }],
+      }),
+    )
+    expect(result.fillerPanels[0].doorVariant).toBe('veneer')
+    expect(result.totals.fillerPanelCost).toBe(180)
+  })
+
+  it('charges nothing without a panel', () => {
+    expect(computeWasmPricing(input()).totals.fillerPanelCost).toBe(0)
+  })
+})

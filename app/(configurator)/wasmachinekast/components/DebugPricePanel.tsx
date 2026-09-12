@@ -120,6 +120,9 @@ function Totals({ pricing }: { pricing: WasmPricingResult }) {
         <Line label={`Stekkerdozen (${t.powerHoleCount}×)`} value={t.powerHoleCost} />
       )}
       {t.sidePanelCost > 0 && <Line label="Zijpanelen 36 mm" value={t.sidePanelCost} />}
+      {t.fillerPanelCost > 0 && (
+        <Line label={`Afwerkpaneel (${pricing.fillerPanels.length}× deur)`} value={t.fillerPanelCost} />
+      )}
       <div className="border-t border-border/50 mt-0.5 pt-0.5" />
       <Line label="Kast" value={t.cabinetCost} />
       <Line label="Bezorging" value={t.deliveryCost} />

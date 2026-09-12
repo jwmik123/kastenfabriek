@@ -140,3 +140,28 @@ describe('the configurator and the spec PDF report the same widths', () => {
     expect(overlay.map((w) => String(Number(w)))).toEqual(drawn)
   })
 })
+
+describe('buildWasmSpecs — afwerkpaneel', () => {
+  const section = {
+    kind: 'high' as const,
+    widthCm: 150,
+    heightCm: 240,
+    xOffsetM: 0,
+    modules: [slot(0, { fixedWidth: 68.6 }), slot(1, { fixedWidth: 68.6 })],
+    fillerPanel: { side: 'right' as const, widthCm: 9.2 },
+  }
+
+  it('measures the panel and keeps the machines at their own clear width', () => {
+    const specs = buildWasmSpecs([section], 85)
+    const panel = specs.find((s) => s.id === 'filler-panel-high')!
+    expect(panel.label).toBe('9.2')
+    expect(widths(specs)).toEqual(['65.0', '65.0'])
+  })
+
+  it('starts the modules after a left-hand panel', () => {
+    const right = buildWasmSpecs([section], 85)
+    const left = buildWasmSpecs([{ ...section, fillerPanel: { side: 'left' as const, widthCm: 9.2 } }], 85)
+    const firstModule = (specs: typeof right) => specs.find((s) => s.id === 'module-width-high-0')!
+    expect(firstModule(left).p1.x).toBeCloseTo(firstModule(right).p1.x + 0.092, 6)
+  })
+})

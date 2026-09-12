@@ -8,6 +8,8 @@ import { cn } from '@/lib/utils'
 import { Minus, Plus, WashingMachine } from 'lucide-react'
 import ModuleConfigCard from '../components/ModuleConfigCard'
 import { useIsMobile } from '../../_shared/components/useIsMobile'
+import FillerPanelControl from '../components/FillerPanelControl'
+import { useFillerPanel } from '../hooks/useFillerPanel'
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
@@ -48,6 +50,21 @@ function SectionModules({
   const activeModulesSection = useWasmachinekastStore((s) => s.activeModulesSection)
   const setHoveredSlot = useWasmachinekastStore((s) => s.setHoveredSlot)
   const setHoveredSection = useWasmachinekastStore((s) => s.setHoveredSection)
+  const setFillerPanelSide = useWasmachinekastStore((s) => s.setFillerPanelSide)
+  const fillerPanel = useFillerPanel(kind)
+
+  // The afwerkpaneel is not a vak, but it does take up a place in the row.
+  const panelTile = fillerPanel ? (
+    <div
+      key="filler-panel"
+      data-testid={`filler-panel-tile-${kind}`}
+      title="Afwerkpaneel"
+      aria-hidden
+      className="aspect-square flex items-center justify-center rounded-md border border-dashed border-border/70 text-muted-foreground"
+    >
+      <span className="block h-1/2 w-1 rounded-sm bg-current opacity-60" />
+    </div>
+  ) : null
 
   return (
     <section className="space-y-5">
@@ -87,6 +104,7 @@ function SectionModules({
       </div>
 
       <div className="grid grid-cols-8 gap-1">
+        {fillerPanel?.side === 'left' && panelTile}
         {modules.map((m) => {
           const isSelected = selectedSlot === m.slotIndex && activeModulesSection === kind
           const isWasherSlot = washerSlots.has(m.slotIndex)
@@ -109,7 +127,15 @@ function SectionModules({
             </button>
           )
         })}
+        {fillerPanel?.side === 'right' && panelTile}
       </div>
+
+      {fillerPanel && (
+        <FillerPanelControl
+          panel={fillerPanel}
+          onSideChange={(side) => setFillerPanelSide(kind, side)}
+        />
+      )}
     </section>
   )
 }
@@ -128,12 +154,9 @@ export default function ModulesStep() {
 
   const lowSection = useWasmachinekastStore((s) => s.lowSection)
   const setLowSectionModuleCount = useWasmachinekastStore((s) => s.setLowSectionModuleCount)
-  const constraints = useWasmachinekastStore((s) => s.constraints)
-  const sc = constraints?.singleCorpus
-  const lowMinModules = lowSection
-    ? Math.max(1, Math.ceil(lowSection.width / (sc?.maxWidth ?? 65)))
-    : 1
-  const lowMaxModules = lowSection ? Math.floor(lowSection.width / (sc?.minWidth ?? 15)) : 1
+  // The store knows the low section's machines and its shared seam panel.
+  const lowMinModules = useWasmachinekastStore((s) => (s.lowSection ? s.minModulesFor('low') : 1))
+  const lowMaxModules = useWasmachinekastStore((s) => (s.lowSection ? s.maxModulesFor('low') : 1))
 
   const selectedSlot = useWasmachinekastStore((s) => s.selectedSlot)
   const setHoveredSlot = useWasmachinekastStore((s) => s.setHoveredSlot)

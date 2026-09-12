@@ -322,10 +322,37 @@ export function buildWireframe(
 
     // --- Modules ---
     const walls = wallsOf(section);
-    const innerW = W - walls.left - walls.right;
-    const slotWidths = computeSlotWidthsCm(section.modules, innerW);
     const moduleTop = mainH - SIDE_WALL_CM;
-    let slotX = x0 + walls.left;
+    // An afwerkpaneel takes its width off the interior on the side it sits;
+    // the modules share what is left, exactly as in the scene.
+    const panel = section.fillerPanel;
+    const panelW = panel ? Math.min(panel.widthCm, W - walls.left - walls.right) : 0;
+    const innerW = W - walls.left - walls.right - panelW;
+    const slotWidths = computeSlotWidthsCm(section.modules, innerW);
+    let slotX = x0 + walls.left + (panel?.side === "left" ? panelW : 0);
+
+    if (panel && panelW > 0) {
+      const panelX = panel.side === "left" ? x0 + walls.left : x0 + W - walls.right - panelW;
+      const panelH = moduleTop - MODULE_FLOOR_CM;
+      rect(panelX, MODULE_FLOOR_CM, panelW, panelH, "panel");
+      // A diagonal through the strip marks it as a blind front, not a vak.
+      lines.push({
+        x1: panelX,
+        y1: dy(MODULE_FLOOR_CM),
+        x2: panelX + panelW,
+        y2: dy(moduleTop),
+        weight: "interior",
+      });
+      dimensionH(
+        lines,
+        labels,
+        panelX,
+        panelX + panelW,
+        dy(0) + M.rowModules,
+        `paneel ${fmtCm(panelW)}`,
+        M.labelGap,
+      );
+    }
 
     for (let i = 0; i < section.modules.length; i++) {
       const m = section.modules[i];

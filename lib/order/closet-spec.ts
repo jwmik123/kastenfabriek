@@ -3,6 +3,7 @@ import { getWasmLayoutConfig } from "@/app/(configurator)/wasmachinekast/moduleL
 import type {
   ClosetConfigSnapshot,
   ClosetProductType,
+  FillerPanelSnapshot,
   ModuleSlotSnapshot,
   PriceSnapshot,
 } from "@/lib/cart/types";
@@ -72,6 +73,11 @@ export interface SpecSection {
   /** Lage kast only. */
   topPanelThicknessMm?: 18 | 36;
   countertopMaterialName?: string;
+  /**
+   * Afwerkpaneel closing off the rest of a section that holds only machines:
+   * a blind front flush with the doors, on the side the customer chose.
+   */
+  fillerPanel: FillerPanelSnapshot | null;
 }
 
 const SECTION_LABELS: Record<"high" | "low", string> = {
@@ -140,6 +146,7 @@ export function resolveSections(c: ClosetConfigSnapshot): SpecSection[] {
     heightCm: c.heightCm,
     moduleCount: c.moduleCount,
     modules: c.modules.map((m) => toSpecModule(m, washersIn(topLevelKey), topLevelKey)),
+    fillerPanel: c.fillerPanel ?? null,
   };
 
   // Kledingkast, and wasmachinekast snapshots from before sections existed.
@@ -170,6 +177,7 @@ export function resolveSections(c: ClosetConfigSnapshot): SpecSection[] {
         modules: low.modules.map((m) => toSpecModule(m, washersIn("low"), "low")),
         topPanelThicknessMm: low.topPanelThicknessMm,
         countertopMaterialName: getMaterialName(low.countertopMaterialId),
+        fillerPanel: low.fillerPanel ?? null,
       }
     : null;
 
@@ -208,7 +216,8 @@ export function buildPriceRows(
     p.ledCost +
     (p.slopedBackWallSurcharge ?? 0) +
     (p.slopedSideWallSurcharge ?? 0) +
-    (p.sidePanelCost ?? 0);
+    (p.sidePanelCost ?? 0) +
+    (p.fillerPanelCost ?? 0);
   const residual = round2(p.subtotal - p.deliveryCost - named);
   const powerHoleCost = p.powerHoleCost ?? Math.max(0, residual);
   const powerHoleCount = countPowerHoles(c);
@@ -235,6 +244,9 @@ export function buildPriceRows(
       : null,
     (p.sidePanelCost ?? 0) > 0
       ? { label: "Zijpanelen 36 mm (upgrade)", amount: p.sidePanelCost! }
+      : null,
+    (p.fillerPanelCost ?? 0) > 0
+      ? { label: "Afwerkpaneel", amount: p.fillerPanelCost! }
       : null,
   ];
 
@@ -271,6 +283,32 @@ export interface ClosetSpec {
   extras: string[];
   priceRows: SpecPriceRow[];
   subtotal: number;
+}
+
+/** "Afwerkpaneel 9,2 cm rechts" — how a section's panel reads on the documents. */
+export function describeFillerPanel(panel: FillerPanelSnapshot): string {
+  const width = panel.widthCm.toLocaleString("nl-NL", { maximumFractionDigits: 1 });
+  return `Afwerkpaneel ${width} cm ${panel.side === "left" ? "links" : "rechts"}`;
+}
+
+/**
+ * Per-section lines under the outer size: the size and module count of each
+ * section when there is more than one, and the afwerkpaneel of any section
+ * that has one — a blind front the workshop has to make, flush with the doors.
+ */
+function dimensionNotes(sections: SpecSection[]): string[] | undefined {
+  const notes: string[] = [];
+  for (const s of sections) {
+    if (sections.length > 1) {
+      notes.push(
+        `${s.label}: ${s.widthCm} × ${s.heightCm} cm · ${plural(s.moduleCount, "module", "modules")}`,
+      );
+    }
+    if (s.fillerPanel) {
+      notes.push(`${s.label ? `${s.label}: ` : ""}${describeFillerPanel(s.fillerPanel)}`);
+    }
+  }
+  return notes.length > 0 ? notes : undefined;
 }
 
 export function getMaterialName(id: string): string {
@@ -342,13 +380,7 @@ export function buildClosetSpec(
     {
       label: "Afmetingen",
       value: `${totalWidthCm} × ${maxHeightCm} × ${c.depthCm} cm (b × h × d)`,
-      notes:
-        sections.length > 1
-          ? sections.map(
-              (s) =>
-                `${s.label}: ${s.widthCm} × ${s.heightCm} cm · ${plural(s.moduleCount, "module", "modules")}`,
-            )
-          : undefined,
+      notes: dimensionNotes(sections),
     },
     {
       label: "Plaatsing",

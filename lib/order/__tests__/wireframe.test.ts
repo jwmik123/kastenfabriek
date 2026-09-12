@@ -382,3 +382,37 @@ describe("sloped side walls", () => {
     }
   });
 });
+
+describe("afwerkpaneel", () => {
+  const withPanel: ClosetConfigSnapshot = {
+    ...base,
+    productType: "wasmachinekast",
+    layout: "high-only",
+    widthCm: 150,
+    moduleCount: 2,
+    modules: [
+      mod(0, { layoutId: 11, layoutName: "Wasmachine", fixedWidth: 68.6 }),
+      mod(1, { layoutId: 11, layoutName: "Wasmachine", fixedWidth: 68.6 }),
+    ],
+    washerModules: [
+      { slotIndex: 0, layoutId: 11, section: "high" },
+      { slotIndex: 1, layoutId: 11, section: "high" },
+    ],
+    fillerPanel: { side: "right", widthCm: 9.2 },
+  };
+
+  it("labels the panel and keeps the machines at their own width", () => {
+    const texts = labelTexts(withPanel);
+    expect(texts).toContain("paneel 9.2");
+    // 68.6 slot minus 2 × 1.8 module walls.
+    expect(texts.filter((t) => t === "65")).toHaveLength(2);
+  });
+
+  it("moves the modules right when the panel sits on the left", () => {
+    const right = buildWireframe(withPanel);
+    const left = buildWireframe({ ...withPanel, fillerPanel: { side: "left", widthCm: 9.2 } });
+    const firstWidthLabel = (d: ReturnType<typeof buildWireframe>) =>
+      d.labels.find((l) => l.text === "65")!;
+    expect(firstWidthLabel(left).x).toBeCloseTo(firstWidthLabel(right).x + 9.2, 5);
+  });
+});

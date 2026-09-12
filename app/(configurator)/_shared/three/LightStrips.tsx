@@ -128,6 +128,8 @@ export interface StripLayoutInput {
    * Module applies.
    */
   sharedSideWall?: 'left' | 'right' | null
+  /** Interior lost to an afwerkpaneel on either side, in metres. */
+  interiorInsetM?: { left: number; right: number }
 }
 
 /**
@@ -144,10 +146,11 @@ export function computeStripInstances({
   depthM,
   diagParams: p,
   sharedSideWall = null,
+  interiorInsetM,
 }: StripLayoutInput): StripInstance[] {
   const sideWallM = p.sideWallThickness
-  const leftWallM = sharedSideWall === 'left' ? 0 : sideWallM
-  const rightWallM = sharedSideWall === 'right' ? 0 : sideWallM
+  const leftWallM = (sharedSideWall === 'left' ? 0 : sideWallM) + (interiorInsetM?.left ?? 0)
+  const rightWallM = (sharedSideWall === 'right' ? 0 : sideWallM) + (interiorInsetM?.right ?? 0)
   const innerW = widthM - leftWallM - rightWallM
   if (innerW <= 0 || modules.length === 0) return []
 
@@ -203,10 +206,11 @@ export default function LightStrips({
   depthM,
   diagParams,
   sharedSideWall = null,
+  interiorInsetM,
 }: StripLayoutInput) {
   const strips = useMemo(
-    () => computeStripInstances({ modules, widthM, depthM, diagParams, sharedSideWall }),
-    [modules, widthM, depthM, diagParams, sharedSideWall],
+    () => computeStripInstances({ modules, widthM, depthM, diagParams, sharedSideWall, interiorInsetM }),
+    [modules, widthM, depthM, diagParams, sharedSideWall, interiorInsetM],
   )
 
   return <StripMesh strips={strips} />

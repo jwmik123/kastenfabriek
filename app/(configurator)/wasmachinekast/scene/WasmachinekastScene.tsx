@@ -21,6 +21,12 @@ import { WASHER_LAYOUT_IDS } from '../moduleLayouts'
 import { resolveFrontPlan } from '../../_shared/frontPolicy'
 import type { BaseModuleSlot } from '../../_shared/store/types'
 import type { Section } from '../sections/types'
+import { fillerWidthCm } from '../sections/sectionPlan'
+import FillerPanel from './FillerPanel'
+
+/** Interior taken by the afwerkpaneel on each side, in metres. */
+type InteriorInset = { left: number; right: number }
+const NO_INSET: InteriorInset = { left: 0, right: 0 }
 
 const BORDER_M = 0.015
 const WASHER_REAR_CLEARANCE = 0.10
@@ -42,6 +48,7 @@ function SlotInteraction({
   modules,
   sectionKind,
   sharedSideWall = null,
+  interiorInset = NO_INSET,
 }: {
   slotIndex: number
   span: 1 | 2
@@ -52,6 +59,7 @@ function SlotInteraction({
   modules: BaseModuleSlot[]
   sectionKind: 'high' | 'low'
   sharedSideWall?: 'left' | 'right' | null
+  interiorInset?: InteriorInset
 }) {
   const selectedSlot = useWasmachinekastStore((s) => s.selectedSlot)
   const activeModulesSection = useWasmachinekastStore((s) => s.activeModulesSection)
@@ -72,9 +80,10 @@ function SlotInteraction({
   const [localHovered, setLocalHovered] = useState(false)
 
   // Mirrors Module's interior: a shared panel belongs to the neighbouring
-  // section, so the hit area runs out to this section's edge on that side.
-  const leftWallM = sharedSideWall === 'left' ? 0 : WALL
-  const rightWallM = sharedSideWall === 'right' ? 0 : WALL
+  // section, so the hit area runs out to this section's edge on that side;
+  // an afwerkpaneel takes its strip off the interior on its side.
+  const leftWallM = (sharedSideWall === 'left' ? 0 : WALL) + interiorInset.left
+  const rightWallM = (sharedSideWall === 'right' ? 0 : WALL) + interiorInset.right
   const innerW = sectionWidthM - leftWallM - rightWallM
   const moduleDepth = sectionDepthM - WALL - CLOSET_INSIDE_INSET
   // Group sits at y=MODULE_FLOOR_Y (top of plinth). Plane should reach the
@@ -250,48 +259,56 @@ function SectionPlinth({
   depthM,
   modules,
   sharedSideWall = null,
+  interiorInset = NO_INSET,
 }: {
   widthM: number
   depthM: number
   modules: BaseModuleSlot[]
   sharedSideWall?: 'left' | 'right' | null
+  interiorInset?: InteriorInset
 }) {
   // Follows the corpus: where the neighbouring section's panel is shared, this
   // section has no panel of its own and the plinth runs out to the seam.
   const leftWallM = sharedSideWall === 'left' ? 0 : WALL
   const rightWallM = sharedSideWall === 'right' ? 0 : WALL
-  const innerW = widthM - leftWallM - rightWallM
+  const innerW = widthM - leftWallM - rightWallM - interiorInset.left - interiorInset.right
   const slotWidthsM = useMemo(() => computeSlotWidthsM(modules, innerW), [modules, innerW])
 
   const segments = useMemo(() => {
-    // Each slot contributes to a "keep" segment unless it's a floor-mount slot.
-    // Walk left→right, accumulating runs of contiguous keep slots.
+    // The afwerkpaneel stands on the plinth like a door does, so its strip is
+    // a piece of the run on its side; the slots follow in between.
+    const pieces: Array<{ width: number; floorMount: boolean }> = [
+      { width: interiorInset.left, floorMount: false },
+      ...modules.map((m, i) => {
+        const cfg = m.layoutId !== null ? getWasmLayoutConfig(m.layoutId) : undefined
+        return { width: slotWidthsM[i] ?? 0, floorMount: !!cfg?.floorMount }
+      }),
+      { width: interiorInset.right, floorMount: false },
+    ]
+    // Each piece contributes to a "keep" segment unless it's a floor-mount slot.
+    // Walk left→right, accumulating runs of contiguous keep pieces.
     const runs: Array<{ width: number; startX: number }> = []
     let runStart = 0
     let runWidth = 0
     let cursorX = 0
-    for (let i = 0; i < modules.length; i++) {
-      const layoutId = modules[i].layoutId
-      const cfg = layoutId !== null ? getWasmLayoutConfig(layoutId) : undefined
-      const isFloorMount = !!cfg?.floorMount
-      const slotW = slotWidthsM[i] ?? 0
-      if (isFloorMount) {
+    for (const piece of pieces) {
+      if (piece.floorMount) {
         if (runWidth > 0) runs.push({ width: runWidth, startX: runStart })
-        runStart = cursorX + slotW
+        runStart = cursorX + piece.width
         runWidth = 0
       } else {
-        runWidth += slotW
+        runWidth += piece.width
       }
-      cursorX += slotW
+      cursorX += piece.width
     }
     if (runWidth > 0) runs.push({ width: runWidth, startX: runStart })
-    // Translate runs from inner-x coords (0..innerW) into section coords
-    // (centered at 0). With both panels present this equals -innerW / 2.
+    // Translate runs from inner-x coords (0..full interior) into section
+    // coords (centered at 0). With both panels present this equals -innerW / 2.
     return runs.map((r) => ({
       segWidthM: r.width,
       centerXM: -widthM / 2 + leftWallM + r.startX + r.width / 2,
     }))
-  }, [modules, slotWidthsM, widthM, leftWallM])
+  }, [modules, slotWidthsM, widthM, leftWallM, interiorInset])
 
   return (
     <>
@@ -350,6 +367,7 @@ function WasmTopCabinet({
   depthM,
   modules,
   sideWallThicknessM,
+  interiorInset = NO_INSET,
 }: {
   widthM: number
   heightCm: number
@@ -357,12 +375,14 @@ function WasmTopCabinet({
   depthM: number
   modules: BaseModuleSlot[]
   sideWallThicknessM: number
+  interiorInset?: InteriorInset
 }) {
   const doorsOpen = useWasmachinekastStore((s) => s.doorsOpen)
   const lightStripsEnabled = useWasmachinekastStore((s) => s.lightStripsEnabled)
 
   const SIDE_WALL_EXTRA_M = 0.005
-  const innerW = widthM - sideWallThicknessM * 2
+  const fullInnerW = widthM - sideWallThicknessM * 2
+  const innerW = fullInnerW - interiorInset.left - interiorInset.right
   const moduleDepth = depthM - WALL - CLOSET_INSIDE_INSET
   const ceilH = heightCm / 100 - SIDE_WALL_EXTRA_M
   const flatH = ceilH - mainHeightM - WALL
@@ -393,7 +413,9 @@ function WasmTopCabinet({
 
   if (flatH <= WALL * 2) return null
 
-  const startX = -innerW / 2
+  // The compartments start after the afwerkpaneel's strip, like the modules
+  // below them; the panel's own blind front is drawn by SectionGroup.
+  const startX = -fullInnerW / 2 + interiorInset.left
   let offset = 0
 
   return (
@@ -509,9 +531,52 @@ function SectionGroup({
 
   const werkbladMaterialId = countertopMaterialId ?? buitenkantMaterialId
 
+  // Afwerkpaneel: the strip left over when the section holds nothing but
+  // machines and the rest is too narrow for a module. Same arithmetic as the
+  // store's `fillerPanel`, in this section's own interior.
+  const fillerSide = useWasmachinekastStore((s) => s.fillerPanelSide[kind])
+  const leftWallM = sharedSideWall === 'left' ? 0 : sideWallThicknessM
+  const rightWallM = sharedSideWall === 'right' ? 0 : sideWallThicknessM
+  const innerWidthCm = section.width - (leftWallM + rightWallM) * 100
+  const fillerM = fillerWidthCm(section.modules, innerWidthCm) / 100
+  const interiorInset = useMemo<InteriorInset>(
+    () =>
+      fillerM > 0
+        ? { left: fillerSide === 'left' ? fillerM : 0, right: fillerSide === 'right' ? fillerM : 0 }
+        : NO_INSET,
+    [fillerM, fillerSide],
+  )
+  // The panel is a door without hinges: same plane, same bottom and top edge.
+  const doorZBack = depthM - CLOSET_INSIDE_INSET
+  const doorBottomY = doorsExtendToFloor ? 0.02 : MODULE_FLOOR_Y
+  const doorTopY = (isLow ? lowMainH : mainHeightCm / 100) - WALL_M
+  const fillerXLeft =
+    fillerSide === 'left' ? -widthM / 2 + leftWallM : widthM / 2 - rightWallM - fillerM
+  const topCabinetCeilY = heightCm / 100 - SIDE_WALL_EXTRA_M - WALL_M
+
   return (
     <group position={[xOffsetM, 0, 0]}>
       <ClosetCorpus diagParams={diagParams} hideTopPanel={isLow} sharedSideWall={sharedSideWall} />
+      {fillerM > 0 && (
+        <FillerPanel
+          xLeft={fillerXLeft}
+          widthM={fillerM}
+          yBottom={doorBottomY}
+          yTop={doorTopY}
+          zBack={doorZBack}
+          floor={{ y: MODULE_FLOOR_Y, zStart: WALL }}
+        />
+      )}
+      {/* Above 275 cm the doors split at the top cabinet; so does the panel. */}
+      {fillerM > 0 && !isLow && needsTop && (
+        <FillerPanel
+          xLeft={fillerXLeft}
+          widthM={fillerM}
+          yBottom={mainHeightCm / 100 - WALL_M}
+          yTop={topCabinetCeilY}
+          zBack={doorZBack}
+        />
+      )}
       {/* LED strips light the high cabinet only — a low section under a
           werkblad has no strips, whatever the accessory toggle says. */}
       {!isLow && lightStripsEnabled && doorsOpen && (
@@ -521,6 +586,7 @@ function SectionGroup({
           depthM={depthM}
           diagParams={diagParams}
           sharedSideWall={sharedSideWall}
+          interiorInsetM={interiorInset}
         />
       )}
       <SectionPlinth
@@ -528,6 +594,7 @@ function SectionGroup({
         depthM={depthM}
         modules={section.modules}
         sharedSideWall={sharedSideWall}
+        interiorInset={interiorInset}
       />
       {isLow && (
         <WerkbladSlab
@@ -575,6 +642,7 @@ function SectionGroup({
               doorHandleIdOverride={plan.doorHandleId}
               drawerHandleId={plan.drawerHandleId}
               sharedSideWall={sharedSideWall}
+              interiorInsetM={interiorInset}
             />
           )
         })}
@@ -586,6 +654,7 @@ function SectionGroup({
           depthM={depthM}
           modules={section.modules}
           sideWallThicknessM={sideWallThicknessM}
+          interiorInset={interiorInset}
         />
       )}
       {enableSlotInteraction &&
@@ -604,6 +673,7 @@ function SectionGroup({
               modules={section.modules}
               sectionKind={kind}
               sharedSideWall={sharedSideWall}
+              interiorInset={interiorInset}
             />
           )
         })}

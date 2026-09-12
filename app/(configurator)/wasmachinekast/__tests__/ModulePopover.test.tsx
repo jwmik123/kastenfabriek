@@ -34,6 +34,9 @@ interface MockState {
   activeModulesSection: 'high' | 'low'
   lowSection: null
   lastClickPoint: { x: number; y: number } | null
+  fillerPanelSide: { high: 'left' | 'right'; low: 'left' | 'right' }
+  fillerPanel: (section: 'high' | 'low') => { side: 'left' | 'right'; widthCm: number } | null
+  setFillerPanelSide: (section: 'high' | 'low', side: 'left' | 'right') => void
 }
 
 const baseModules: Mod[] = [
@@ -80,6 +83,9 @@ beforeEach(() => {
     activeModulesSection: 'high',
     lowSection: null,
     lastClickPoint: null,
+    fillerPanelSide: { high: 'right', low: 'right' },
+    fillerPanel: () => null,
+    setFillerPanelSide: vi.fn(),
   }
 })
 
@@ -106,6 +112,24 @@ describe('ModulePopover (wasmachinekast)', () => {
     expect(html).toContain('data-testid="module-popover-layout-picker"')
     expect(html).not.toContain('data-testid="module-popover-door-toggle"')
     expect(html).not.toContain('data-testid="module-popover-double-toggle"')
+  })
+
+  it('explains the afwerkpaneel on a washer slot and offers the side', async () => {
+    mockState.selectedSlot = 0
+    mockState.fillerPanel = (section) => (section === 'high' ? { side: 'right', widthCm: 9.2 } : null)
+    const { default: ModulePopover } = await import('../components/ModulePopover')
+    const html = renderToStaticMarkup(<ModulePopover />)
+    expect(html).toContain('data-testid="module-popover-filler-notice"')
+    expect(html).toContain('9,2 cm')
+    expect(html).toContain('Links')
+    expect(html).toContain('Rechts')
+  })
+
+  it('keeps the afwerkpaneel notice off a plain vak', async () => {
+    mockState.fillerPanel = () => ({ side: 'right', widthCm: 9.2 })
+    const { default: ModulePopover } = await import('../components/ModulePopover')
+    const html = renderToStaticMarkup(<ModulePopover />)
+    expect(html).not.toContain('data-testid="module-popover-filler-notice"')
   })
 
   it('renders bay header for selected slot', async () => {

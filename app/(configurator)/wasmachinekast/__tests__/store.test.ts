@@ -346,7 +346,8 @@ describe('minModules / maxModules', () => {
     useWasmachinekastStore.getState().hydrate(basePricingData) // minWidth=15
     useWasmachinekastStore.setState({ width: 120 })
     const max = useWasmachinekastStore.getState().maxModules()
-    expect(max).toBe(Math.floor(120 / 15)) // 8
+    // The interior is what the modules share: 120 cm minus two 18 mm panels.
+    expect(max).toBe(Math.floor((120 - 3.6) / 15)) // 7
   })
 })
 
@@ -1289,8 +1290,9 @@ describe('canPlaceWasher / addWasherModule — capacity gate', () => {
     expect(s.washerModuleCountNotice).toBeNull()
   })
 
-  it('rejects when dropping modules would delete an existing washer', () => {
-    // The only way to free up room is to cut slot 5, which holds a washer.
+  it('shifts an existing washer left instead of cutting it when a vak has to go', () => {
+    // Room is made by dropping the last empty vak (4); the washer in slot 5
+    // moves up to slot 4 rather than falling off the end.
     useWasmachinekastStore.setState({
       width: 250, moduleCount: 6, layout: 'high-only',
       washerModules: [{ slotIndex: 5, layoutId: 99, section: 'high' as const }],
@@ -1302,7 +1304,12 @@ describe('canPlaceWasher / addWasherModule — capacity gate', () => {
       ],
       moduleLayouts: basePricingData.modules,
     })
-    expect(useWasmachinekastStore.getState().canPlaceWasher(0, 99)).toBe(false)
+    expect(useWasmachinekastStore.getState().canPlaceWasher(0, 99)).toBe(true)
+    useWasmachinekastStore.getState().addWasherModule(0, 99)
+    const s = useWasmachinekastStore.getState()
+    expect(s.moduleCount).toBe(5)
+    expect(s.washerModules.map((w) => w.slotIndex).sort()).toEqual([0, 4])
+    expect(s.modules[4].layoutId).toBe(99)
   })
 
   it('dismissWasherModuleCountNotice clears the flag', () => {

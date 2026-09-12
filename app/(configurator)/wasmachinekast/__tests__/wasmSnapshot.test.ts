@@ -46,6 +46,7 @@ const input = (o: Partial<WasmSnapshotInput> = {}): WasmSnapshotInput => ({
   layout: 'high-only',
   lowSection: null,
   washerModules: [],
+  fillerPanels: { high: null, low: null },
   topPanelThicknessMm: 18,
   countertopMaterialId: undefined,
   buitenkantMaterialId: 'zwart',
@@ -171,5 +172,35 @@ describe('resolveHandleName', () => {
   it('falls back to the English name, then to null', () => {
     expect(resolveHandleName('h1', [{ id: 'h1', name: 'Straight handle' }])).toBe('Straight handle')
     expect(resolveHandleName('h1', [])).toBeNull()
+  })
+})
+
+describe('buildWasmConfigSnapshot — afwerkpaneel', () => {
+  it('writes the top-level section panel with its side and width', () => {
+    const snap = buildWasmConfigSnapshot(
+      input({ fillerPanels: { high: { side: 'left', widthCm: 9.2 }, low: null } }),
+    )
+    expect(snap.fillerPanel).toEqual({ side: 'left', widthCm: 9.2 })
+    expect(snap.lowSection).toBeUndefined()
+  })
+
+  it('writes the low section panel on the low section', () => {
+    const snap = buildWasmConfigSnapshot(
+      input({
+        layout: 'low-right',
+        lowSection: { width: 150, height: 90, moduleCount: 2, modules: [slot(0), slot(1)] },
+        fillerPanels: { high: null, low: { side: 'right', widthCm: 11 } },
+      }),
+    )
+    expect(snap.fillerPanel).toBeNull()
+    expect(snap.lowSection?.fillerPanel).toEqual({ side: 'right', widthCm: 11 })
+  })
+
+  it('puts a low-only panel on both the top level and the mirrored low section', () => {
+    const snap = buildWasmConfigSnapshot(
+      input({ layout: 'low-only', fillerPanels: { high: null, low: { side: 'left', widthCm: 4 } } }),
+    )
+    expect(snap.fillerPanel).toEqual({ side: 'left', widthCm: 4 })
+    expect(snap.lowSection?.fillerPanel).toEqual({ side: 'left', widthCm: 4 })
   })
 })

@@ -3,6 +3,7 @@ import type { ClosetConfigSnapshot, ModuleSlotSnapshot } from '@/lib/cart/types'
 import type { BaseModuleSlot } from '../_shared/store/types'
 import type { HandleMaterial } from '../_shared/constants/handleMaterials'
 import type { Section, WasherPlacement, WasmLayout } from './sections/types'
+import type { FillerPanel } from './sections/sectionPlan'
 
 /**
  * Everything a wasmachinekast snapshot needs, in the shape the store holds it.
@@ -21,6 +22,8 @@ export interface WasmSnapshotInput {
   layout: WasmLayout
   lowSection: Section | null
   washerModules: WasherPlacement[]
+  /** Afwerkpaneel per section, as the store derives it (`fillerPanel`). */
+  fillerPanels: { high: FillerPanel | null; low: FillerPanel | null }
   topPanelThicknessMm: 18 | 36
   countertopMaterialId: string | undefined
   buitenkantMaterialId: string
@@ -78,6 +81,7 @@ export function buildWasmConfigSnapshot(s: WasmSnapshotInput): ClosetConfigSnaps
   const isLowOnly = s.layout === 'low-only'
   const lowModules = isLowOnly ? s.modules : (s.lowSection?.modules ?? [])
   const hasLowSection = isLowOnly || s.lowSection !== null
+  const topLevelFiller = isLowOnly ? s.fillerPanels.low : s.fillerPanels.high
 
   return {
     id: s.id,
@@ -93,6 +97,7 @@ export function buildWasmConfigSnapshot(s: WasmSnapshotInput): ClosetConfigSnaps
 
     layout: s.layout,
     washerModules: s.washerModules,
+    fillerPanel: topLevelFiller,
     ...(hasLowSection
       ? {
           lowSection: {
@@ -102,6 +107,7 @@ export function buildWasmConfigSnapshot(s: WasmSnapshotInput): ClosetConfigSnaps
             modules: lowModules.map((m) => toModuleSnapshot(m, s.moduleLayouts)),
             topPanelThicknessMm: s.topPanelThicknessMm,
             countertopMaterialId: s.countertopMaterialId ?? s.buitenkantMaterialId,
+            fillerPanel: s.fillerPanels.low,
           },
         }
       : {}),

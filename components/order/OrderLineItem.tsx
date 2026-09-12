@@ -1,4 +1,4 @@
-import { buildClosetSpec, describeModuleRow, plural } from "@/lib/order/closet-spec";
+import { buildClosetSpec, describeFillerPanel, describeModuleRow, plural } from "@/lib/order/closet-spec";
 import { renderClosetWireframeSvg } from "@/lib/order/wireframe-svg";
 import {
   describeProductLine,
@@ -125,6 +125,9 @@ function ClosetLine({ item }: { item: Extract<OrderLine, { kind: "closet" }> }) 
               {plural(section.moduleCount, "module", "modules")} · {section.widthCm} ×{" "}
               {section.heightCm} cm
             </span>
+            {section.fillerPanel && (
+              <span className="block text-gray-500">{describeFillerPanel(section.fillerPanel)}</span>
+            )}
             {section.modules.map((m) => {
               const row = describeModuleRow(m);
               return (

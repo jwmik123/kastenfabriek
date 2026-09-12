@@ -340,3 +340,48 @@ describe("LED strips reach the order documents", () => {
     expect(buildPriceRows(lowOnly, price).find((r) => r.label === "LED-strips")).toBeUndefined();
   });
 });
+
+describe("afwerkpaneel", () => {
+  it("carries the panel of each section into the spec", () => {
+    const sections = resolveSections({
+      ...base,
+      layout: "low-left",
+      fillerPanel: { side: "right", widthCm: 9.2 },
+      lowSection: { ...lowSection, fillerPanel: { side: "left", widthCm: 11 } },
+    });
+    expect(sections.find((s) => s.key === "high")!.fillerPanel).toEqual({ side: "right", widthCm: 9.2 });
+    expect(sections.find((s) => s.key === "low")!.fillerPanel).toEqual({ side: "left", widthCm: 11 });
+  });
+
+  it("has no panel on snapshots written before the field existed", () => {
+    expect(resolveSections(base)[0].fillerPanel).toBeNull();
+  });
+
+  it("lists the panel cost as its own price row", () => {
+    const rows = buildPriceRows(base, { ...price, fillerPanelCost: 120, subtotal: price.subtotal + 120 });
+    expect(rows).toContainEqual({ label: "Afwerkpaneel", amount: 120 });
+  });
+});
+
+describe("buildClosetSpec — afwerkpaneel", () => {
+  it("notes the panel under the dimensions, per section", () => {
+    const spec = buildClosetSpec(
+      {
+        ...base,
+        layout: "low-left",
+        fillerPanel: { side: "right", widthCm: 9.2 },
+        lowSection,
+      },
+      price,
+    );
+    const afmetingen = spec.details.find((d) => d.label === "Afmetingen")!;
+    expect(afmetingen.notes).toContain("Hoge kast: Afwerkpaneel 9,2 cm rechts");
+  });
+
+  it("notes a single-section panel without a section label", () => {
+    const spec = buildClosetSpec({ ...base, fillerPanel: { side: "left", widthCm: 4 } }, price);
+    expect(spec.details.find((d) => d.label === "Afmetingen")!.notes).toEqual([
+      "Afwerkpaneel 4 cm links",
+    ]);
+  });
+});

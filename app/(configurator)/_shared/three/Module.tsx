@@ -60,6 +60,10 @@ interface ModuleProps {
   // neighbouring section's (wasmachinekast dual layouts). The interior widens
   // into the freed space instead of leaving a gap against the shared panel.
   sharedSideWall?: 'left' | 'right' | null
+  // Extra width taken off the interior on either side, in metres — the
+  // wasmachinekast afwerkpaneel. The modules share what is left and start
+  // after the panel, exactly as they start after the side wall.
+  interiorInsetM?: { left: number; right: number }
 }
 
 function wallHeightAt(xOuter: number, p: DiagParams, floorY: number = MODULE_FLOOR_Y): number {
@@ -176,6 +180,7 @@ export default function Module({
   doorHandleIdOverride,
   drawerHandleId,
   sharedSideWall = null,
+  interiorInsetM,
 }: ModuleProps) {
   const depth        = useConfiguratorStore((s) => s.depth) / 100
   const storeModuleCount = useConfiguratorStore((s) => s.moduleCount)
@@ -215,8 +220,8 @@ export default function Module({
   const sideWallM    = p.sideWallThickness
   // A shared side wall belongs to the neighbouring section, so this section has
   // no panel of its own there and its interior runs out to the section edge.
-  const leftWallM    = sharedSideWall === 'left'  ? 0 : sideWallM
-  const rightWallM   = sharedSideWall === 'right' ? 0 : sideWallM
+  const leftWallM    = (sharedSideWall === 'left'  ? 0 : sideWallM) + (interiorInsetM?.left ?? 0)
+  const rightWallM   = (sharedSideWall === 'right' ? 0 : sideWallM) + (interiorInsetM?.right ?? 0)
   const innerW       = width - leftWallM - rightWallM
   const moduleDepth  = depthOverride ?? (depth - WALL - CLOSET_INSIDE_INSET)
   const groupZ       = depthOverride != null ? (depth - CLOSET_INSIDE_INSET - depthOverride) : WALL

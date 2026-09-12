@@ -7,6 +7,7 @@ import { getWasmLayoutConfig } from '../moduleLayoutConfigs'
 import { WASHER_LAYOUT_IDS } from '../moduleLayouts'
 import { frontsInModule, sectionedModules } from '../sections/drawerFronts'
 import type { Section, WasmLayout } from '../sections/types'
+import type { FillerSide } from '../sections/sectionPlan'
 import type { ModuleSlot } from '../store'
 
 /** Delivery price used when the pricing data has not loaded yet. */
@@ -25,6 +26,20 @@ export interface WasmPricingInput {
   lightStripsEnabled: boolean
   hasTopCabinet: boolean
   sidePanelThickness: '18mm' | '36mm'
+  /** Afwerkpanelen the sections show; at most one per section. */
+  fillerPanels?: FillerPanelInput[]
+}
+
+export interface FillerPanelInput {
+  section: 'high' | 'low'
+  side: FillerSide
+  widthCm: number
+}
+
+/** An afwerkpaneel priced as one door: it is a door panel without hinges. */
+export interface WasmFillerPanelRow extends FillerPanelInput {
+  doorVariant: DoorVariant
+  cost: number
 }
 
 /** One module slot with every price line it contributes. */
@@ -72,6 +87,8 @@ export interface WasmPricingTotals {
   powerHoleCount: number
   powerHoleCost: number
   sidePanelCost: number
+  /** Afwerkpanelen, each priced as one door. */
+  fillerPanelCost: number
   deliveryCost: number
   /** Cabinet only — everything except delivery and montage. */
   cabinetCost: number
@@ -88,6 +105,7 @@ export interface WasmPricingTotals {
 export interface WasmPricingResult {
   rows: WasmPriceRow[]
   topCabinet: WasmTopCabinetRow | null
+  fillerPanels: WasmFillerPanelRow[]
   totals: WasmPricingTotals
   handles: {
     doorHandleId: string
@@ -99,11 +117,15 @@ export interface WasmPricingResult {
   }
 }
 
+/** A front priced as veneer when the outside material it shows is a texture. */
+function variantForMaterial(materialId: string): DoorVariant {
+  const material = MATERIALS.find((m) => m.id === materialId)
+  return material?.type === 'texture' ? 'veneer' : 'standard'
+}
+
 /** Doors of a module priced as veneer when its outside material is a texture. */
 function doorVariantFor(module: ModuleSlot, buitenkantMaterialId: string): DoorVariant {
-  const effectiveMaterialId = module.buitenkantMaterialId ?? buitenkantMaterialId
-  const material = MATERIALS.find((m) => m.id === effectiveMaterialId)
-  return material?.type === 'texture' ? 'veneer' : 'standard'
+  return variantForMaterial(module.buitenkantMaterialId ?? buitenkantMaterialId)
 }
 
 /**
@@ -128,6 +150,7 @@ export function computeWasmPricing(input: WasmPricingInput): WasmPricingResult {
     lightStripsEnabled,
     hasTopCabinet,
     sidePanelThickness,
+    fillerPanels: fillerPanelInputs = [],
   } = input
 
   const engine = pricingData ? new PricingEngine(pricingData) : null
@@ -273,8 +296,19 @@ export function computeWasmPricing(input: WasmPricingInput): WasmPricingResult {
   const sidePanelCost =
     sidePanelThickness === '36mm' ? engine?.getAccessoryPrice('side-panels-36mm') ?? 0 : 0
 
+  // An afwerkpaneel is a door panel without hinges, in the cabinet's outside
+  // material, so it costs what one such door costs.
+  const fillerPanelVariant = variantForMaterial(buitenkantMaterialId)
+  const fillerPanels: WasmFillerPanelRow[] = fillerPanelInputs.map((panel) => ({
+    ...panel,
+    doorVariant: fillerPanelVariant,
+    cost: engine?.getDoorPrice(fillerPanelVariant) ?? 0,
+  }))
+  const fillerPanelCost = fillerPanels.reduce((sum, p) => sum + p.cost, 0)
+
   const deliveryCost = engine?.deliveryPrice ?? DELIVERY_FALLBACK
-  const cabinetCost = moduleCost + doorCost + mechanismCost + ledCost + powerHoleCost + sidePanelCost
+  const cabinetCost =
+    moduleCost + doorCost + mechanismCost + ledCost + powerHoleCost + sidePanelCost + fillerPanelCost
   const subtotal = cabinetCost + deliveryCost
 
   const installationBasis = computeInstallationBasis({ subtotal, deliveryCost, ledCost })
@@ -286,6 +320,7 @@ export function computeWasmPricing(input: WasmPricingInput): WasmPricingResult {
   return {
     rows,
     topCabinet,
+    fillerPanels,
     totals: {
       moduleCost,
       doorCost,
@@ -295,6 +330,7 @@ export function computeWasmPricing(input: WasmPricingInput): WasmPricingResult {
       powerHoleCount,
       powerHoleCost,
       sidePanelCost,
+      fillerPanelCost,
       deliveryCost,
       cabinetCost,
       subtotal,

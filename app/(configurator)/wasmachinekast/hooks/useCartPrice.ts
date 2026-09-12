@@ -9,6 +9,7 @@ import { addWishlistItem } from '@/lib/wishlist/wishlist-store'
 import { requestCapture, resetToFrontView } from '@/lib/canvas-capture'
 import { useWasmPricing } from './useWasmPricing'
 import { buildWasmConfigSnapshot, resolveHandleName } from '../wasmSnapshot'
+import { useFillerPanel } from './useFillerPanel'
 import type { CartItem, PriceSnapshot } from '@/lib/cart/types'
 
 export const formatter = new Intl.NumberFormat('nl-NL', {
@@ -47,6 +48,8 @@ export function useCartPrice() {
   const sidePanelThickness = useWasmachinekastStore((s) => s.sidePanelThickness)
   const placementType = useWasmachinekastStore((s) => s.placementType)
   const washerModules = useWasmachinekastStore((s) => s.washerModules)
+  const highFiller = useFillerPanel('high')
+  const lowFiller = useFillerPanel('low')
 
   const hasTopCabinet = needsTopCabinet()
   const topCabinetHeightCm = topCabinetHeight()
@@ -60,6 +63,7 @@ export function useCartPrice() {
     ledCost,
     powerHoleCost,
     sidePanelCost,
+    fillerPanelCost,
     deliveryCost,
     cabinetCost: totalPrice,
     subtotal,
@@ -87,6 +91,7 @@ export function useCartPrice() {
       layout,
       lowSection,
       washerModules,
+      fillerPanels: { high: highFiller, low: lowFiller },
       topPanelThicknessMm,
       countertopMaterialId,
       buitenkantMaterialId,
@@ -120,6 +125,7 @@ export function useCartPrice() {
       slopedBackWallSurcharge: 0,
       slopedSideWallSurcharge: 0,
       sidePanelCost,
+      fillerPanelCost,
       freeMontageApplied,
       freeMontageDiscount,
       total: grandTotal,

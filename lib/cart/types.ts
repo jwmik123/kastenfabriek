@@ -36,6 +36,17 @@ export type ClosetProductType = 'kledingkast' | 'wasmachinekast';
 export type WasmLayout = 'high-only' | 'low-only' | 'low-left' | 'low-right';
 export type WasherSection = 'high' | 'low' | null;
 
+/**
+ * Afwerkpaneel: a blind front, flush with the doors, closing off the rest of a
+ * section that holds nothing but machines and is too narrow for another
+ * module. The width is stored so the order documents do not have to re-derive
+ * it from the slot widths.
+ */
+export interface FillerPanelSnapshot {
+  side: 'left' | 'right';
+  widthCm: number;
+}
+
 export interface LowSectionSnapshot {
   width: number;
   height: number;
@@ -43,6 +54,7 @@ export interface LowSectionSnapshot {
   modules: ModuleSlotSnapshot[];
   topPanelThicknessMm: 18 | 36;
   countertopMaterialId: string;
+  fillerPanel?: FillerPanelSnapshot | null;
 }
 
 // Serialized closet configuration — mirrors relevant Zustand store state
@@ -65,6 +77,8 @@ export interface ClosetConfigSnapshot {
   // Module layout
   moduleCount: number;
   modules: ModuleSlotSnapshot[];
+  /** Wasmachinekast: afwerkpaneel of the top-level section, when it has one. */
+  fillerPanel?: FillerPanelSnapshot | null;
 
   // Appearance
   buitenkantMaterialId: string;
@@ -183,6 +197,9 @@ export interface PriceSnapshot {
 
   // Side panels accessory cost (issue 072). Optional for back-compat.
   sidePanelCost?: number;
+
+  /** Afwerkpanelen (wasmachinekast), each priced as one door. Optional for back-compat. */
+  fillerPanelCost?: number;
 
   freeMontageApplied?: boolean;
   freeMontageDiscount?: number;

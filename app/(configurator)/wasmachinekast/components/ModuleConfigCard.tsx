@@ -14,6 +14,8 @@ import { LOW_LAYOUT_SVGS, WASHER_LAYOUT_SVGS, WASHER_TYPE_SVGS } from './WasherL
 import { STEP } from '../steps/steps'
 import { Toggle } from '@/components/ui/Toggle'
 import { cn } from '@/lib/utils'
+import { useFillerPanel } from '../hooks/useFillerPanel'
+import FillerPanelControl, { formatPanelWidth } from './FillerPanelControl'
 
 function PickerHeading({ children }: { children: React.ReactNode }) {
   return (
@@ -69,6 +71,7 @@ export default function ModuleConfigCard({ className }: { className?: string }) 
   const dismissModuleCountNotice = useWasmachinekastStore((s) => s.dismissWasherModuleCountNotice)
   const layout           = useWasmachinekastStore((s) => s.layout)
   const constraints      = useWasmachinekastStore((s) => s.constraints)
+  const setFillerPanelSide = useWasmachinekastStore((s) => s.setFillerPanelSide)
   // Floor under a variable slot: a fixed-width layout is offered only when the
   // remaining slots stay at least this wide.
   const minModuleWidthCm = constraints?.singleCorpus.minWidth ?? FALLBACK_MODULE_MIN_WIDTH_CM
@@ -86,6 +89,7 @@ export default function ModuleConfigCard({ className }: { className?: string }) 
   // N — same index, different vak.
   const editingSection: 'high' | 'low' =
     layout === 'low-only' ? 'low' : editingLow ? 'low' : 'high'
+  const fillerPanel = useFillerPanel(editingSection)
   const washerSlots = new Set(
     washerModules.filter((w) => w.section === editingSection).map((w) => w.slotIndex),
   )
@@ -153,7 +157,7 @@ export default function ModuleConfigCard({ className }: { className?: string }) 
         data-layout-id={layoutItem.layoutId}
         disabled={!available}
         onClick={() => chooseLayout(layoutItem.layoutId)}
-        title={!available && isWasher ? 'Niet genoeg ruimte voor nog een wasmachine' : undefined}
+        title={!available && isWasher ? 'De wasmachine past niet meer in deze kast' : undefined}
         style={isWasher ? undefined : { aspectRatio: '1' }}
         className={cn(
           'flex flex-col items-center justify-center gap-1 rounded-md transition-all py-2',
@@ -217,7 +221,8 @@ export default function ModuleConfigCard({ className }: { className?: string }) 
         </button>
       </div>
 
-      {moduleCountNotice !== null && (
+      {/* The panel notice below already says why the count dropped. */}
+      {moduleCountNotice !== null && !(isWasherSlot && fillerPanel) && (
         <div className="flex items-start gap-2 rounded-md bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800">
           <Info className="w-4 h-4 shrink-0 mt-0.5" />
           <span className="flex-1">
@@ -231,6 +236,29 @@ export default function ModuleConfigCard({ className }: { className?: string }) 
           >
             Begrepen
           </button>
+        </div>
+      )}
+
+      {/* The panel is not a layout choice but a consequence of the machines:
+          say so where the machine was picked, and let the side be chosen. */}
+      {isWasherSlot && fillerPanel && (
+        <div
+          data-testid="module-popover-filler-notice"
+          className="space-y-2 rounded-md bg-muted/40 border border-border/50 px-3 py-2 text-xs"
+        >
+          <div className="flex items-start gap-2 text-muted-foreground">
+            <Info className="w-4 h-4 shrink-0 mt-0.5" />
+            <span>
+              Naast de wasmachine{washerSlots.size > 1 ? 's' : ''} past geen module meer. De
+              overige {formatPanelWidth(fillerPanel.widthCm)} wordt afgewerkt met een afwerkpaneel,
+              gelijk met de deuren.
+            </span>
+          </div>
+          <FillerPanelControl
+            panel={fillerPanel}
+            onSideChange={(side) => setFillerPanelSide(editingSection, side)}
+            compact
+          />
         </div>
       )}
 
