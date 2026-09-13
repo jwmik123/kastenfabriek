@@ -680,8 +680,8 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
     { slotIndex: 1, layoutId: null, hasDoor: true, span: 1, hasPowerHole: false },
   ],
 
-  buitenkantMaterialId: 'premium-wit',
-  binnenkantMaterialId: 'premium-wit',
+  buitenkantMaterialId: 'h3158-vicenza-eik-grijs',
+  binnenkantMaterialId: 'zwart',
   doorHandleId: '23',
   // Drawer fronts (lage kast) have their own handle choice and start
   // greeploos; the wizard can add a handle separately from the doors.
