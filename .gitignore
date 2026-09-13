@@ -42,3 +42,8 @@ next-env.d.ts
 
 # Local previews of the order mails / spec PDF
 /tmp
+
+# Agent tooling (Codex / skills mirror)
+/.agents/
+/.codex/
+/AGENTS.md
