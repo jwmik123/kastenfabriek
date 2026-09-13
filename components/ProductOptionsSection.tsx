@@ -8,6 +8,8 @@ interface OptionItem {
   description: string;
   icon?: React.ReactNode;
   image?: string;
+  /** Base64 blur placeholder, only present for Sanity images. */
+  blurDataURL?: string;
   comingSoon?: boolean;
   href?: string;
   ctaLabel?: string;
@@ -41,6 +43,9 @@ const ProductOptionsSection: React.FC<ProductOptionsSectionProps> = ({
                 src={option.image}
                 alt={option.title}
                 fill
+                sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
+                placeholder={option.blurDataURL ? "blur" : "empty"}
+                blurDataURL={option.blurDataURL}
                 className="object-cover transition-transform duration-500 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-black/40 md:bg-black/10 md:group-hover:bg-black/40 transition-colors duration-500" />
@@ -130,6 +135,9 @@ const ProductOptionsSection: React.FC<ProductOptionsSectionProps> = ({
                     src={option.image}
                     alt={option.title}
                     fill
+                    sizes="100vw"
+                    placeholder={option.blurDataURL ? "blur" : "empty"}
+                    blurDataURL={option.blurDataURL}
                     className="object-cover opacity-30 transition-transform duration-700 group-hover:scale-105"
                   />
                   <div className="absolute inset-0 bg-gradient-to-r from-primary via-primary/80 to-primary/40" />

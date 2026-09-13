@@ -13,6 +13,7 @@ import ModulesScrollSection from "@/components/ModulesScrollSection";
 import HotspotSection from "@/components/HotspotSection";
 import PromoText from "@/components/PromoText";
 import { getSiteSettings } from "@/sanity/lib/siteSettings";
+import { getHomeProductOptionImages } from "@/sanity/lib/homeProductOptions";
 
 /** Scherpe poster, ~60 kB webp. Wordt getoond tot de video echt speelt. */
 const HERO_POSTER =
@@ -22,8 +23,19 @@ const HERO_POSTER =
 const HERO_PLACEHOLDER =
   "data:image/webp;base64,UklGRtgBAABXRUJQVlA4IMwBAAAQCQCdASowABsAPkUciUQioaEdXMwAKAREs4BhRgnE+maZEj1mcsn6k66diVZD6nSr/rhb+gU8gZVgPR3esiKm0f7bcgHtfjSFUZ3fDLScrQAA/vwuuhODErz7uPciwNgp22UDyI77mcyV6+QuH0ySlu8Nvp34Jlys7LOL/UP/tb0efdTutkFqM9QAwSAlvpf1GfvlAx+qW7SIs0nWgCafUJuUfTzWPNpLtEHblxOhel/R8tOr8WhgnaMH+Db1rZAurfkKkRoHRpng8OgkXHDAMoWeYirKIwBxjO+rZNcYTns1UljqO/XQPiMITjQfiXb12GN/+yWQhuJphAKfegIY28bhYyz/fXqGYKgo0w/uEdS8eWo0IwC6rCJXoY/rctpMTx+qRKFIhswchM/LVLYEXogthO4qhJFVtXR151wpmYohaDlmULDMAPqP6dzuFTVTb8QnNB4MI16MM6IAF+u12W2FtewWbvpWtjH5OMYH0Be2ncNKyM0WBiIX+DfWnK8qhcX6Iazn0rTAD0rcPPae4gq2nycb/j0fgW57qFQ51Igq1GcKTPjyeTA0mVxENxHYRSlPdaTpWtPsWpygMshAr05W41w8nYIMAAAA";
 
+/** Blijft staan zolang een redacteur nog geen foto in Sanity koos. */
+const FALLBACK_OPTION_IMAGES = {
+  kledingkast: "/images/kledingkast.png",
+  wasmachinekast: "/images/wasmachinekast.png",
+  ikeaPax: "/colorways/lincoln-notelaar-1.webp",
+  alleProducten: "/images/Modules_High4.webp",
+} as const;
+
 export default async function Home() {
-  const settings = await getSiteSettings();
+  const [settings, optionImages] = await Promise.all([
+    getSiteSettings(),
+    getHomeProductOptionImages(),
+  ]);
   const promo = settings.promoBanner?.homepage;
 
   return (
@@ -92,21 +104,24 @@ export default async function Home() {
           id: 'kledingkast',
           title: 'Kledingkast',
           description: 'Volledig op maat gemaakt, perfect passend in jouw ruimte',
-          image: '/images/kledingkast.png',
+          image: optionImages.kledingkast?.src ?? FALLBACK_OPTION_IMAGES.kledingkast,
+          blurDataURL: optionImages.kledingkast?.blurDataURL,
           href: '/kledingkast',
         },
         {
           id: 'wasmachinekast',
           title: 'Wasmachinekast',
           description: 'Functionele kast voor je wasmachine en droger',
-          image: '/images/wasmachinekast.png',
+          image: optionImages.wasmachinekast?.src ?? FALLBACK_OPTION_IMAGES.wasmachinekast,
+          blurDataURL: optionImages.wasmachinekast?.blurDataURL,
           href: '/wasmachinekast',
         },
         {
           id: 'ikea-pax',
           title: 'IKEA PAX Deuren',
           description: 'Op maat gemaakte deuren voor je bestaande IKEA kast',
-          image: '/colorways/lincoln-notelaar-1.webp',
+          image: optionImages.ikeaPax?.src ?? FALLBACK_OPTION_IMAGES.ikeaPax,
+          blurDataURL: optionImages.ikeaPax?.blurDataURL,
           href: '/producten/ikea-pax-deur',
         },
       ]}
@@ -115,7 +130,8 @@ export default async function Home() {
           id: 'alle-producten',
           title: 'Bekijk al onze producten',
           description: 'Ontdek het volledige assortiment maatwerk en accessoires',
-          image: '/images/Modules_High4.webp',
+          image: optionImages.alleProducten?.src ?? FALLBACK_OPTION_IMAGES.alleProducten,
+          blurDataURL: optionImages.alleProducten?.blurDataURL,
           href: '/producten',
           ctaLabel: 'Bekijk producten',
         },

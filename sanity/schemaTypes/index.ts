@@ -12,6 +12,7 @@ import { installationTier } from "./installationTier";
 import { pricingConfig } from "./pricingConfig";
 import { testimonial } from "./testimonial";
 import { hotspotSection } from "./hotspotSection";
+import { homeProductOptions } from "./homeProductOptions";
 import { coupon } from "./coupon";
 import { productSchemaTypes } from "./product";
 import { kennisbankSchemaTypes } from "./kennisbank";
@@ -25,6 +26,7 @@ export const schema: { types: SchemaTypeDefinition[] } = {
     siteSettings,
     testimonial,
     hotspotSection,
+    homeProductOptions,
     ...kennisbankSchemaTypes,
     // Configurator Pricing
     configuratorServices,

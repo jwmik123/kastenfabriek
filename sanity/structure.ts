@@ -19,6 +19,7 @@ export const structure: StructureResolver = (S) =>
               singleton(S, 'siteSettings', 'Instellingen'),
               S.divider(),
               singleton(S, 'hotspotSection', 'Kastdetails (homepage)'),
+              singleton(S, 'homeProductOptions', 'Kasttypes (homepage)'),
               S.documentTypeListItem('page').title("Pagina's"),
               S.documentTypeListItem('testimonial').title('Klantbeoordelingen'),
             ]),
