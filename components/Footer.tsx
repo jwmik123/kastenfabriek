@@ -237,7 +237,10 @@ const Footer = async () => {
       <div className="w-full bg-primary-dark">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col gap-2 sm:flex-row sm:justify-between">
           <p className="text-sm text-white/50">&copy; {new Date().getFullYear()} {siteName}. Alle rechten voorbehouden.</p>
-          <p className="text-sm text-white/50">Website gerealiseerd door Mik Development</p>
+          <p className="text-sm text-white/50">Website gerealiseerd door <Link href="https://squared-media.nl" target="_blank" rel="noopener noreferrer" className="underline hover:no-underline">
+            Squared Media
+          </Link>
+          </p>
         </div>
       </div>
     </footer>
