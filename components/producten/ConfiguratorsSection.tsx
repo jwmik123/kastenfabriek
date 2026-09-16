@@ -29,6 +29,8 @@ function ConfiguratorCard({ item }: { item: ConfiguratorItem }) {
           alt={item.title}
           fill
           sizes="(max-width: 1024px) 100vw, 33vw"
+          placeholder={item.blurDataURL ? 'blur' : 'empty'}
+          blurDataURL={item.blurDataURL}
           className="object-cover"
         />
         {item.badge && (

@@ -25,6 +25,8 @@ export interface ConfiguratorItem {
   title: string
   description: string
   image: string
+  /** Base64 blur placeholder, only present for Sanity images. */
+  blurDataURL?: string
   href: string
   /** Small pill on the image, e.g. "Populair". */
   badge?: string

@@ -6,7 +6,10 @@ import type { SanityImageSource } from "@sanity/image-url/lib/types/types";
 import { client } from "./client";
 import { urlFor } from "./image";
 
-/** The cards under the homepage hero, in the order they're rendered. */
+/**
+ * The product cards under the homepage hero. Kledingkast and wasmachinekast
+ * reuse the same photos on the /ontwerp-je-kast configurator cards.
+ */
 export type HomeProductOptionKey =
   | "kledingkast"
   | "wasmachinekast"
@@ -14,7 +17,10 @@ export type HomeProductOptionKey =
   | "alleProducten";
 
 export interface HomeProductOptionImage {
+  /** Cropped for the homepage cards (square, or a wide strip for the banner). */
   src: string;
+  /** 4:3 crop for the /ontwerp-je-kast configurator cards. */
+  landscapeSrc: string;
   /** Base64 blur placeholder from Sanity, when the asset has one. */
   blurDataURL?: string;
 }
@@ -44,6 +50,16 @@ const DIMENSIONS: Record<HomeProductOptionKey, { width: number; height: number }
   ikeaPax: { width: 900, height: 900 },
   alleProducten: { width: 1800, height: 600 },
 };
+
+/** The hotspot the editor set decides what stays in view for each crop. */
+function cropUrl(source: SanityImageSource, width: number, height: number) {
+  return urlFor(source)
+    .width(width)
+    .height(height)
+    .fit("crop")
+    .auto("format")
+    .url();
+}
 
 const imageProjection = KEYS.map(
   (key) => `${key}{ ..., "lqip": asset->metadata.lqip }`,
@@ -75,14 +91,11 @@ export async function getHomeProductOptionImages(): Promise<HomeProductOptionIma
     const field = raw[key];
     if (!field?.asset) continue;
 
+    const source = field as SanityImageSource;
     const { width, height } = DIMENSIONS[key];
     images[key] = {
-      src: urlFor(field as SanityImageSource)
-        .width(width)
-        .height(height)
-        .fit("crop")
-        .auto("format")
-        .url(),
+      src: cropUrl(source, width, height),
+      landscapeSrc: cropUrl(source, 1200, 900),
       blurDataURL: field.lqip,
     };
   }
