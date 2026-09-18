@@ -8,9 +8,7 @@ import * as THREE from 'three/webgpu'
 // from back-right, ambient from the HDRI (no hemisphere fill). Intensities are
 // scaled for NoToneMapping so the light walls never clip.
 const KEY = { color: '#fffaf4', intensity: 0.8, position: [-1.8, 3.5, 2.4] as const }
-// Low and behind the back wall (walls cast no shadow): grazes the floor towards the camera,
-// which is what puts the soft sheen on the floor finish.
-const RIM = { color: '#eef3ff', intensity: 0.55, position: [0.4, 2.6, -3.2] as const }
+const RIM = { color: '#eef3ff', intensity: 0.15, position: [2.4, 3.2, -0.3] as const }
 const TARGET: readonly [number, number, number] = [0, 1.2, 0.3]
 
 function useAimAtTarget(ref: React.RefObject<THREE.DirectionalLight | null>) {

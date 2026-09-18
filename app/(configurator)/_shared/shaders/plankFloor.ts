@@ -7,7 +7,7 @@
  * cabinet and keep their physical size regardless of floor dimensions.
  */
 import * as THREE from 'three/webgpu'
-import { color, float, positionWorld, texture, vec3 } from 'three/tsl'
+import { color, float, normalize, positionWorld, texture, transformNormalToView, vec3 } from 'three/tsl'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Node = any
@@ -17,6 +17,8 @@ const TILE_M = 1.6
 /** Linear-space mean of diff.jpg / mean of rough.jpg, measured offline. */
 const DIFF_MEAN: [number, number, number] = [0.2176, 0.1175, 0.0554]
 const ROUGH_MEAN = 0.4715
+/** Relief strength of the grain and plank bevels. */
+const NORMAL_SCALE = 1.2
 
 const cache = new Map<string, THREE.Texture>()
 
@@ -40,6 +42,10 @@ export function createPlankFloorMaterial({ tint, roughness }: { tint: string; ro
   const mat = new THREE.MeshStandardNodeMaterial()
   mat.colorNode = diff.rgb.div(vec3(...DIFF_MEAN)).mul(color(tint))
   mat.roughnessNode = rough.r.mul(float(roughness / ROUGH_MEAN))
+  // The floor is flat and its UVs are world XZ, so the tangent frame is fixed:
+  // tangent = +X, bitangent = +Z, normal = +Y. No per-vertex tangents needed.
+  const n: Node = texture(loadTiled('/materials/floor-oak/nor.jpg', false), uvNode).rgb.mul(2).sub(1)
+  mat.normalNode = transformNormalToView(normalize(vec3(n.x.mul(NORMAL_SCALE), n.z, n.y.mul(NORMAL_SCALE))))
   mat.metalness = 0
   return mat
 }

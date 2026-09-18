@@ -7,11 +7,9 @@ import { getFloor, type FloorOption } from './floors'
 import { createWoodFloorMaterial } from '../shaders/woodFloor'
 import { createPlankFloorMaterial } from '../shaders/plankFloor'
 
-/** Satin finish: the registry's roughness is the raw surface; a lacquered room floor has a slight sheen. */
-const FLOOR_SHEEN = 0.62
-
 export function createFloorMaterial(floor: FloorOption): THREE.Material {
-  const roughness = floor.roughness * FLOOR_SHEEN
+  // Planks are matt oiled oak: the relief comes from the normal map, not from gloss.
+  const roughness = floor.kind === 'planks' ? 0.8 : floor.roughness
   if (floor.kind === 'planks') {
     return createPlankFloorMaterial({ tint: floor.color, roughness })
   }
