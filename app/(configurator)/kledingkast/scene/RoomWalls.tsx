@@ -4,6 +4,7 @@ import { useMemo } from 'react'
 import * as THREE from 'three/webgpu'
 import { useClosetStore } from '../store'
 import { useFloorMaterial } from '../../_shared/materials/useFloorMaterial'
+import RoomTrim, { useRoomWallMaterial } from '../../_shared/three/RoomTrim'
 import { getDiagHeightAt } from './diagonalUtils'
 import type { DiagParams } from './diagonalUtils'
 
@@ -384,17 +385,8 @@ export default function RoomWalls() {
   }, [hasLeft, hasRight, backDiagonal, isVrijstaand, W, T, D, RF, floorW, leftSlopeTopX, rightSlopeTopX])
 
   // ── Materials ──────────────────────────────────────────────────────────────
-  // DoubleSide ensures correct visibility regardless of polygon winding,
-  // which differs between left/right walls. Cost is negligible for 4 panels.
-  const wallMat = useMemo(
-    () => new THREE.MeshStandardMaterial({
-      color: '#ffffff',
-      roughness: 0.9,
-      metalness: 0,
-      side: THREE.FrontSide,
-    }),
-    [],
-  )
+  // FrontSide inner faces only: invisible from outside the room.
+  const wallMat = useRoomWallMaterial()
   // Floor finish is user-selectable (toolbar → Vloer); see _shared/materials/floors.
   const floorMat = useFloorMaterial()
 
@@ -457,6 +449,16 @@ export default function RoomWalls() {
         <boxGeometry args={[floorW, T, D + T + RF]} />
         <primitive object={floorMat} attach="material" />
       </mesh>
+
+      {/* Skirting + scale cues (socket, switch, door) */}
+      <RoomTrim
+        closetWidth={W}
+        backHalfWidth={sceneHalfW}
+        backWallHeight={backDiagonal ? kinkH : H}
+        closetDepth={D}
+        roomFrontZ={D + RF}
+        sideWalls={!isVrijstaand}
+      />
 
       {/* Ceiling — trimmed where side diagonals are active */}
       <mesh
