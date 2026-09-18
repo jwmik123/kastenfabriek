@@ -4,6 +4,7 @@ import { Canvas, useFrame } from '@react-three/fiber'
 import * as THREE from 'three/webgpu'
 import { useEffect, useRef, type ReactNode } from 'react'
 import SceneEnvironment from './SceneEnvironment'
+import SceneLighting from './SceneLighting'
 import { isLowPowerDevice } from './devicePower'
 import Stats from 'stats.js'
 
@@ -29,7 +30,7 @@ interface ThreeCanvasProps {
 
 /**
  * Base canvas wrapper shared across all configurators.
- * Sets up: WebGPU renderer, camera, directional light, HDR environment.
+ * Sets up: WebGPU renderer, camera, living-room light rig, HDR environment.
  * Scene-specific content (controls, objects, overlays) goes in children.
  */
 export default function ThreeCanvas({ children, onPointerMissed }: ThreeCanvasProps) {
@@ -50,26 +51,11 @@ export default function ThreeCanvas({ children, onPointerMissed }: ThreeCanvasPr
         return renderer
       }}
     >
-      <color attach="background" args={['#ffffff']} />
+      <color attach="background" args={['#f1efeb']} />
       <SceneEnvironment />
 
       {process.env.NODE_ENV === 'development' && <StatsPanel />}
-      <hemisphereLight intensity={0.4} color="#ffffff" groundColor="#ffffff" />
-      <directionalLight
-        position={[-3, 5, 10]}
-        intensity={0.5}
-        castShadow
-        shadow-mapSize-width={lowPower ? 1024 : 2048}
-        shadow-mapSize-height={lowPower ? 1024 : 2048}
-        shadow-camera-left={-3}
-        shadow-camera-right={3}
-        shadow-camera-top={4}
-        shadow-camera-bottom={-1}
-        shadow-camera-near={0.5}
-        shadow-camera-far={20}
-        shadow-bias={-0.0005}
-        shadow-normalBias={0.02}
-      />
+      <SceneLighting shadowMapSize={lowPower ? 1024 : 2048} />
       {children}
     </Canvas>
   )
