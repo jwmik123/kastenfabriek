@@ -53,7 +53,31 @@ export default function LockViewport() {
     apply()
     mql.addEventListener('change', apply)
 
+    // overflow:hidden does not stop the browser from scrolling the page itself:
+    // iOS pans the layout viewport when the keyboard opens for a dimension
+    // input (and scrollIntoView can do the same), and never pans back. That
+    // leaves the whole configurator shifted with the wizard footer off-screen.
+    // Snap the page back whenever the keyboard closes or the viewport settles.
+    const resetScroll = () => {
+      if (!mql.matches) return
+      // While typing, the pan is what keeps the input above the keyboard.
+      const active = document.activeElement
+      if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) return
+      if (window.scrollY !== 0 || html.scrollTop !== 0 || body.scrollTop !== 0) {
+        window.scrollTo(0, 0)
+        html.scrollTop = 0
+        body.scrollTop = 0
+      }
+    }
+    const onFocusOut = () => setTimeout(resetScroll, 50)
+    document.addEventListener('focusout', onFocusOut)
+    window.addEventListener('scroll', resetScroll, { passive: true })
+    window.visualViewport?.addEventListener('resize', resetScroll)
+
     return () => {
+      document.removeEventListener('focusout', onFocusOut)
+      window.removeEventListener('scroll', resetScroll)
+      window.visualViewport?.removeEventListener('resize', resetScroll)
       mql.removeEventListener('change', apply)
       unlock()
     }

@@ -255,3 +255,89 @@ describe('handle material invariant', () => {
     expect(useClosetStore.getState().doorHandleMaterial).toBe('rose-gold')
   })
 })
+
+describe('double modules — slot invariants', () => {
+  beforeEach(resetStore)
+
+  const filled = (n: number) =>
+    Array.from({ length: n }, (_, i) => ({ slotIndex: i, layoutId: 1, hasDoor: true, span: 1 as const, hasPowerHole: false }))
+
+  /** A slot covered by a double to its left must stay empty, single-span. */
+  function expectValid() {
+    const { modules } = useClosetStore.getState()
+    modules.forEach((m, i) => {
+      const covered = i > 0 && modules[i - 1].span === 2
+      if (covered) {
+        expect(m.layoutId, `covered slot ${i} layout`).toBeNull()
+        expect(m.span, `covered slot ${i} span`).toBe(1)
+      } else {
+        expect(m.layoutId, `visible slot ${i} layout`).not.toBeNull()
+      }
+    })
+    expect(modules[modules.length - 1].span).toBe(1)
+  }
+
+  it('nextStep does not fill the slot covered by a double', () => {
+    useClosetStore.setState({ width: 200, moduleCount: 4, modules: filled(4), step: 2 })
+    useClosetStore.getState().setModuleSpan(1, 2)
+    useClosetStore.getState().prevStep()
+    useClosetStore.getState().nextStep()
+    expectValid()
+  })
+
+  it('un-doubling refills the freed slot instead of leaving a hole', () => {
+    useClosetStore.setState({ width: 200, moduleCount: 4, modules: filled(4), step: 2 })
+    useClosetStore.getState().setModuleSpan(1, 2)
+    useClosetStore.getState().setModuleSpan(1, 1)
+    expectValid()
+  })
+
+  it('doubling over a neighbouring double refills the orphaned slot', () => {
+    useClosetStore.setState({ width: 200, moduleCount: 4, modules: filled(4), step: 2 })
+    useClosetStore.getState().setModuleSpan(1, 2)
+    useClosetStore.getState().setModuleSpan(0, 2)
+    expectValid()
+    expect(useClosetStore.getState().modules[0].span).toBe(2)
+  })
+
+  it('doubling an empty slot gives the double a layout', () => {
+    const mods = filled(4)
+    mods[1] = { ...mods[1], layoutId: null as unknown as number }
+    useClosetStore.setState({ width: 200, moduleCount: 4, modules: mods, step: 2 })
+    useClosetStore.getState().setModuleSpan(1, 2)
+    expectValid()
+  })
+
+  it('shrinking the module count through a double keeps slots valid', () => {
+    useClosetStore.setState({ width: 200, moduleCount: 4, modules: filled(4), step: 2 })
+    useClosetStore.getState().setModuleSpan(2, 2)
+    useClosetStore.getState().setModuleCount(3)
+    expectValid()
+  })
+
+  it('changing the layout of a double keeps it double', () => {
+    useClosetStore.setState({ width: 200, moduleCount: 4, modules: filled(4), step: 2 })
+    useClosetStore.getState().setModuleSpan(1, 2)
+    useClosetStore.getState().setModuleLayout(1, 2)
+    expect(useClosetStore.getState().modules[1]).toMatchObject({ span: 2, layoutId: 2 })
+    expectValid()
+  })
+})
+
+describe('double modules — dropped by a diagonal', () => {
+  beforeEach(resetStore)
+
+  it('refills the freed slot when a side diagonal removes a double', () => {
+    useClosetStore.setState({
+      width: 200, moduleCount: 4, step: 2,
+      modules: Array.from({ length: 4 }, (_, i) => ({ slotIndex: i, layoutId: 1, hasDoor: true, span: 1 as const, hasPowerHole: false })),
+    })
+    useClosetStore.getState().setModuleSpan(0, 2)
+    useClosetStore.getState().setDiagonalSide('left')
+    const { modules } = useClosetStore.getState()
+    modules.forEach((m, i) => {
+      const covered = i > 0 && modules[i - 1].span === 2
+      if (!covered) expect(m.layoutId, `slot ${i}`).not.toBeNull()
+    })
+  })
+})

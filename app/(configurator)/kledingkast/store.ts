@@ -179,6 +179,41 @@ function diagParamsFromState(s: {
   }
 }
 
+type SlotGeometryState = Parameters<typeof diagParamsFromState>[0] & { moduleCount: number }
+
+/** Enforce the double-module invariants in one place:
+ *  - a slot covered by the double to its left is empty and single-span;
+ *  - a double never overflows the last slot or chains into another double;
+ *  - with `fillEmpty`, every visible empty slot gets its default layout, so
+ *    un-doubling (or a double being dropped) never leaves a hole in the closet. */
+function normalizeSlots(modules: ModuleSlot[], s: SlotGeometryState, fillEmpty: boolean): ModuleSlot[] {
+  const MODULE_FLOOR_Y = 0.118 // ONDERSTEL_HEIGHT (0.108) + ONDERSTEL_GAP (0.010)
+  const count = modules.length
+  const sideWallM = s.sidePanelThickness === '36mm' ? 0.036 : 0.018
+  const slotW = (s.width / 100 - sideWallM * 2) / count
+  const diagParams = diagParamsFromState(s)
+  const next: ModuleSlot[] = []
+  let covered = false
+  for (let i = 0; i < count; i++) {
+    const m = modules[i]
+    if (covered) {
+      next.push(m.layoutId === null && m.span === 1 ? m : { ...m, layoutId: null, span: 1 })
+      covered = false
+      continue
+    }
+    let out = m
+    if (out.span === 2 && i + 1 >= count) out = { ...out, span: 1 }
+    if (fillEmpty && out.layoutId === null) {
+      const leftH  = Math.max(0, getDiagHeightAt(sideWallM + i * slotW, diagParams) - MODULE_FLOOR_Y - WALL_M)
+      const rightH = Math.max(0, getDiagHeightAt(sideWallM + (i + out.span) * slotW, diagParams) - MODULE_FLOOR_Y - WALL_M)
+      out = { ...out, layoutId: defaultLayoutFor(i, slotW * 100, Math.min(leftH, rightH) * 100, count) }
+    }
+    next.push(out)
+    covered = out.span === 2
+  }
+  return next
+}
+
 const TOP_CABINET_THRESHOLD = 275
 // Side walls always extend 15mm above the interior top panel.
 // This is deducted from the usable interior height so modules fit correctly.
@@ -486,23 +521,7 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
     const s = get()
     const hasEmpty = s.step === 1 && s.modules.some((m) => m.layoutId === null)
     if (hasEmpty) {
-      const widthM = s.width / 100
-      const MODULE_FLOOR_Y = 0.118
-      const sideWallM = s.sidePanelThickness === '36mm' ? 0.036 : 0.018
-      const slotW = (widthM - sideWallM * 2) / s.moduleCount
-      const diagParams = diagParamsFromState(s)
-
-      const modules = s.modules.map((m) => {
-        if (m.layoutId !== null) return m
-        const leftX = sideWallM + m.slotIndex * slotW
-        const rightX = sideWallM + (m.slotIndex + m.span) * slotW
-        const leftH = Math.max(0, getDiagHeightAt(leftX, diagParams) - MODULE_FLOOR_Y - WALL_M)
-        const rightH = Math.max(0, getDiagHeightAt(rightX, diagParams) - MODULE_FLOOR_Y - WALL_M)
-        const effectiveHeightM = Math.min(leftH, rightH)
-        const slotWidthCm = slotW * 100
-        const layoutId = defaultLayoutFor(m.slotIndex, slotWidthCm, effectiveHeightM * 100, s.moduleCount)
-        return { ...m, layoutId }
-      })
+      const modules = normalizeSlots(s.modules, s, true)
       set({ step: 2, selectedSlot: null, lastClickPoint: null, modules })
     } else {
       set((s) => ({ step: Math.min(s.step + 1, 5), selectedSlot: null, lastClickPoint: null }))
@@ -645,7 +664,9 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
     // Slot widths change with module count → previously full-height span=2
     // slots can now intersect the diagonal. Drop those before commit.
     const sNow = get()
-    const modules = resetDiagDoubles(rebuilt, diagParamsFromState(sNow), clamped, sNow.width / 100)
+    const cleaned = resetDiagDoubles(rebuilt, diagParamsFromState(sNow), clamped, sNow.width / 100)
+    // Before the indeling step slots are empty on purpose (nextStep fills them).
+    const modules = normalizeSlots(cleaned, { ...sNow, moduleCount: clamped }, sNow.step >= 2)
     set({ moduleCount: clamped, modules })
   },
 
@@ -660,16 +681,14 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
     })),
 
   setModuleSpan: (slotIndex: number, span: 1 | 2) =>
-    set((s) => ({
-      modules: s.modules.map((m) => {
-        if (m.slotIndex === slotIndex) return { ...m, span }
-        // when doubling: clear the secondary slot's layout
-        if (span === 2 && m.slotIndex === slotIndex + 1) return { ...m, layoutId: null, span: 1 as const }
-        // when doubling: clear any previous double that was covering this slot
-        if (span === 2 && m.slotIndex === slotIndex - 1 && m.span === 2) return { ...m, span: 1 as const }
-        return m
-      }),
-    })),
+    set((s) => {
+      // A slot that is itself covered by a double cannot start one.
+      if (slotIndex > 0 && s.modules[slotIndex - 1]?.span === 2) return s
+      const modules = s.modules.map((m) => (m.slotIndex === slotIndex ? { ...m, span } : m))
+      // normalizeSlots empties the newly covered slot, demotes a neighbouring
+      // double we now overlap, and refills any slot that got freed.
+      return { modules: normalizeSlots(modules, s, true) }
+    }),
 
   toggleModuleDoor: (slotIndex) =>
     set((s) => ({
@@ -831,3 +850,12 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
     set({ modules: newModules })
   },
 }))
+
+// Safety net for every path that can drop a double (diagonal edits, width
+// changes, restored carts): re-establish the slot invariants against the
+// committed state. normalizeSlots is idempotent, so this settles in one pass.
+useClosetStore.subscribe((s, prev) => {
+  if (s.modules === prev.modules && s.step === prev.step) return
+  const next = normalizeSlots(s.modules, s, s.step >= 2)
+  if (next.some((m, i) => m !== s.modules[i])) useClosetStore.setState({ modules: next })
+})

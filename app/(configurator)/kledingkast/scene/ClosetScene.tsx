@@ -226,7 +226,7 @@ export default function ClosetScene() {
       <TopCabinet />
       <OnderstelPlinth />
       {modules
-        .filter((m) => m.layoutId !== null)
+        .filter((m, i) => m.layoutId !== null && !(i > 0 && modules[i - 1].span === 2))
         .map((m) => {
           const layout = getLayoutById(m.layoutId!)
           if (!layout) return null
