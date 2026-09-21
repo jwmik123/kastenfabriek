@@ -127,6 +127,8 @@ export interface ProductListItem {
   singlePrice: boolean;
   /** Samples only: how many swatches a customer may pick. */
   maxSamples: number | null;
+  /** Simple products flagged as a service — nothing to keep in stock. */
+  isService: boolean;
 }
 
 export interface Product {
@@ -160,6 +162,7 @@ const productListProjection = groq`
     count(paxConfig.variants[].priceEur) == 1 ||
     math::min(paxConfig.variants[].priceEur) == math::max(paxConfig.variants[].priceEur),
   "maxSamples": sampleConfig.maxSelections,
+  "isService": productType == "simple" && simpleConfig.isService == true,
   "optionDeltas": simpleConfig.optionGroups[]{ "deltas": values[].priceDeltaEur }
 `;
 

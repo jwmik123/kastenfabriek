@@ -18,6 +18,8 @@ export interface WebshopProduct {
   price: number | null
   /** Free products (samples) show "Gratis" instead of an amount. */
   isFree: boolean
+  /** Services are not stocked, so they get no "Op voorraad" badge. */
+  isService: boolean
   singlePrice: boolean
   createdAt: string
 }
@@ -65,15 +67,17 @@ function ProductCard({ product }: { product: WebshopProduct }) {
             {product.title}
           </span>
         )}
-        <span
-          className={`absolute left-3 top-3 rounded-[7px] px-2.5 py-1.5 text-[11px] font-medium uppercase tracking-[0.04em] ${
-            product.isFree
-              ? 'bg-amber-500 text-[#1f2a20]'
-              : 'border border-[#1f2a20]/12 bg-white text-[#1b211c]'
-          }`}
-        >
-          {product.isFree ? 'Gratis' : 'Op voorraad'}
-        </span>
+        {!product.isService && (
+          <span
+            className={`absolute left-3 top-3 rounded-[7px] px-2.5 py-1.5 text-[11px] font-medium uppercase tracking-[0.04em] ${
+              product.isFree
+                ? 'bg-amber-500 text-[#1f2a20]'
+                : 'border border-[#1f2a20]/12 bg-white text-[#1b211c]'
+            }`}
+          >
+            {product.isFree ? 'Gratis' : 'Op voorraad'}
+          </span>
+        )}
       </Link>
 
       <div className="flex flex-1 flex-col p-4">

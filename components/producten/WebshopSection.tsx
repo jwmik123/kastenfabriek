@@ -23,6 +23,7 @@ export function toWebshopProduct(p: ProductListItem): WebshopProduct {
     category: p.category ?? CATEGORY_LABELS[p.productType] ?? 'Overig',
     price: p.fromPrice,
     isFree: p.productType === 'samples',
+    isService: p.isService,
     singlePrice: p.singlePrice,
     createdAt: p._createdAt,
   }
