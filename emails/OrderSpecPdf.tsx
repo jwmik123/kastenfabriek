@@ -428,7 +428,9 @@ function ProductBlock({
         {total > 1 ? `${index + 1}. ` : ""}
         {c.productName}
       </Text>
-      <Text style={styles.itemSub}>Aantal: {line.quantity}</Text>
+      <Text style={styles.itemSub}>
+        {c.isService ? "Dienst" : `Aantal: ${line.quantity}`}
+      </Text>
       <Text style={styles.sectionHeading}>Specificaties</Text>
       {describeProductLine(c).map((l) => (
         <Text key={l}>{l}</Text>

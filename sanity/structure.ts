@@ -45,6 +45,7 @@ export const structure: StructureResolver = (S) =>
             .title('Commerce')
             .items([
               S.documentTypeListItem('product').title('Producten'),
+              S.documentTypeListItem('productCategory').title('Productcategorieën'),
               S.documentTypeListItem('coupon').title('Kortingscodes'),
             ]),
         ),

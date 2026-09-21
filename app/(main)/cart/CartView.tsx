@@ -7,7 +7,7 @@ import Image from 'next/image'
 import { Trash2, ShoppingBag, ArrowRight, Pencil } from 'lucide-react'
 import type { CartItem, ClosetCartItem, ProductCartItem } from '@/lib/cart/types'
 import { summarizeCloset } from '@/lib/order/closet-spec'
-import { formatProductSize } from '@/lib/order/types'
+import { formatProductOptions, formatProductSize } from '@/lib/order/types'
 import { getCart, removeItem, clearCart } from '@/lib/cart/cart-store'
 import { syncCartItems, removeDbCartItem } from '@/lib/actions/cart'
 import { getDeliveryWindow } from '@/lib/delivery-window'
@@ -331,7 +331,8 @@ function ProductItemCard({
     formatProductSize(cfg),
     cfg.doorSide ? PRODUCT_SIDE_LABELS[cfg.doorSide] : '',
     cfg.materialName ?? '',
-    `${quantity} ${quantity === 1 ? 'stuk' : 'stuks'}`,
+    formatProductOptions(cfg),
+    cfg.isService ? '' : `${quantity} ${quantity === 1 ? 'stuk' : 'stuks'}`,
   ].filter(Boolean)
   const lineTotal = (price.total + price.deliveryCost) * quantity
 
@@ -372,11 +373,13 @@ function ProductItemCard({
         </div>
 
         <div className="text-sm text-gray-500 space-y-1 mb-4">
-          <div className="flex justify-between"><span>Stuksprijs</span><span>{fmt.format(price.unitPrice)}</span></div>
+          <div className="flex justify-between"><span>{cfg.isService ? 'Prijs' : 'Stuksprijs'}</span><span>{fmt.format(price.unitPrice)}</span></div>
           {price.materialSurcharge > 0 && (
             <div className="flex justify-between"><span>Materiaal-toeslag</span><span>{fmt.format(price.materialSurcharge)}</span></div>
           )}
-          <div className="flex justify-between"><span>Bezorging</span><span>{fmt.format(price.deliveryCost)}</span></div>
+          {!cfg.isService && (
+            <div className="flex justify-between"><span>Bezorging</span><span>{fmt.format(price.deliveryCost)}</span></div>
+          )}
         </div>
 
         <div className="flex justify-end">

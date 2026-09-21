@@ -98,17 +98,27 @@ export function formatProductSize(c: ProductConfigSnapshot): string {
 }
 
 /**
- * One-line summary under a product's name: its size and material, whichever it
- * has. A simple product has neither and yields an empty string.
+ * One-line summary under a product's name: its size, material and options,
+ * whichever it has. A simple product without options yields an empty string.
  */
 export function summarizeProductLine(c: ProductConfigSnapshot): string {
-  return [formatProductSize(c), c.materialName].filter(Boolean).join(" · ");
+  return [formatProductSize(c), c.materialName, formatProductOptions(c)]
+    .filter(Boolean)
+    .join(" · ");
+}
+
+/** A simple product's choices as one line, e.g. "Zwart · 120 cm". */
+export function formatProductOptions(c: ProductConfigSnapshot): string {
+  return (c.selectedOptions ?? []).map((o) => o.value).join(" · ");
 }
 
 /** The spec lines for a non-configurator product (PAX doors and friends). */
 export function describeProductLine(c: ProductConfigSnapshot): string[] {
   if (isSimpleProductLine(c)) {
-    return c.sku ? [`Artikelnummer: ${c.sku}`] : [];
+    return [
+      ...(c.selectedOptions ?? []).map((o) => `${o.group}: ${o.value}`),
+      ...(c.sku ? [`Artikelnummer: ${c.sku}`] : []),
+    ];
   }
   const isAfwerk = (c.doorType ?? "deuren") === "afwerkpaneel";
   return [

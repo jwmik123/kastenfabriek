@@ -4,7 +4,7 @@ import { db } from "@/db";
 import { cartItem } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { getCurrentUser } from "./auth";
-import { sameProductLine } from "@/lib/cart/merge";
+import { mergedQuantity, sameProductLine } from "@/lib/cart/merge";
 import type {
   CartItem,
   ClosetCartItem,
@@ -145,7 +145,7 @@ export async function addProductCartItem(incoming: ProductCartItem): Promise<voi
     await db
       .update(cartItem)
       .set({
-        quantity: match.quantity + incoming.quantity,
+        quantity: mergedQuantity(match.quantity, incoming),
         updatedAt: new Date(),
       })
       .where(eq(cartItem.id, match.id));

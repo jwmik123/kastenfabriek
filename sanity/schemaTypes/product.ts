@@ -22,6 +22,25 @@ const MATERIAL_OPTIONS: { title: string; value: string }[] = [
   { title: "Steengroen", value: "steengroen" },
 ];
 
+/** A simple product flagged as a service: no quantity, no delivery. */
+const isServiceDoc = (document: unknown) => {
+  const d = document as { productType?: string; simpleConfig?: { isService?: boolean } } | undefined;
+  return d?.productType === "simple" && Boolean(d.simpleConfig?.isService);
+};
+
+// Nested config objects are validated even when hidden (other productType),
+// so required-checks inside them must only fire for their own productType.
+const requiredFor =
+  (productType: string, message: string) =>
+  (value: unknown, context: { document?: unknown }) => {
+    const current = (context.document as { productType?: string } | undefined)
+      ?.productType;
+    if (current !== productType) return true;
+    const empty =
+      value === undefined || value === null || (Array.isArray(value) && value.length === 0);
+    return empty ? message : true;
+  };
+
 const paxVariant = defineType({
   name: "paxVariant",
   title: "Variant",
@@ -161,9 +180,99 @@ const sampleConfig = defineType({
       initialValue: 3,
       description:
         "Maximum aantal materialen dat een klant gratis kan aanvragen.",
-      validation: (Rule) => Rule.required().integer().min(1).max(10),
+      validation: (Rule) =>
+        Rule.integer()
+          .min(1)
+          .max(10)
+          .custom(requiredFor("samples", "Max aantal stalen is vereist.")),
     }),
   ],
+});
+
+const simpleOptionValue = defineType({
+  name: "simpleOptionValue",
+  title: "Keuze",
+  type: "object",
+  fields: [
+    defineField({
+      name: "label",
+      title: "Naam",
+      type: "string",
+      description: "Wat de klant ziet, bv. \"Zwart\" of \"120 cm\".",
+      validation: (Rule) => Rule.required(),
+    }),
+    defineField({
+      name: "priceDeltaEur",
+      title: "Meerprijs (\u20ac)",
+      type: "number",
+      description:
+        "Komt bovenop de basisprijs. Leeg laten = zelfde prijs. Negatief mag, voor een goedkopere uitvoering.",
+    }),
+    defineField({
+      name: "colorHex",
+      title: "Kleurstaal (hex)",
+      type: "string",
+      description: "Optioneel, bv. #1f2a20. Toont een rondje in deze kleur naast de naam.",
+      validation: (Rule) =>
+        Rule.regex(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, { name: "hex-kleur" }),
+    }),
+    defineField({
+      name: "image",
+      title: "Foto",
+      type: "image",
+      options: { hotspot: true },
+      description: "Optioneel. Wordt de hoofdfoto zodra de klant deze keuze maakt.",
+    }),
+  ],
+  preview: {
+    select: { title: "label", delta: "priceDeltaEur", media: "image" },
+    prepare({ title, delta, media }) {
+      return {
+        title,
+        subtitle: delta ? `${delta > 0 ? "+" : ""}\u20ac${delta}` : undefined,
+        media,
+      };
+    },
+  },
+});
+
+const simpleOptionGroup = defineType({
+  name: "simpleOptionGroup",
+  title: "Optie",
+  type: "object",
+  fields: [
+    defineField({
+      name: "name",
+      title: "Naam",
+      type: "string",
+      description: "Bv. \"Kleur\" of \"Maat\".",
+      validation: (Rule) => Rule.required(),
+    }),
+    defineField({
+      name: "values",
+      title: "Keuzes",
+      type: "array",
+      of: [{ type: "simpleOptionValue" }],
+      description: "De eerste keuze staat standaard geselecteerd.",
+      validation: (Rule) =>
+        Rule.required()
+          .min(1)
+          .custom((values) => {
+            const labels = ((values ?? []) as { label?: string }[]).map((v) =>
+              v.label?.trim().toLowerCase(),
+            );
+            const dup = labels.filter((l, i) => l && labels.indexOf(l) !== i);
+            return dup.length ? `Dubbele keuze(s): ${[...new Set(dup)].join(", ")}` : true;
+          }),
+    }),
+  ],
+  preview: {
+    select: { title: "name", values: "values" },
+    prepare({ title, values }) {
+      const labels = ((values ?? []) as { label?: string }[]).map((v) => v.label);
+      return { title, subtitle: labels.filter(Boolean).join(", ") };
+    },
+  },
 });
 
 const simpleConfig = defineType({
@@ -171,14 +280,23 @@ const simpleConfig = defineType({
   title: "Product Configuratie",
   type: "object",
   description:
-    "Voor losse producten zonder configurator: een lade, een hanger, een deurstop.",
+    "Voor losse producten en diensten zonder configurator: een lade, een hanger, montage. Optioneel met keuzes zoals kleur of maat.",
   fields: [
+    defineField({
+      name: "isService",
+      title: "Dienst",
+      type: "boolean",
+      initialValue: false,
+      description:
+        "Aan = een dienst (bv. montage of inmeten): geen aantal-teller en geen bezorgkosten. De klant bestelt hem één keer.",
+    }),
     defineField({
       name: "priceEur",
       title: "Prijs (\u20ac)",
       type: "number",
       description: "Stuksprijs, exclusief bezorgkosten.",
-      validation: (Rule) => Rule.required().min(0),
+      validation: (Rule) =>
+        Rule.min(0).custom(requiredFor("simple", "Prijs is vereist.")),
     }),
     defineField({
       name: "sku",
@@ -192,7 +310,24 @@ const simpleConfig = defineType({
       type: "number",
       initialValue: 10,
       description: "Bovengrens van de aantal-teller. Leeg laten = 10.",
+      hidden: ({ parent }) => Boolean((parent as { isService?: boolean } | undefined)?.isService),
       validation: (Rule) => Rule.integer().min(1),
+    }),
+    defineField({
+      name: "optionGroups",
+      title: "Opties",
+      type: "array",
+      of: [{ type: "simpleOptionGroup" }],
+      description:
+        "Keuzes die de klant maakt, zoals kleur of maat. Leeg laten = geen keuzes. Per keuze kan een meerprijs en een eigen foto.",
+      validation: (Rule) =>
+        Rule.custom((groups) => {
+          const names = ((groups ?? []) as { name?: string }[]).map((g) =>
+            g.name?.trim().toLowerCase(),
+          );
+          const dup = names.filter((n, i) => n && names.indexOf(n) !== i);
+          return dup.length ? `Dubbele optie(s): ${[...new Set(dup)].join(", ")}` : true;
+        }),
     }),
   ],
 });
@@ -209,7 +344,10 @@ const paxConfig = defineType({
       of: [{ type: "paxVariant" }],
       description:
         "Prijsmatrix voor type 'Deuren' (standaard). Eén entry per (breedte × hoogte) combinatie. De beschikbare breedtes/hoogtes worden hieruit afgeleid — voeg alleen combinaties toe die echt bestaan.",
-      validation: (Rule) => Rule.required().min(1),
+      validation: (Rule) =>
+        Rule.custom(
+          requiredFor("pax-doors", "Minimaal één variant in de prijsmatrix is vereist."),
+        ),
     }),
     defineField({
       name: "hoekVariants",
@@ -370,6 +508,31 @@ const paxConfig = defineType({
   ],
 });
 
+export const productCategory = defineType({
+  name: "productCategory",
+  title: "Productcategorie",
+  type: "document",
+  description:
+    "Groepering in de webshop, bv. \"Diensten\" of \"Accessoires\". Een product zonder categorie valt terug op zijn producttype.",
+  fields: [
+    defineField({
+      name: "title",
+      title: "Naam",
+      type: "string",
+      validation: (Rule) => Rule.required(),
+    }),
+    defineField({
+      name: "order",
+      title: "Volgorde",
+      type: "number",
+      description: "Lager = eerder in het filter. Leeg = achteraan.",
+    }),
+  ],
+  orderings: [
+    { title: "Volgorde", name: "orderAsc", by: [{ field: "order", direction: "asc" }] },
+  ],
+});
+
 export const product = defineType({
   name: "product",
   title: "Product",
@@ -396,11 +559,19 @@ export const product = defineType({
         list: [
           { title: "PAX Deuren", value: "pax-doors" },
           { title: "Materiaalstalen", value: "samples" },
-          { title: "Los product", value: "simple" },
+          { title: "Los product / dienst", value: "simple" },
         ],
         layout: "radio",
       },
       validation: (Rule) => Rule.required(),
+    }),
+    defineField({
+      name: "category",
+      title: "Categorie",
+      type: "reference",
+      to: [{ type: "productCategory" }],
+      description:
+        "Waar het product in de webshop onder valt. Leeg laten = standaard bij het producttype (bv. \"Losse producten\"). Voor een dienst: maak een categorie \"Diensten\" en kies producttype \"Los product / dienst\".",
     }),
     defineField({
       name: "isActive",
@@ -456,13 +627,17 @@ export const product = defineType({
       name: "deliveryFee",
       title: "Bezorgkosten (€)",
       type: "number",
-      hidden: ({ document }) => document?.productType === "samples",
-      description: "Niet van toepassing op materiaalstalen (altijd gratis).",
+      hidden: ({ document }) => document?.productType === "samples" || isServiceDoc(document),
+      description: "Niet van toepassing op materiaalstalen (altijd gratis) en diensten.",
       validation: (Rule) =>
         Rule.min(0).custom((value, context) => {
           const productType = (context.document as { productType?: string } | undefined)
             ?.productType;
-          if (productType !== "samples" && (value === undefined || value === null)) {
+          if (
+            productType !== "samples" &&
+            !isServiceDoc(context.document) &&
+            (value === undefined || value === null)
+          ) {
             return "Bezorgkosten zijn vereist.";
           }
           return true;
@@ -529,6 +704,9 @@ export const productSchemaTypes = [
   paxVerlengdePrice,
   paxConfig,
   sampleConfig,
+  simpleOptionValue,
+  simpleOptionGroup,
   simpleConfig,
+  productCategory,
   product,
 ];

@@ -401,10 +401,12 @@ function ProductLine({
             </tr>
           );
         })}
-        <tr>
-          <td style={detailLabel}><Text style={label}>Aantal</Text></td>
-          <td><Text style={value}>{line.quantity}</Text></td>
-        </tr>
+        {!c.isService && (
+          <tr>
+            <td style={detailLabel}><Text style={label}>Aantal</Text></td>
+            <td><Text style={value}>{line.quantity}</Text></td>
+          </tr>
+        )}
       </table>
       <Section style={priceSection}>
         <Heading as="h4" style={h4}>Prijsopbouw</Heading>

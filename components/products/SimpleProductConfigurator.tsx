@@ -6,7 +6,11 @@ import { PortableText } from '@portabletext/react'
 
 import { Button } from '@/components/ui/button'
 import type { Product } from '@/sanity/lib/products'
-import { calcSimpleProductPrice } from '@/lib/products/pricing'
+import {
+  calcSimpleProductPrice,
+  resolveSimpleOptions,
+  type SimpleOptionSelection,
+} from '@/lib/products/pricing'
 import { urlFor } from '@/sanity/lib/image'
 import {
   addItem as addLocalCartItem,
@@ -30,8 +34,8 @@ function formatEuro(amount: number) {
 const DEFAULT_MAX_QTY = 10
 
 /**
- * A plain webshop article — a drawer, a hanger, a doorstop. No options to pick:
- * photos, a description, one price and a quantity.
+ * A plain webshop article or service — a drawer, a hanger, montage. Photos, a
+ * description, optional choices (kleur, maat, …) and a quantity.
  */
 export default function SimpleProductConfigurator({
   product,
@@ -47,7 +51,9 @@ export default function SimpleProductConfigurator({
   const [isAdding, startAddTransition] = useTransition()
 
   const cfg = product.simpleConfig
-  const maxQty = cfg?.maxQuantity ?? DEFAULT_MAX_QTY
+  const isService = cfg?.isService ?? false
+  // A service is ordered once: no stepper, always one.
+  const maxQty = isService ? 1 : (cfg?.maxQuantity ?? DEFAULT_MAX_QTY)
 
   // Anon edit: the line only exists in localStorage, so look it up there.
   const localSeed = useMemo(() => {
@@ -58,11 +64,36 @@ export default function SimpleProductConfigurator({
   }, [editItemId, editItem])
   const seed = editItem ?? localSeed
 
-  const [qty, setQty] = useState<number>(seed?.quantity ?? 1)
+  const [qty, setQty] = useState<number>(isService ? 1 : (seed?.quantity ?? 1))
   const activeEditId = seed?.id ?? null
+
+  // Snapshots store names, not keys (they must read well on an order years
+  // later), so an edited line finds its picks back by group name and label.
+  const [selection, setSelection] = useState<SimpleOptionSelection>(() => {
+    const picked: SimpleOptionSelection = {}
+    for (const o of seed?.configuration.selectedOptions ?? []) {
+      const group = cfg?.optionGroups?.find((g) => g.name === o.group)
+      const value = group?.values?.find((v) => v.label === o.value)
+      if (group && value) picked[group._key] = value._key
+    }
+    return picked
+  })
+  const resolved = useMemo(
+    () => (cfg ? resolveSimpleOptions(cfg, selection) : []),
+    [cfg, selection],
+  )
+  const optionImage = resolved.find((o) => o.value.image)?.value
 
   const images = useMemo(
     () => [
+      ...(optionImage?.image
+        ? [
+            {
+              url: urlFor(optionImage.image).width(1600).height(1600).url(),
+              alt: `${product.title} — ${optionImage.label}`,
+            },
+          ]
+        : []),
       ...(product.heroImage
         ? [
             {
@@ -76,12 +107,13 @@ export default function SimpleProductConfigurator({
         alt: `${product.title} — afbeelding ${i + 1}`,
       })),
     ],
-    [product],
+    [product, optionImage],
   )
 
   if (!cfg) return null
 
-  const unitPrice = cfg.priceEur
+  const priceSnapshot = calcSimpleProductPrice(product, selection)
+  const unitPrice = priceSnapshot.unitPrice
   const lineTotal = unitPrice * qty
 
   const handleAddToCart = () => {
@@ -105,8 +137,12 @@ export default function SimpleProductConfigurator({
         productName: product.title,
         imageUrl: images[0]?.url,
         sku: cfg.sku,
+        isService: isService || undefined,
+        selectedOptions: resolved.length
+          ? resolved.map((o) => ({ group: o.group.name, value: o.value.label }))
+          : undefined,
       },
-      priceSnapshot: calcSimpleProductPrice(product),
+      priceSnapshot,
       quantity: qty,
     }
 
@@ -150,6 +186,51 @@ export default function SimpleProductConfigurator({
         )}
 
         <div className="space-y-8">
+          {resolved.map(({ group, value: selected }) => (
+            <div key={group._key}>
+              <h3 className="text-sm font-medium mb-2">
+                {group.name}
+                <span className="font-normal text-muted-foreground">: {selected.label}</span>
+              </h3>
+              <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={group.name}>
+                {group.values.map((v) => {
+                  const active = v._key === selected._key
+                  const delta = v.priceDeltaEur ?? 0
+                  return (
+                    <button
+                      key={v._key}
+                      type="button"
+                      role="radio"
+                      aria-checked={active}
+                      onClick={() => setSelection((s) => ({ ...s, [group._key]: v._key }))}
+                      className={`inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm transition-colors ${
+                        active
+                          ? 'border-primary bg-primary/5 text-gray-900'
+                          : 'border-gray-300 text-gray-700 hover:border-gray-500'
+                      }`}
+                    >
+                      {v.colorHex && (
+                        <span
+                          aria-hidden="true"
+                          className="size-4 rounded-full border border-black/15"
+                          style={{ backgroundColor: v.colorHex }}
+                        />
+                      )}
+                      {v.label}
+                      {delta !== 0 && (
+                        <span className="text-muted-foreground">
+                          {delta > 0 ? '+' : '−'}
+                          {formatEuro(Math.abs(delta))}
+                        </span>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          ))}
+
+          {!isService && (
           <div>
             <h3 className="text-sm font-medium mb-2">Aantal</h3>
             <div className="inline-flex items-center gap-2">
@@ -176,6 +257,7 @@ export default function SimpleProductConfigurator({
               </Button>
             </div>
           </div>
+          )}
 
           <div className="border-t pt-6 flex items-center justify-between gap-4">
             <div>

@@ -82,12 +82,33 @@ export interface SampleConfig {
   maxSelections: number;
 }
 
-/** A plain webshop article — no configurator, one price, pick a quantity. */
+export interface SimpleOptionValue {
+  _key: string;
+  label: string;
+  /** Added to the base price; may be negative. Absent = same price. */
+  priceDeltaEur?: number;
+  /** Swatch colour shown next to the label, e.g. "#1f2a20". */
+  colorHex?: string;
+  /** Replaces the hero image while this value is selected. */
+  image?: SanityImageRef;
+}
+
+/** One choice a customer makes on a simple product, e.g. "Kleur" or "Maat". */
+export interface SimpleOptionGroup {
+  _key: string;
+  name: string;
+  values: SimpleOptionValue[];
+}
+
+/** A plain webshop article or service — no configurator, a base price, optional choices. */
 export interface SimpleConfig {
+  /** A service (montage, inmeten): ordered once, no delivery fee. */
+  isService?: boolean;
   priceEur: number;
   sku?: string;
   /** Ceiling for the quantity stepper. Absent = 10. */
   maxQuantity?: number;
+  optionGroups?: SimpleOptionGroup[];
 }
 
 export interface ProductListItem {
@@ -96,6 +117,8 @@ export interface ProductListItem {
   title: string;
   slug: string;
   productType: ProductType;
+  /** Title of the Sanity productCategory, when one is set. */
+  category: string | null;
   shortDescription: string;
   heroImage?: SanityImageRef;
   /** Lowest variant price for pax-doors; null for samples (free). */
@@ -131,11 +154,13 @@ const productListProjection = groq`
   productType,
   shortDescription,
   heroImage,
+  "category": category->title,
   "fromPrice": coalesce(simpleConfig.priceEur, math::min(paxConfig.variants[].priceEur)),
   "singlePrice": defined(simpleConfig.priceEur) ||
     count(paxConfig.variants[].priceEur) == 1 ||
     math::min(paxConfig.variants[].priceEur) == math::max(paxConfig.variants[].priceEur),
-  "maxSamples": sampleConfig.maxSelections
+  "maxSamples": sampleConfig.maxSelections,
+  "optionDeltas": simpleConfig.optionGroups[]{ "deltas": values[].priceDeltaEur }
 `;
 
 const productProjection = groq`
@@ -167,8 +192,22 @@ export const productBySlugQuery = groq`
   }
 `;
 
+type ProductListRow = ProductListItem & {
+  optionDeltas: { deltas: (number | null)[] | null }[] | null;
+};
+
 export async function getActiveProducts(): Promise<ProductListItem[]> {
-  return client.fetch<ProductListItem[]>(activeProductsQuery);
+  const rows = await client.fetch<ProductListRow[]>(activeProductsQuery);
+  // Simple products with priced options start at the cheapest pick per option,
+  // and are only a single price when no option moves it.
+  return rows.map(({ optionDeltas, ...p }) => {
+    if (p.productType !== "simple" || p.fromPrice == null || !optionDeltas?.length) return p;
+    const perGroup = optionDeltas.map((g) => (g.deltas ?? []).map((d) => d ?? 0));
+    const fromPrice =
+      p.fromPrice + perGroup.reduce((sum, ds) => sum + (ds.length ? Math.min(...ds) : 0), 0);
+    const singlePrice = perGroup.every((ds) => ds.every((d) => d === ds[0]));
+    return { ...p, fromPrice, singlePrice };
+  });
 }
 
 export async function getProductBySlug(slug: string): Promise<Product | null> {

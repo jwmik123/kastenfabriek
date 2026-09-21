@@ -160,3 +160,45 @@ describe('mergeOrAddProduct', () => {
     expect(next[1].quantity).toBe(2)
   })
 })
+
+describe('mergeOrAddProduct — simple product options', () => {
+  const simple = (id: string, options: { group: string; value: string }[]) =>
+    productItem(id, {
+      sanityProductId: 'prod-lade',
+      productType: 'simple',
+      widthCm: undefined,
+      heightCm: undefined,
+      materialId: undefined,
+      selectedOptions: options,
+    })
+
+  it('merges lines with the same options', () => {
+    const items: CartItem[] = [simple('a', [{ group: 'Kleur', value: 'Zwart' }])]
+    const next = mergeOrAddProduct(items, simple('b', [{ group: 'Kleur', value: 'Zwart' }]))
+    expect(next).toHaveLength(1)
+    expect((next[0] as ProductCartItem).quantity).toBe(2)
+  })
+
+  it('keeps lines with different options apart', () => {
+    const items: CartItem[] = [simple('a', [{ group: 'Kleur', value: 'Zwart' }])]
+    const next = mergeOrAddProduct(items, simple('b', [{ group: 'Kleur', value: 'Wit' }]))
+    expect(next).toHaveLength(2)
+  })
+})
+
+describe('mergeOrAddProduct — service', () => {
+  it('keeps a re-added service at quantity one', () => {
+    const service = (id: string) =>
+      productItem(id, {
+        sanityProductId: 'prod-montage',
+        productType: 'simple',
+        widthCm: undefined,
+        heightCm: undefined,
+        materialId: undefined,
+        isService: true,
+      })
+    const next = mergeOrAddProduct([service('a')], service('b'))
+    expect(next).toHaveLength(1)
+    expect((next[0] as ProductCartItem).quantity).toBe(1)
+  })
+})

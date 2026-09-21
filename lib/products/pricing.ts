@@ -1,4 +1,10 @@
-import type { PaxDoorType, Product } from '@/sanity/lib/products'
+import type {
+  PaxDoorType,
+  Product,
+  SimpleConfig,
+  SimpleOptionGroup,
+  SimpleOptionValue,
+} from '@/sanity/lib/products'
 
 export interface ProductPriceSnapshot {
   calculatedAt: string
@@ -171,21 +177,52 @@ export function calcProductPrice({
   }
 }
 
+/** Selected value `_key` per option group `_key`. */
+export type SimpleOptionSelection = Record<string, string>
+
+export interface ResolvedSimpleOption {
+  group: SimpleOptionGroup
+  value: SimpleOptionValue
+}
+
 /**
- * A simple product's price: one number from Sanity, no material surcharge and
- * no size to look up. Delivery stays a per-line cost, same as PAX doors.
+ * The value picked for every option group. A group without a (valid) pick falls
+ * back to its first value, so a product with options always resolves in full.
  */
-export function calcSimpleProductPrice(product: Product): ProductPriceSnapshot {
+export function resolveSimpleOptions(
+  cfg: SimpleConfig,
+  selection: SimpleOptionSelection = {},
+): ResolvedSimpleOption[] {
+  return (cfg.optionGroups ?? [])
+    .filter((g) => g.values?.length)
+    .map((group) => ({
+      group,
+      value: group.values.find((v) => v._key === selection[group._key]) ?? group.values[0],
+    }))
+}
+
+/**
+ * A simple product's price: the base price from Sanity plus the surcharge of
+ * each picked option. No material surcharge and no size to look up. Delivery
+ * stays a per-line cost, same as PAX doors — except for a service, which has none.
+ */
+export function calcSimpleProductPrice(
+  product: Product,
+  selection: SimpleOptionSelection = {},
+): ProductPriceSnapshot {
   const cfg = product.simpleConfig
   if (!cfg) {
     throw new Error(`Product ${product.slug} has no simpleConfig`)
   }
+  const unitPrice =
+    cfg.priceEur +
+    resolveSimpleOptions(cfg, selection).reduce((sum, o) => sum + (o.value.priceDeltaEur ?? 0), 0)
   return {
     calculatedAt: new Date().toISOString(),
     currency: 'EUR',
-    unitPrice: cfg.priceEur,
+    unitPrice,
     materialSurcharge: 0,
-    deliveryCost: product.deliveryFee ?? 0,
-    total: cfg.priceEur,
+    deliveryCost: cfg.isService ? 0 : (product.deliveryFee ?? 0),
+    total: unitPrice,
   }
 }

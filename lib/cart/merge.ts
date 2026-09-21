@@ -4,6 +4,10 @@ import type {
   ProductConfigSnapshot,
 } from "./types";
 
+function optionsKey(c: ProductConfigSnapshot): string {
+  return (c.selectedOptions ?? []).map((o) => `${o.group}=${o.value}`).join('|');
+}
+
 /**
  * Would these two product lines be produced identically? Compares every option
  * a customer can pick, so a zijpaneel never merges into a door line and a left
@@ -22,15 +26,24 @@ export function sameProductLine(
     (a.isVerlengd ?? false) === (b.isVerlengd ?? false) &&
     a.doorSide === b.doorSide &&
     a.depthCm === b.depthCm &&
-    a.materialId === b.materialId
+    a.materialId === b.materialId &&
+    optionsKey(a) === optionsKey(b)
   );
+}
+
+/**
+ * Quantity after adding `incoming` to a matching line. A service is ordered
+ * once, so adding it again leaves it at one.
+ */
+export function mergedQuantity(existing: number, incoming: ProductCartItem): number {
+  return incoming.configuration.isService ? 1 : existing + incoming.quantity;
 }
 
 /**
  * Merge a product item into a cart, or append it.
  *
  * Identity for merging: every configured option a customer can pick — product,
- * type, size, material, hinge side and zijpaneel depth. Two lines only merge
+ * type, size, material, hinge side, zijpaneel depth and simple-product options. Two lines only merge
  * when they would be produced identically. On match, the existing line's
  * quantity is incremented by the incoming item's quantity. On no match, the
  * item is appended.
@@ -55,7 +68,7 @@ export function mergeOrAddProduct(
   const existing = next[idx] as ProductCartItem;
   next[idx] = {
     ...existing,
-    quantity: existing.quantity + incoming.quantity,
+    quantity: mergedQuantity(existing.quantity, incoming),
   };
   return next;
 }

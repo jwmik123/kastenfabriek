@@ -154,6 +154,10 @@ export interface ProductConfigSnapshot {
   imageUrl?: string;
   /** Simple products: the article number from Sanity, for the order spec. */
   sku?: string;
+  /** Simple products: a service is ordered once and never delivered. */
+  isService?: boolean;
+  /** Simple products: the choices made, e.g. Kleur → Zwart, in Sanity order. */
+  selectedOptions?: { group: string; value: string }[];
 
   // PAX door type (issue: pax extra options). Absent on old cart entries → treat as 'deuren'.
   doorType?: "deuren" | "hoekdeuren" | "afwerkpaneel";

@@ -6,7 +6,7 @@ import type { ProductListItem, ProductType } from '@/sanity/lib/products'
 
 import WebshopGrid, { type WebshopProduct } from './WebshopGrid'
 
-/** Category label per product type — the only grouping Sanity currently stores. */
+/** Fallback category per product type, for products without a Sanity productCategory. */
 const CATEGORY_LABELS: Record<ProductType, string> = {
   'pax-doors': 'Deuren & fronten',
   samples: 'Stalen',
@@ -20,7 +20,7 @@ export function toWebshopProduct(p: ProductListItem): WebshopProduct {
     slug: p.slug,
     shortDescription: p.shortDescription,
     imageUrl: p.heroImage ? urlFor(p.heroImage).width(800).height(800).url() : null,
-    category: CATEGORY_LABELS[p.productType] ?? 'Overig',
+    category: p.category ?? CATEGORY_LABELS[p.productType] ?? 'Overig',
     price: p.fromPrice,
     isFree: p.productType === 'samples',
     singlePrice: p.singlePrice,
