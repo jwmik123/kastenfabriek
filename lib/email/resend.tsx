@@ -13,6 +13,11 @@ import SampleRequestConfirmation, {
 import SampleRequestAdminNotification, {
   type SampleRequestAdminNotificationProps,
 } from "@/emails/SampleRequestAdminNotification";
+import ShowroomAppointmentConfirmation, {
+  type ShowroomAppointmentProps,
+} from "@/emails/ShowroomAppointmentConfirmation";
+import ShowroomAppointmentAdminNotification from "@/emails/ShowroomAppointmentAdminNotification";
+import { formatSlotNl } from "@/lib/showroom/format";
 
 export const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -114,6 +119,39 @@ export async function sendSampleRequestEmails(props: {
       from: SAMPLE_FROM_ADDRESS,
       to: ADMIN_ADDRESS,
       subject: `Nieuwe stalenaanvraag — ${props.admin.name}`,
+      html: adminHtml,
+    }),
+  ]);
+}
+
+/**
+ * Showroom booking mails: the confirmation to the visitor, the notification
+ * to the showroom inbox (info@kasten-fabriek.nl unless ADMIN_EMAIL says
+ * otherwise). Replies to either land at the contact address.
+ */
+export async function sendShowroomAppointmentEmails(props: {
+  customerEmail: string;
+  appointment: ShowroomAppointmentProps;
+}): Promise<void> {
+  const when = formatSlotNl(props.appointment.date, props.appointment.start, props.appointment.end);
+  const [customerHtml, adminHtml] = await Promise.all([
+    render(<ShowroomAppointmentConfirmation {...props.appointment} />),
+    render(<ShowroomAppointmentAdminNotification {...props.appointment} />),
+  ]);
+
+  await Promise.all([
+    resend.emails.send({
+      from: SAMPLE_FROM_ADDRESS,
+      to: props.customerEmail,
+      replyTo: CONTACT_EMAIL,
+      subject: `Je showroombezoek op ${when} — Kastenfabriek`,
+      html: customerHtml,
+    }),
+    resend.emails.send({
+      from: SAMPLE_FROM_ADDRESS,
+      to: ADMIN_ADDRESS,
+      replyTo: props.customerEmail,
+      subject: `Showroomafspraak — ${props.appointment.name}, ${when}`,
       html: adminHtml,
     }),
   ]);

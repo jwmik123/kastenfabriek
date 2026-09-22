@@ -24,32 +24,14 @@ export function formatShowroomAddress(
   return [street, place].filter(Boolean).join(", ");
 }
 
-const MAIL_SUBJECT = "Showroombezoek plannen";
-
-// V1: prefilled email. V2 replaces this with a calendar where slots can be booked.
-const MAIL_BODY = `Beste Kasten Fabriek,
-
-Graag kom ik langs in de showroom om de materialen en modules te bekijken.
-
-Mijn voorkeur (de showroom is alleen op zaterdag geopend):
-Zaterdag: [datum]
-Tijd: [tijd]
-
-Naam: [naam]
-Telefoonnummer: [telefoonnummer]
-
-Met vriendelijke groet,
-`;
+/** Where the homepage calendar lives; the CTA sends the customer there. */
+export const SHOWROOM_BOOKING_HREF = "/#showroom";
 
 /**
  * Invitation to see materials and modules in the showroom before ordering —
  * shown under the items in the cart and wishlist.
  */
 export default function ShowroomCta({ email, addressLine }: ShowroomCtaProps) {
-  const href = `mailto:${email}?subject=${encodeURIComponent(
-    MAIL_SUBJECT,
-  )}&body=${encodeURIComponent(MAIL_BODY)}`;
-
   const mapsHref = addressLine
     ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
         addressLine,
@@ -59,7 +41,7 @@ export default function ShowroomCta({ email, addressLine }: ShowroomCtaProps) {
   return (
     <div className="bg-primary rounded-2xl shadow-sm mt-8 font-poppins p-8 md:p-10">
       <p className="text-amber-400 text-xs uppercase tracking-widest font-semibold mb-3">
-        Showroom · elke zaterdag geopend
+        Showroom · op zaterdag geopend
       </p>
       <h2 className="text-2xl md:text-3xl font-bold text-white">
         Liever eerst zien en{" "}
@@ -67,7 +49,12 @@ export default function ShowroomCta({ email, addressLine }: ShowroomCtaProps) {
       </h2>
       <p className="text-white/70 mt-3 max-w-xl">
         Nog niet klaar om te bestellen? Kom langs in onze showroom en bekijk de
-        materialen en modules in het echt.
+        materialen en modules in het echt. Kies online een dag en tijdslot; heb
+        je vragen, mail dan naar{" "}
+        <a href={`mailto:${email}`} className="underline underline-offset-4 decoration-white/30 hover:text-white">
+          {email}
+        </a>
+        .
       </p>
       {addressLine && (
         <a
@@ -82,7 +69,7 @@ export default function ShowroomCta({ email, addressLine }: ShowroomCtaProps) {
       )}
       <div>
         <a
-          href={href}
+          href={SHOWROOM_BOOKING_HREF}
           className="inline-flex items-center gap-2 mt-6 px-6 py-3 text-sm font-semibold text-white bg-amber-500 rounded-md hover:opacity-80 transition-opacity duration-150 shadow-sm"
         >
           Plan een showroombezoek

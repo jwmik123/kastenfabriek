@@ -14,6 +14,7 @@ import { material } from "./material";
 import { testimonial } from "./testimonial";
 import { hotspotSection } from "./hotspotSection";
 import { homeProductOptions } from "./homeProductOptions";
+import { showroomAvailability } from "./showroomAvailability";
 import { coupon } from "./coupon";
 import { productSchemaTypes } from "./product";
 import { kennisbankSchemaTypes } from "./kennisbank";
@@ -28,6 +29,7 @@ export const schema: { types: SchemaTypeDefinition[] } = {
     testimonial,
     hotspotSection,
     homeProductOptions,
+    showroomAvailability,
     ...kennisbankSchemaTypes,
     // Configurator Pricing
     configuratorServices,

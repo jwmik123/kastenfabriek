@@ -8,6 +8,7 @@ import HeroBackgroundVideo from "@/components/HeroBackgroundVideo";
 // import ModuleHighlight from "@/components/ModuleHighlight";
 import TestimonialSection from "@/components/TestimonialSection";
 import WerkwijzeSection from "@/components/WerkwijzeSection";
+import ShowroomBooking from "@/components/showroom/ShowroomBooking";
 import MaterialsSection from "@/components/MaterialsSection";
 import ModulesScrollSection from "@/components/ModulesScrollSection";
 import HotspotSection from "@/components/HotspotSection";
@@ -150,6 +151,9 @@ export default async function Home() {
     <MaterialsSection maxSamples={maxSamples} />
 
     <WerkwijzeSection />
+
+    {/* Showroomkalender — alleen zichtbaar als boeken aanstaat in Sanity */}
+    <ShowroomBooking />
 
     {/* <SloganSection
       text="Elke millimeter is op maat gemaakt — van de

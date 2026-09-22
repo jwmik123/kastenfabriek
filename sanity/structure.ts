@@ -20,6 +20,7 @@ export const structure: StructureResolver = (S) =>
               S.divider(),
               singleton(S, 'hotspotSection', 'Kastdetails (homepage)'),
               singleton(S, 'homeProductOptions', 'Kasttypes (homepage)'),
+              singleton(S, 'showroomAvailability', 'Showroom-afspraken'),
               S.documentTypeListItem('page').title("Pagina's"),
               S.documentTypeListItem('testimonial').title('Klantbeoordelingen'),
             ]),
