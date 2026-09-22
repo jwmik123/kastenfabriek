@@ -389,6 +389,14 @@ function ClosetBlock({
           <Text style={styles.detailValue}>{spec.extras.join(" · ")}</Text>
         </View>
       )}
+      {line.configuration.customerRemarks?.trim() && (
+        <View style={styles.detailRow} wrap={false}>
+          <Text style={styles.detailLabel}>Opmerking klant</Text>
+          <Text style={[styles.detailValue, { fontFamily: "Helvetica-Bold" }]}>
+            {line.configuration.customerRemarks.trim()}
+          </Text>
+        </View>
+      )}
 
       {spec.sections.map((section) => (
         <ModuleTable key={section.key} section={section} />
@@ -526,6 +534,12 @@ export default function OrderSpecPdf({
                 {summary.installationTierName ? ` (${summary.installationTierName})` : ""}
               </Text>
               <Text>{formatPrice(summary.installationGross)}</Text>
+            </View>
+          )}
+          {summary.selfInstall && (
+            <View style={styles.priceRow}>
+              <Text>Montage (ZELF MONTEREN — geen montageploeg)</Text>
+              <Text>{formatPrice(0)}</Text>
             </View>
           )}
           {summary.freeMontageDiscount > 0 && (

@@ -9,7 +9,8 @@ import { addWishlistItem } from '@/lib/wishlist/wishlist-store'
 import { requestCapture, resetToFrontView } from '@/lib/canvas-capture'
 import { useWasmPricing } from './useWasmPricing'
 import { buildWasmConfigSnapshot, resolveHandleName } from '../wasmSnapshot'
-import { useFillerPanel } from './useFillerPanel'
+import { useFillerPanel, useSideWallExtraCm } from './useFillerPanel'
+import { selfInstallLabel } from '@/lib/configurator/free-montage'
 import type { CartItem, PriceSnapshot } from '@/lib/cart/types'
 
 export const formatter = new Intl.NumberFormat('nl-NL', {
@@ -48,8 +49,11 @@ export function useCartPrice() {
   const sidePanelThickness = useWasmachinekastStore((s) => s.sidePanelThickness)
   const placementType = useWasmachinekastStore((s) => s.placementType)
   const washerModules = useWasmachinekastStore((s) => s.washerModules)
+  const customerRemarks = useWasmachinekastStore((s) => s.customerRemarks)
   const highFiller = useFillerPanel('high')
   const lowFiller = useFillerPanel('low')
+  const highExtra = useSideWallExtraCm('high')
+  const lowExtra = useSideWallExtraCm('low')
 
   const hasTopCabinet = needsTopCabinet()
   const topCabinetHeightCm = topCabinetHeight()
@@ -72,9 +76,11 @@ export function useCartPrice() {
     installationCost,
     freeMontageApplied,
     freeMontageDiscount,
+    montageOption,
     originalPrice,
     grandTotal,
   } = pricing.totals
+  const selfInstall = montageOption === 'self'
   const drawerHandleId = pricing.handles.drawerHandleId
 
   // Builds the full cart item for the current configuration, including the
@@ -92,6 +98,7 @@ export function useCartPrice() {
       lowSection,
       washerModules,
       fillerPanels: { high: highFiller, low: lowFiller },
+      sideWallExtraCm: { high: highExtra, low: lowExtra },
       topPanelThicknessMm,
       countertopMaterialId,
       buitenkantMaterialId,
@@ -105,6 +112,8 @@ export function useCartPrice() {
       lightStripsEnabled,
       sidePanelThickness,
       placementType,
+      montageOption,
+      customerRemarks,
       hasTopCabinet,
       topCabinetHeightCm,
     })
@@ -128,6 +137,7 @@ export function useCartPrice() {
       fillerPanelCost,
       freeMontageApplied,
       freeMontageDiscount,
+      montageOption,
       total: grandTotal,
     }
 
@@ -186,6 +196,8 @@ export function useCartPrice() {
     installationCost,
     installationTier,
     freeMontageApplied,
+    selfInstall,
+    selfInstallLabel: selfInstallLabel(pricingData?.config.montageChoice),
     pricingData,
     editItemId,
     handleAddToCart,

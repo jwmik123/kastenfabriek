@@ -1,4 +1,7 @@
 import { create } from 'zustand'
+import { STEP_COUNT } from './steps/steps'
+import { montageChoiceEnabled, resolveMontageOption } from '@/lib/configurator/free-montage'
+import type { MontageOption } from '@/lib/cart/types'
 import type { FullPricingData } from '@/types/configurator-pricing'
 import type { BaseConfiguratorState, BaseModuleSlot } from '../_shared/store/types'
 import type { ClosetConfigSnapshot } from '@/lib/cart/types'
@@ -11,8 +14,11 @@ import { DEFAULT_FLOOR_ID, FLOOR_IDS } from '../_shared/materials/floors'
 import { FALLBACK_MODULE_MIN_WIDTH_CM } from '../_shared/store/slotWidths'
 import { restore as restoreWasmSnapshot } from './sections/wasmSnapshotMigration'
 import {
+  DEFAULT_MIN_FILLER_CM,
+  absorbedRestCm,
   fillerWidthCm,
   planSectionWidths,
+  resolveFillerSide,
   reconcileSlots,
   type FillerPanel,
   type FillerSide,
@@ -94,6 +100,11 @@ function sectionOuterWidthCm(s: WasmState, section: 'high' | 'low'): number {
 
 function sectionInnerWidthCm(s: WasmState, section: 'high' | 'low'): number {
   return sectionOuterWidthCm(s, section) - sectionWallsCm(s, section)
+}
+
+/** Narrowest afwerkpaneel the owner wants produced. */
+function minFillerCm(s: Pick<WasmState, 'constraints'>): number {
+  return s.constraints?.minFillerPanelCm ?? DEFAULT_MIN_FILLER_CM
 }
 
 function variableBounds(s: Pick<WasmState, 'constraints'>) {
@@ -374,6 +385,13 @@ function fillSectionModules(s: WasmState, section: 'high' | 'low'): BaseModuleSl
 interface WasmState extends BaseConfiguratorState {
   placementType: PlacementType
   setPlacementType: (type: PlacementType) => void
+  // Laten monteren (default) or zelf monteren — only offered while the owner
+  // enables the choice in the pricing config.
+  montageOption: MontageOption
+  setMontageOption: (v: MontageOption) => void
+  // Opmerkingen/vragen for the workshop, sent with the order.
+  customerRemarks: string
+  setCustomerRemarks: (v: string) => void
   sidePanelThickness: SidePanelThickness
   setSidePanelThickness: (v: SidePanelThickness) => void
   // Placed washers, each in its own section — high and low may both hold some.
@@ -410,6 +428,10 @@ interface WasmState extends BaseConfiguratorState {
   fillerPanelSide: Record<'high' | 'low', FillerSide>
   setFillerPanelSide: (section: 'high' | 'low', side: FillerSide) => void
   fillerPanel: (section: 'high' | 'low') => FillerPanel | null
+  /** Narrowest panel worth producing; a smaller rest goes into the side panels. */
+  minFillerPanelCm: () => number
+  /** Extra thickness each side panel of a section gets from an absorbed rest, in cm. */
+  sideWallExtraCm: (section: 'high' | 'low') => number
   /** Module count bounds of one section — the top-level min/maxModules for high. */
   minModulesFor: (section: 'high' | 'low') => number
   maxModulesFor: (section: 'high' | 'low') => number
@@ -456,6 +478,11 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
 
   placementType: 'ingebouwd' as PlacementType,
   setPlacementType: (type) => set({ placementType: type }),
+
+  montageOption: 'included' as MontageOption,
+  setMontageOption: (montageOption) => set({ montageOption }),
+  customerRemarks: '',
+  setCustomerRemarks: (customerRemarks) => set({ customerRemarks: customerRemarks.slice(0, 2000) }),
 
   sidePanelThickness: '18mm' as SidePanelThickness,
   // Thicker panels eat into the interior, so the sections may have to shed or
@@ -752,8 +779,19 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
     const s = get()
     if (section === 'high' && s.layout === 'low-only') return null
     if (section === 'low' && s.lowSection === null && s.layout !== 'low-only') return null
-    const widthCm = fillerWidthCm(sectionModules(s, section), sectionInnerWidthCm(s, section))
-    return widthCm > 0 ? { side: s.fillerPanelSide[section], widthCm } : null
+    const min = minFillerCm(s)
+    const widthCm = fillerWidthCm(sectionModules(s, section), sectionInnerWidthCm(s, section), min)
+    return widthCm > 0
+      ? { side: resolveFillerSide(s.fillerPanelSide[section], widthCm, min), widthCm }
+      : null
+  },
+  minFillerPanelCm: () => minFillerCm(get()),
+  sideWallExtraCm: (section) => {
+    const s = get()
+    if (section === 'high' && s.layout === 'low-only') return 0
+    if (section === 'low' && s.lowSection === null && s.layout !== 'low-only') return 0
+    const rest = absorbedRestCm(sectionModules(s, section), sectionInnerWidthCm(s, section), minFillerCm(s))
+    return rest > 0 ? rest / 2 : 0
   },
   minModulesFor: (section) => moduleCountBounds(get(), section).min,
   maxModulesFor: (section) => moduleCountBounds(get(), section).max,
@@ -841,7 +879,7 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
   },
 
   setStep: (step) => set({ step, selectedSlot: null, lastClickPoint: null }),
-  nextStep: () => set((s) => ({ step: Math.min(s.step + 1, 6), selectedSlot: null, lastClickPoint: null })),
+  nextStep: () => set((s) => ({ step: Math.min(s.step + 1, STEP_COUNT), selectedSlot: null, lastClickPoint: null })),
   prevStep: () => set((s) => ({ step: Math.max(s.step - 1, 1), selectedSlot: null, lastClickPoint: null })),
 
   setWidth: (width) => {
@@ -1075,6 +1113,11 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
       lightStripsEnabled: config.lightStripsEnabled,
       sidePanelThickness: config.sidePanelThickness ?? '18mm',
       placementType: (config.placementType ?? 'ingebouwd') as PlacementType,
+      montageOption: resolveMontageOption(
+        config.montageOption,
+        montageChoiceEnabled(get().pricingData?.config.montageChoice),
+      ),
+      customerRemarks: config.customerRemarks ?? '',
       washerModules,
       fillerPanelSide: {
         high: config.fillerPanel?.side ?? 'right',

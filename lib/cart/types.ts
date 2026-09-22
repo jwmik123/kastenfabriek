@@ -43,7 +43,9 @@ export type WasherSection = 'high' | 'low' | null;
  * it from the slot widths.
  */
 export interface FillerPanelSnapshot {
-  side: 'left' | 'right';
+  /** 'both' = split in two equal halves, one on each side. */
+  side: 'left' | 'right' | 'both';
+  /** Total width; with 'both' each half is widthCm / 2. */
   widthCm: number;
 }
 
@@ -55,6 +57,8 @@ export interface LowSectionSnapshot {
   topPanelThicknessMm: 18 | 36;
   countertopMaterialId: string;
   fillerPanel?: FillerPanelSnapshot | null;
+  /** Extra thickness per side panel from a rest too narrow for a panel, in cm. */
+  sideWallExtraCm?: number;
 }
 
 // Serialized closet configuration — mirrors relevant Zustand store state
@@ -79,6 +83,11 @@ export interface ClosetConfigSnapshot {
   modules: ModuleSlotSnapshot[];
   /** Wasmachinekast: afwerkpaneel of the top-level section, when it has one. */
   fillerPanel?: FillerPanelSnapshot | null;
+  /**
+   * Wasmachinekast: extra thickness per side panel of the top-level section,
+   * in cm, when the rest beside the machines was too narrow for a panel.
+   */
+  sideWallExtraCm?: number;
 
   // Appearance
   buitenkantMaterialId: string;
@@ -129,6 +138,12 @@ export interface ClosetConfigSnapshot {
   // Side panels thickness (issue 072). 18mm = default, 36mm = paid upgrade.
   sidePanelThickness?: '18mm' | '36mm';
 
+  /** Laten monteren (default) or zelf monteren. Absent on older snapshots. */
+  montageOption?: MontageOption;
+
+  /** Opmerkingen/vragen the customer left in the last wizard step. */
+  customerRemarks?: string;
+
   // Derived (snapshotted for display)
   hasTopCabinet: boolean;
   topCabinetHeightCm: number;
@@ -172,6 +187,9 @@ export interface ProductConfigSnapshot {
   depthCm?: number;
 }
 
+/** Montage as a service ('included', the default) or a self-install kit ('self'). */
+export type MontageOption = 'included' | 'self';
+
 // Price calculated at "Add to Cart" time for a closet
 export interface PriceSnapshot {
   calculatedAt: string; // ISO timestamp
@@ -207,6 +225,13 @@ export interface PriceSnapshot {
 
   freeMontageApplied?: boolean;
   freeMontageDiscount?: number;
+
+  /**
+   * 'self' when the customer chose to install the cabinet themselves (only
+   * offered while the owner enables the choice). Absent on older snapshots,
+   * which always included montage.
+   */
+  montageOption?: MontageOption;
 
   total: number; // subtotal + installationCost
 

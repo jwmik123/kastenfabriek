@@ -330,3 +330,29 @@ describe("LED strips on a wasmachinekast", () => {
     expect(html).toContain("LED-strips");
   });
 });
+
+describe("Opmerkingen / vragen van de klant", () => {
+  const withRemark: ClosetOrderLine = {
+    ...baseClosetItem,
+    configuration: { ...baseConfig, customerRemarks: "Er zit een plint van 7 cm langs de muur." },
+  };
+
+  it("puts the remark in a highlighted block at the top of the admin mail", async () => {
+    const html = await render(<OrderAdminNotification {...props([withRemark])} />);
+    expect(html).toContain("Opmerkingen / vragen van de klant");
+    expect(html).toContain("Er zit een plint van 7 cm langs de muur.");
+    // before the order meta table, so it is the first thing the workshop reads
+    expect(html.indexOf("Opmerkingen / vragen van de klant")).toBeLessThan(html.indexOf("Bestelnummer"));
+  });
+
+  it("shows the remark on the cabinet line in the customer mail, without the admin block", async () => {
+    const html = await render(<OrderConfirmation {...props([withRemark])} />);
+    expect(html).toContain("Er zit een plint van 7 cm langs de muur.");
+    expect(html).not.toContain("Opmerkingen / vragen van de klant");
+  });
+
+  it("renders no remarks block when the customer left none", async () => {
+    const html = await render(<OrderAdminNotification {...props()} />);
+    expect(html).not.toContain("Opmerkingen / vragen van de klant");
+  });
+});

@@ -22,6 +22,7 @@ const TOP_BAR_STEPS = [
   { label: 'Materiaal', number: 4 },
   { label: 'Handgrepen', number: 5 },
   { label: 'Accessoires', number: 6 },
+  { label: 'Montage', number: 7 },
 ]
 import { getDraftConfig, saveDraftConfig } from '@/lib/cart/draft-config'
 import { getCart } from '@/lib/cart/cart-store'
@@ -39,7 +40,7 @@ export default function WasmachinekastConfigurator({ pricingData, editConfig, ed
   const restoreConfig = useWasmachinekastStore((s) => s.restoreConfig)
   const step = useWasmachinekastStore((s) => s.step)
   const setStep = useWasmachinekastStore((s) => s.setStep)
-  const { grandTotal } = useCartPrice()
+  const { grandTotal, selfInstall } = useCartPrice()
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   function handleTopBarStep(target: number) {
@@ -87,6 +88,7 @@ export default function WasmachinekastConfigurator({ pricingData, editConfig, ed
           lowSection: state.lowSection,
           washerModules: state.washerModules,
           fillerPanels: { high: state.fillerPanel('high'), low: state.fillerPanel('low') },
+          sideWallExtraCm: { high: state.sideWallExtraCm('high'), low: state.sideWallExtraCm('low') },
           topPanelThicknessMm: state.topPanelThicknessMm,
           countertopMaterialId: state.countertopMaterialId,
           buitenkantMaterialId: state.buitenkantMaterialId,
@@ -100,6 +102,8 @@ export default function WasmachinekastConfigurator({ pricingData, editConfig, ed
           lightStripsEnabled: state.lightStripsEnabled,
           sidePanelThickness: state.sidePanelThickness,
           placementType: state.placementType,
+          montageOption: state.montageOption,
+          customerRemarks: state.customerRemarks,
           hasTopCabinet: state.needsTopCabinet(),
           topCabinetHeightCm: state.topCabinetHeight(),
         })
@@ -120,7 +124,7 @@ export default function WasmachinekastConfigurator({ pricingData, editConfig, ed
           <ConfiguratorMobileHeader
             price={grandTotal}
             productName="Wasmachinekast"
-            priceNote="incl. levering & montage"
+            priceNote={selfInstall ? 'incl. levering' : 'incl. levering & montage'}
           />
           <div className="hidden md:block">
             <ConfiguratorTopBar

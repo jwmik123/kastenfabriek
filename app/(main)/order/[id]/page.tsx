@@ -176,6 +176,12 @@ export default async function OrderPage({
               <span>{fmt.format(summary.installationGross)}</span>
             </div>
           )}
+          {summary.selfInstall && (
+            <div className="flex justify-between">
+              <span>Montage (zelf monteren)</span>
+              <span>{fmt.format(0)}</span>
+            </div>
+          )}
           {summary.freeMontageDiscount > 0 && (
             <div className="flex justify-between text-green-700">
               <span>Gratis montage</span>

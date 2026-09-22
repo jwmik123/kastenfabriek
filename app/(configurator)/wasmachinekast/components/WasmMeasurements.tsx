@@ -12,7 +12,8 @@ import {
 import type { MeasurementSpec } from '../../_shared/measurements/types'
 import type { BaseModuleSlot } from '../../_shared/store/types'
 import type { FillerPanel } from '../sections/sectionPlan'
-import { useFillerPanel } from '../hooks/useFillerPanel'
+import { useFillerPanel, useSideWallExtraCm } from '../hooks/useFillerPanel'
+import { fillerPieces } from '../sections/sectionPlan'
 
 export type { ProjectedMap }
 
@@ -30,6 +31,8 @@ interface SectionInput {
   sharedSideWall?: 'left' | 'right' | null
   /** Afwerkpaneel of this section, taking its strip off the interior. */
   fillerPanel?: FillerPanel | null
+  /** Extra thickness per side panel from an absorbed rest, in cm. */
+  sideWallExtraCm?: number
 }
 
 /**
@@ -79,14 +82,23 @@ export function buildWasmSpecs(
       label: section.heightCm,
     })
 
-    // The afwerkpaneel is measured on its own; the modules share the rest.
-    const panel = section.fillerPanel ?? null
-    const panelM = panel ? Math.min(panel.widthCm / 100, innerW) : 0
-    if (panel && panelM > 0) {
+    // The afwerkpaneel (one, or two halves) is measured on its own; the
+    // modules share the rest, after any thickening of the side panels.
+    const extraM = (section.sideWallExtraCm ?? 0) / 100
+    const pieces = fillerPieces(section.fillerPanel)
+    let panelsM = 0
+    let leftPanelM = 0
+    for (const piece of pieces) {
+      const panelM = Math.min(piece.widthCm / 100, innerW - 2 * extraM - panelsM)
+      if (panelM <= 0) continue
+      panelsM += panelM
+      if (piece.side === 'left') leftPanelM += panelM
       const panelLeft =
-        panel.side === 'left' ? leftEdge + leftWallM : leftEdge + widthM - rightWallM - panelM
+        piece.side === 'left'
+          ? leftEdge + leftWallM + extraM
+          : leftEdge + widthM - rightWallM - extraM - panelM
       specs.push({
-        id: `filler-panel-${section.kind}`,
+        id: `filler-panel-${section.kind}${pieces.length > 1 ? `-${piece.side}` : ''}`,
         p1: { x: panelLeft, y: MODULE_FLOOR_Y, z: frontZ },
         p2: { x: panelLeft + panelM, y: MODULE_FLOOR_Y, z: frontZ },
         offsetDir: { x: 0, y: -1, z: 0 },
@@ -96,8 +108,8 @@ export function buildWasmSpecs(
     }
 
     // Per-module clear widths.
-    const slotWidthsM = computeSlotWidthsM(section.modules, innerW - panelM)
-    const interiorLeft = leftEdge + leftWallM + (panel?.side === 'left' ? panelM : 0)
+    const slotWidthsM = computeSlotWidthsM(section.modules, innerW - panelsM - 2 * extraM)
+    const interiorLeft = leftEdge + leftWallM + extraM + leftPanelM
     let xOffset = 0
     for (let i = 0; i < section.modules.length; i++) {
       const slotW = slotWidthsM[i]
@@ -141,6 +153,8 @@ function useWasmMeasurementSpecs(): MeasurementSpec[] {
   const sidePanelThickness = useWasmachinekastStore((s) => s.sidePanelThickness)
   const highFiller = useFillerPanel('high')
   const lowFiller = useFillerPanel('low')
+  const highExtra = useSideWallExtraCm('high')
+  const lowExtra = useSideWallExtraCm('low')
 
   return useMemo(() => {
     const sideWallM = sidePanelThickness === '36mm' ? 0.036 : WALL
@@ -150,11 +164,11 @@ function useWasmMeasurementSpecs(): MeasurementSpec[] {
     // Resolve sections (mirrors WasmachinekastScene).
     const highSection: SectionInput | null = isLowOnly
       ? null
-      : { kind: 'high', widthCm: topWidth, heightCm: topHeight, modules: topModules, xOffsetM: 0, fillerPanel: highFiller }
+      : { kind: 'high', widthCm: topWidth, heightCm: topHeight, modules: topModules, xOffsetM: 0, fillerPanel: highFiller, sideWallExtraCm: highExtra }
     const lowSectionInput: SectionInput | null = isLowOnly
-      ? { kind: 'low', widthCm: topWidth, heightCm: topHeight, modules: topModules, xOffsetM: 0, fillerPanel: lowFiller }
+      ? { kind: 'low', widthCm: topWidth, heightCm: topHeight, modules: topModules, xOffsetM: 0, fillerPanel: lowFiller, sideWallExtraCm: lowExtra }
       : lowSection
-        ? { kind: 'low', widthCm: lowSection.width, heightCm: lowSection.height, modules: lowSection.modules, xOffsetM: 0, fillerPanel: lowFiller }
+        ? { kind: 'low', widthCm: lowSection.width, heightCm: lowSection.height, modules: lowSection.modules, xOffsetM: 0, fillerPanel: lowFiller, sideWallExtraCm: lowExtra }
         : null
 
     const highW = highSection ? highSection.widthCm / 100 : 0
@@ -181,7 +195,7 @@ function useWasmMeasurementSpecs(): MeasurementSpec[] {
     if (isLowOnly && lowSectionInput) sections.push(lowSectionInput)
 
     return buildWasmSpecs(sections, depthCm, sideWallM)
-  }, [layout, topWidth, topHeight, topModules, depthCm, lowSection, sidePanelThickness, highFiller, lowFiller])
+  }, [layout, topWidth, topHeight, topModules, depthCm, lowSection, sidePanelThickness, highFiller, lowFiller, highExtra, lowExtra])
 }
 
 export function WasmMeasurementProjectorLayer({

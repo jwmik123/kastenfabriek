@@ -73,9 +73,20 @@ export interface TopCabinetConstraints {
 export interface PricingConstraints {
   /** Widest cabinet the configurators allow, in cm — the width slider's upper bound. */
   maxTotalWidth?: number;
+  /**
+   * Wasmachinekast: narrowest afwerkpaneel worth producing, in cm. A rest
+   * below it goes into the side panels instead of becoming a panel.
+   */
+  minFillerPanelCm?: number;
   singleCorpus: DimensionConstraints;
   doubleCorpus: DimensionConstraints;
   topCabinet: TopCabinetConstraints;
+}
+
+export interface MontageChoiceConfig {
+  customerCanChoose?: boolean;
+  selfInstallLabel?: string;
+  selfInstallDescription?: string;
 }
 
 export interface PricingConfig {
@@ -85,6 +96,8 @@ export interface PricingConfig {
   deliveryPrice: number;
   constraints: PricingConstraints;
   freeMontage?: boolean;
+  /** Owner switch: may the customer pick 'zelf monteren' instead of montage? */
+  montageChoice?: MontageChoiceConfig;
   slopedBackWallSurcharge?: number;
   slopedSideWallSurchargePerSide?: number;
 }

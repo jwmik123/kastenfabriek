@@ -316,3 +316,50 @@ describe('machines are cleaned up on every path that narrows a section', () => {
     expect(store().washerModules).toHaveLength(2)
   })
 })
+
+describe('afwerkpaneel — beide zijden en te smalle rest', () => {
+  beforeEach(reset)
+
+  it('splits the panel over both sides when each half is wide enough', () => {
+    store().setWidth(150)
+    store().addWasherModule(0, 11, 'high')
+    store().addWasherModule(1, 11, 'high')
+    store().setFillerPanelSide('high', 'both')
+    expect(store().fillerPanel('high')).toEqual({ side: 'both', widthCm: expect.closeTo(9.2, 5) })
+    expect(store().sideWallExtraCm('high')).toBe(0)
+  })
+
+  it("resolves 'both' to the right side once the halves get too narrow", () => {
+    store().setWidth(150)
+    store().addWasherModule(0, 11, 'high')
+    store().addWasherModule(1, 11, 'high')
+    store().setFillerPanelSide('high', 'both')
+    store().setWidth(145) // 4.2 cm rest → halves of 2.1 cm, below the 3 cm minimum
+    expect(store().fillerPanel('high')).toEqual({ side: 'right', widthCm: expect.closeTo(4.2, 5) })
+    expect(store().fillerPanelSide.high).toBe('both') // the wish survives a later widening
+    store().setWidth(150)
+    expect(store().fillerPanel('high')?.side).toBe('both')
+  })
+
+  it('absorbs a rest narrower than the minimum into the side panels', () => {
+    store().setWidth(150)
+    store().addWasherModule(0, 11, 'high')
+    store().addWasherModule(1, 11, 'high')
+    store().setWidth(141.6) // 141.6 − 3.6 − 137.2 = 0.8 cm rest
+    const s = store()
+    expect(s.fillerPanel('high')).toBeNull()
+    expect(s.sideWallExtraCm('high')).toBeCloseTo(0.4, 5)
+    expect(s.moduleCount).toBe(2)
+    expect(s.washerModules).toHaveLength(2)
+  })
+
+  it('honours the owner-set minimum from the constraints', () => {
+    useWasmachinekastStore.setState({ constraints: { ...constraints, minFillerPanelCm: 10 } })
+    store().setWidth(150)
+    store().addWasherModule(0, 11, 'high')
+    store().addWasherModule(1, 11, 'high')
+    expect(store().minFillerPanelCm()).toBe(10)
+    expect(store().fillerPanel('high')).toBeNull()
+    expect(store().sideWallExtraCm('high')).toBeCloseTo(4.6, 5)
+  })
+})

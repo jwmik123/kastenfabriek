@@ -21,8 +21,9 @@ import { WASHER_LAYOUT_IDS } from '../moduleLayouts'
 import { resolveFrontPlan } from '../../_shared/frontPolicy'
 import type { BaseModuleSlot } from '../../_shared/store/types'
 import type { Section } from '../sections/types'
-import { fillerWidthCm } from '../sections/sectionPlan'
-import FillerPanel from './FillerPanel'
+import { fillerInsetsCm, fillerPieces } from '../sections/sectionPlan'
+import { useFillerPanel, useSideWallExtraCm } from '../hooks/useFillerPanel'
+import FillerPanel, { SideWallExtension } from './FillerPanel'
 
 /** Interior taken by the afwerkpaneel on each side, in metres. */
 type InteriorInset = { left: number; right: number }
@@ -532,51 +533,70 @@ function SectionGroup({
   const werkbladMaterialId = countertopMaterialId ?? buitenkantMaterialId
 
   // Afwerkpaneel: the strip left over when the section holds nothing but
-  // machines and the rest is too narrow for a module. Same arithmetic as the
-  // store's `fillerPanel`, in this section's own interior.
-  const fillerSide = useWasmachinekastStore((s) => s.fillerPanelSide[kind])
+  // machines and the rest is too narrow for a module. The store resolves the
+  // side ('both' splits it in two) and the rest too narrow for a panel, which
+  // thickens the side panels instead.
+  const fillerPanel = useFillerPanel(kind)
+  const sideWallExtraM = useSideWallExtraCm(kind) / 100
   const leftWallM = sharedSideWall === 'left' ? 0 : sideWallThicknessM
   const rightWallM = sharedSideWall === 'right' ? 0 : sideWallThicknessM
-  const innerWidthCm = section.width - (leftWallM + rightWallM) * 100
-  const fillerM = fillerWidthCm(section.modules, innerWidthCm) / 100
-  const interiorInset = useMemo<InteriorInset>(
-    () =>
-      fillerM > 0
-        ? { left: fillerSide === 'left' ? fillerM : 0, right: fillerSide === 'right' ? fillerM : 0 }
-        : NO_INSET,
-    [fillerM, fillerSide],
-  )
+  const pieces = useMemo(() => fillerPieces(fillerPanel), [fillerPanel])
+  const interiorInset = useMemo<InteriorInset>(() => {
+    const insets = fillerInsetsCm(fillerPanel, sideWallExtraM * 200)
+    return insets.left > 0 || insets.right > 0
+      ? { left: insets.left / 100, right: insets.right / 100 }
+      : NO_INSET
+  }, [fillerPanel, sideWallExtraM])
   // The panel is a door without hinges: same plane, same bottom and top edge.
   const doorZBack = depthM - CLOSET_INSIDE_INSET
   const doorBottomY = doorsExtendToFloor ? 0.02 : MODULE_FLOOR_Y
   const doorTopY = (isLow ? lowMainH : mainHeightCm / 100) - WALL_M
-  const fillerXLeft =
-    fillerSide === 'left' ? -widthM / 2 + leftWallM : widthM / 2 - rightWallM - fillerM
   const topCabinetCeilY = heightCm / 100 - SIDE_WALL_EXTRA_M - WALL_M
+  // A piece sits against its side wall, past any thickening of that wall.
+  const pieceXLeft = (piece: { side: 'left' | 'right'; widthCm: number }) =>
+    piece.side === 'left'
+      ? -widthM / 2 + leftWallM + sideWallExtraM
+      : widthM / 2 - rightWallM - sideWallExtraM - piece.widthCm / 100
+  const corpusHeightM = isLow ? lowClosetH : heightCm / 100 - SIDE_WALL_EXTRA_M
 
   return (
     <group position={[xOffsetM, 0, 0]}>
       <ClosetCorpus diagParams={diagParams} hideTopPanel={isLow} sharedSideWall={sharedSideWall} />
-      {fillerM > 0 && (
+      {/* Rest too narrow for a panel: each side panel grows inward by half of it. */}
+      {sideWallExtraM > 0 &&
+        (['left', 'right'] as const).map((side) => (
+          <SideWallExtension
+            key={side}
+            xLeft={side === 'left' ? -widthM / 2 + leftWallM : widthM / 2 - rightWallM - sideWallExtraM}
+            widthM={sideWallExtraM}
+            heightM={corpusHeightM}
+            depthM={depthM}
+          />
+        ))}
+      {pieces.map((piece) => (
         <FillerPanel
-          xLeft={fillerXLeft}
-          widthM={fillerM}
+          key={piece.side}
+          xLeft={pieceXLeft(piece)}
+          widthM={piece.widthCm / 100}
           yBottom={doorBottomY}
           yTop={doorTopY}
           zBack={doorZBack}
           floor={{ y: MODULE_FLOOR_Y, zStart: WALL }}
         />
-      )}
+      ))}
       {/* Above 275 cm the doors split at the top cabinet; so does the panel. */}
-      {fillerM > 0 && !isLow && needsTop && (
-        <FillerPanel
-          xLeft={fillerXLeft}
-          widthM={fillerM}
-          yBottom={mainHeightCm / 100 - WALL_M}
-          yTop={topCabinetCeilY}
-          zBack={doorZBack}
-        />
-      )}
+      {!isLow &&
+        needsTop &&
+        pieces.map((piece) => (
+          <FillerPanel
+            key={`top-${piece.side}`}
+            xLeft={pieceXLeft(piece)}
+            widthM={piece.widthCm / 100}
+            yBottom={mainHeightCm / 100 - WALL_M}
+            yTop={topCabinetCeilY}
+            zBack={doorZBack}
+          />
+        ))}
       {/* LED strips light the high cabinet only — a low section under a
           werkblad has no strips, whatever the accessory toggle says. */}
       {!isLow && lightStripsEnabled && doorsOpen && (

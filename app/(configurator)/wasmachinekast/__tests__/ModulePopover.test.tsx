@@ -35,7 +35,8 @@ interface MockState {
   lowSection: null
   lastClickPoint: { x: number; y: number } | null
   fillerPanelSide: { high: 'left' | 'right'; low: 'left' | 'right' }
-  fillerPanel: (section: 'high' | 'low') => { side: 'left' | 'right'; widthCm: number } | null
+  fillerPanel: (section: 'high' | 'low') => { side: 'left' | 'right' | 'both'; widthCm: number } | null
+  minFillerPanelCm: () => number
   setFillerPanelSide: (section: 'high' | 'low', side: 'left' | 'right') => void
 }
 
@@ -85,6 +86,7 @@ beforeEach(() => {
     lastClickPoint: null,
     fillerPanelSide: { high: 'right', low: 'right' },
     fillerPanel: () => null,
+    minFillerPanelCm: () => 3,
     setFillerPanelSide: vi.fn(),
   }
 })

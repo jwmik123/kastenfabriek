@@ -78,6 +78,8 @@ export interface SpecSection {
    * a blind front flush with the doors, on the side the customer chose.
    */
   fillerPanel: FillerPanelSnapshot | null;
+  /** Extra thickness per side panel from a rest too narrow for a panel, in cm. */
+  sideWallExtraCm: number;
 }
 
 const SECTION_LABELS: Record<"high" | "low", string> = {
@@ -147,6 +149,7 @@ export function resolveSections(c: ClosetConfigSnapshot): SpecSection[] {
     moduleCount: c.moduleCount,
     modules: c.modules.map((m) => toSpecModule(m, washersIn(topLevelKey), topLevelKey)),
     fillerPanel: c.fillerPanel ?? null,
+    sideWallExtraCm: c.sideWallExtraCm ?? 0,
   };
 
   // Kledingkast, and wasmachinekast snapshots from before sections existed.
@@ -178,6 +181,7 @@ export function resolveSections(c: ClosetConfigSnapshot): SpecSection[] {
         topPanelThicknessMm: low.topPanelThicknessMm,
         countertopMaterialName: getMaterialName(low.countertopMaterialId),
         fillerPanel: low.fillerPanel ?? null,
+        sideWallExtraCm: low.sideWallExtraCm ?? 0,
       }
     : null;
 
@@ -287,8 +291,18 @@ export interface ClosetSpec {
 
 /** "Afwerkpaneel 9,2 cm rechts" — how a section's panel reads on the documents. */
 export function describeFillerPanel(panel: FillerPanelSnapshot): string {
-  const width = panel.widthCm.toLocaleString("nl-NL", { maximumFractionDigits: 1 });
-  return `Afwerkpaneel ${width} cm ${panel.side === "left" ? "links" : "rechts"}`;
+  const fmt = (cm: number) => cm.toLocaleString("nl-NL", { maximumFractionDigits: 1 });
+  if (panel.side === "both") {
+    return `Afwerkpaneel 2 × ${fmt(panel.widthCm / 2)} cm (links en rechts)`;
+  }
+  return `Afwerkpaneel ${fmt(panel.widthCm)} cm ${panel.side === "left" ? "links" : "rechts"}`;
+}
+
+/** "Zijpanelen elk 4 mm dikker (restruimte 0,8 cm)" */
+export function describeSideWallExtra(extraCm: number): string {
+  const mm = (extraCm * 10).toLocaleString("nl-NL", { maximumFractionDigits: 1 });
+  const rest = (extraCm * 2).toLocaleString("nl-NL", { maximumFractionDigits: 1 });
+  return `Zijpanelen elk ${mm} mm dikker (restruimte ${rest} cm naast de machines)`;
 }
 
 /**
@@ -306,6 +320,9 @@ function dimensionNotes(sections: SpecSection[]): string[] | undefined {
     }
     if (s.fillerPanel) {
       notes.push(`${s.label ? `${s.label}: ` : ""}${describeFillerPanel(s.fillerPanel)}`);
+    }
+    if (s.sideWallExtraCm > 0) {
+      notes.push(`${s.label ? `${s.label}: ` : ""}${describeSideWallExtra(s.sideWallExtraCm)}`);
     }
   }
   return notes.length > 0 ? notes : undefined;
@@ -421,6 +438,7 @@ export function buildClosetSpec(
 
   const powerHoleCount = countPowerHoles(c, sections);
   const extras = [
+    c.montageOption === "self" ? "Zelf monteren (bouwpakket, geen montageploeg)" : null,
     c.lightStripsEnabled ? "LED-strips" : null,
     powerHoleCount > 0 ? `Kabeldoorvoer (${powerHoleCount}×)` : null,
     (c.sidePanelThickness ?? "18mm") === "36mm" ? "Zijpanelen 36 mm (upgrade)" : null,

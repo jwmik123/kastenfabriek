@@ -1,5 +1,5 @@
 import type { ModuleLayout } from '@/types/configurator-pricing'
-import type { ClosetConfigSnapshot, ModuleSlotSnapshot } from '@/lib/cart/types'
+import type { ClosetConfigSnapshot, ModuleSlotSnapshot, MontageOption } from '@/lib/cart/types'
 import type { BaseModuleSlot } from '../_shared/store/types'
 import type { HandleMaterial } from '../_shared/constants/handleMaterials'
 import type { Section, WasherPlacement, WasmLayout } from './sections/types'
@@ -24,6 +24,8 @@ export interface WasmSnapshotInput {
   washerModules: WasherPlacement[]
   /** Afwerkpaneel per section, as the store derives it (`fillerPanel`). */
   fillerPanels: { high: FillerPanel | null; low: FillerPanel | null }
+  /** Extra side-panel thickness per section from an absorbed rest, in cm (`sideWallExtraCm`). */
+  sideWallExtraCm?: { high: number; low: number }
   topPanelThicknessMm: 18 | 36
   countertopMaterialId: string | undefined
   buitenkantMaterialId: string
@@ -37,6 +39,8 @@ export interface WasmSnapshotInput {
   lightStripsEnabled: boolean
   sidePanelThickness: '18mm' | '36mm'
   placementType: 'vrijstaand' | 'ingebouwd'
+  montageOption?: MontageOption
+  customerRemarks?: string
   hasTopCabinet: boolean
   topCabinetHeightCm: number
 }
@@ -82,6 +86,8 @@ export function buildWasmConfigSnapshot(s: WasmSnapshotInput): ClosetConfigSnaps
   const lowModules = isLowOnly ? s.modules : (s.lowSection?.modules ?? [])
   const hasLowSection = isLowOnly || s.lowSection !== null
   const topLevelFiller = isLowOnly ? s.fillerPanels.low : s.fillerPanels.high
+  const extra = s.sideWallExtraCm ?? { high: 0, low: 0 }
+  const topLevelExtra = isLowOnly ? extra.low : extra.high
 
   return {
     id: s.id,
@@ -98,6 +104,7 @@ export function buildWasmConfigSnapshot(s: WasmSnapshotInput): ClosetConfigSnaps
     layout: s.layout,
     washerModules: s.washerModules,
     fillerPanel: topLevelFiller,
+    ...(topLevelExtra > 0 ? { sideWallExtraCm: topLevelExtra } : {}),
     ...(hasLowSection
       ? {
           lowSection: {
@@ -108,6 +115,7 @@ export function buildWasmConfigSnapshot(s: WasmSnapshotInput): ClosetConfigSnaps
             topPanelThicknessMm: s.topPanelThicknessMm,
             countertopMaterialId: s.countertopMaterialId ?? s.buitenkantMaterialId,
             fillerPanel: s.fillerPanels.low,
+            ...(extra.low > 0 ? { sideWallExtraCm: extra.low } : {}),
           },
         }
       : {}),
@@ -132,6 +140,8 @@ export function buildWasmConfigSnapshot(s: WasmSnapshotInput): ClosetConfigSnaps
     backDiagFlatSectionDepth: 0,
 
     placementType: s.placementType,
+    montageOption: s.montageOption ?? 'included',
+    ...(s.customerRemarks?.trim() ? { customerRemarks: s.customerRemarks.trim() } : {}),
     lightStripsEnabled: s.lightStripsEnabled,
     sidePanelThickness: s.sidePanelThickness,
     hasTopCabinet: s.hasTopCabinet,

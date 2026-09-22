@@ -1,6 +1,7 @@
 import type { DoorVariant, FullPricingData, InstallationTier } from '@/types/configurator-pricing'
 import { PricingEngine } from '@/lib/configurator/pricing-engine'
-import { computeFreeMontage } from '@/lib/configurator/free-montage'
+import { computeFreeMontage, montageChoiceEnabled } from '@/lib/configurator/free-montage'
+import type { MontageOption } from '@/lib/cart/types'
 import { computeInstallationBasis } from '@/lib/configurator/installation-basis'
 import { isTextureMaterial } from '@/lib/materials'
 import { getWasmLayoutConfig } from '../moduleLayoutConfigs'
@@ -28,6 +29,8 @@ export interface WasmPricingInput {
   sidePanelThickness: '18mm' | '36mm'
   /** Afwerkpanelen the sections show; at most one per section. */
   fillerPanels?: FillerPanelInput[]
+  /** Laten monteren (default) or zelf monteren; only honoured when the owner allows it. */
+  montageOption?: MontageOption
 }
 
 export interface FillerPanelInput {
@@ -98,6 +101,8 @@ export interface WasmPricingTotals {
   installationCost: number
   freeMontageApplied: boolean
   freeMontageDiscount: number
+  /** What applies after the owner switch. */
+  montageOption: MontageOption
   originalPrice: number | undefined
   grandTotal: number
 }
@@ -313,8 +318,14 @@ export function computeWasmPricing(input: WasmPricingInput): WasmPricingResult {
   const installationBasis = computeInstallationBasis({ subtotal, deliveryCost, ledCost })
   const installationTier = engine?.getInstallationTier(installationBasis) ?? null
   const freeMontage = pricingData?.config.freeMontage ?? false
-  const { effectiveInstallationCost, freeMontageDiscount, freeMontageApplied, originalPrice, grandTotal } =
-    computeFreeMontage({ subtotal, installationTier, freeMontage })
+  const montage = computeFreeMontage({
+    subtotal,
+    installationTier,
+    freeMontage,
+    montageOption: input.montageOption,
+    choiceEnabled: montageChoiceEnabled(pricingData?.config.montageChoice),
+  })
+  const { effectiveInstallationCost, freeMontageDiscount, freeMontageApplied, originalPrice, grandTotal } = montage
 
   return {
     rows,
@@ -338,6 +349,7 @@ export function computeWasmPricing(input: WasmPricingInput): WasmPricingResult {
       installationCost: effectiveInstallationCost,
       freeMontageApplied,
       freeMontageDiscount,
+      montageOption: montage.montageOption,
       originalPrice,
       grandTotal,
     },

@@ -9,12 +9,27 @@ import type { BaseModuleSlot } from '../../_shared/store/types'
  * documents only read the outcome.
  */
 
-export type FillerSide = 'left' | 'right'
+export type FillerSide = 'left' | 'right' | 'both'
 
 export interface FillerPanel {
+  /** Resolved side: 'both' only when each half is at least the minimum width. */
   side: FillerSide
+  /** Total panel width; with 'both' it is split in two equal halves. */
   widthCm: number
 }
+
+/** One physical panel: 'both' resolves into two of these. */
+export interface FillerPiece {
+  side: 'left' | 'right'
+  widthCm: number
+}
+
+/**
+ * Narrowest afwerkpaneel worth producing. A rest below this is not a panel:
+ * it disappears into the two side panels, half on each side. Owner-configurable
+ * in the pricing config; this is the fallback.
+ */
+export const DEFAULT_MIN_FILLER_CM = 3
 
 /** Below this the rest is rounding noise, not a panel. */
 const EPS = 1e-6
@@ -30,6 +45,8 @@ export interface SectionWidthPlan {
   maxVariable: number
   /** Width of the afwerkpaneel, 0 when a module fits in the free width. */
   fillerWidthCm: number
+  /** Rest too narrow for a panel; absorbed into the side panels instead. */
+  absorbedRestCm: number
 }
 
 export function planSectionWidths({
@@ -37,17 +54,20 @@ export function planSectionWidths({
   fixedWidthsCm,
   minVarWidthCm,
   maxVarWidthCm,
+  minFillerCm = 0,
 }: {
   innerWidthCm: number
   fixedWidthsCm: number[]
   minVarWidthCm: number
   maxVarWidthCm: number
+  /** Rest below this becomes side-panel thickness rather than a panel. */
+  minFillerCm?: number
 }): SectionWidthPlan {
   const totalFixed = fixedWidthsCm.reduce((sum, w) => sum + w, 0)
   const freeCm = innerWidthCm - totalFixed
   const fits = freeCm >= -EPS
   if (!fits) {
-    return { freeCm, fits, minVariable: 0, maxVariable: 0, fillerWidthCm: 0 }
+    return { freeCm, fits, minVariable: 0, maxVariable: 0, fillerWidthCm: 0, absorbedRestCm: 0 }
   }
   const maxVariable = Math.floor((freeCm + EPS) / minVarWidthCm)
   // A section without machines always keeps at least one vak — an empty
@@ -58,17 +78,24 @@ export function planSectionWidths({
         ? 1
         : 0
       : Math.max(1, Math.ceil((freeCm - EPS) / maxVarWidthCm))
-  const fillerWidthCm =
-    maxVariable === 0 && fixedWidthsCm.length > 0 && freeCm > EPS ? freeCm : 0
-  return { freeCm, fits, minVariable, maxVariable, fillerWidthCm }
+  const rest = maxVariable === 0 && fixedWidthsCm.length > 0 && freeCm > EPS ? freeCm : 0
+  const isPanel = rest >= minFillerCm - EPS
+  return {
+    freeCm,
+    fits,
+    minVariable,
+    maxVariable,
+    fillerWidthCm: isPanel ? rest : 0,
+    absorbedRestCm: isPanel ? 0 : rest,
+  }
 }
 
 /**
- * Width of the afwerkpaneel a section shows, from its slots alone: the store
- * only ever leaves a section with nothing but fixed slots when the rest was too
- * narrow for a module, so that rest is the panel.
+ * The rest a section is left with when it holds nothing but fixed slots: the
+ * store only ever leaves a section like that when the rest was too narrow for
+ * a module. Zero when a variable slot is present.
  */
-export function fillerWidthCm(
+function fixedOnlyRestCm(
   modules: Array<{ fixedWidth?: number }>,
   innerWidthCm: number,
 ): number {
@@ -77,6 +104,74 @@ export function fillerWidthCm(
   const totalFixed = modules.reduce((sum, m) => sum + (m.fixedWidth ?? 0), 0)
   const free = innerWidthCm - totalFixed
   return free > EPS ? free : 0
+}
+
+/**
+ * Width of the afwerkpaneel a section shows, from its slots alone. A rest
+ * narrower than `minFillerCm` is no panel (see `absorbedRestCm`).
+ */
+export function fillerWidthCm(
+  modules: Array<{ fixedWidth?: number }>,
+  innerWidthCm: number,
+  minFillerCm = 0,
+): number {
+  const rest = fixedOnlyRestCm(modules, innerWidthCm)
+  return rest >= minFillerCm - EPS ? rest : 0
+}
+
+/**
+ * The rest that is too narrow for a panel and goes into the side panels
+ * instead — half on each side, so the cabinet still fills its width exactly.
+ */
+export function absorbedRestCm(
+  modules: Array<{ fixedWidth?: number }>,
+  innerWidthCm: number,
+  minFillerCm = 0,
+): number {
+  const rest = fixedOnlyRestCm(modules, innerWidthCm)
+  return rest > 0 && rest < minFillerCm - EPS ? rest : 0
+}
+
+/** 'Beide zijden' is only offered when each half is a real panel. */
+export function canSplitFiller(widthCm: number, minFillerCm: number): boolean {
+  return widthCm / 2 >= minFillerCm - EPS
+}
+
+/** The side that applies: a 'both' that no longer splits falls back to the right. */
+export function resolveFillerSide(side: FillerSide, widthCm: number, minFillerCm: number): FillerSide {
+  return side === 'both' && !canSplitFiller(widthCm, minFillerCm) ? 'right' : side
+}
+
+/** The physical panels of a section: none, one, or two halves. */
+export function fillerPieces(panel: FillerPanel | null | undefined): FillerPiece[] {
+  if (!panel || panel.widthCm <= 0) return []
+  if (panel.side === 'both') {
+    const half = panel.widthCm / 2
+    return [
+      { side: 'left', widthCm: half },
+      { side: 'right', widthCm: half },
+    ]
+  }
+  return [{ side: panel.side, widthCm: panel.widthCm }]
+}
+
+/**
+ * Interior a section loses on each side, in cm: the panel piece(s) plus half
+ * the absorbed rest per side. The scene, the measurements and the drawings all
+ * start the modules after this.
+ */
+export function fillerInsetsCm(
+  panel: FillerPanel | null | undefined,
+  absorbedCm = 0,
+): { left: number; right: number } {
+  const half = absorbedCm > 0 ? absorbedCm / 2 : 0
+  let left = half
+  let right = half
+  for (const piece of fillerPieces(panel)) {
+    if (piece.side === 'left') left += piece.widthCm
+    else right += piece.widthCm
+  }
+  return { left, right }
 }
 
 export interface ReconcileResult {

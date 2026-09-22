@@ -1,4 +1,6 @@
 import { create } from 'zustand'
+import { montageChoiceEnabled, resolveMontageOption } from '@/lib/configurator/free-montage'
+import type { MontageOption } from '@/lib/cart/types'
 import type { FullPricingData, ModuleLayout, PricingConstraints } from '@/types/configurator-pricing'
 import type { DiagonalSide, DiagParams } from './scene/diagonalUtils'
 import { getDiagHeightAt, isFullHeight } from './scene/diagonalUtils'
@@ -37,6 +39,14 @@ interface ClosetState {
 
   // Placement type
   placementType: PlacementType
+
+  // Laten monteren (default) or zelf monteren — only offered while the owner
+  // enables the choice in the pricing config.
+  montageOption: MontageOption
+  setMontageOption: (v: MontageOption) => void
+  // Opmerkingen/vragen for the workshop, sent with the order.
+  customerRemarks: string
+  setCustomerRemarks: (v: string) => void
 
   // Dimensions (cm) — total closet dimensions
   width: number
@@ -231,6 +241,11 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
   step: 1,
 
   placementType: 'ingebouwd',
+
+  montageOption: 'included',
+  setMontageOption: (montageOption) => set({ montageOption }),
+  customerRemarks: '',
+  setCustomerRemarks: (customerRemarks) => set({ customerRemarks: customerRemarks.slice(0, 2000) }),
 
   width: 180,
   height: 240,
@@ -524,7 +539,7 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
       const modules = normalizeSlots(s.modules, s, true)
       set({ step: 2, selectedSlot: null, lastClickPoint: null, modules })
     } else {
-      set((s) => ({ step: Math.min(s.step + 1, 5), selectedSlot: null, lastClickPoint: null }))
+      set((s) => ({ step: Math.min(s.step + 1, 6), selectedSlot: null, lastClickPoint: null }))
     }
   },
   prevStep: () => set((s) => ({ step: Math.max(s.step - 1, 1), selectedSlot: null, lastClickPoint: null })),
@@ -781,6 +796,11 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
       backDiagKinkHeight: (config as any).backDiagKinkHeight ?? 180,
       backDiagFlatSectionDepth: (config as any).backDiagFlatSectionDepth ?? 0,
       placementType: (config as any).placementType ?? 'ingebouwd',
+      montageOption: resolveMontageOption(
+        config.montageOption,
+        montageChoiceEnabled(get().pricingData?.config.montageChoice),
+      ),
+      customerRemarks: config.customerRemarks ?? '',
       doorHandleMaterial: config.doorHandleMaterial ?? 'chrome',
       doorsExtendToFloor: config.doorsExtendToFloor ?? false,
       lightStripsEnabled: config.lightStripsEnabled ?? false,

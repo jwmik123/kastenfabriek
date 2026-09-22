@@ -9,7 +9,7 @@ import { addItem } from '@/lib/cart/cart-store'
 import { addWishlistItem } from '@/lib/wishlist/wishlist-store'
 import { requestCapture, resetToFrontView } from '@/lib/canvas-capture'
 import { PricingEngine } from '@/lib/configurator/pricing-engine'
-import { computeFreeMontage } from '@/lib/configurator/free-montage'
+import { computeFreeMontage, montageChoiceEnabled, selfInstallLabel } from '@/lib/configurator/free-montage'
 import { computeInstallationBasis } from '@/lib/configurator/installation-basis'
 import type { CartItem, ClosetConfigSnapshot, PriceSnapshot } from '@/lib/cart/types'
 
@@ -52,6 +52,8 @@ export function useCartPrice() {
   const needsTopCabinet = useClosetStore((s) => s.needsTopCabinet)
   const topCabinetHeight = useClosetStore((s) => s.topCabinetHeight)
   const moduleLayouts = useClosetStore((s) => s.moduleLayouts)
+  const montageOption = useClosetStore((s) => s.montageOption)
+  const customerRemarks = useClosetStore((s) => s.customerRemarks)
 
   const hasTopCabinet = needsTopCabinet()
   const topCabinetHeightCm = topCabinetHeight()
@@ -122,9 +124,17 @@ export function useCartPrice() {
   const installationBasis = computeInstallationBasis({ subtotal, deliveryCost, ledCost })
   const installationTier = engine?.getInstallationTier(installationBasis) ?? null
   const freeMontage = pricingData?.config.freeMontage ?? false
-  const { effectiveInstallationCost, freeMontageDiscount, freeMontageApplied, originalPrice, grandTotal } =
-    computeFreeMontage({ subtotal, installationTier, freeMontage })
+  const montageChoice = pricingData?.config.montageChoice
+  const montage = computeFreeMontage({
+    subtotal,
+    installationTier,
+    freeMontage,
+    montageOption,
+    choiceEnabled: montageChoiceEnabled(montageChoice),
+  })
+  const { effectiveInstallationCost, freeMontageDiscount, freeMontageApplied, originalPrice, grandTotal } = montage
   const installationCost = effectiveInstallationCost
+  const selfInstall = montage.montageOption === 'self'
 
   const totalPrice =
     moduleCost +
@@ -189,6 +199,8 @@ export function useCartPrice() {
       doorsExtendToFloor,
       lightStripsEnabled,
       sidePanelThickness,
+      montageOption: montage.montageOption,
+      ...(customerRemarks.trim() ? { customerRemarks: customerRemarks.trim() } : {}),
       hasTopCabinet,
       topCabinetHeightCm,
     }
@@ -204,13 +216,14 @@ export function useCartPrice() {
       deliveryCost,
       subtotal,
       installationBasis,
-      installationTierName: installationTier?.name ?? null,
+      installationTierName: montage.installationTierName,
       installationCost,
       slopedBackWallSurcharge,
       slopedSideWallSurcharge,
       sidePanelCost,
       freeMontageApplied,
       freeMontageDiscount,
+      montageOption: montage.montageOption,
       total: grandTotal,
     }
 
@@ -269,6 +282,8 @@ export function useCartPrice() {
     installationCost,
     installationTier,
     freeMontageApplied,
+    selfInstall,
+    selfInstallLabel: selfInstallLabel(montageChoice),
     pricingData,
     editItemId,
     handleAddToCart,

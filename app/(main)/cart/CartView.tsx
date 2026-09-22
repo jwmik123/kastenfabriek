@@ -300,6 +300,9 @@ function CartItemCard({ item, onRemove, editHref }: { item: ClosetCartItem; onRe
           {price.installationCost > 0 && (
             <div className="flex justify-between"><span>Installatie ({price.installationTierName})</span><span>{fmt.format(price.installationCost)}</span></div>
           )}
+          {price.montageOption === 'self' && (
+            <div className="flex justify-between"><span>Montage (zelf monteren)</span><span>{fmt.format(0)}</span></div>
+          )}
         </div>
       )}
 

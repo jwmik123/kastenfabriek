@@ -14,6 +14,41 @@ export const pricingConfig = defineType({
       initialValue: false,
     }),
     defineField({
+      name: "montageChoice",
+      title: "Montage-keuze",
+      type: "object",
+      description:
+        "Mag de klant kiezen tussen laten monteren en zelf monteren? Uit = montage zit altijd bij de prijs (zoals nu).",
+      options: { collapsible: true, collapsed: false },
+      fields: [
+        defineField({
+          name: "customerCanChoose",
+          title: "Klant mag montage kiezen",
+          type: "boolean",
+          description:
+            "Aan: de configurator toont de keuze 'Laten monteren' of 'Zelf monteren' (€ 0). Uit: montage is altijd inbegrepen.",
+          initialValue: false,
+        }),
+        defineField({
+          name: "selfInstallLabel",
+          title: "Naam van de zelf-monteren optie",
+          type: "string",
+          initialValue: "Zelf monteren",
+          validation: (Rule) => Rule.max(40),
+        }),
+        defineField({
+          name: "selfInstallDescription",
+          title: "Toelichting bij zelf monteren",
+          type: "text",
+          rows: 3,
+          description:
+            "Korte uitleg wat de klant krijgt, bijvoorbeeld: bouwpakket met handleiding, alle onderdelen voorgeboord.",
+          initialValue:
+            "Je ontvangt de kast als bouwpakket met een duidelijke handleiding. Alle onderdelen zijn voorgeboord.",
+        }),
+      ],
+    }),
+    defineField({
       name: "title",
       title: "Title",
       type: "string",
@@ -88,6 +123,15 @@ export const pricingConfig = defineType({
             "Breedste kast die de configurator toestaat — de bovengrens van de breedte-schuif. Wordt over meerdere modules verdeeld.",
           initialValue: 1000,
           validation: (Rule) => Rule.min(50).max(5000),
+        }),
+        defineField({
+          name: "minFillerPanelCm",
+          title: "Minimale breedte afwerkpaneel (cm)",
+          type: "number",
+          description:
+            "Wasmachinekast: een restruimte naast de machines smaller dan dit wordt geen afwerkpaneel, maar verdwijnt in de zijpanelen (elk de helft dikker).",
+          initialValue: 3,
+          validation: (Rule) => Rule.min(0).max(30),
         }),
         defineField({
           name: "singleCorpus",

@@ -22,6 +22,10 @@ export interface PriceBreakdown {
   installationDays?: number
   installationPeople?: number
   freeMontageApplied?: boolean
+  /** Customer chose to install the cabinet themselves: montage is € 0 and no tier applies. */
+  selfInstall?: boolean
+  /** Owner's name for that option, e.g. "Zelf monteren". */
+  selfInstallLabel?: string
 }
 
 export interface CanvasPricePanelProps {
@@ -77,6 +81,8 @@ export default function CanvasPricePanel({
 
   // Tier name plus crew size / duration, so the montage amount reads as work
   // done rather than an arbitrary surcharge.
+  const selfInstall = breakdown?.selfInstall === true
+  const selfLabel = breakdown?.selfInstallLabel || 'Zelf monteren'
   const montageDetail = breakdown
     ? [
         breakdown.installationTierName,
@@ -93,7 +99,7 @@ export default function CanvasPricePanel({
     <div className="hidden md:flex absolute bottom-0 left-0 right-0 items-center gap-4 bg-background/90 backdrop-blur-sm border-t border-border px-6 py-4">
       <div className="flex flex-col">
         <p className="text-xs text-muted-foreground leading-none mb-1">
-          Totaalprijs · incl. levering &amp; montage
+          {selfInstall ? 'Totaalprijs · incl. levering' : 'Totaalprijs · incl. levering & montage'}
         </p>
         {configured && originalPrice !== undefined && (
           <p className="text-xs text-red-600 line-through leading-none mb-0.5">
@@ -118,7 +124,11 @@ export default function CanvasPricePanel({
             <span className="tabular-nums">
               Kast {formatter.format(breakdown.cabinet)} · Levering {formatter.format(breakdown.delivery)} ·
               Montage{' '}
-              {breakdown.freeMontageApplied ? 'gratis' : formatter.format(breakdown.installation)}
+              {selfInstall
+                ? 'zelf'
+                : breakdown.freeMontageApplied
+                  ? 'gratis'
+                  : formatter.format(breakdown.installation)}
             </span>
             <ChevronDown className={cn('size-3.5 shrink-0 transition-transform', open && 'rotate-180')} />
           </button>
@@ -161,7 +171,9 @@ export default function CanvasPricePanel({
         >
           <BreakdownRow label="Kast" amount={breakdown.cabinet} />
           <BreakdownRow label="Levering" detail={deliveryWindow} amount={breakdown.delivery} />
-          {breakdown.freeMontageApplied ? (
+          {selfInstall ? (
+            <BreakdownRow label={`Montage — ${selfLabel.toLowerCase()}`} amount={0} />
+          ) : breakdown.freeMontageApplied ? (
             <BreakdownRow
               label="Montage — nu gratis"
               detail={montageDetail || undefined}
@@ -179,7 +191,9 @@ export default function CanvasPricePanel({
             <span className="text-sm font-semibold tabular-nums">{formatter.format(totalPrice)}</span>
           </div>
           <p className="text-xs text-muted-foreground mt-2">
-            Montage wordt altijd door onze eigen monteurs gedaan en zit bij de prijs inbegrepen.
+            {selfInstall
+              ? 'Je monteert de kast zelf; je ontvangt een bouwpakket met handleiding.'
+              : 'Montage wordt door onze eigen monteurs gedaan en zit bij de prijs inbegrepen.'}
           </p>
         </div>
       )}

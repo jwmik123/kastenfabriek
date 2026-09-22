@@ -39,3 +39,45 @@ describe('computeFreeMontage', () => {
     expect(result.freeMontageApplied).toBe(false)
   })
 })
+
+describe('computeFreeMontage — zelf monteren', () => {
+  it("'self' is ignored while the owner has the choice switched off", () => {
+    const result = computeFreeMontage({
+      subtotal: 1500, installationTier: tier, freeMontage: false, montageOption: 'self', choiceEnabled: false,
+    })
+    expect(result.montageOption).toBe('included')
+    expect(result.effectiveInstallationCost).toBe(720)
+    expect(result.installationTierName).toBe('Groot project')
+    expect(result.grandTotal).toBe(2220)
+  })
+
+  it("'self' with the choice enabled zeroes montage and drops the tier", () => {
+    const result = computeFreeMontage({
+      subtotal: 1500, installationTier: tier, freeMontage: false, montageOption: 'self', choiceEnabled: true,
+    })
+    expect(result.montageOption).toBe('self')
+    expect(result.effectiveInstallationCost).toBe(0)
+    expect(result.installationTierName).toBeNull()
+    expect(result.grandTotal).toBe(1500)
+    expect(result.originalPrice).toBeUndefined()
+  })
+
+  it("'self' never combines with the free-montage promo", () => {
+    const result = computeFreeMontage({
+      subtotal: 1500, installationTier: tier, freeMontage: true, montageOption: 'self', choiceEnabled: true,
+    })
+    expect(result.freeMontageApplied).toBe(false)
+    expect(result.freeMontageDiscount).toBe(0)
+    expect(result.grandTotal).toBe(1500)
+  })
+
+  it("'included' with the choice enabled behaves exactly as before", () => {
+    const result = computeFreeMontage({
+      subtotal: 1500, installationTier: tier, freeMontage: true, montageOption: 'included', choiceEnabled: true,
+    })
+    expect(result.montageOption).toBe('included')
+    expect(result.freeMontageApplied).toBe(true)
+    expect(result.originalPrice).toBe(2220)
+    expect(result.grandTotal).toBe(1500)
+  })
+})

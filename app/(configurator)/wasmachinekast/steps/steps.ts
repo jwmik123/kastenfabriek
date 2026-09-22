@@ -10,6 +10,7 @@ export const STEP = {
   material: 4,
   handles: 5,
   accessories: 6,
+  finish: 7,
 } as const
 
-export const STEP_COUNT = 6
+export const STEP_COUNT = 7

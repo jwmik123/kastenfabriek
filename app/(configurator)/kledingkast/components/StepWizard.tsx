@@ -8,39 +8,45 @@ import ModulesStep from '../steps/ModulesStep'
 import MaterialStep from '../steps/MaterialStep'
 import DoorHandlesStep from '../../_shared/steps/DoorHandlesStep'
 import AccessoiresStep from '../steps/AccessoiresStep'
+import FinishStep from '../steps/FinishStep'
 import ModuleMaterialPanel from './ModuleMaterialPanel'
 import StepHeader from '../../_shared/components/StepHeader'
 import ScrollArea from '../../_shared/components/ScrollArea'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
-const STEP_COUNT = 5
+const STEP_COUNT = 6
 
 const STEP_META: Record<number, { eyebrow: string; title: string; subtitle: string }> = {
   1: {
-    eyebrow: 'Stap 1 van 5',
+    eyebrow: 'Stap 1 van 6',
     title: 'Afmetingen',
     subtitle: 'Bepaal de breedte, hoogte en diepte van je kast.',
   },
   2: {
-    eyebrow: 'Stap 2 van 5',
+    eyebrow: 'Stap 2 van 6',
     title: 'Indeling',
     subtitle: 'Kies per vak een indeling en of er een deur op komt.',
   },
   3: {
-    eyebrow: 'Stap 3 van 5',
+    eyebrow: 'Stap 3 van 6',
     title: 'Materiaal',
     subtitle: 'Kies een materiaal voor de buiten- en binnenkant.',
   },
   4: {
-    eyebrow: 'Stap 4 van 5',
+    eyebrow: 'Stap 4 van 6',
     title: 'Handgrepen',
     subtitle: 'Selecteer een handgreep en afwerking.',
   },
   5: {
-    eyebrow: 'Stap 5 van 5',
+    eyebrow: 'Stap 5 van 6',
     title: 'Accessoires',
     subtitle: 'Verlichting, stekkerdoos­gaten en extra opties.',
+  },
+  6: {
+    eyebrow: 'Stap 6 van 6',
+    title: 'Montage',
+    subtitle: 'Hoe je kast geplaatst wordt, en ruimte voor opmerkingen of vragen.',
   },
 }
 
@@ -53,6 +59,7 @@ function CurrentStep() {
     case 3: return <MaterialStep />
     case 4: return <DoorHandlesStep />
     case 5: return <AccessoiresStep />
+    case 6: return <FinishStep />
     default: return null
   }
 }

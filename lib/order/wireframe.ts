@@ -326,13 +326,40 @@ export function buildWireframe(
     // An afwerkpaneel takes its width off the interior on the side it sits;
     // the modules share what is left, exactly as in the scene.
     const panel = section.fillerPanel;
-    const panelW = panel ? Math.min(panel.widthCm, W - walls.left - walls.right) : 0;
-    const innerW = W - walls.left - walls.right - panelW;
+    const extra = section.sideWallExtraCm ?? 0;
+    const innerFree = W - walls.left - walls.right - 2 * extra;
+    const pieces: Array<{ side: "left" | "right"; widthCm: number }> = panel
+      ? panel.side === "both"
+        ? [
+            { side: "left", widthCm: panel.widthCm / 2 },
+            { side: "right", widthCm: panel.widthCm / 2 },
+          ]
+        : [{ side: panel.side, widthCm: panel.widthCm }]
+      : [];
+    const piecesW = Math.min(
+      pieces.reduce((sum, p) => sum + p.widthCm, 0),
+      innerFree,
+    );
+    const leftPieceW = pieces
+      .filter((p) => p.side === "left")
+      .reduce((sum, p) => sum + p.widthCm, 0);
+    const innerW = innerFree - piecesW;
     const slotWidths = computeSlotWidthsCm(section.modules, innerW);
-    let slotX = x0 + walls.left + (panel?.side === "left" ? panelW : 0);
+    let slotX = x0 + walls.left + extra + leftPieceW;
 
-    if (panel && panelW > 0) {
-      const panelX = panel.side === "left" ? x0 + walls.left : x0 + W - walls.right - panelW;
+    // A rest too narrow for a panel thickens both side panels inward.
+    if (extra > 0) {
+      rect(x0 + walls.left, 0, extra, mainH, "panel");
+      rect(x0 + W - walls.right - extra, 0, extra, mainH, "panel");
+    }
+
+    for (const piece of pieces) {
+      const panelW = piece.widthCm;
+      if (panelW <= 0) continue;
+      const panelX =
+        piece.side === "left"
+          ? x0 + walls.left + extra
+          : x0 + W - walls.right - extra - panelW;
       const panelH = moduleTop - MODULE_FLOOR_CM;
       rect(panelX, MODULE_FLOOR_CM, panelW, panelH, "panel");
       // A diagonal through the strip marks it as a blind front, not a vak.

@@ -72,3 +72,28 @@ export default function FillerPanel({
     </>
   )
 }
+
+/**
+ * The inward thickening of a side panel that swallows a rest too narrow for
+ * an afwerkpaneel: a full-height, full-depth board in the outside material,
+ * flush against the side wall, so the cabinet still fills its width.
+ */
+export function SideWallExtension({
+  xLeft,
+  widthM,
+  heightM,
+  depthM,
+}: {
+  xLeft: number
+  widthM: number
+  heightM: number
+  depthM: number
+}) {
+  if (widthM <= 0 || heightM <= 0) return null
+  return (
+    <mesh position={[xLeft + widthM / 2, heightM / 2, depthM / 2]} castShadow receiveShadow>
+      <boxGeometry args={[widthM, heightM, depthM]} />
+      <ClosetMaterial />
+    </mesh>
+  )
+}

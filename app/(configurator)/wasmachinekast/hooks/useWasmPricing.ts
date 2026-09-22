@@ -20,6 +20,7 @@ export function useWasmPricing(): WasmPricingResult {
   const lightStripsEnabled = useWasmachinekastStore((s) => s.lightStripsEnabled)
   const needsTopCabinet = useWasmachinekastStore((s) => s.needsTopCabinet)
   const sidePanelThickness = useWasmachinekastStore((s) => s.sidePanelThickness)
+  const montageOption = useWasmachinekastStore((s) => s.montageOption)
   const highFiller = useFillerPanel('high')
   const lowFiller = useFillerPanel('low')
 
@@ -34,6 +35,7 @@ export function useWasmPricing(): WasmPricingResult {
     lightStripsEnabled,
     hasTopCabinet: needsTopCabinet(),
     sidePanelThickness,
+    montageOption,
     fillerPanels: [
       ...(highFiller ? [{ section: 'high' as const, ...highFiller }] : []),
       ...(lowFiller ? [{ section: 'low' as const, ...lowFiller }] : []),

@@ -11,7 +11,21 @@ import type { FillerPanel } from '../sections/sectionPlan'
  * primitives instead and memoises the pair.
  */
 export function useFillerPanel(section: 'high' | 'low'): FillerPanel | null {
-  const side = useWasmachinekastStore((s) => s.fillerPanelSide[section])
+  // The resolved side: a 'both' that no longer splits reads as 'right'.
+  const side = useWasmachinekastStore((s) => s.fillerPanel(section)?.side ?? 'right')
   const widthCm = useWasmachinekastStore((s) => s.fillerPanel(section)?.widthCm ?? 0)
   return useMemo(() => (widthCm > 0 ? { side, widthCm } : null), [side, widthCm])
+}
+
+/** Extra thickness per side panel of a section from an absorbed rest, in cm. */
+export function useSideWallExtraCm(section: 'high' | 'low'): number {
+  return useWasmachinekastStore((s) => s.sideWallExtraCm(section))
+}
+
+/** Whether the section's panel may be split over both sides. */
+export function useCanSplitFiller(section: 'high' | 'low'): boolean {
+  return useWasmachinekastStore((s) => {
+    const panel = s.fillerPanel(section)
+    return panel ? panel.widthCm / 2 >= s.minFillerPanelCm() - 1e-6 : false
+  })
 }

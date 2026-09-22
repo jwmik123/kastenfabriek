@@ -14,7 +14,7 @@ import { LOW_LAYOUT_SVGS, WASHER_LAYOUT_SVGS, WASHER_TYPE_SVGS } from './WasherL
 import { STEP } from '../steps/steps'
 import { Toggle } from '@/components/ui/Toggle'
 import { cn } from '@/lib/utils'
-import { useFillerPanel } from '../hooks/useFillerPanel'
+import { useCanSplitFiller, useFillerPanel } from '../hooks/useFillerPanel'
 import FillerPanelControl, { formatPanelWidth } from './FillerPanelControl'
 
 function PickerHeading({ children }: { children: React.ReactNode }) {
@@ -90,6 +90,8 @@ export default function ModuleConfigCard({ className }: { className?: string }) 
   const editingSection: 'high' | 'low' =
     layout === 'low-only' ? 'low' : editingLow ? 'low' : 'high'
   const fillerPanel = useFillerPanel(editingSection)
+  const canSplitFiller = useCanSplitFiller(editingSection)
+  const minFillerPanelCm = useWasmachinekastStore((s) => s.minFillerPanelCm())
   const washerSlots = new Set(
     washerModules.filter((w) => w.section === editingSection).map((w) => w.slotIndex),
   )
@@ -257,6 +259,8 @@ export default function ModuleConfigCard({ className }: { className?: string }) 
           <FillerPanelControl
             panel={fillerPanel}
             onSideChange={(side) => setFillerPanelSide(editingSection, side)}
+            canSplit={canSplitFiller}
+            minPanelCm={minFillerPanelCm}
             compact
           />
         </div>

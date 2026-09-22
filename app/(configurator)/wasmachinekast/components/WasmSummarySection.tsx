@@ -7,7 +7,8 @@ import type { HandleType } from '@/types/configurator-pricing'
 import ConfiguratorServicesBar from '../../_shared/components/ConfiguratorServicesBar'
 import type { ConfiguratorService } from '@/lib/configurator/services'
 import { SpecRow, MaterialSwatch } from '../../_shared/components/SpecList'
-import { useFillerPanel } from '../hooks/useFillerPanel'
+import { useFillerPanel, useSideWallExtraCm } from '../hooks/useFillerPanel'
+import { describeFillerPanelSide } from './FillerPanelControl'
 import type { FillerPanel } from '../sections/sectionPlan'
 
 const LAYOUT_LABELS: Record<WasmLayout, string> = {
@@ -33,11 +34,13 @@ function SectionSpecs({
   prefix,
   washerCount,
   fillerPanel,
+  sideWallExtraCm = 0,
 }: {
   section: Section
   prefix: string
   washerCount: number
   fillerPanel: FillerPanel | null
+  sideWallExtraCm?: number
 }) {
   const doorsCount = section.modules.filter((m) => m.hasDoor).length
   const doubleCount = section.modules.filter((m) => m.span === 2).length
@@ -58,9 +61,12 @@ function SectionSpecs({
         <SpecRow label={`${prefix} wasmachines`}>{washerCount}</SpecRow>
       )}
       {fillerPanel && (
-        <SpecRow label={`${prefix} afwerkpaneel`}>
-          {fillerPanel.widthCm.toLocaleString('nl-NL', { maximumFractionDigits: 1 })} cm (
-          {fillerPanel.side === 'left' ? 'links' : 'rechts'})
+        <SpecRow label={`${prefix} afwerkpaneel`}>{describeFillerPanelSide(fillerPanel)}</SpecRow>
+      )}
+      {sideWallExtraCm > 0 && (
+        <SpecRow label={`${prefix} zijpanelen`}>
+          elk {(sideWallExtraCm * 10).toLocaleString('nl-NL', { maximumFractionDigits: 1 })} mm dikker
+          (restruimte)
         </SpecRow>
       )}
     </>
@@ -83,6 +89,8 @@ export default function WasmSummarySection({ services }: { services: Configurato
 
   const highFiller = useFillerPanel('high')
   const lowFiller = useFillerPanel('low')
+  const highExtra = useSideWallExtraCm('high')
+  const lowExtra = useSideWallExtraCm('low')
 
   const high = highSection()
   const highWashers = washerModules.filter((w) => w.section === 'high').length
@@ -111,6 +119,7 @@ export default function WasmSummarySection({ services }: { services: Configurato
                 prefix={lowSection ? 'Hoge kast' : 'Kast'}
                 washerCount={highWashers}
                 fillerPanel={highFiller}
+                sideWallExtraCm={highExtra}
               />
             )}
             {high && needsTopCabinet() && (
@@ -122,6 +131,7 @@ export default function WasmSummarySection({ services }: { services: Configurato
                 prefix={high ? 'Lage kast' : 'Kast'}
                 washerCount={lowWashers}
                 fillerPanel={lowFiller}
+                sideWallExtraCm={lowExtra}
               />
             )}
             <SpecRow label="Materiaal buiten">

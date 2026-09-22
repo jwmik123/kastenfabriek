@@ -67,6 +67,17 @@ export default function OrderDocumentBody({
   summary,
 }: OrderDocumentProps & { variant: OrderEmailVariant }) {
   const isAdmin = variant === "admin";
+  // Opmerkingen/vragen per cabinet, numbered like the lines below.
+  const remarks = items
+    .map((item, i) => ({ item, i }))
+    .filter(
+      (x): x is { item: ClosetOrderLine; i: number } =>
+        x.item.kind === "closet" && !!x.item.configuration.customerRemarks?.trim(),
+    )
+    .map(({ item, i }) => ({
+      title: `${items.length > 1 ? `${i + 1}. ` : ""}${buildClosetSpec(item.configuration, item.priceSnapshot).title}`,
+      text: item.configuration.customerRemarks!.trim(),
+    }));
   const preview = isAdmin
     ? `Nieuwe bestelling ${orderNumber} — ${formatPrice(summary.total)}`
     : `Bevestiging van bestelling ${orderNumber} — Kastenfabriek`;
@@ -119,6 +130,28 @@ export default function OrderDocumentBody({
             )}
           </Section>
 
+          {isAdmin && remarks.length > 0 && (
+            <Section style={{ ...section, paddingTop: 0 }}>
+              <div style={remarksBox}>
+                <Text style={remarksHeading}>
+                  ⚠ Opmerkingen / vragen van de klant
+                </Text>
+                {remarks.map((r) => (
+                  <div key={r.title} style={{ marginTop: "10px" }}>
+                    {remarks.length > 1 || items.length > 1 ? (
+                      <Text style={remarksTitle}>{r.title}</Text>
+                    ) : null}
+                    <Text style={remarksText}>{r.text}</Text>
+                  </div>
+                ))}
+                <Text style={remarksHint}>
+                  Beantwoord vragen vóór productie: mail de klant op{" "}
+                  <a href={`mailto:${customerEmail}`} style={footerLink}>{customerEmail}</a>.
+                </Text>
+              </div>
+            </Section>
+          )}
+
           <Section style={{ ...section, paddingTop: 0 }}>
             <table width="100%" cellPadding="0" cellSpacing="0" style={metaTable}>
               <tr>
@@ -163,6 +196,9 @@ export default function OrderDocumentBody({
                 label={`Montage${summary.installationTierName ? ` (${summary.installationTierName})` : ""}`}
                 amount={formatPrice(summary.installationGross)}
               />
+            )}
+            {summary.selfInstall && (
+              <SummaryRow label="Montage (zelf monteren)" amount={formatPrice(0)} />
             )}
             {summary.freeMontageDiscount > 0 && (
               <SummaryRow
@@ -283,6 +319,12 @@ function ClosetLine({
                 <Text key={e} style={featureText}>{e}</Text>
               ))}
             </td>
+          </tr>
+        )}
+        {line.configuration.customerRemarks?.trim() && (
+          <tr>
+            <td style={detailLabel}><Text style={label}>Opmerking</Text></td>
+            <td><Text style={{ ...value, whiteSpace: "pre-wrap" }}>{line.configuration.customerRemarks.trim()}</Text></td>
           </tr>
         )}
         {line.quantity > 1 && (
@@ -616,6 +658,43 @@ const hr: React.CSSProperties = {
 const thinHr: React.CSSProperties = {
   borderColor: "#e2e9e3",
   margin: "8px 0",
+};
+
+const remarksBox: React.CSSProperties = {
+  backgroundColor: "#fff7e6",
+  border: "2px solid #f59e0b",
+  borderRadius: "8px",
+  padding: "16px 20px",
+};
+
+const remarksHeading: React.CSSProperties = {
+  fontSize: "15px",
+  fontWeight: 700,
+  color: "#92400e",
+  margin: 0,
+};
+
+const remarksTitle: React.CSSProperties = {
+  fontSize: "12px",
+  fontWeight: 700,
+  textTransform: "uppercase",
+  letterSpacing: "0.04em",
+  color: "#92400e",
+  margin: "0 0 2px",
+};
+
+const remarksText: React.CSSProperties = {
+  fontSize: "15px",
+  lineHeight: "1.6",
+  color: "#1a1a1a",
+  whiteSpace: "pre-wrap",
+  margin: 0,
+};
+
+const remarksHint: React.CSSProperties = {
+  fontSize: "12px",
+  color: "#92400e",
+  margin: "12px 0 0",
 };
 
 const footer: React.CSSProperties = {

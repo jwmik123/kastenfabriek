@@ -120,6 +120,10 @@ export default function CheckoutForm({ addresses, cartItems, legalFilled }: Chec
     0
   )
 
+  const selfInstallAll =
+    cartItems.some((item) => item.kind === 'closet') &&
+    cartItems.every((item) => item.kind !== 'closet' || item.priceSnapshot.montageOption === 'self')
+
   const discountAmountEur = appliedCoupon
     ? calculateDiscount(totals.lineSubtotal + totals.install, appliedCoupon)
     : 0
@@ -390,6 +394,12 @@ export default function CheckoutForm({ addresses, cartItems, legalFilled }: Chec
                 <div className="flex justify-between text-green-700">
                   <span>Gratis montage</span>
                   <span>-{fmt.format(freeMontageTotal)}</span>
+                </div>
+              )}
+              {selfInstallAll && (
+                <div className="flex justify-between">
+                  <span>Montage (zelf monteren)</span>
+                  <span>{fmt.format(0)}</span>
                 </div>
               )}
               {discountAmountEur > 0 && appliedCoupon && (

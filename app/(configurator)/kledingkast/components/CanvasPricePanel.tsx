@@ -13,6 +13,8 @@ export default function CanvasPricePanel() {
     installationCost,
     installationTier,
     freeMontageApplied,
+    selfInstall,
+    selfInstallLabel,
     handleAddToWishlist,
     isCapturing,
   } = useCartPrice()
@@ -47,6 +49,8 @@ export default function CanvasPricePanel() {
         installationDays: installationTier?.days,
         installationPeople: installationTier?.people,
         freeMontageApplied,
+        selfInstall,
+        selfInstallLabel,
       }}
       stepSummary={stepSummary}
       onSave={handleAddToWishlist}

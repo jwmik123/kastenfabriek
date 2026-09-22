@@ -21,6 +21,8 @@ export interface OrderSummary {
    */
   installationGross: number;
   installationTierName: string | null;
+  /** True when every closet line is a self-install kit: no montage service on this order. */
+  selfInstall: boolean;
   freeMontageDiscount: number;
   discountCode: string | null;
   discount: number;
@@ -48,11 +50,15 @@ export function buildOrderSummary(
   let freeMontageDiscount = 0;
   let delivery = 0;
   let installationTierName: string | null = null;
+  let closetLines = 0;
+  let selfInstallLines = 0;
 
   for (const line of lines) {
     const qty = line.quantity;
     if (line.kind === "closet") {
       const ps = line.priceSnapshot;
+      closetLines += 1;
+      if (ps.montageOption === "self") selfInstallLines += 1;
       lineSubtotal += (ps.total - ps.deliveryCost - ps.installationCost) * qty;
       installation += ps.installationCost * qty;
       if (ps.freeMontageApplied) freeMontageDiscount += (ps.freeMontageDiscount ?? 0) * qty;
@@ -73,6 +79,7 @@ export function buildOrderSummary(
     installation: round2(installation),
     installationGross: round2(installation + freeMontageDiscount),
     installationTierName,
+    selfInstall: closetLines > 0 && selfInstallLines === closetLines,
     freeMontageDiscount: round2(freeMontageDiscount),
     discountCode: coupon?.code ?? null,
     discount: round2(discount),

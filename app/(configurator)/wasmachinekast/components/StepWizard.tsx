@@ -9,6 +9,7 @@ import ModulesStep from '../steps/ModulesStep'
 import MaterialStep from '../steps/MaterialStep'
 import DoorHandlesStep from '../../_shared/steps/DoorHandlesStep'
 import AccessoiresStep from '../steps/AccessoiresStep'
+import FinishStep from '../steps/FinishStep'
 import { hasDrawerFronts } from '../sections/drawerFronts'
 import { STEP, STEP_COUNT } from '../steps/steps'
 import ModuleMaterialPanel from './ModuleMaterialPanel'
@@ -19,34 +20,39 @@ import { cn } from '@/lib/utils'
 
 const STEP_META: Record<number, { eyebrow: string; title: string; subtitle: string }> = {
   1: {
-    eyebrow: 'Stap 1 van 6',
+    eyebrow: 'Stap 1 van 7',
     title: 'Layout',
     subtitle: 'Kies de vorm van je wasmachinekast.',
   },
   2: {
-    eyebrow: 'Stap 2 van 6',
+    eyebrow: 'Stap 2 van 7',
     title: 'Afmetingen',
     subtitle: 'Bepaal de breedte, hoogte en diepte van je kast.',
   },
   3: {
-    eyebrow: 'Stap 3 van 6',
+    eyebrow: 'Stap 3 van 7',
     title: 'Indeling',
     subtitle: 'Kies per vak een indeling — ook je wasmachine — en of er een deur op komt.',
   },
   4: {
-    eyebrow: 'Stap 4 van 6',
+    eyebrow: 'Stap 4 van 7',
     title: 'Materiaal',
     subtitle: 'Kies een materiaal voor de buiten- en binnenkant.',
   },
   5: {
-    eyebrow: 'Stap 5 van 6',
+    eyebrow: 'Stap 5 van 7',
     title: 'Handgrepen',
     subtitle: 'Selecteer een handgreep en afwerking.',
   },
   6: {
-    eyebrow: 'Stap 6 van 6',
+    eyebrow: 'Stap 6 van 7',
     title: 'Accessoires',
     subtitle: 'Verlichting, stekkerdoos­gaten en extra opties.',
+  },
+  7: {
+    eyebrow: 'Stap 7 van 7',
+    title: 'Montage',
+    subtitle: 'Hoe je kast geplaatst wordt, en ruimte voor opmerkingen of vragen.',
   },
 }
 
@@ -89,6 +95,7 @@ function CurrentStep() {
     case STEP.material: return <MaterialStep />
     case STEP.handles: return <HandlesStep />
     case STEP.accessories: return <AccessoiresStep />
+    case STEP.finish: return <FinishStep />
     default: return null
   }
 }

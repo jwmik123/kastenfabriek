@@ -19,6 +19,7 @@ const TOP_BAR_STEPS = [
   { label: 'Materiaal', number: 3 },
   { label: 'Handgrepen', number: 4 },
   { label: 'Accessoires', number: 5 },
+  { label: 'Montage', number: 6 },
 ]
 import { getDraftConfig, saveDraftConfig } from '@/lib/cart/draft-config'
 import { getCart } from '@/lib/cart/cart-store'
@@ -36,7 +37,7 @@ export default function KledingkastConfigurator({ pricingData, editConfig, editI
   const restoreConfig = useClosetStore((s) => s.restoreConfig)
   const step = useClosetStore((s) => s.step)
   const setStep = useClosetStore((s) => s.setStep)
-  const { grandTotal } = useCartPrice()
+  const { grandTotal, selfInstall } = useCartPrice()
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // 1. Hydrate pricing data, then restore config (priority: URL cart item > localStorage draft)
@@ -101,6 +102,8 @@ export default function KledingkastConfigurator({ pricingData, editConfig, editI
           doorHandleMaterial: state.doorHandleMaterial,
           doorsExtendToFloor: state.doorsExtendToFloor,
           sidePanelThickness: state.sidePanelThickness,
+          montageOption: state.montageOption,
+          customerRemarks: state.customerRemarks,
           lightStripsEnabled: state.lightStripsEnabled,
           hasTopCabinet: state.needsTopCabinet(),
           topCabinetHeightCm: state.topCabinetHeight(),
@@ -122,7 +125,7 @@ export default function KledingkastConfigurator({ pricingData, editConfig, editI
           <ConfiguratorMobileHeader
             price={grandTotal}
             productName="Kledingkast"
-            priceNote="incl. levering & montage"
+            priceNote={selfInstall ? 'incl. levering' : 'incl. levering & montage'}
           />
           <div className="hidden md:block">
             <ConfiguratorTopBar

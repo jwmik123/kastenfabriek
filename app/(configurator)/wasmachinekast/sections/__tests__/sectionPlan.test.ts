@@ -123,3 +123,77 @@ describe('reconcileSlots', () => {
     expect(result.modules).toBe(modules)
   })
 })
+
+import {
+  absorbedRestCm,
+  canSplitFiller,
+  fillerInsetsCm,
+  fillerPieces,
+  resolveFillerSide,
+} from '../sectionPlan'
+
+describe('minimum panel width — a rest too narrow for a panel', () => {
+  it('reports a real rest as a panel and nothing absorbed', () => {
+    const plan = planSectionWidths({ innerWidthCm: 146.4, fixedWidthsCm: [68.6, 68.6], ...bounds, minFillerCm: 3 })
+    expect(plan.fillerWidthCm).toBeCloseTo(9.2, 5)
+    expect(plan.absorbedRestCm).toBe(0)
+  })
+
+  it('turns a rest below the minimum into absorbed side-panel thickness', () => {
+    // 0.8 cm rest: the client's "plint van een paar millimeter"
+    const plan = planSectionWidths({ innerWidthCm: 138, fixedWidthsCm: [68.6, 68.6], ...bounds, minFillerCm: 3 })
+    expect(plan.fillerWidthCm).toBe(0)
+    expect(plan.absorbedRestCm).toBeCloseTo(0.8, 5)
+    expect(plan.minVariable).toBe(0)
+    expect(plan.maxVariable).toBe(0)
+  })
+
+  it('exactly the minimum is still a panel', () => {
+    const plan = planSectionWidths({ innerWidthCm: 140.2, fixedWidthsCm: [68.6, 68.6], ...bounds, minFillerCm: 3 })
+    expect(plan.fillerWidthCm).toBeCloseTo(3, 5)
+    expect(plan.absorbedRestCm).toBe(0)
+  })
+
+  it('fillerWidthCm / absorbedRestCm agree with the plan', () => {
+    const modules = [slot(0, 68.6), slot(1, 68.6)]
+    expect(fillerWidthCm(modules, 138, 3)).toBe(0)
+    expect(absorbedRestCm(modules, 138, 3)).toBeCloseTo(0.8, 5)
+    expect(fillerWidthCm(modules, 146.4, 3)).toBeCloseTo(9.2, 5)
+    expect(absorbedRestCm(modules, 146.4, 3)).toBe(0)
+    // A variable slot present: no rest at all.
+    expect(absorbedRestCm([slot(0, 68.6), slot(1)], 138, 3)).toBe(0)
+  })
+
+  it('keeps every rest a panel when no minimum is given', () => {
+    expect(fillerWidthCm([slot(0, 68.6), slot(1, 68.6)], 138)).toBeCloseTo(0.8, 5)
+  })
+})
+
+describe('beide zijden', () => {
+  it('may split only when each half is at least the minimum', () => {
+    expect(canSplitFiller(9.2, 3)).toBe(true)
+    expect(canSplitFiller(6, 3)).toBe(true)
+    expect(canSplitFiller(5, 3)).toBe(false)
+  })
+
+  it("'both' falls back to the right side when it no longer splits", () => {
+    expect(resolveFillerSide('both', 9.2, 3)).toBe('both')
+    expect(resolveFillerSide('both', 5, 3)).toBe('right')
+    expect(resolveFillerSide('left', 5, 3)).toBe('left')
+  })
+
+  it('resolves into two equal pieces', () => {
+    expect(fillerPieces({ side: 'both', widthCm: 9.2 })).toEqual([
+      { side: 'left', widthCm: 4.6 },
+      { side: 'right', widthCm: 4.6 },
+    ])
+    expect(fillerPieces({ side: 'left', widthCm: 9.2 })).toEqual([{ side: 'left', widthCm: 9.2 }])
+    expect(fillerPieces(null)).toEqual([])
+  })
+
+  it('insets combine the pieces and half the absorbed rest per side', () => {
+    expect(fillerInsetsCm({ side: 'both', widthCm: 9.2 })).toEqual({ left: 4.6, right: 4.6 })
+    expect(fillerInsetsCm({ side: 'right', widthCm: 9.2 })).toEqual({ left: 0, right: 9.2 })
+    expect(fillerInsetsCm(null, 0.8)).toEqual({ left: 0.4, right: 0.4 })
+  })
+})

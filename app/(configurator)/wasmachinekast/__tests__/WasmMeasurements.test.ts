@@ -165,3 +165,33 @@ describe('buildWasmSpecs — afwerkpaneel', () => {
     expect(firstModule(left).p1.x).toBeCloseTo(firstModule(right).p1.x + 0.092, 6)
   })
 })
+
+describe('buildWasmSpecs — beide zijden en verdikte zijpanelen', () => {
+  const base = {
+    kind: 'high' as const,
+    widthCm: 150,
+    heightCm: 240,
+    xOffsetM: 0,
+    modules: [slot(0, { fixedWidth: 68.6 }), slot(1, { fixedWidth: 68.6 })],
+  }
+
+  it('measures both halves and centres the machines between them', () => {
+    const specs = buildWasmSpecs([{ ...base, fillerPanel: { side: 'both' as const, widthCm: 9.2 } }], 85)
+    const left = specs.find((s) => s.id === 'filler-panel-high-left')!
+    const right = specs.find((s) => s.id === 'filler-panel-high-right')!
+    expect(left.label).toBe('4.6')
+    expect(right.label).toBe('4.6')
+    expect(widths(specs)).toEqual(['65.0', '65.0'])
+    const first = specs.find((s) => s.id === 'module-width-high-0')!
+    // left edge −0.75, side panel 0.018, half panel 0.046, module wall 0.018
+    expect(first.p1.x).toBeCloseTo(-0.75 + 0.018 + 0.046 + 0.018, 6)
+  })
+
+  it('starts the modules after the thickened side panel when the rest was absorbed', () => {
+    const specs = buildWasmSpecs([{ ...base, widthCm: 141.6, fillerPanel: null, sideWallExtraCm: 0.4 }], 85)
+    expect(specs.find((s) => s.id.startsWith('filler-panel'))).toBeUndefined()
+    expect(widths(specs)).toEqual(['65.0', '65.0'])
+    const first = specs.find((s) => s.id === 'module-width-high-0')!
+    expect(first.p1.x).toBeCloseTo(-0.708 + 0.018 + 0.004 + 0.018, 6)
+  })
+})

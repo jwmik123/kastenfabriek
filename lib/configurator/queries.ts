@@ -8,6 +8,7 @@ export const pricingDataQuery = groq`{
     deliveryPrice,
     constraints,
     freeMontage,
+    montageChoice,
     slopedBackWallSurcharge,
     slopedSideWallSurchargePerSide
   },
@@ -118,6 +119,7 @@ export const pricingConfigQuery = groq`
     deliveryPrice,
     constraints,
     freeMontage,
+    montageChoice,
     slopedBackWallSurcharge,
     slopedSideWallSurchargePerSide
   }
