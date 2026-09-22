@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useSession } from '@/lib/auth-client'
 import { useClosetStore } from '../store'
-import { MATERIALS } from '../materials'
+import { isTextureMaterial } from '@/lib/materials'
 import { addItem } from '@/lib/cart/cart-store'
 import { addWishlistItem } from '@/lib/wishlist/wishlist-store'
 import { requestCapture, resetToFrontView } from '@/lib/canvas-capture'
@@ -72,8 +72,7 @@ export function useCartPrice() {
   for (const module of modules) {
     if (!module.hasDoor || module.layoutId === null || !engine) continue
     const effectiveMaterialId = module.buitenkantMaterialId ?? buitenkantMaterialId
-    const material = MATERIALS.find((m) => m.id === effectiveMaterialId)
-    const variant = material?.type === 'texture' ? 'veneer' : 'standard'
+    const variant = isTextureMaterial(effectiveMaterialId) ? 'veneer' : 'standard'
     const count = module.span === 2 ? 2 : 1
     moduleDoorCost += engine.getDoorPrice(variant) * count
     moduleDoorCount += count

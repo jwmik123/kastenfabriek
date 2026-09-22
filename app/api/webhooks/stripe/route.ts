@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { order, orderItem, cartItem } from "@/db/schema";
 import { and, eq, ne } from "drizzle-orm";
 import { sendOrderEmails } from "@/lib/email/resend";
+import { getMaterials } from "@/sanity/lib/materials";
 import { incrementCouponUseCount } from "@/lib/actions/coupon";
 import { buildOrderSummary } from "@/lib/order/order-summary";
 import type { AddressSnapshot, OrderLine } from "@/lib/order/types";
@@ -120,6 +121,8 @@ export async function POST(request: NextRequest) {
       });
 
       try {
+        // Material names in the e-mails and spec PDF come from the Sanity list.
+        await getMaterials();
         await sendOrderEmails({
           orderNumber: fullOrder.orderNumber,
           orderDate: fullOrder.paidAt ?? fullOrder.createdAt,

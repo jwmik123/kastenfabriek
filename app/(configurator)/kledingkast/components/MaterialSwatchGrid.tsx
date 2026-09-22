@@ -1,6 +1,6 @@
 'use client'
 
-import { MATERIALS } from '../materials'
+import { useMaterials } from '@/lib/materials/MaterialsProvider'
 import { cn } from '@/lib/utils'
 
 interface MaterialSwatchGridProps {
@@ -12,7 +12,7 @@ interface MaterialSwatchGridProps {
 
 /**
  * Square-swatch grid picker — the mobile counterpart of MaterialColorWheel.
- * Textures come first (that's the MATERIALS order), then colors.
+ * Textures come first, then colors, each in editor order.
  */
 export default function MaterialSwatchGrid({
   materialId,
@@ -20,9 +20,12 @@ export default function MaterialSwatchGrid({
   hideOutsideOnly = false,
   className,
 }: MaterialSwatchGridProps) {
-  const items = MATERIALS.filter(
-    (m) => !(hideOutsideOnly && m.type === 'color' && m.outsideOnly),
-  )
+  const { selectable } = useMaterials()
+  const offered = selectable.filter((m) => !(hideOutsideOnly && m.outsideOnly))
+  const items = [
+    ...offered.filter((m) => m.type === 'texture'),
+    ...offered.filter((m) => m.type === 'color'),
+  ]
 
   return (
     <div

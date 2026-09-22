@@ -9,7 +9,7 @@ import {
   Section,
   Text,
 } from "@react-email/components";
-import { MATERIALS } from "@/app/(configurator)/kledingkast/materials";
+import { findMaterial } from "@/lib/materials";
 
 export interface SampleRequestAdminNotificationProps {
   name: string;
@@ -28,7 +28,7 @@ export interface SampleRequestAdminNotificationProps {
 }
 
 function materialLine(id: string): string {
-  const m = MATERIALS.find((x) => x.id === id);
+  const m = findMaterial(id);
   return m ? `${m.name} (${id})` : id;
 }
 

@@ -10,6 +10,7 @@ import { doorType } from "./doorType";
 import { handle } from "./handle";
 import { installationTier } from "./installationTier";
 import { pricingConfig } from "./pricingConfig";
+import { material } from "./material";
 import { testimonial } from "./testimonial";
 import { hotspotSection } from "./hotspotSection";
 import { homeProductOptions } from "./homeProductOptions";
@@ -36,6 +37,7 @@ export const schema: { types: SchemaTypeDefinition[] } = {
     handle,
     installationTier,
     pricingConfig,
+    material,
     // Commerce
     coupon,
     ...productSchemaTypes,

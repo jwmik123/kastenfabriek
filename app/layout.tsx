@@ -4,6 +4,8 @@ import "./globals.css";
 import { AuthProvider } from "@/components/auth";
 import { OG_IMAGE, SITE_DESCRIPTION, SITE_NAME, SITE_TITLE, SITE_URL } from "@/lib/site";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { MaterialsProvider } from "@/lib/materials/MaterialsProvider";
+import { getMaterials } from "@/sanity/lib/materials";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -60,20 +62,23 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const materials = await getMaterials();
   return (
     <html lang="nl">
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${plexMono.variable} ${poppins.variable} antialiased min-h-screen flex flex-col`}
       >
         <AuthProvider>
-          <TooltipProvider delayDuration={400}>
-            {children}
-          </TooltipProvider>
+          <MaterialsProvider materials={materials}>
+            <TooltipProvider delayDuration={400}>
+              {children}
+            </TooltipProvider>
+          </MaterialsProvider>
         </AuthProvider>
       </body>
     </html>

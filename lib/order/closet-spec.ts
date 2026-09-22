@@ -1,4 +1,4 @@
-import { MATERIALS } from "@/app/(configurator)/kledingkast/materials";
+import { getMaterialName } from "@/lib/materials";
 import { getWasmLayoutConfig } from "@/app/(configurator)/wasmachinekast/moduleLayoutConfigs";
 import type {
   ClosetConfigSnapshot,
@@ -311,9 +311,7 @@ function dimensionNotes(sections: SpecSection[]): string[] | undefined {
   return notes.length > 0 ? notes : undefined;
 }
 
-export function getMaterialName(id: string): string {
-  return MATERIALS.find((m) => m.id === id)?.name ?? id;
-}
+export { getMaterialName };
 
 /** Counts every section, so low-section sockets are no longer missed. */
 function countPowerHoles(c: ClosetConfigSnapshot, sections = resolveSections(c)): number {

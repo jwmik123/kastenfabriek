@@ -15,6 +15,7 @@ import {
   resolveClosetKind,
 } from "@/lib/order/closet-spec";
 import { summarizeProductLine } from "@/lib/order/types";
+import { getMaterials } from "@/sanity/lib/materials";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2026-02-25.clover",
@@ -34,6 +35,8 @@ export async function createCheckoutSession(
 ): Promise<{ url: string }> {
   const user = await getCurrentUser();
   if (!user) throw new Error("Not authenticated");
+  // Material names on the Stripe line items come from the Sanity list.
+  await getMaterials();
 
   // The checkbox is enforced here too, not just in the form: the acceptance is
   // recorded on the order, so an order may never exist without one.

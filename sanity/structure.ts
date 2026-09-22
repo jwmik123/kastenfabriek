@@ -61,6 +61,13 @@ export const structure: StructureResolver = (S) =>
               singleton(S, 'pricingConfig', 'Prijsconfiguratie'),
               singleton(S, 'configuratorServices', 'Servicesbalk'),
               S.divider(),
+              S.documentTypeListItem('material')
+                .title('Kleuren & materialen')
+                .child(
+                  S.documentTypeList('material')
+                    .title('Kleuren & materialen')
+                    .defaultOrdering([{ field: 'sortOrder', direction: 'asc' }, { field: 'name', direction: 'asc' }]),
+                ),
               S.listItem()
                 .title('Onderdelen')
                 .child(

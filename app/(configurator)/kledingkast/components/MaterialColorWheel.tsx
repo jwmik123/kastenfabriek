@@ -1,6 +1,7 @@
 'use client'
 
-import { MATERIALS, type ColorMaterial, type TextureMaterial } from '../materials'
+import type { ColorMaterial, TextureMaterial } from '@/lib/materials'
+import { useMaterials } from '@/lib/materials/MaterialsProvider'
 
 const CX = 150
 const CY = 150
@@ -49,8 +50,10 @@ interface MaterialColorWheelProps {
 }
 
 export default function MaterialColorWheel({ materialId, onSelect, size = 300, hideOutsideOnly = false }: MaterialColorWheelProps) {
-  const colorMats = MATERIALS.filter((m): m is ColorMaterial => m.type === 'color' && (!hideOutsideOnly || !m.outsideOnly))
-  const textureMats = MATERIALS.filter((m): m is TextureMaterial => m.type === 'texture')
+  const { selectable } = useMaterials()
+  const offered = selectable.filter((m) => !hideOutsideOnly || !m.outsideOnly)
+  const colorMats = offered.filter((m): m is ColorMaterial => m.type === 'color')
+  const textureMats = offered.filter((m): m is TextureMaterial => m.type === 'texture')
   const colorSegAngle = 360 / colorMats.length
 
   return (

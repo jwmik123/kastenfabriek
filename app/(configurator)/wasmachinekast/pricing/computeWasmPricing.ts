@@ -2,7 +2,7 @@ import type { DoorVariant, FullPricingData, InstallationTier } from '@/types/con
 import { PricingEngine } from '@/lib/configurator/pricing-engine'
 import { computeFreeMontage } from '@/lib/configurator/free-montage'
 import { computeInstallationBasis } from '@/lib/configurator/installation-basis'
-import { MATERIALS } from '../../kledingkast/materials'
+import { isTextureMaterial } from '@/lib/materials'
 import { getWasmLayoutConfig } from '../moduleLayoutConfigs'
 import { WASHER_LAYOUT_IDS } from '../moduleLayouts'
 import { frontsInModule, sectionedModules } from '../sections/drawerFronts'
@@ -119,8 +119,7 @@ export interface WasmPricingResult {
 
 /** A front priced as veneer when the outside material it shows is a texture. */
 function variantForMaterial(materialId: string): DoorVariant {
-  const material = MATERIALS.find((m) => m.id === materialId)
-  return material?.type === 'texture' ? 'veneer' : 'standard'
+  return isTextureMaterial(materialId) ? 'veneer' : 'standard'
 }
 
 /** Doors of a module priced as veneer when its outside material is a texture. */

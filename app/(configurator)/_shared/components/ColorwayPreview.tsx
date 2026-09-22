@@ -2,20 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
-import { MATERIALS, type Material } from '../../kledingkast/materials'
+import type { Material } from '@/lib/materials'
+import { useMaterials } from '@/lib/materials/MaterialsProvider'
 import { cn } from '@/lib/utils'
-
-const COLORWAY_SLUGS: Record<string, string> = {
-  'h1199-thermo-eik': 'thermo-eik-zwartbruin',
-  'h3165-vicenza-eik-licht': 'vicenza-eik-licht',
-  'h3158-vicenza-eik-grijs': 'vicenza-eik-grijs',
-  'h1714-lincoln-notelaar': 'lincoln-notelaar',
-  'h3190-fineline-antraciet': 'fineline-metallic-antraciet',
-}
-
-function slugFor(id: string) {
-  return COLORWAY_SLUGS[id] ?? id
-}
 
 function Swatch({
   material,
@@ -68,10 +57,12 @@ export default function ColorwayPreview({ buitenkantMaterialId }: { buitenkantMa
     setPrefetched((p) => (p.has(id) ? p : new Set(p).add(id)))
   }
 
-  const active = MATERIALS.find((m) => m.id === activeId)
+  // Only materials with room renders can be previewed; a buitenkant without
+  // renders (e.g. a new colour) opens on the first one that has them.
+  const { selectable, find } = useMaterials()
+  const withRenders = selectable.filter((m) => (m.roomImages?.length ?? 0) > 0)
+  const active = withRenders.find((m) => m.id === activeId) ?? withRenders[0]
   if (!active) return null
-
-  const slug = slugFor(activeId)
 
   return (
     <section id="material-preview" className="w-full bg-primary/10 py-12 md:py-20">
@@ -82,11 +73,11 @@ export default function ColorwayPreview({ buitenkantMaterialId }: { buitenkantMa
             <p className="text-sm text-muted-foreground mt-1">Zo ziet je buitenkant eruit in deze kleur.</p>
           </div>
           <div className="flex flex-wrap gap-1.5 max-w-[280px] justify-end">
-            {MATERIALS.map((m) => (
+            {withRenders.map((m) => (
               <Swatch
                 key={m.id}
                 material={m}
-                active={m.id === activeId}
+                active={m.id === active.id}
                 onClick={() => setActiveId(m.id)}
                 onPrefetch={() => prefetch(m.id)}
               />
@@ -95,11 +86,11 @@ export default function ColorwayPreview({ buitenkantMaterialId }: { buitenkantMa
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {[1, 2].map((n) => (
-            <div key={n} className="relative aspect-[4/3] overflow-hidden">
+          {active.roomImages!.map((src, i) => (
+            <div key={src} className="relative aspect-[4/3] overflow-hidden">
               <Image
-                src={`/colorways/${slug}-${n}.webp`}
-                alt={`${active.name} ${n}`}
+                src={src}
+                alt={`${active.name} ${i + 1}`}
                 fill
                 sizes="(min-width: 768px) 50vw, 100vw"
                 className="object-cover"
@@ -110,13 +101,12 @@ export default function ColorwayPreview({ buitenkantMaterialId }: { buitenkantMa
 
         <div aria-hidden className="absolute pointer-events-none opacity-0" style={{ width: 0, height: 0, overflow: 'hidden' }}>
           {[...prefetched]
-            .filter((id) => id !== activeId)
+            .filter((id) => id !== active.id)
             .map((id) => {
-              const s = slugFor(id)
-              return [1, 2].map((n) => (
+              return (find(id)?.roomImages ?? []).map((src) => (
                 <Image
-                  key={`${id}-${n}`}
-                  src={`/colorways/${s}-${n}.webp`}
+                  key={src}
+                  src={src}
                   alt=""
                   width={1}
                   height={1}

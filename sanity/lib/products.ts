@@ -178,7 +178,14 @@ const productProjection = groq`
   gallery,
   productInfo,
   deliveryFee,
-  paxConfig,
+  paxConfig{
+    ...,
+    "allowedMaterialIds": allowedMaterials[]->materialId.current,
+    "materialSurcharges": materialSurcharges[]{
+      "materialId": material->materialId.current,
+      surchargeEur
+    }
+  },
   sampleConfig,
   simpleConfig
 `;

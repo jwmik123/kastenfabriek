@@ -1,27 +1,5 @@
 import { defineField, defineType } from "sanity";
 
-const MATERIAL_OPTIONS: { title: string; value: string }[] = [
-  { title: "Thermo Eik Zwartbruin", value: "h1199-thermo-eik" },
-  { title: "Vicenza Eik Licht", value: "h3165-vicenza-eik-licht" },
-  { title: "Vicenza Eik Grijs", value: "h3158-vicenza-eik-grijs" },
-  { title: "Lincoln Notelaar", value: "h1714-lincoln-notelaar" },
-  { title: "Fineline Metallic Antraciet", value: "h3190-fineline-antraciet" },
-  { title: "Zwart", value: "zwart" },
-  { title: "Premium Wit", value: "premium-wit" },
-  { title: "Zandbeige", value: "zandbeige" },
-  { title: "Eucalyptus Groen", value: "eucalyptus-groen" },
-  { title: "Amandelbeige", value: "amandelbeige" },
-  { title: "Truffelbruin", value: "truffelbruin" },
-  { title: "Donkertaupe", value: "donkertaupe" },
-  { title: "Koolstofgrijs", value: "koolstofgrijs" },
-  { title: "Mistblauw", value: "mistblauw" },
-  { title: "Cosmosblauw", value: "cosmosblauw" },
-  { title: "Granaatappelrood", value: "granaatappelrood" },
-  { title: "Pistachegroen", value: "pistachegroen" },
-  { title: "Olijfgroen", value: "olijfgroen" },
-  { title: "Steengroen", value: "steengroen" },
-];
-
 /** A simple product flagged as a service: no quantity, no delivery. */
 const isServiceDoc = (document: unknown) => {
   const d = document as { productType?: string; simpleConfig?: { isService?: boolean } } | undefined;
@@ -121,10 +99,10 @@ const paxMaterialSurcharge = defineType({
   type: "object",
   fields: [
     defineField({
-      name: "materialId",
+      name: "material",
       title: "Materiaal",
-      type: "string",
-      options: { list: MATERIAL_OPTIONS },
+      type: "reference",
+      to: [{ type: "material" }],
       validation: (Rule) => Rule.required(),
     }),
     defineField({
@@ -135,7 +113,7 @@ const paxMaterialSurcharge = defineType({
     }),
   ],
   preview: {
-    select: { m: "materialId", s: "surchargeEur" },
+    select: { m: "material.name", s: "surchargeEur" },
     prepare({ m, s }) {
       return { title: m, subtitle: s != null ? `+ €${s}` : undefined };
     },
@@ -366,13 +344,12 @@ const paxConfig = defineType({
         "Zet het type 'Zijpaneel' aan. Een zijpaneel heeft geen breedtekeuze: de klant kiest een standaardhoogte (of een eigen hoogte via 'Verlengde zijpanelen') en vult de diepte zelf in. De prijs volgt uit de maatwerkprijs per m² voor zijpanelen hieronder.",
     }),
     defineField({
-      name: "allowedMaterialIds",
+      name: "allowedMaterials",
       title: "Toegestane materialen",
       type: "array",
-      of: [{ type: "string" }],
+      of: [{ type: "reference", to: [{ type: "material" }] }],
       description:
         "Beperk welke materialen beschikbaar zijn. Leeg laten = alle materialen toegestaan.",
-      options: { layout: "grid", list: MATERIAL_OPTIONS },
       validation: (Rule) => Rule.unique(),
     }),
     defineField({

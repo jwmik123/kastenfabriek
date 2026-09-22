@@ -1,6 +1,7 @@
 import Link from 'next/link'
 
-import { MATERIALS } from '@/app/(configurator)/kledingkast/materials'
+import { selectableMaterials } from '@/lib/materials'
+import { getMaterials } from '@/sanity/lib/materials'
 import { SAMPLES_ANCHOR } from '@/lib/configurators'
 import type { ProductListItem } from '@/sanity/lib/products'
 
@@ -16,8 +17,10 @@ function amountLabel(n: number | null) {
  * values from the configurator's material list, and the copy takes the maximum
  * from the samples product in Sanity.
  */
-export default function SamplesBanner({ product }: { product: ProductListItem }) {
-  const swatches = MATERIALS.filter((m) => m.type === 'color').slice(0, 4)
+export default async function SamplesBanner({ product }: { product: ProductListItem }) {
+  const swatches = selectableMaterials(await getMaterials())
+    .filter((m) => m.type === 'color')
+    .slice(0, 4)
   const max = amountLabel(product.maxSamples)
 
   return (

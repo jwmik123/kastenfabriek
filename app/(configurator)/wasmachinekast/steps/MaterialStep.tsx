@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from 'react'
 import { useWasmachinekastStore } from '../store'
-import { MATERIALS } from '../../kledingkast/materials'
+import { useMaterials } from '@/lib/materials/MaterialsProvider'
 import { cn } from '@/lib/utils'
 import MaterialPicker from '../../kledingkast/components/MaterialPicker'
 
 type MaterialTab = 'buitenkant' | 'binnenkant' | 'werkblad'
 
 export default function MaterialStep() {
+  const { find: findMaterial } = useMaterials()
   const buitenkantMaterialId = useWasmachinekastStore((s) => s.buitenkantMaterialId)
   const binnenkantMaterialId = useWasmachinekastStore((s) => s.binnenkantMaterialId)
   const setBuitenkantMaterialId = useWasmachinekastStore((s) => s.setBuitenkantMaterialId)
@@ -38,7 +39,7 @@ export default function MaterialStep() {
         ? setBinnenkantMaterialId
         : setLowCountertopMaterialId
 
-  const selectedMaterial = MATERIALS.find((m) => m.id === materialId)
+  const selectedMaterial = findMaterial(materialId)
 
   return (
     <div className="space-y-6">

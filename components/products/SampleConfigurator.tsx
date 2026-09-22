@@ -6,18 +6,10 @@ import Link from "next/link";
 import { PortableText } from "@portabletext/react";
 import { Check, Loader2 } from "lucide-react";
 
-import {
-  MATERIALS,
-  type ColorMaterial,
-  type TextureMaterial,
-} from "@/app/(configurator)/kledingkast/materials";
+import type { ColorMaterial, TextureMaterial } from "@/lib/materials";
+import { useMaterials } from "@/lib/materials/MaterialsProvider";
 import { createSampleRequest } from "@/lib/actions/sample-request";
 import type { Product } from "@/sanity/lib/products";
-
-const textures = MATERIALS.filter(
-  (m): m is TextureMaterial => m.type === "texture"
-);
-const colors = MATERIALS.filter((m): m is ColorMaterial => m.type === "color");
 
 export default function SampleConfigurator({
   product,
@@ -28,10 +20,15 @@ export default function SampleConfigurator({
   preselectedMaterialIds?: string[];
 }) {
   const maxSelections = product.sampleConfig?.maxSelections ?? 3;
+  const { selectable } = useMaterials();
+  const textures = selectable.filter(
+    (m): m is TextureMaterial => m.type === "texture"
+  );
+  const colors = selectable.filter((m): m is ColorMaterial => m.type === "color");
 
   const [selected, setSelected] = useState<string[]>(() =>
     preselectedMaterialIds
-      .filter((id) => MATERIALS.some((m) => m.id === id))
+      .filter((id) => selectable.some((m) => m.id === id))
       .slice(0, maxSelections)
   );
   const [submitting, setSubmitting] = useState(false);

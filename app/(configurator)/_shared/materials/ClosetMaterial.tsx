@@ -4,12 +4,11 @@ import * as THREE from 'three/webgpu'
 import { color as tslColor } from 'three/tsl'
 import { useLoader } from '@react-three/fiber'
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, type ReactNode } from 'react'
-import { MATERIAL_COLORS } from '../../kledingkast/materials'
+import { useMaterials } from '@/lib/materials/MaterialsProvider'
 import { useStripWarmth } from './StripWarmthContext'
 import { createStripWarmthUniforms, buildWarmthNode } from '../shaders/stripWarmth'
 import { WardrobeRootGroup, useWardrobeInverse } from './WardrobeRoot'
 import { buildTriplanarNodes } from './triplanar'
-import { VENEERS } from './veneers'
 
 // Slice 1 globals — slice 2 replaces these with per-veneer registry values.
 // ANISOTROPY and BUMP_SCALE held at 0: anisotropy needs anisotropyNode wired
@@ -28,6 +27,7 @@ interface MaterialState {
   buitenkantMaterialId: string
   binnenkantMaterialId: string
   lightStripsEnabled: boolean
+  colors: Record<string, string>
   textureMaps: Record<string, THREE.Texture>
   normalMaps: Record<string, THREE.Texture>
   roughnessMaps: Record<string, THREE.Texture>
@@ -80,27 +80,34 @@ export function ClosetMaterialProvider({
   children: ReactNode
 }) {
 
-  // Flatten the registry into a single deterministic path list so one
-  // useLoader call covers color + optional normal + optional roughness
-  // for every veneer. The layout array remembers which slot each path
-  // belongs to so we can split the loaded textures back per-veneer.
-  const { paths: allPaths, layout: pathLayout } = useMemo(() => {
+  const { all: materials } = useMaterials()
+
+  // Flatten every texture material into a single deterministic path list so
+  // one useLoader call covers color + optional normal + optional roughness.
+  // The layout array remembers which slot each path belongs to so we can
+  // split the loaded textures back per material.
+  const { paths: allPaths, layout: pathLayout, colors } = useMemo(() => {
     const paths: string[] = []
     const layout: { id: string; kind: 'color' | 'normal' | 'roughness' }[] = []
-    for (const v of VENEERS) {
-      paths.push(v.colorPath)
-      layout.push({ id: v.id, kind: 'color' })
-      if (v.normalPath) {
-        paths.push(v.normalPath)
-        layout.push({ id: v.id, kind: 'normal' })
+    const colors: Record<string, string> = {}
+    for (const m of materials) {
+      if (m.type === 'color') {
+        colors[m.id] = m.color
+        continue
       }
-      if (v.roughnessPath) {
-        paths.push(v.roughnessPath)
-        layout.push({ id: v.id, kind: 'roughness' })
+      paths.push(m.maps.color)
+      layout.push({ id: m.id, kind: 'color' })
+      if (m.maps.normal) {
+        paths.push(m.maps.normal)
+        layout.push({ id: m.id, kind: 'normal' })
+      }
+      if (m.maps.roughness) {
+        paths.push(m.maps.roughness)
+        layout.push({ id: m.id, kind: 'roughness' })
       }
     }
-    return { paths, layout }
-  }, [])
+    return { paths, layout, colors }
+  }, [materials])
 
   const loadedTextures = useLoader(THREE.TextureLoader, allPaths)
 
@@ -146,8 +153,8 @@ export function ClosetMaterialProvider({
   }), [])
 
   const state = useMemo<MaterialState>(
-    () => ({ buitenkantMaterialId, binnenkantMaterialId, lightStripsEnabled, textureMaps, normalMaps, roughnessMaps, chromeMaterial, glassMaterial }),
-    [buitenkantMaterialId, binnenkantMaterialId, lightStripsEnabled, textureMaps, normalMaps, roughnessMaps, chromeMaterial, glassMaterial],
+    () => ({ buitenkantMaterialId, binnenkantMaterialId, lightStripsEnabled, colors, textureMaps, normalMaps, roughnessMaps, chromeMaterial, glassMaterial }),
+    [buitenkantMaterialId, binnenkantMaterialId, lightStripsEnabled, colors, textureMaps, normalMaps, roughnessMaps, chromeMaterial, glassMaterial],
   )
 
   return (
@@ -193,10 +200,13 @@ function MaterialCacheProvider({ children }: { children: ReactNode }) {
   const warmthCtxRef = useRef(warmthCtx)
   warmthCtxRef.current = warmthCtx
 
-  // Texture set identity change (e.g. dev hot reload) invalidates the cache.
+  // Texture set or colour list identity change (new materials from Sanity,
+  // dev hot reload) invalidates the cache.
   const texMapsRef = useRef(ctx?.textureMaps)
-  if (texMapsRef.current !== ctx?.textureMaps) {
+  const colorsRef = useRef(ctx?.colors)
+  if (texMapsRef.current !== ctx?.textureMaps || colorsRef.current !== ctx?.colors) {
     texMapsRef.current = ctx?.textureMaps
+    colorsRef.current = ctx?.colors
     cacheRef.current.forEach((m) => m.dispose())
     cacheRef.current.clear()
   }
@@ -288,7 +298,7 @@ function applyPhysicalProps(
       mat.roughnessNode = roughnessNode as any
     }
   } else {
-    mat.colorNode = tslColor(MATERIAL_COLORS[materialId ?? 'premium-wit'] ?? '#ffffff') as any
+    mat.colorNode = tslColor(ctx?.colors[materialId ?? 'premium-wit'] ?? '#ffffff') as any
   }
 }
 

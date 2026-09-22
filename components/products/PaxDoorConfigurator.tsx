@@ -5,7 +5,8 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { PortableText } from '@portabletext/react'
 
-import { MATERIALS, type Material } from '@/app/(configurator)/kledingkast/materials'
+import type { Material } from '@/lib/materials'
+import { useMaterials } from '@/lib/materials/MaterialsProvider'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import type { PaxDoorType, Product } from '@/sanity/lib/products'
@@ -155,13 +156,14 @@ export default function PaxDoorConfigurator({
   const verlengdeMinHeight = cfg?.verlengdeMinHeightCm ?? 200
   const verlengdeMaxHeight = cfg?.verlengdeMaxHeightCm ?? 300
 
+  const { selectable } = useMaterials()
   const allowedMaterials = useMemo<Material[]>(() => {
     if (cfg?.allowedMaterialIds && cfg.allowedMaterialIds.length > 0) {
       const set = new Set(cfg.allowedMaterialIds)
-      return MATERIALS.filter((m) => set.has(m.id))
+      return selectable.filter((m) => set.has(m.id))
     }
-    return MATERIALS
-  }, [cfg?.allowedMaterialIds])
+    return selectable
+  }, [cfg?.allowedMaterialIds, selectable])
 
   // Server-fetched edit (authed) seeds initial state synchronously.
   const seed = editItem
@@ -284,7 +286,7 @@ export default function PaxDoorConfigurator({
   const widthLabel = typeof widthKey === 'string' ? widthKey : undefined
 
   const [materialId, setMaterialId] = useState<string>(
-    seed?.configuration.materialId ?? allowedMaterials[0]?.id ?? MATERIALS[0].id,
+    seed?.configuration.materialId ?? allowedMaterials[0]?.id ?? selectable[0]?.id ?? '',
   )
   const [qty, setQty] = useState<number>(seed?.quantity ?? 1)
   const [lightboxOpen, setLightboxOpen] = useState(false)

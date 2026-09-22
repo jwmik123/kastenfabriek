@@ -3,11 +3,12 @@
 import { useState } from 'react'
 import { X } from 'lucide-react'
 import { useClosetStore } from '../store'
-import { MATERIALS } from '../materials'
+import { useMaterials } from '@/lib/materials/MaterialsProvider'
 import { cn } from '@/lib/utils'
 import MaterialPicker from './MaterialPicker'
 
 export default function ModuleMaterialPanel() {
+  const { find: findMaterial } = useMaterials()
   const step = useClosetStore((s) => s.step)
   const selectedSlot = useClosetStore((s) => s.selectedSlot)
   const setSelectedSlot = useClosetStore((s) => s.setSelectedSlot)
@@ -28,7 +29,7 @@ export default function ModuleMaterialPanel() {
     ? (moduleSlot.buitenkantMaterialId ?? buitenkantMaterialId)
     : (moduleSlot.binnenkantMaterialId ?? binnenkantMaterialId)
 
-  const selectedMaterial = MATERIALS.find((m) => m.id === materialId)
+  const selectedMaterial = findMaterial(materialId)
 
   function handleSelect(id: string) {
     if (selectedSlot === null) return

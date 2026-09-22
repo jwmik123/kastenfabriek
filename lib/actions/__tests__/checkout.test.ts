@@ -25,6 +25,10 @@ vi.mock("@/lib/actions/auth", () => ({
   getCurrentUser: mockGetCurrentUser,
 }));
 
+vi.mock("@/sanity/lib/materials", () => ({
+  getMaterials: vi.fn(async () => []),
+}));
+
 vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }));

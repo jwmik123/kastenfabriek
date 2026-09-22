@@ -4,7 +4,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useEffect, useRef } from 'react'
 import { ArrowRight, X } from 'lucide-react'
-import type { Material } from '@/app/(configurator)/kledingkast/materials'
+import type { Material } from '@/lib/materials'
 
 /** Sample product page; `staal` preselects the material in its picker. */
 const SAMPLES_PATH = '/producten/materiaalstalen'

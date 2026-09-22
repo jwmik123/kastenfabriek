@@ -1,4 +1,6 @@
-import { MATERIALS } from '../../kledingkast/materials'
+'use client'
+
+import { useMaterials } from '@/lib/materials/MaterialsProvider'
 
 /** One label/value line in a configurator's specifications card. */
 export function SpecRow({ label, children }: { label: string; children: React.ReactNode }) {
@@ -12,7 +14,7 @@ export function SpecRow({ label, children }: { label: string; children: React.Re
 
 /** Material name preceded by its colour dot or texture thumbnail. */
 export function MaterialSwatch({ id }: { id: string }) {
-  const material = MATERIALS.find((m) => m.id === id)
+  const material = useMaterials().find(id)
   if (!material) return <span className="text-sm text-foreground">{id}</span>
 
   return (

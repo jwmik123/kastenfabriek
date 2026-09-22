@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from 'react'
 import { useClosetStore } from '../store'
-import { MATERIALS } from '../materials'
+import { useMaterials } from '@/lib/materials/MaterialsProvider'
 import { cn } from '@/lib/utils'
 import MaterialPicker from '../components/MaterialPicker'
 
 export default function MaterialStep() {
+  const { find: findMaterial } = useMaterials()
   const buitenkantMaterialId = useClosetStore((s) => s.buitenkantMaterialId)
   const binnenkantMaterialId = useClosetStore((s) => s.binnenkantMaterialId)
   const setBuitenkantMaterialId = useClosetStore((s) => s.setBuitenkantMaterialId)
@@ -21,7 +22,7 @@ export default function MaterialStep() {
   const materialId = activeTab === 'buitenkant' ? buitenkantMaterialId : binnenkantMaterialId
   const setMaterialId = activeTab === 'buitenkant' ? setBuitenkantMaterialId : setBinnenkantMaterialId
 
-  const selectedMaterial = MATERIALS.find((m) => m.id === materialId)
+  const selectedMaterial = findMaterial(materialId)
 
   return (
     <div className="space-y-6">

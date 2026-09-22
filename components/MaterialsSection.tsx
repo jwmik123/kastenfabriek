@@ -4,18 +4,14 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useState } from 'react'
 import { ArrowRight } from 'lucide-react'
-import {
-  MATERIALS,
-  ColorMaterial,
-  Material,
-  TextureMaterial,
-} from '@/app/(configurator)/kledingkast/materials'
+import type { ColorMaterial, Material, TextureMaterial } from '@/lib/materials'
+import { useMaterials } from '@/lib/materials/MaterialsProvider'
 import MaterialLightbox from './MaterialLightbox'
 
-const colors = MATERIALS.filter((m): m is ColorMaterial => m.type === 'color')
-const textures = MATERIALS.filter((m): m is TextureMaterial => m.type === 'texture')
-
 export default function MaterialsSection() {
+  const { selectable } = useMaterials()
+  const colors = selectable.filter((m): m is ColorMaterial => m.type === 'color')
+  const textures = selectable.filter((m): m is TextureMaterial => m.type === 'texture')
   // Clicking a swatch enlarges it, with a link on to ordering that sample.
   const [zoomed, setZoomed] = useState<Material | null>(null)
 

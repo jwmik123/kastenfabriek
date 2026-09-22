@@ -9,7 +9,7 @@ import {
   Section,
   Text,
 } from "@react-email/components";
-import { MATERIALS } from "@/app/(configurator)/kledingkast/materials";
+import { getMaterialName } from "@/lib/materials";
 import { CONTACT_EMAIL } from "@/lib/configurators";
 
 export interface SampleRequestConfirmationProps {
@@ -28,7 +28,7 @@ export interface SampleRequestConfirmationProps {
 const BRAND_GREEN = "#34463a";
 
 function materialName(id: string): string {
-  return MATERIALS.find((m) => m.id === id)?.name ?? id;
+  return getMaterialName(id);
 }
 
 export default function SampleRequestConfirmation({

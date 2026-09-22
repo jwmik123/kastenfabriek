@@ -4,11 +4,11 @@ import { eq, and } from "drizzle-orm";
 
 import { db } from "@/db";
 import { sampleRequest } from "@/db/schema";
-import { MATERIALS } from "@/app/(configurator)/kledingkast/materials";
+import { selectableMaterials } from "@/lib/materials";
+import { getMaterials } from "@/sanity/lib/materials";
 import { sendSampleRequestEmails } from "@/lib/email/resend";
 
 const MAX_SELECTIONS = 3;
-const VALID_MATERIAL_IDS = new Set(MATERIALS.map((m) => m.id));
 
 export type SampleRequestInput = {
   materialIds: string[];
@@ -45,7 +45,9 @@ export async function createSampleRequest(
   if (materialIds.length < 1 || materialIds.length > MAX_SELECTIONS) {
     return { ok: false, error: `Kies 1 tot ${MAX_SELECTIONS} materialen.` };
   }
-  if (materialIds.some((id) => !VALID_MATERIAL_IDS.has(id))) {
+  // Also loads the Sanity list into the registry for the e-mails below.
+  const validIds = new Set(selectableMaterials(await getMaterials()).map((m) => m.id));
+  if (materialIds.some((id) => !validIds.has(id))) {
     return { ok: false, error: "Ongeldig materiaal geselecteerd." };
   }
 

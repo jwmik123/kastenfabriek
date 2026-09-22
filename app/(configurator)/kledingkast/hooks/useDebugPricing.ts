@@ -1,7 +1,7 @@
 'use client'
 
 import { useClosetStore } from '../store'
-import { MATERIALS } from '../materials'
+import { findMaterial, isTextureMaterial } from '@/lib/materials'
 import { PricingEngine } from '@/lib/configurator/pricing-engine'
 import type { FullPricingData, ModuleLayout } from '@/types/configurator-pricing'
 import type { ModuleSlot } from '../store'
@@ -113,8 +113,7 @@ export function computeDebugGlobal(params: {
   for (const m of modules) {
     if (!m.hasDoor || m.layoutId === null) continue
     const effectiveMaterialId = m.buitenkantMaterialId ?? buitenkantMaterialId
-    const material = MATERIALS.find((mat) => mat.id === effectiveMaterialId)
-    const variant = material?.type === 'texture' ? 'veneer' : 'standard'
+    const variant = isTextureMaterial(effectiveMaterialId) ? 'veneer' : 'standard'
     const count = m.span === 2 ? 2 : 1
     moduleDoorCost += engine.getDoorPrice(variant) * count
     moduleDoorCount += count
@@ -165,7 +164,7 @@ export function computeDebugGlobal(params: {
 
 function resolveMaterial(slotId: string | undefined, globalId: string): DebugMaterialInfo {
   const id = slotId ?? globalId
-  const mat = MATERIALS.find((m) => m.id === id)
+  const mat = findMaterial(id)
   return { id, name: mat?.name ?? id, isOverride: slotId !== undefined }
 }
 
@@ -224,8 +223,7 @@ export function computeDebugSlots(params: {
 
     if (m.hasDoor) {
       const effectiveMaterialId = m.buitenkantMaterialId ?? buitenkantMaterialId
-      const material = MATERIALS.find((mat) => mat.id === effectiveMaterialId)
-      doorVariant = material?.type === 'texture' ? 'veneer' : 'standard'
+      doorVariant = isTextureMaterial(effectiveMaterialId) ? 'veneer' : 'standard'
       doorCount = m.span === 2 ? 2 : 1
       doorCost = engine.getDoorPrice(doorVariant) * doorCount
       handleCost = handlePrice * doorCount

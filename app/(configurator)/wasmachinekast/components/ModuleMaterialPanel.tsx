@@ -2,12 +2,13 @@
 
 import { useState } from 'react'
 import { useWasmachinekastStore } from '../store'
-import { MATERIALS } from '../../kledingkast/materials'
+import { useMaterials } from '@/lib/materials/MaterialsProvider'
 import { cn } from '@/lib/utils'
 import MaterialPicker from '../../kledingkast/components/MaterialPicker'
 import { STEP } from '../steps/steps'
 
 export default function ModuleMaterialPanel() {
+  const { find: findMaterial } = useMaterials()
   const step = useWasmachinekastStore((s) => s.step)
   const selectedSlot = useWasmachinekastStore((s) => s.selectedSlot)
   const setSelectedSlot = useWasmachinekastStore((s) => s.setSelectedSlot)
@@ -36,7 +37,7 @@ export default function ModuleMaterialPanel() {
     ? (moduleSlot.buitenkantMaterialId ?? buitenkantMaterialId)
     : (moduleSlot.binnenkantMaterialId ?? binnenkantMaterialId)
 
-  const selectedMaterial = MATERIALS.find((m) => m.id === materialId)
+  const selectedMaterial = findMaterial(materialId)
 
   function handleSelect(id: string) {
     if (selectedSlot === null) return
