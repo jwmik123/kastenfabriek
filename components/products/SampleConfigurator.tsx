@@ -10,6 +10,7 @@ import type { ColorMaterial, TextureMaterial } from "@/lib/materials";
 import { useMaterials } from "@/lib/materials/MaterialsProvider";
 import { createSampleRequest } from "@/lib/actions/sample-request";
 import type { Product } from "@/sanity/lib/products";
+import { DEFAULT_MAX_SAMPLES } from "@/lib/products/samples";
 
 export default function SampleConfigurator({
   product,
@@ -19,7 +20,7 @@ export default function SampleConfigurator({
   /** Material ids to tick on arrival (from the homepage material lightbox). */
   preselectedMaterialIds?: string[];
 }) {
-  const maxSelections = product.sampleConfig?.maxSelections ?? 3;
+  const maxSelections = product.sampleConfig?.maxSelections ?? DEFAULT_MAX_SAMPLES;
   const { selectable } = useMaterials();
   const textures = selectable.filter(
     (m): m is TextureMaterial => m.type === "texture"

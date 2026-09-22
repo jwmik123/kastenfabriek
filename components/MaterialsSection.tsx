@@ -6,9 +6,11 @@ import { useState } from 'react'
 import { ArrowRight } from 'lucide-react'
 import type { ColorMaterial, Material, TextureMaterial } from '@/lib/materials'
 import { useMaterials } from '@/lib/materials/MaterialsProvider'
+import { samplesAmountLabel } from '@/lib/products/samples'
 import MaterialLightbox from './MaterialLightbox'
 
-export default function MaterialsSection() {
+/** `maxSamples`: "Max aantal stalen" from the samples product in Sanity. */
+export default function MaterialsSection({ maxSamples }: { maxSamples: number }) {
   const { selectable } = useMaterials()
   const colors = selectable.filter((m): m is ColorMaterial => m.type === 'color')
   const textures = selectable.filter((m): m is TextureMaterial => m.type === 'texture')
@@ -29,7 +31,7 @@ export default function MaterialsSection() {
           </div>
           <div className="md:max-w-[480px] self-start">
             <p className="text-gray-600 text-base leading-relaxed">
-              Al onze materialen zijn op voorraad. Bestel tot drie gratis stalen en voel zelf —
+              Al onze materialen zijn op voorraad. Bestel tot {samplesAmountLabel(maxSamples)} gratis stalen en voel zelf —
               een textuur zegt meer dan een schermweergave. Wij sturen binnen drie werkdagen.
             </p>
             <Link

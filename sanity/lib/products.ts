@@ -4,6 +4,7 @@ import { groq } from "next-sanity";
 import type { PortableTextBlock } from "@portabletext/react";
 
 import { client } from "./client";
+import { DEFAULT_MAX_SAMPLES } from "@/lib/products/samples";
 
 export type ProductType = "pax-doors" | "samples" | "simple";
 
@@ -222,4 +223,14 @@ export async function getActiveProducts(): Promise<ProductListItem[]> {
 
 export async function getProductBySlug(slug: string): Promise<Product | null> {
   return client.fetch<Product | null>(productBySlugQuery, { slug });
+}
+
+const maxSampleSelectionsQuery = groq`
+  *[_type == "product" && productType == "samples" && isActive == true][0].sampleConfig.maxSelections
+`;
+
+/** "Max aantal stalen" from the samples product — the same number the page enforces. */
+export async function getMaxSampleSelections(): Promise<number> {
+  const max = await client.fetch<number | null>(maxSampleSelectionsQuery);
+  return max ?? DEFAULT_MAX_SAMPLES;
 }

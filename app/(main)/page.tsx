@@ -14,6 +14,7 @@ import HotspotSection from "@/components/HotspotSection";
 import PromoText from "@/components/PromoText";
 import { getSiteSettings } from "@/sanity/lib/siteSettings";
 import { getHomeProductOptionImages } from "@/sanity/lib/homeProductOptions";
+import { getMaxSampleSelections } from "@/sanity/lib/products";
 
 /** Scherpe poster, ~60 kB webp. Wordt getoond tot de video echt speelt. */
 const HERO_POSTER =
@@ -32,9 +33,10 @@ const FALLBACK_OPTION_IMAGES = {
 } as const;
 
 export default async function Home() {
-  const [settings, optionImages] = await Promise.all([
+  const [settings, optionImages, maxSamples] = await Promise.all([
     getSiteSettings(),
     getHomeProductOptionImages(),
+    getMaxSampleSelections(),
   ]);
   const promo = settings.promoBanner?.homepage;
 
@@ -145,7 +147,7 @@ export default async function Home() {
 
     <HotspotSection />
 
-    <MaterialsSection />
+    <MaterialsSection maxSamples={maxSamples} />
 
     <WerkwijzeSection />
 

@@ -1,14 +1,11 @@
 "use server";
 
-import { eq, and } from "drizzle-orm";
-
 import { db } from "@/db";
 import { sampleRequest } from "@/db/schema";
 import { selectableMaterials } from "@/lib/materials";
 import { getMaterials } from "@/sanity/lib/materials";
+import { getMaxSampleSelections } from "@/sanity/lib/products";
 import { sendSampleRequestEmails } from "@/lib/email/resend";
-
-const MAX_SELECTIONS = 3;
 
 export type SampleRequestInput = {
   materialIds: string[];
@@ -42,8 +39,9 @@ export async function createSampleRequest(
   }
 
   const materialIds = Array.from(new Set(input.materialIds ?? []));
-  if (materialIds.length < 1 || materialIds.length > MAX_SELECTIONS) {
-    return { ok: false, error: `Kies 1 tot ${MAX_SELECTIONS} materialen.` };
+  const maxSelections = await getMaxSampleSelections();
+  if (materialIds.length < 1 || materialIds.length > maxSelections) {
+    return { ok: false, error: `Kies 1 tot ${maxSelections} materialen.` };
   }
   // Also loads the Sanity list into the registry for the e-mails below.
   const validIds = new Set(selectableMaterials(await getMaterials()).map((m) => m.id));
@@ -63,21 +61,6 @@ export async function createSampleRequest(
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return { ok: false, error: "Vul een geldig e-mailadres in." };
-  }
-
-  // One pending request per email — light abuse guard.
-  const existing = await db.query.sampleRequest.findFirst({
-    where: and(
-      eq(sampleRequest.email, email),
-      eq(sampleRequest.status, "pending")
-    ),
-  });
-  if (existing) {
-    return {
-      ok: false,
-      error:
-        "Er staat al een aanvraag open op dit e-mailadres. Je stalen zijn onderweg.",
-    };
   }
 
   const houseNumberAddition = clean(input.houseNumberAddition) || null;

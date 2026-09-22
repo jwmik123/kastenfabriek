@@ -4,7 +4,7 @@ import { pgTable, text, timestamp, boolean, jsonb } from "drizzle-orm/pg-core";
 export const sampleRequest = pgTable("sample_request", {
   id: text("id").primaryKey(),
   status: text("status").notNull().default("pending"), // pending, sent, cancelled
-  // Selected material ids (1-3), e.g. ["zwart", "h1199-thermo-eik"]
+  // Selected material ids (1 up to the samples product's max), e.g. ["zwart", "h1199-thermo-eik"]
   materialIds: jsonb("material_ids").notNull().$type<string[]>(),
   // Contact + shipping (NL only)
   name: text("name").notNull(),

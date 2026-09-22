@@ -4,13 +4,7 @@ import { selectableMaterials } from '@/lib/materials'
 import { getMaterials } from '@/sanity/lib/materials'
 import { SAMPLES_ANCHOR } from '@/lib/configurators'
 import type { ProductListItem } from '@/sanity/lib/products'
-
-const NUMBER_WORDS = ['nul', 'één', 'twee', 'drie', 'vier', 'vijf', 'zes']
-
-function amountLabel(n: number | null) {
-  if (n == null) return null
-  return NUMBER_WORDS[n] ?? String(n)
-}
+import { samplesAmountLabel } from '@/lib/products/samples'
 
 /**
  * Sample-swatch banner between the two sections. Swatches are real colourway
@@ -21,7 +15,7 @@ export default async function SamplesBanner({ product }: { product: ProductListI
   const swatches = selectableMaterials(await getMaterials())
     .filter((m) => m.type === 'color')
     .slice(0, 4)
-  const max = amountLabel(product.maxSamples)
+  const max = samplesAmountLabel(product.maxSamples)
 
   return (
     <section id={SAMPLES_ANCHOR} className="scroll-mt-[124px] bg-primary text-[#f1ede4]">
