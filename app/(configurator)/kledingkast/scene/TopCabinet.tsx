@@ -244,13 +244,19 @@ interface SlotProps {
   flatH: number    // full TC interior height (flat zone) — for middle shelf
   doorsOpen: boolean
   mirror: boolean
+  /** Customer choice; false leaves the compartment open. */
+  showDoor?: boolean
 }
 
 export function TopCabinetSlot({
-  slotW, moduleDepth, roofProfile, leftH, rightH, flatH, doorsOpen, mirror,
+  slotW, moduleDepth, roofProfile, leftH, rightH, flatH, doorsOpen, mirror, showDoor = true,
 }: SlotProps) {
   const pivotRef = useRef<any>(null)
   const posRef   = useRef<any>(null)
+
+  // Same rule as Module: an open compartment is part of the visible outside,
+  // so it finishes in the buitenkant colour instead of the binnenkant.
+  const finish = showDoor ? 'binnenkant' : 'buitenkant'
 
   const innerProfile = useMemo(
     () => offsetProfileInward(roofProfile, WALL),
@@ -313,7 +319,7 @@ export function TopCabinetSlot({
   // Door — polygon whose top edge follows the roofProfile so it matches the module opening
   // exactly: rectangular in the flat zone, trapezoidal in the diagonal zone.
   const usableH = Math.min(leftH, rightH)
-  const hasDoor = slotW > WALL * 4 && usableH > WALL * 4
+  const hasDoor = showDoor && slotW > WALL * 4 && usableH > WALL * 4
 
   const doorGeo = useMemo(() => {
     if (!hasDoor) return null
@@ -367,39 +373,39 @@ export function TopCabinetSlot({
     <>
       {/* Ceiling — ExtrudeGeometry following the diagonal profile */}
       <mesh position={[0, 0, 0]} geometry={roofGeo} castShadow receiveShadow>
-        <ClosetMaterial variant="binnenkant" />
+        <ClosetMaterial variant={finish} />
       </mesh>
 
       {/* Back wall — polygon matching the ceiling profile */}
       <mesh position={[0, 0, 0]} geometry={backWallGeo} castShadow receiveShadow>
-        <ClosetMaterial variant="binnenkant" />
+        <ClosetMaterial variant={finish} />
       </mesh>
 
       {/* Left divider — trapezoid matching ceiling inner face */}
       {leftWallGeo && (
         <mesh position={[0, 0, 0]} geometry={leftWallGeo} castShadow receiveShadow>
-          <ClosetMaterial variant="binnenkant" />
+          <ClosetMaterial variant={finish} />
         </mesh>
       )}
 
       {/* Right divider — trapezoid matching ceiling inner face */}
       {rightWallGeo && (
         <mesh position={[0, 0, 0]} geometry={rightWallGeo} castShadow receiveShadow>
-          <ClosetMaterial variant="binnenkant" />
+          <ClosetMaterial variant={finish} />
         </mesh>
       )}
 
       {/* Floor — lowered by WALL so bottom face meets module roof top face (no gap) */}
       <mesh position={[slotW / 2, -WALL / 2, moduleDepth / 2]} castShadow receiveShadow>
         <boxGeometry args={[slotW, WALL, moduleDepth]} />
-        <ClosetMaterial variant="binnenkant" />
+        <ClosetMaterial variant={finish} />
       </mesh>
 
       {/* Middle shelf — only in flat-zone slots */}
       {isFlat && (
         <mesh position={[slotW / 2, shelfY, moduleDepth / 2]} castShadow receiveShadow>
           <boxGeometry args={[slotW, WALL, moduleDepth]} />
-          <ClosetMaterial variant="binnenkant" />
+          <ClosetMaterial variant={finish} />
         </mesh>
       )}
 
@@ -452,16 +458,21 @@ interface BackDiagSlotProps {
   shellAtHingeZ: number  // TC-local ceiling height at hinge z position (for hinge clearance)
   doorsOpen: boolean
   mirror: boolean
+  showDoor: boolean
 }
 
 function BackDiagTCSlot({
-  slotW, tcBack_local, tcSlotDepth, doorCeilH, doorTopH, dividerGeo, ceilGeo, shellAtHingeZ, doorsOpen, mirror,
+  slotW, tcBack_local, tcSlotDepth, doorCeilH, doorTopH, dividerGeo, ceilGeo, shellAtHingeZ, doorsOpen, mirror, showDoor,
 }: BackDiagSlotProps) {
   const pivotRef = useRef<any>(null)
   const posRef   = useRef<any>(null)
 
+  // Same rule as Module: an open compartment is part of the visible outside,
+  // so it finishes in the buitenkant colour instead of the binnenkant.
+  const finish = showDoor ? 'binnenkant' : 'buitenkant'
+
   const z_front = tcBack_local + tcSlotDepth
-  const hasDoor = slotW > WALL * 4 && doorCeilH > WALL * 4
+  const hasDoor = showDoor && slotW > WALL * 4 && doorCeilH > WALL * 4
 
   // Rectangular door — ceiling is flat in X for back diagonal.
   const doorGeo = useMemo(() => {
@@ -510,21 +521,21 @@ function BackDiagTCSlot({
       {/* Ceiling panel — Bug 1: interior face of the diagonal shell, binnenkant material */}
       {ceilGeo && (
         <mesh position={[0, 0, 0]} geometry={ceilGeo} castShadow receiveShadow>
-          <ClosetMaterial variant="binnenkant" />
+          <ClosetMaterial variant={finish} />
         </mesh>
       )}
 
       {/* Left divider — Bug 2 fix: position [0,0,0] so geo (new_x=z_ext∈[0,WALL]) → x∈[0,WALL] */}
       {dividerGeo && (
         <mesh position={[0, 0, 0]} geometry={dividerGeo} castShadow receiveShadow>
-          <ClosetMaterial variant="binnenkant" />
+          <ClosetMaterial variant={finish} />
         </mesh>
       )}
 
       {/* Right divider — Bug 2 fix: position [slotW-WALL,0,0] → x∈[slotW-WALL,slotW] */}
       {dividerGeo && (
         <mesh position={[slotW - WALL, 0, 0]} geometry={dividerGeo} castShadow receiveShadow>
-          <ClosetMaterial variant="binnenkant" />
+          <ClosetMaterial variant={finish} />
         </mesh>
       )}
 
@@ -535,7 +546,7 @@ function BackDiagTCSlot({
         receiveShadow
       >
         <boxGeometry args={[slotW, WALL, tcSlotDepth]} />
-        <ClosetMaterial variant="binnenkant" />
+        <ClosetMaterial variant={finish} />
       </mesh>
 
       {/* Door */}
@@ -945,6 +956,7 @@ export default function TopCabinet() {
                 shellAtHingeZ={shellAtHingeZ}
                 doorsOpen={doorsOpen}
                 mirror={mirror}
+                showDoor={modules[i]?.topHasDoor !== false}
               />
               <TCSlotHighlight
                 slotIndex={ownerSlot}
@@ -1005,6 +1017,7 @@ export default function TopCabinet() {
               flatH={flatH}
               doorsOpen={doorsOpen}
               mirror={mirror}
+              showDoor={modules[i]?.topHasDoor !== false}
             />
             <TCSlotHighlight
               slotIndex={ownerSlot}

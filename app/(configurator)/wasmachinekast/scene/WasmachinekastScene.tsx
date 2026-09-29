@@ -455,6 +455,7 @@ function WasmTopCabinet({
               flatH={flatH}
               doorsOpen={doorsOpen}
               mirror={mirror}
+              showDoor={m.topHasDoor !== false}
             />
           </group>
         )
