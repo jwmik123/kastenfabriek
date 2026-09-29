@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useWasmachinekastStore, WASM_MIN_DEPTH_CM, type PlacementType } from '../store'
+import RestPreferenceControl from '../components/RestPreferenceControl'
 import { Slider } from '@/components/ui/slider'
 import { Info } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -117,7 +118,6 @@ export default function DimensionsStep() {
   const moduleCount = useWasmachinekastStore((s) => s.moduleCount)
   const setModuleCount = useWasmachinekastStore((s) => s.setModuleCount)
   const lowSection = useWasmachinekastStore((s) => s.lowSection)
-  const setLowSectionWidth = useWasmachinekastStore((s) => s.setLowSectionWidth)
   const setLowSectionModuleCount = useWasmachinekastStore((s) => s.setLowSectionModuleCount)
 
   const sc = constraints?.singleCorpus
@@ -128,10 +128,12 @@ export default function DimensionsStep() {
   const isLowOnly = layout === 'low-only'
   const isDual = layout === 'low-left' || layout === 'low-right'
 
-  const lowMinModules = lowSection
-    ? Math.max(1, Math.ceil(lowSection.width / (sc?.maxWidth ?? 65)))
-    : 1
-  const lowMaxModules = lowSection ? Math.floor(lowSection.width / minW) : 1
+  // The store knows the machines, the shared seam panel and the dual split.
+  const lowMinModules = useWasmachinekastStore((s) => (s.lowSection ? s.minModulesFor('low') : 1))
+  const lowMaxModules = useWasmachinekastStore((s) => (s.lowSection ? s.maxModulesFor('low') : 1))
+  const setTotalWidth = useWasmachinekastStore((s) => s.setTotalWidth)
+  const minTotalWidth = useWasmachinekastStore((s) => s.dualWidthPlan()?.minTotalCm ?? minW)
+  const totalWidth = Math.round((width + (lowSection?.width ?? 0)) * 10) / 10
 
   return (
     <div className="space-y-10">
@@ -198,20 +200,37 @@ export default function DimensionsStep() {
           </div>
         )}
 
+        {isDual && lowSection && (
+          <div className="space-y-5 rounded-md border border-border/60 p-3">
+            <DimensionInput
+              label="Totale breedte"
+              value={totalWidth}
+              min={Math.ceil(minTotalWidth)}
+              max={maxW}
+              unit="cm"
+              onChange={setTotalWidth}
+              hint="Hoge en lage kast samen, van muur tot muur"
+            />
+            <RestPreferenceControl />
+          </div>
+        )}
+
         {!isLowOnly && (
           <div className="space-y-5 rounded-md border border-border/60 p-3">
             <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
               Hoge kast
             </h3>
-            <DimensionInput
-              label="Breedte"
-              value={width}
-              min={minW}
-              max={maxW}
-              unit="cm"
-              onChange={setWidth}
-              hint={`${minModules}–${maxModules} modules`}
-            />
+            {!isDual && (
+              <DimensionInput
+                label="Breedte"
+                value={width}
+                min={minW}
+                max={maxW}
+                unit="cm"
+                onChange={setWidth}
+                hint={`${minModules}–${maxModules} modules`}
+              />
+            )}
             <DimensionInput
               label="Hoogte"
               value={height}
@@ -240,15 +259,6 @@ export default function DimensionsStep() {
             <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
               Lage kast
             </h3>
-            <DimensionInput
-              label="Breedte"
-              value={lowSection.width}
-              min={minW}
-              max={maxW}
-              unit="cm"
-              onChange={setLowSectionWidth}
-              hint={`${lowMinModules}–${lowMaxModules} modules`}
-            />
             <DimensionInput
               label="Modules"
               value={lowSection.moduleCount}

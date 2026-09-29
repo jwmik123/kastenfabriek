@@ -16,7 +16,7 @@ Implements the second client feedback batch (September 2026). Four independent f
 - **Feature 1 (montage-keuze):** built. Sanity field "Montage-keuze" on the pricing config; off by default.
 - **Feature 3 (afwerkpanelen):** built. "Beide" option, `minFillerPanelCm` constraint (default 3), absorbed rest thickens both side panels for every placement type.
 - **Feature 2 (showroomkalender):** built. Sanity singleton "Showroom-afspraken" with a calendar preview, Postgres table (migration 0006), homepage section with slot popup, two e-mails. Needs: migration run, singleton created and enabled in Studio.
-- **Feature 4 (restruimte dubbele opstelling):** not started.
+- **Feature 4 (restruimte dubbele opstelling):** built. One "Totale breedte" plus "Waar moet de overige ruimte heen? Hoge kast / Lage kast" in Afmetingen (also in Indeling). Deviations from this PRD: two options, no "gelijk verdelen" (the client asked a two-way question); the part without the rest keeps its machines plus the vakken the customer keeps there at minimum width (so a second machine or an extra vak can still be added there), instead of reserving a placeholder machine width. Older snapshots infer the answer from their saved widths.
 
 ## Verified current state
 

@@ -124,10 +124,16 @@ describe('afwerkpaneel — two machines in a cabinet too narrow for a third modu
   })
 
   it('keeps the low section of a dual cabinet on its own panel', () => {
-    store().setWidth(200)
+    // The rest goes to the low part, which is too narrow for a third vak.
+    useWasmachinekastStore.setState({ restPreference: 'low' })
     store().applySectionsState({
       layout: 'low-right',
-      highSection: { width: 200, height: 240, moduleCount: 3, modules: store().modules },
+      highSection: {
+        width: 33.6,
+        height: 240,
+        moduleCount: 1,
+        modules: [{ slotIndex: 0, layoutId: null, hasDoor: true, span: 1, hasPowerHole: false }],
+      },
       lowSection: {
         width: 150,
         height: 90,

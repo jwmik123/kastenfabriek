@@ -87,6 +87,7 @@ export default function WasmSummarySection({ services }: { services: Configurato
   const topCabinetHeight = useWasmachinekastStore((s) => s.topCabinetHeight)
   const handles = useWasmachinekastStore((s) => s.pricingData?.handles)
 
+  const restPreference = useWasmachinekastStore((s) => s.restPreference)
   const highFiller = useFillerPanel('high')
   const lowFiller = useFillerPanel('low')
   const highExtra = useSideWallExtraCm('high')
@@ -112,6 +113,11 @@ export default function WasmSummarySection({ services }: { services: Configurato
           </div>
           <div className="flex-1 bg-white border border-border rounded-xl px-6 divide-y divide-border">
             <SpecRow label="Opstelling">{LAYOUT_LABELS[layout]}</SpecRow>
+            {(layout === 'low-left' || layout === 'low-right') && (
+              <SpecRow label="Overige ruimte">
+                {restPreference === 'low' ? 'naar de lage kast' : 'naar de hoge kast'}
+              </SpecRow>
+            )}
             <SpecRow label="Diepte">{depth} cm</SpecRow>
             {high && (
               <SectionSpecs

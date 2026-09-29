@@ -104,6 +104,7 @@ export default function WasmachinekastConfigurator({ pricingData, editConfig, ed
           placementType: state.placementType,
           montageOption: state.montageOption,
           customerRemarks: state.customerRemarks,
+          restPreference: state.restPreference,
           hasTopCabinet: state.needsTopCabinet(),
           topCabinetHeightCm: state.topCabinetHeight(),
         })

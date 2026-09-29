@@ -50,6 +50,7 @@ export function useCartPrice() {
   const placementType = useWasmachinekastStore((s) => s.placementType)
   const washerModules = useWasmachinekastStore((s) => s.washerModules)
   const customerRemarks = useWasmachinekastStore((s) => s.customerRemarks)
+  const restPreference = useWasmachinekastStore((s) => s.restPreference)
   const highFiller = useFillerPanel('high')
   const lowFiller = useFillerPanel('low')
   const highExtra = useSideWallExtraCm('high')
@@ -114,6 +115,7 @@ export function useCartPrice() {
       placementType,
       montageOption,
       customerRemarks,
+      restPreference,
       hasTopCabinet,
       topCabinetHeightCm,
     })

@@ -131,6 +131,11 @@ export interface ClosetConfigSnapshot {
   // interpreted as the high section and layout defaults to 'high-only'.
   layout?: WasmLayout;
   lowSection?: LowSectionSnapshot;
+  /**
+   * Hoge + lage opstelling: which part got the width next to the machines.
+   * Absent on older snapshots; restore infers it from the saved widths.
+   */
+  restPreference?: 'high' | 'low';
   /** Legacy: the single section that held every washer. Read, no longer written. */
   washerSection?: WasherSection;
 

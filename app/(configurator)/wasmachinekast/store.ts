@@ -23,6 +23,13 @@ import {
   type FillerPanel,
   type FillerSide,
 } from './sections/sectionPlan'
+import {
+  inferRestPreference,
+  splitDualWidth,
+  type DualPartInput,
+  type DualWidthResult,
+  type RestPreference,
+} from './sections/dualWidth'
 import type {
   Section,
   WasherPlacement,
@@ -114,6 +121,85 @@ function variableBounds(s: Pick<WasmState, 'constraints'>) {
   }
 }
 
+function isDualLayout(layout: WasmLayout): boolean {
+  return layout === 'low-left' || layout === 'low-right'
+}
+
+/** One part of a hoge + lage opstelling, as the width split sees it. */
+function dualPart(
+  s: WasmState,
+  section: 'high' | 'low',
+  modules: BaseModuleSlot[] = sectionModules(s, section),
+): DualPartInput {
+  return {
+    wallsCm: sectionWallsCm(s, section),
+    fixedWidthsCm: modules.filter((m) => m.fixedWidth).map((m) => m.fixedWidth!),
+    variableCount: modules.filter((m) => !m.fixedWidth).length,
+  }
+}
+
+/**
+ * How a hoge + lage opstelling divides its total width (see `splitDualWidth`),
+ * or null outside the dual layouts. Overrides let a caller try a change —
+ * another total, a machine in a slot — before applying it.
+ */
+function dualSplit(
+  s: WasmState,
+  overrides: { totalCm?: number; high?: BaseModuleSlot[]; low?: BaseModuleSlot[] } = {},
+): DualWidthResult | null {
+  if (!isDualLayout(s.layout) || !s.lowSection) return null
+  return splitDualWidth({
+    totalCm: overrides.totalCm ?? s.width + s.lowSection.width,
+    high: dualPart(s, 'high', overrides.high),
+    low: dualPart(s, 'low', overrides.low),
+    minVarWidthCm: variableBounds(s).minVarWidthCm,
+    preference: s.restPreference,
+  })
+}
+
+/**
+ * Re-divide a hoge + lage opstelling over its two parts and bring both parts'
+ * vakken in line. The total stays what it was (or `totalCm`), except that it
+ * never drops below what the machines and vakken need.
+ */
+function rebalanceDual(
+  get: () => WasmState,
+  set: (patch: Partial<WasmState>) => void,
+  { totalCm }: { totalCm?: number } = {},
+): void {
+  let split = dualSplit(get(), { totalCm })
+  if (!split) return
+  if (!split.fits) split = dualSplit(get(), { totalCm: split.minTotalCm })!
+  const s = get()
+  if (s.width !== split.highWidthCm || s.lowSection!.width !== split.lowWidthCm) {
+    set({ width: split.highWidthCm, lowSection: { ...s.lowSection!, width: split.lowWidthCm } })
+  }
+  reconcileSection(get, set, 'high')
+  reconcileSection(get, set, 'low')
+}
+
+/**
+ * The state as it would be with a machine of `layoutId` in `slotIndex` of
+ * `section`, with the dual width split already applied — or null when the
+ * total width cannot hold it. Outside the dual layouts the state is returned
+ * as is.
+ */
+function withDualRoomForWasher(
+  s: WasmState,
+  slotIndex: number,
+  layoutId: number,
+  section: 'high' | 'low',
+): WasmState | null {
+  if (!isDualLayout(s.layout) || !s.lowSection) return s
+  const width = s.moduleLayouts.find((l) => l.layoutId === layoutId)?.minSlotWidth
+  const candidate = sectionModules(s, section).map((m) =>
+    m.slotIndex === slotIndex ? { ...m, fixedWidth: width } : m,
+  )
+  const split = dualSplit(s, { [section]: candidate })
+  if (!split || !split.fits) return null
+  return { ...s, width: split.highWidthCm, lowSection: { ...s.lowSection, width: split.lowWidthCm } }
+}
+
 /** Module count bounds of a section: its fixed slots plus what the rest holds. */
 function moduleCountBounds(
   s: WasmState,
@@ -121,6 +207,15 @@ function moduleCountBounds(
   modules: BaseModuleSlot[] = sectionModules(s, section),
 ): { min: number; max: number } {
   const fixed = modules.filter((m) => m.fixedWidth).map((m) => m.fixedWidth!)
+  // In a hoge + lage opstelling the part that does not get the rest fits its
+  // vakken at minimum width, so it can grow by as many vakken as the rest holds.
+  const split = dualSplit(s)
+  if (split && section !== s.restPreference) {
+    const variable = modules.length - fixed.length
+    const room = Math.floor(Math.max(0, split.restCm) / variableBounds(s).minVarWidthCm + 1e-6)
+    const min = fixed.length + (fixed.length > 0 ? 0 : 1)
+    return { min, max: Math.max(min, fixed.length + variable + room) }
+  }
   const plan = planSectionWidths({
     innerWidthCm: sectionInnerWidthCm(s, section),
     fixedWidthsCm: fixed,
@@ -394,6 +489,13 @@ interface WasmState extends BaseConfiguratorState {
   setCustomerRemarks: (v: string) => void
   sidePanelThickness: SidePanelThickness
   setSidePanelThickness: (v: SidePanelThickness) => void
+  // Hoge + lage opstelling: which part gets the width next to the machines.
+  restPreference: RestPreference
+  setRestPreference: (p: RestPreference) => void
+  /** Hoge + lage opstelling: set the total width; the parts are derived. */
+  setTotalWidth: (cm: number) => void
+  /** Hoge + lage opstelling: the current width split, or null in other layouts. */
+  dualWidthPlan: () => DualWidthResult | null
   // Placed washers, each in its own section — high and low may both hold some.
   // `section` defaults to the one the top-level fields stand for.
   washerModules: WasherModule[]
@@ -492,7 +594,20 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
   setSidePanelThickness: (sidePanelThickness) => {
     set({ sidePanelThickness })
     for (const section of sectionsPresent(get())) reconcileSection(get, set, section)
+    rebalanceDual(get, set)
   },
+
+  restPreference: 'high' as RestPreference,
+  setRestPreference: (restPreference) => {
+    set({ restPreference })
+    rebalanceDual(get, set)
+  },
+  setTotalWidth: (cm) => {
+    const s = get()
+    if (!isDualLayout(s.layout) || !s.lowSection) return
+    rebalanceDual(get, set, { totalCm: Math.min(maxTotalWidthCm(s.constraints), cm) })
+  },
+  dualWidthPlan: () => dualSplit(get()),
 
   washerModules: [],
 
@@ -589,6 +704,7 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
         })
       }
     }
+    rebalanceDual(get, set)
   },
 
   setLowSectionWidth: (cm) => {
@@ -618,6 +734,7 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
         ),
       })
     }
+    rebalanceDual(get, set)
   },
   setLowSectionModuleLayout: (slotIndex, layoutId) => {
     const s = get()
@@ -768,8 +885,11 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
     }
   },
 
-  canPlaceWasher: (slotIndex, layoutId, section) =>
-    washerFitPlan(get(), slotIndex, layoutId, section ?? topLevelSection(get().layout)) !== null,
+  canPlaceWasher: (slotIndex, layoutId, section) => {
+    const target = section ?? topLevelSection(get().layout)
+    const s = withDualRoomForWasher(get(), slotIndex, layoutId, target)
+    return s !== null && washerFitPlan(s, slotIndex, layoutId, target) !== null
+  },
 
   washerModuleCountNotice: null,
   dismissWasherModuleCountNotice: () => set({ washerModuleCountNotice: null }),
@@ -800,6 +920,14 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
 
   addWasherModule: (slotIndex, layoutId, section) => {
     const target = section ?? topLevelSection(get().layout)
+    // Hoge + lage opstelling: the part that takes the machine grows first,
+    // at the expense of the rest; the other part follows.
+    const roomy = withDualRoomForWasher(get(), slotIndex, layoutId, target)
+    if (!roomy || !washerFitPlan(roomy, slotIndex, layoutId, target)) return
+    if (roomy !== get()) {
+      set({ width: roomy.width, lowSection: { ...get().lowSection!, width: roomy.lowSection!.width } })
+      reconcileSection(get, set, target === 'high' ? 'low' : 'high')
+    }
     const plan = washerFitPlan(get(), slotIndex, layoutId, target)
     if (!plan) return
     // Two fixed-width washers can squeeze the remaining slots below their
@@ -841,6 +969,7 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
     } else {
       get().setLowSectionModuleLayout(landed, layoutId)
     }
+    rebalanceDual(get, set)
   },
 
   removeWasherModule: (slotIndex, section) => {
@@ -858,6 +987,7 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
     } else if (s.lowSection) {
       set({ lowSection: { ...s.lowSection, modules: s.lowSection.modules.map(clearSlot) } })
     }
+    rebalanceDual(get, set)
   },
 
   clearWasherModules: () => {
@@ -928,6 +1058,7 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
       (w) => w.section === section && w.slotIndex >= clamped,
     )
     outOfBounds.forEach((w) => get().removeWasherModule(w.slotIndex, section))
+    rebalanceDual(get, set)
   },
 
   setModuleLayout: (slotIndex: number, layoutId: number) => {
@@ -1125,6 +1256,7 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
         montageChoiceEnabled(get().pricingData?.config.montageChoice),
       ),
       customerRemarks: config.customerRemarks ?? '',
+      restPreference: config.restPreference ?? 'high',
       washerModules,
       fillerPanelSide: {
         high: config.fillerPanel?.side ?? 'right',
@@ -1139,6 +1271,22 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
     // A saved cabinet keeps its vakken; only what no longer fits is corrected.
     for (const section of sectionsPresent(get())) {
       reconcileSection(get, set, section, { mode: 'lenient' })
+    }
+    // Saved before the rest question existed: read the answer off the saved
+    // widths, so the cabinet comes back exactly as it was.
+    {
+      const r = get()
+      if (!config.restPreference && isDualLayout(r.layout) && r.lowSection) {
+        set({
+          restPreference: inferRestPreference(
+            r.width,
+            r.lowSection.width,
+            dualPart(r, 'high'),
+            dualPart(r, 'low'),
+            variableBounds(r).minVarWidthCm,
+          ),
+        })
+      }
     }
     const post = get()
     const stripPatch = clearLightStripsForLowOnly(post)

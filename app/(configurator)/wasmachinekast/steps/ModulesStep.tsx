@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import { useWasmachinekastStore } from '../store'
+import RestPreferenceControl from '../components/RestPreferenceControl'
 import type { BaseModuleSlot } from '../../_shared/store/types'
 import { Toggle } from '@/components/ui/Toggle'
 import { cn } from '@/lib/utils'
@@ -223,6 +224,12 @@ export default function ModulesStep() {
       <p className="text-xs text-muted-foreground/60">
         Selecteer een module — in de lijst of direct in de 3D-weergave — om de indeling aan te passen
       </p>
+
+      {isDual && (
+        <section className="rounded-md border border-border/60 p-3">
+          <RestPreferenceControl compact />
+        </section>
+      )}
 
       {blocks.map((block) => (
         <SectionModules
