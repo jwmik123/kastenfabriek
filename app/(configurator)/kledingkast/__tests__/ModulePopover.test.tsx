@@ -8,6 +8,7 @@ type Mod = {
   hasDoor: boolean
   span: 1 | 2
   hasPowerHole?: boolean
+  topHasDoor?: boolean
 }
 
 interface MockState {
@@ -17,6 +18,8 @@ interface MockState {
   setModuleLayout: (slot: number, id: number) => void
   setModuleSpan: (slot: number, span: 1 | 2) => void
   toggleModuleDoor: (slot: number) => void
+  toggleTopDoor: (slot: number) => void
+  needsTopCabinet: () => boolean
   modules: Mod[]
   moduleCount: number
   width: number
@@ -54,6 +57,8 @@ beforeEach(() => {
     setModuleLayout: vi.fn(),
     setModuleSpan: vi.fn(),
     toggleModuleDoor: vi.fn(),
+    toggleTopDoor: vi.fn(),
+    needsTopCabinet: () => false,
     modules: baseModules.map((m) => ({ ...m })),
     moduleCount: 4,
     width: 200,
@@ -170,5 +175,30 @@ describe('ModulePopover (kledingkast)', () => {
     expect(html).toContain('data-layout-id="1"')
     // Layout id 3 (height 1.75m) cannot fit in a strongly constrained slot
     expect(html).not.toContain('data-layout-id="3"')
+  })
+
+  it('hides the bovenkast deur toggle when there is no top cabinet', async () => {
+    const { default: ModulePopover } = await import('../components/ModulePopover')
+    const html = renderToStaticMarkup(<ModulePopover />)
+    expect(html).not.toContain('data-testid="module-popover-top-door-toggle"')
+  })
+
+  it('shows the bovenkast deur toggle when the closet has a top cabinet', async () => {
+    mockState.needsTopCabinet = () => true
+    const { default: ModulePopover } = await import('../components/ModulePopover')
+    const html = renderToStaticMarkup(<ModulePopover />)
+    expect(html).toContain('data-testid="module-popover-top-door-toggle"')
+    expect(html).toContain('Bovenkast deur')
+  })
+
+  it('keeps the bovenkast deur toggle on the covered half of a double', async () => {
+    // The top cabinet keeps one compartment per slot, also above a double.
+    mockState.needsTopCabinet = () => true
+    mockState.modules[0].span = 2
+    mockState.selectedSlot = 1
+    const { default: ModulePopover } = await import('../components/ModulePopover')
+    const html = renderToStaticMarkup(<ModulePopover />)
+    expect(html).toContain('data-testid="module-popover-top-door-toggle"')
+    expect(html).not.toContain('data-testid="module-popover-door-toggle"')
   })
 })

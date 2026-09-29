@@ -266,7 +266,10 @@ export function computeWasmPricing(input: WasmPricingInput): WasmPricingResult {
     }
   })
 
-  const topCabinetDoorCount = hasTopCabinet ? moduleCount : 0
+  // One door per compartment, minus the ones the customer left open.
+  const topCabinetDoorCount = hasTopCabinet
+    ? moduleCount - modules.filter((m) => m.topHasDoor === false).length
+    : 0
   const topCabinet: WasmTopCabinetRow | null =
     topCabinetDoorCount > 0
       ? {

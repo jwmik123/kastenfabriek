@@ -22,6 +22,14 @@ export interface ModuleSlot {
   buitenkantMaterialId?: string // overrides global buitenkant for this module
   binnenkantMaterialId?: string // overrides global binnenkant for this module
   hasPowerHole?: boolean
+  // Door on the top cabinet compartment above this slot. The top cabinet keeps
+  // one compartment per slot, also above a double module. Absent = door.
+  topHasDoor?: boolean
+}
+
+/** Top cabinet doors to price: one per slot, minus the ones left open. */
+export function countTopCabinetDoors(modules: Pick<ModuleSlot, 'topHasDoor'>[]): number {
+  return modules.filter((m) => m.topHasDoor !== false).length
 }
 
 export type PlacementType = 'vrijstaand' | 'ingebouwd'
@@ -117,6 +125,7 @@ interface ClosetState {
   setModuleLayout: (slotIndex: number, layoutId: number) => void
   setModuleSpan: (slotIndex: number, span: 1 | 2) => void
   toggleModuleDoor: (slotIndex: number) => void
+  toggleTopDoor: (slotIndex: number) => void
   setHasPowerHole: (slotIndex: number, value: boolean) => void
   setBuitenkantMaterialId: (id: string) => void
   setBinnenkantMaterialId: (id: string) => void
@@ -262,9 +271,9 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
 
   moduleCount: 3,
   modules: [
-    { slotIndex: 0, layoutId: null, hasDoor: true, span: 1 },
-    { slotIndex: 1, layoutId: null, hasDoor: true, span: 1 },
-    { slotIndex: 2, layoutId: null, hasDoor: true, span: 1 },
+    { slotIndex: 0, layoutId: null, hasDoor: true, span: 1, topHasDoor: true },
+    { slotIndex: 1, layoutId: null, hasDoor: true, span: 1, topHasDoor: true },
+    { slotIndex: 2, layoutId: null, hasDoor: true, span: 1, topHasDoor: true },
   ],
 
   buitenkantMaterialId: 'h3158-vicenza-eik-grijs',
@@ -669,10 +678,11 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
       if (Object.keys(updates).length > 0) set(updates)
     }
     const rebuilt: ModuleSlot[] = Array.from({ length: clamped }, (_, i) =>
-      existing[i] ?? { slotIndex: i, layoutId: null, hasDoor: true, span: 1, hasPowerHole: false }
+      existing[i] ?? { slotIndex: i, layoutId: null, hasDoor: true, span: 1, hasPowerHole: false, topHasDoor: true }
     ).map((m) => ({
       ...m,
       hasPowerHole: m.hasPowerHole ?? false,
+      topHasDoor: m.topHasDoor ?? true,
       // clear a double that would overflow beyond the new count
       span: (m.span === 2 && m.slotIndex + 1 >= clamped ? 1 : m.span) as 1 | 2,
     }))
@@ -708,6 +718,11 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
   toggleModuleDoor: (slotIndex) =>
     set((s) => ({
       modules: s.modules.map((m) => (m.slotIndex === slotIndex ? { ...m, hasDoor: !m.hasDoor } : m)),
+    })),
+
+  toggleTopDoor: (slotIndex) =>
+    set((s) => ({
+      modules: s.modules.map((m) => (m.slotIndex === slotIndex ? { ...m, topHasDoor: m.topHasDoor === false } : m)),
     })),
 
   setHasPowerHole: (slotIndex, value) =>
@@ -783,6 +798,7 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
         buitenkantMaterialId: m.buitenkantMaterialId,
         binnenkantMaterialId: m.binnenkantMaterialId,
         hasPowerHole: m.hasPowerHole ?? false,
+        topHasDoor: m.topHasDoor ?? true,
       })),
       buitenkantMaterialId: config.buitenkantMaterialId,
       binnenkantMaterialId: config.binnenkantMaterialId,

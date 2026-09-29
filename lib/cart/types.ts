@@ -18,6 +18,8 @@ export interface ModuleSlotSnapshot {
   buitenkantMaterialId?: string;
   binnenkantMaterialId?: string;
   hasPowerHole?: boolean;
+  /** Door on the top cabinet compartment above this slot. Absent = door (older snapshots). */
+  topHasDoor?: boolean;
   /** This module opens by pushing — no handle, regardless of the cabinet's choice. */
   pushToOpen?: boolean;
   /**

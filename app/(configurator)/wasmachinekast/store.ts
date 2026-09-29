@@ -461,6 +461,8 @@ interface WasmState extends BaseConfiguratorState {
   toggleLowSectionModulePushToOpen: (slotIndex: number) => void
   /** Per-module push-to-open: the module keeps its front but drops the handle. */
   toggleModulePushToOpen: (slotIndex: number) => void
+  /** Door on the top cabinet compartment above a high-section slot. */
+  toggleTopDoor: (slotIndex: number) => void
   setLowSectionHasPowerHole: (slotIndex: number, value: boolean) => void
   setLowSectionModuleMaterial: (
     slotIndex: number,
@@ -953,6 +955,11 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
   toggleModuleDoor: (slotIndex) =>
     set((s) => ({
       modules: s.modules.map((m) => (m.slotIndex === slotIndex ? { ...m, hasDoor: !m.hasDoor } : m)),
+    })),
+
+  toggleTopDoor: (slotIndex) =>
+    set((s) => ({
+      modules: s.modules.map((m) => (m.slotIndex === slotIndex ? { ...m, topHasDoor: m.topHasDoor === false } : m)),
     })),
 
   toggleModulePushToOpen: (slotIndex) =>

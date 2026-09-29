@@ -70,6 +70,7 @@ function toModuleSnapshot(
     binnenkantMaterialId: m.binnenkantMaterialId,
     hasPowerHole: m.hasPowerHole ?? false,
     pushToOpen: m.pushToOpen ?? false,
+    topHasDoor: m.topHasDoor ?? true,
     fixedWidth: m.fixedWidth,
   }
 }

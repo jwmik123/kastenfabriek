@@ -224,6 +224,27 @@ describe("buildClosetSpec", () => {
     expect(werkblad?.notes).toEqual(["Dikte: 36 mm"]);
   });
 
+  it("names the open top cabinet compartments", () => {
+    const spec = buildClosetSpec(
+      {
+        ...base,
+        hasTopCabinet: true,
+        topCabinetHeightCm: 40,
+        modules: [mod(0), mod(1, { topHasDoor: false })],
+      },
+      price,
+    );
+    expect(spec.extras).toContain("Bovenkast (40 cm), vak 2 zonder deur");
+  });
+
+  it("keeps the plain Bovenkast line when every compartment has a door", () => {
+    const spec = buildClosetSpec(
+      { ...base, hasTopCabinet: true, topCabinetHeightCm: 40 },
+      price,
+    );
+    expect(spec.extras).toContain("Bovenkast (40 cm)");
+  });
+
   it("has no Werkblad for a kledingkast", () => {
     const spec = buildClosetSpec(base, price);
     expect(spec.details.find((d) => d.label === "Werkblad")).toBeUndefined();

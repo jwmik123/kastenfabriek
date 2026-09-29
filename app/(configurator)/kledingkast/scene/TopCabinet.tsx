@@ -9,6 +9,8 @@ import { Model as HingeModel } from '../../_shared/objects/Hinge'
 import { FILLER_FLAT_SEC_THRESHOLD, getBackDiagHeightAtZ, getFullDiagHeightAt } from './diagonalUtils'
 import type { DiagParams } from './diagonalUtils'
 import { trapShape, trapGeo, trapNaN } from '@/utils/debugGeometry'
+import { useSlotHighlightMaterial, buildSlotOverlayGeometry } from '../../_shared/three/slotHighlight'
+import { useClosetSlotInteraction } from './slotInteraction'
 
 const WALL = 0.018
 const DOOR_DEPTH = 0.018
@@ -669,6 +671,34 @@ function TCLightStrips({
 // ---------------------------------------------------------------------------
 // Main component
 // ---------------------------------------------------------------------------
+// Hover/selection overlay on a top cabinet compartment's front. The
+// compartment belongs to the module below it, so it shares that slot's state.
+function TCSlotHighlight({ slotIndex, slotW, moduleDepth, roofProfile }: {
+  slotIndex: number
+  slotW: number
+  moduleDepth: number
+  roofProfile: Array<{ x: number; y: number }>
+}) {
+  const { isSelected, hovered, handlers } = useClosetSlotInteraction(slotIndex)
+  const maxH = Math.max(...roofProfile.map((pt) => pt.y))
+  // Keyed on the profile's values: callers may pass a fresh array each render.
+  const profileKey = roofProfile.map((pt) => `${pt.x},${pt.y}`).join('|')
+  const geo = useMemo(
+    () => buildSlotOverlayGeometry(slotW, roofProfile, `TCSlotHighlight${slotIndex}`),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [slotW, profileKey, slotIndex],
+  )
+  const material = useSlotHighlightMaterial(slotW, maxH, isSelected, hovered)
+  return (
+    <mesh
+      position={[0, 0, moduleDepth + 0.002]}
+      geometry={geo}
+      material={material}
+      {...handlers}
+    />
+  )
+}
+
 export default function TopCabinet() {
   const needsTop    = useClosetStore((s) => s.needsTopCabinet())
   const mainHCm     = useClosetStore((s) => s.mainHeight())
@@ -677,6 +707,7 @@ export default function TopCabinet() {
   const width       = useClosetStore((s) => s.width) / 100
   const depth       = useClosetStore((s) => s.depth) / 100
   const moduleCount = useClosetStore((s) => s.moduleCount)
+  const modules     = useClosetStore((s) => s.modules)
   const doorsOpen   = useClosetStore((s) => s.doorsOpen)
 
   const sidePanelThickness      = useClosetStore((s) => s.sidePanelThickness)
@@ -894,6 +925,8 @@ export default function TopCabinet() {
       {/* ── Per-slot content ── */}
       {Array.from({ length: moduleCount }, (_, i) => {
         const x = startX + i * slotW
+        // A double-width module owns the compartment above its second slot too.
+        const ownerSlot = i > 0 && modules[i - 1]?.span === 2 ? i - 1 : i
 
         // ── Back diagonal path ──
         if (backDiagonal) {
@@ -912,6 +945,12 @@ export default function TopCabinet() {
                 shellAtHingeZ={shellAtHingeZ}
                 doorsOpen={doorsOpen}
                 mirror={mirror}
+              />
+              <TCSlotHighlight
+                slotIndex={ownerSlot}
+                slotW={slotW}
+                moduleDepth={moduleDepth}
+                roofProfile={[{ x: 0, y: doorCeilH }, { x: slotW, y: doorCeilH }]}
               />
             </group>
           )
@@ -966,6 +1005,12 @@ export default function TopCabinet() {
               flatH={flatH}
               doorsOpen={doorsOpen}
               mirror={mirror}
+            />
+            <TCSlotHighlight
+              slotIndex={ownerSlot}
+              slotW={slotW}
+              moduleDepth={moduleDepth}
+              roofProfile={roofProfile}
             />
           </group>
         )

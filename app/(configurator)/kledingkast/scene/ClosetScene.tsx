@@ -1,13 +1,12 @@
 'use client'
 
-import { useState, useEffect, useRef, useMemo } from 'react'
-import * as THREE from 'three/webgpu'
-import { uv, float, fract, time, color, uniform, select, positionWorld } from 'three/tsl'
+import { useMemo } from 'react'
 import { useClosetStore } from '../store'
 import { ClosetMaterialProvider } from '../../_shared/materials/ClosetMaterial'
 import { getDiagHeightAt, computeModuleCapY } from './diagonalUtils'
 import type { DiagParams } from './diagonalUtils'
-import { trapNaN, trapGeo } from '@/utils/debugGeometry'
+import { useSlotHighlightMaterial, buildSlotOverlayGeometry } from '../../_shared/three/slotHighlight'
+import { useClosetSlotInteraction } from './slotInteraction'
 import ClosetCorpus from '../../_shared/three/ClosetCorpus'
 import TopCabinet from './TopCabinet'
 import OnderstelPlinth from './OnderstelPlinth'
@@ -18,7 +17,6 @@ import LightStrips from '../../_shared/three/LightStrips'
 import { getLayoutById } from './moduleLayouts'
 import { WALL, ONDERSTEL_HEIGHT, ONDERSTEL_GAP, CLOSET_INSIDE_INSET, MODULE_FLOOR_Y } from './closetConstants'
 // import { StripWarmthProvider } from '../../_shared/materials/StripWarmthContext'
-const BORDER_M = 0.015 // 15mm border in world space
 
 function slotCeilingProfile(
   leftXOuter: number,
@@ -44,20 +42,13 @@ function ModuleSlotInteraction({ slotIndex, span, diagParams }: { slotIndex: num
   const depth = useClosetStore((s) => s.depth) / 100
   const moduleCount = useClosetStore((s) => s.moduleCount)
   const width = useClosetStore((s) => s.width) / 100
-  const step = useClosetStore((s) => s.step)
-  const nextStep = useClosetStore((s) => s.nextStep)
-  const selectedSlot = useClosetStore((s) => s.selectedSlot)
-  const setSelectedSlot = useClosetStore((s) => s.setSelectedSlot)
-  const setHoveredSlot = useClosetStore((s) => s.setHoveredSlot)
-
-  const [hovered, setHovered] = useState(false)
+  const { isSelected, hovered, handlers } = useClosetSlotInteraction(slotIndex)
 
   const sideWallM = diagParams.sideWallThickness
   const innerW = width - sideWallM * 2
   const slotW = innerW / moduleCount
   const moduleDepth = depth - WALL - CLOSET_INSIDE_INSET
 
-  const isSelected = selectedSlot === slotIndex
   const totalW = span * slotW
 
   const leftXOuter  = sideWallM + slotIndex * slotW
@@ -70,71 +61,12 @@ function ModuleSlotInteraction({ slotIndex, span, diagParams }: { slotIndex: num
 
   const maxProfileH = Math.max(...profile.map((pt) => pt.y))
 
-  const shapeGeo = useMemo(() => {
-    trapNaN(totalW, `SlotInteraction${slotIndex}-totalW`)
-    trapNaN(maxProfileH, `SlotInteraction${slotIndex}-maxProfileH`)
-    const shape = new THREE.Shape()
-    shape.moveTo(0, 0)
-    shape.lineTo(totalW, 0)
-    for (let i = profile.length - 1; i >= 0; i--) {
-      shape.lineTo(profile[i].x, profile[i].y)
-    }
-    shape.closePath()
-    const geo = new THREE.ShapeGeometry(shape)
-    const pos = geo.attributes.position
-    const uvArr = new Float32Array(pos.count * 2)
-    const safeW = totalW > 0 ? totalW : 1
-    const safeH = maxProfileH > 0 ? maxProfileH : 1
-    for (let i = 0; i < pos.count; i++) {
-      uvArr[i * 2]     = pos.getX(i) / safeW
-      uvArr[i * 2 + 1] = pos.getY(i) / safeH
-    }
-    geo.setAttribute('uv', new THREE.BufferAttribute(uvArr, 2))
-    return trapGeo(geo, `SlotInteraction${slotIndex}-shapeGeo`)
-  }, [profile, totalW, maxProfileH])
+  const shapeGeo = useMemo(
+    () => buildSlotOverlayGeometry(totalW, profile, `SlotInteraction${slotIndex}`),
+    [profile, totalW, slotIndex],
+  )
 
-  useEffect(() => {
-    document.body.style.cursor = hovered ? 'pointer' : 'auto'
-    return () => { document.body.style.cursor = 'auto' }
-  }, [hovered])
-
-  const bxU = useRef(uniform(BORDER_M / totalW))
-  const byU = useRef(uniform(BORDER_M / maxProfileH))
-  const fillAlphaU = useRef(uniform(0.0))
-  const borderAlphaU = useRef(uniform(0.0))
-
-  useEffect(() => { bxU.current.value = BORDER_M / totalW }, [totalW])
-  useEffect(() => { byU.current.value = BORDER_M / maxProfileH }, [maxProfileH])
-  useEffect(() => {
-    fillAlphaU.current.value = isSelected ? 0.05 : hovered ? 0.10 : 0.0
-    borderAlphaU.current.value = (isSelected || hovered) ? 0.85 : 0.0
-  }, [isSelected, hovered])
-
-  const material = useMemo(() => {
-    const uvCoord = uv()
-
-    const onEdge = uvCoord.x.lessThan(bxU.current)
-      .or(float(1.0).sub(uvCoord.x).lessThan(bxU.current))
-      .or(uvCoord.y.lessThan(byU.current))
-      .or(float(1.0).sub(uvCoord.y).lessThan(byU.current))
-
-    const stripe = fract(positionWorld.x.sub(positionWorld.y).mul(8.0).add(time.mul(0.8)))
-    const stripeOn = stripe.lessThan(float(0.5))
-
-    const pixelAlpha = select(
-      onEdge,
-      select(stripeOn, borderAlphaU.current, float(0.0)),
-      fillAlphaU.current,
-    )
-
-    const mat = new THREE.MeshBasicNodeMaterial()
-    mat.colorNode = color(0x22c55e)
-    mat.opacityNode = pixelAlpha
-    mat.transparent = true
-    mat.depthWrite = false
-
-    return mat
-  }, [])
+  const material = useSlotHighlightMaterial(totalW, maxProfileH, isSelected, hovered)
 
   return (
     <group position={[(-innerW / 2) + slotIndex * slotW, MODULE_FLOOR_Y, WALL]}>
@@ -142,23 +74,7 @@ function ModuleSlotInteraction({ slotIndex, span, diagParams }: { slotIndex: num
         position={[0, 0, moduleDepth + 0.002]}
         geometry={shapeGeo}
         material={material}
-        onPointerOver={(e) => { e.stopPropagation(); setHovered(true); setHoveredSlot(slotIndex) }}
-        onPointerOut={() => { setHovered(false); setHoveredSlot(null) }}
-        onClick={(e) => {
-          e.stopPropagation()
-          if (step === 1) {
-            nextStep()
-            const ne = e.nativeEvent as MouseEvent
-            setSelectedSlot(slotIndex, { x: ne.clientX, y: ne.clientY })
-            return
-          }
-          if (isSelected) {
-            setSelectedSlot(null)
-          } else {
-            const ne = e.nativeEvent as MouseEvent
-            setSelectedSlot(slotIndex, { x: ne.clientX, y: ne.clientY })
-          }
-        }}
+        {...handlers}
       />
     </group>
   )

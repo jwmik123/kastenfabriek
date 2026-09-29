@@ -247,6 +247,13 @@ describe('computeWasmPricing — cabinet-wide lines', () => {
     expect(result.totals.mechanismCost).toBe(20 + 30)
   })
 
+  it('drops the top cabinet door of a compartment left open', () => {
+    const open = modules.map((m, i) => (i === 1 ? { ...m, topHasDoor: false } : m))
+    const result = computeWasmPricing(input({ modules: open, moduleCount: 2, hasTopCabinet: true }))
+    expect(result.topCabinet?.doorCount).toBe(1)
+    expect(result.topCabinet?.doorCost).toBe(80)
+  })
+
   it('looks the montage tier up without delivery and LED', () => {
     const result = computeWasmPricing(input({ modules, moduleCount: 2, lightStripsEnabled: true }))
     const t = result.totals

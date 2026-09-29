@@ -16,7 +16,7 @@ const MODULE_FLOOR_Y = ONDERSTEL_HEIGHT + ONDERSTEL_GAP
 const MODULES_STEP = 2
 
 /**
- * The configurable "Vak instellen" card: door / double-module toggles and the
+ * The configurable "Vak instellen" card: door / top cabinet door / double-module toggles and the
  * layout picker for the selected slot. Reads everything it needs from the store
  * and returns null when there is nothing to configure, so it can be dropped into
  * either the canvas popover (desktop) or inline in the step wizard (mobile)
@@ -29,6 +29,8 @@ export default function ModuleConfigCard({ className }: { className?: string }) 
   const setModuleLayout  = useClosetStore((s) => s.setModuleLayout)
   const setModuleSpan    = useClosetStore((s) => s.setModuleSpan)
   const toggleModuleDoor = useClosetStore((s) => s.toggleModuleDoor)
+  const toggleTopDoor    = useClosetStore((s) => s.toggleTopDoor)
+  const hasTopCabinet    = useClosetStore((s) => s.needsTopCabinet())
   const modules          = useClosetStore((s) => s.modules)
   const moduleCount      = useClosetStore((s) => s.moduleCount)
 
@@ -104,6 +106,19 @@ export default function ModuleConfigCard({ className }: { className?: string }) 
 
   const activeLayoutId = modules[selectedSlot]?.layoutId
 
+  const topDoorToggle = hasTopCabinet && (
+    <div
+      data-testid="module-popover-top-door-toggle"
+      className="flex items-center justify-between flex-1"
+    >
+      <span className="text-sm">Bovenkast deur</span>
+      <Toggle
+        checked={modules[selectedSlot]?.topHasDoor !== false}
+        onCheckedChange={() => toggleTopDoor(selectedSlot)}
+      />
+    </div>
+  )
+
   return (
     <div
       data-testid="module-popover"
@@ -128,12 +143,17 @@ export default function ModuleConfigCard({ className }: { className?: string }) 
       </div>
 
       {isCoveredSlot ? (
-        <p className="text-xs text-muted-foreground">
-          Dit vak maakt deel uit van een dubbel module.
-        </p>
+        <div className="space-y-4">
+          <p className="text-xs text-muted-foreground">
+            Dit vak maakt deel uit van een dubbel module.
+          </p>
+          {/* The top cabinet keeps a compartment per slot, also above a double. */}
+          {topDoorToggle}
+        </div>
       ) : (
         <>
-          <div className="flex gap-5">
+          {/* Two columns: three toggles do not fit one row in the narrow card. */}
+          <div className="grid grid-cols-2 gap-x-5 gap-y-3">
             <div
               data-testid="module-popover-door-toggle"
               className="flex items-center justify-between flex-1"
@@ -156,6 +176,7 @@ export default function ModuleConfigCard({ className }: { className?: string }) 
                 />
               </div>
             )}
+            {topDoorToggle}
           </div>
 
           <div className="space-y-2">

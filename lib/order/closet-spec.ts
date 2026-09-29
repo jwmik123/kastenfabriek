@@ -442,7 +442,7 @@ export function buildClosetSpec(
     c.lightStripsEnabled ? "LED-strips" : null,
     powerHoleCount > 0 ? `Kabeldoorvoer (${powerHoleCount}×)` : null,
     (c.sidePanelThickness ?? "18mm") === "36mm" ? "Zijpanelen 36 mm (upgrade)" : null,
-    c.hasTopCabinet ? `Bovenkast (${c.topCabinetHeightCm} cm)` : null,
+    c.hasTopCabinet ? describeTopCabinet(c) : null,
     c.doorsExtendToFloor ? "Deuren doorlopend tot de vloer" : null,
     c.diagonalSide !== "none" ? describeDiagonal(c) : null,
     c.backDiagonal
@@ -463,6 +463,15 @@ export function buildClosetSpec(
     priceRows: buildPriceRows(c, p),
     subtotal: closetLineSubtotal(p),
   };
+}
+
+function describeTopCabinet(c: ClosetConfigSnapshot): string {
+  const base = `Bovenkast (${c.topCabinetHeightCm} cm)`;
+  const open = c.modules
+    .filter((m) => m.topHasDoor === false)
+    .map((m) => m.slotIndex + 1);
+  if (open.length === 0) return base;
+  return `${base}, ${open.length === 1 ? "vak" : "vakken"} ${open.join(", ")} zonder deur`;
 }
 
 function handleLabel(id: string, name: string | null | undefined): string {

@@ -12,6 +12,8 @@ export interface BaseModuleSlot {
   hasPowerHole?: boolean
   /** Per-module override: this module opens by pushing, so it carries no handle. */
   pushToOpen?: boolean
+  /** Door on the top cabinet compartment above this slot. Absent = door. */
+  topHasDoor?: boolean
   fixedWidth?: number  // cm; when set, slot has fixed width (e.g. washer modules)
 }
 

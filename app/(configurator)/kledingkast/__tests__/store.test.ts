@@ -341,3 +341,41 @@ describe('double modules — dropped by a diagonal', () => {
     })
   })
 })
+
+describe('top cabinet doors', () => {
+  beforeEach(resetStore)
+
+  it('gives new slots a top cabinet door by default', () => {
+    useClosetStore.getState().setModuleCount(5)
+    useClosetStore.getState().modules.forEach((m) => expect(m.topHasDoor).toBe(true))
+  })
+
+  it('toggleTopDoor flips only the given slot', () => {
+    useClosetStore.getState().toggleTopDoor(1)
+    const { modules } = useClosetStore.getState()
+    expect(modules.map((m) => m.topHasDoor)).toEqual([true, false, true])
+    useClosetStore.getState().toggleTopDoor(1)
+    expect(useClosetStore.getState().modules[1].topHasDoor).toBe(true)
+  })
+
+  it('restoreConfig defaults missing topHasDoor to true (older snapshots)', () => {
+    const base = useClosetStore.getInitialState()
+    useClosetStore.getState().restoreConfig({
+      id: 'x', capturedAt: '', widthCm: 150, heightCm: 260, depthCm: 60, moduleCount: 2,
+      modules: [
+        { slotIndex: 0, layoutId: 1, layoutName: null, hasDoor: true, span: 1 },
+        { slotIndex: 1, layoutId: 1, layoutName: null, hasDoor: true, span: 1, topHasDoor: false },
+      ],
+      buitenkantMaterialId: base.buitenkantMaterialId, binnenkantMaterialId: base.binnenkantMaterialId,
+      doorHandleId: 'none', diagonalSide: 'none', leftDiagStartHeight: 200, rightDiagStartHeight: 200,
+    } as unknown as ClosetConfigSnapshot)
+    expect(useClosetStore.getState().modules.map((m) => m.topHasDoor)).toEqual([true, false])
+  })
+})
+
+describe('countTopCabinetDoors', () => {
+  it('counts slots with a top door, treating a missing flag as a door', async () => {
+    const { countTopCabinetDoors } = await import('../store')
+    expect(countTopCabinetDoors([{ topHasDoor: true }, {}, { topHasDoor: false }])).toBe(2)
+  })
+})

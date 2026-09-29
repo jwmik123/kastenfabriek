@@ -18,6 +18,8 @@ interface MockState {
   setModuleLayout: (slot: number, id: number) => void
   setModuleSpan: (slot: number, span: 1 | 2) => void
   toggleModuleDoor: (slot: number) => void
+  toggleTopDoor: (slot: number) => void
+  needsTopCabinet: () => boolean
   addWasherModule: (slot: number, id: number, section?: 'high' | 'low') => void
   removeWasherModule: (slot: number, section?: 'high' | 'low') => void
   canPlaceWasher: (slot: number, id: number, section?: 'high' | 'low') => boolean
@@ -68,6 +70,8 @@ beforeEach(() => {
     setModuleLayout: vi.fn(),
     setModuleSpan: vi.fn(),
     toggleModuleDoor: vi.fn(),
+    toggleTopDoor: vi.fn(),
+    needsTopCabinet: () => false,
     setLowSectionModuleLayout: vi.fn(),
     addWasherModule: vi.fn(),
     removeWasherModule: vi.fn(),
@@ -183,5 +187,21 @@ describe('ModulePopover (wasmachinekast)', () => {
     const html = renderToStaticMarkup(<ModulePopover />)
     expect(html).toContain('data-testid="module-popover-layout-picker"')
     expect(html).not.toContain('data-testid="module-popover-double-toggle"')
+  })
+
+  it('shows the bovenkast deur toggle only when the cabinet has a top cabinet', async () => {
+    const { default: ModulePopover } = await import('../components/ModulePopover')
+    expect(renderToStaticMarkup(<ModulePopover />)).not.toContain('module-popover-top-door-toggle')
+    mockState.needsTopCabinet = () => true
+    expect(renderToStaticMarkup(<ModulePopover />)).toContain('module-popover-top-door-toggle')
+  })
+
+  it('keeps the bovenkast deur toggle above a washer', async () => {
+    mockState.needsTopCabinet = () => true
+    mockState.selectedSlot = 0
+    const { default: ModulePopover } = await import('../components/ModulePopover')
+    const html = renderToStaticMarkup(<ModulePopover />)
+    expect(html).toContain('module-popover-top-door-toggle')
+    expect(html).not.toContain('module-popover-door-toggle"')
   })
 })

@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useSession } from '@/lib/auth-client'
-import { useClosetStore } from '../store'
+import { useClosetStore, countTopCabinetDoors } from '../store'
 import { isTextureMaterial } from '@/lib/materials'
 import { addItem } from '@/lib/cart/cart-store'
 import { addWishlistItem } from '@/lib/wishlist/wishlist-store'
@@ -81,7 +81,7 @@ export function useCartPrice() {
   }
 
   // Top cabinet doors are always small variant
-  const topCabinetDoorCount = hasTopCabinet ? moduleCount : 0
+  const topCabinetDoorCount = hasTopCabinet ? countTopCabinetDoors(modules) : 0
   const topCabinetDoorCost = topCabinetDoorCount * (engine?.getDoorPrice('small') ?? 0)
 
   const doorCost = moduleDoorCost + topCabinetDoorCost
@@ -178,6 +178,7 @@ export function useCartPrice() {
           buitenkantMaterialId: m.buitenkantMaterialId,
           binnenkantMaterialId: m.binnenkantMaterialId,
           hasPowerHole: m.hasPowerHole ?? false,
+          topHasDoor: m.topHasDoor ?? true,
         }
       }),
       buitenkantMaterialId,

@@ -1,6 +1,6 @@
 'use client'
 
-import { useClosetStore } from '../store'
+import { useClosetStore, countTopCabinetDoors } from '../store'
 import { findMaterial, isTextureMaterial } from '@/lib/materials'
 import { PricingEngine } from '@/lib/configurator/pricing-engine'
 import type { FullPricingData, ModuleLayout } from '@/types/configurator-pricing'
@@ -119,7 +119,7 @@ export function computeDebugGlobal(params: {
     moduleDoorCount += count
   }
 
-  const topCabinetDoorCount = hasTopCabinet ? moduleCount : 0
+  const topCabinetDoorCount = hasTopCabinet ? countTopCabinetDoors(modules) : 0
   const topCabinetDoorCost = topCabinetDoorCount * engine.getDoorPrice('small')
   const doorCost = moduleDoorCost + topCabinetDoorCost
   const totalDoorCount = moduleDoorCount + topCabinetDoorCount
@@ -254,7 +254,7 @@ export function computeDebugSlots(params: {
 
   let topCabinet: DebugTopCabinetRow | null = null
   if (hasTopCabinet) {
-    const doorCount = moduleCount
+    const doorCount = countTopCabinetDoors(modules)
     const doorCost = doorCount * engine.getDoorPrice('small')
     const handleCost = doorCount * handlePrice
     topCabinet = {

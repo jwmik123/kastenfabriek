@@ -56,6 +56,8 @@ export default function ModuleConfigCard({ className }: { className?: string }) 
   const setLowSectionModuleSpan = useWasmachinekastStore((s) => s.setLowSectionModuleSpan)
   const toggleLowSectionModuleDoor = useWasmachinekastStore((s) => s.toggleLowSectionModuleDoor)
   const togglePushToOpenTop = useWasmachinekastStore((s) => s.toggleModulePushToOpen)
+  const toggleTopDoor    = useWasmachinekastStore((s) => s.toggleTopDoor)
+  const needsTopCabinet  = useWasmachinekastStore((s) => s.needsTopCabinet())
   const toggleLowSectionPushToOpen = useWasmachinekastStore((s) => s.toggleLowSectionModulePushToOpen)
   const selectedHandleId = useWasmachinekastStore((s) => s.doorHandleId)
   const topModules       = useWasmachinekastStore((s) => s.modules)
@@ -125,6 +127,20 @@ export default function ModuleConfigCard({ className }: { className?: string }) 
   const plainLayouts = availableLayouts.filter((l) => !washerIds.has(l.layoutId))
 
   const activeLayoutId = modules[selectedSlot]?.layoutId
+
+  // Only the high section carries a top cabinet (never low-only).
+  const topDoorToggle = editingSection === 'high' && needsTopCabinet && (
+    <div
+      data-testid="module-popover-top-door-toggle"
+      className="flex items-center justify-between"
+    >
+      <span className="text-sm">Bovenkast deur</span>
+      <Toggle
+        checked={modules[selectedSlot]?.topHasDoor !== false}
+        onCheckedChange={() => toggleTopDoor(selectedSlot)}
+      />
+    </div>
+  )
 
   function renderOption(
     layoutItem: { layoutId: number; name: string; minSlotWidth?: number },
@@ -267,9 +283,13 @@ export default function ModuleConfigCard({ className }: { className?: string }) 
       )}
 
       {isCoveredSlot ? (
-        <p className="text-xs text-muted-foreground">
-          Dit vak maakt deel uit van een dubbel module.
-        </p>
+        <div className="space-y-4">
+          <p className="text-xs text-muted-foreground">
+            Dit vak maakt deel uit van een dubbel module.
+          </p>
+          {/* The top cabinet keeps a compartment per slot, also above a double. */}
+          {topDoorToggle}
+        </div>
       ) : (
         <>
           {/* A washer brings its own front, so the door and double toggles do
@@ -300,6 +320,9 @@ export default function ModuleConfigCard({ className }: { className?: string }) 
             )}
           </div>
           )}
+
+          {/* Also above a washer: the top cabinet has a compartment there too. */}
+          {topDoorToggle}
 
           {/* Per-module push-to-open. Only meaningful on a front that would
               otherwise carry the cabinet's handle. */}

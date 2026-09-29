@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three/webgpu'
-import { uv, float, fract, time, color, uniform, select, positionWorld } from 'three/tsl'
+import type { ThreeEvent } from '@react-three/fiber'
 import { useWasmachinekastStore } from '../store'
 import { ClosetMaterialProvider } from '../../_shared/materials/ClosetMaterial'
 import ClosetCorpus from '../../_shared/three/ClosetCorpus'
@@ -14,6 +14,7 @@ import { WALL, ONDERSTEL_HEIGHT, ONDERSTEL_GAP, CLOSET_INSIDE_INSET, MODULE_FLOO
 import { useGLTF } from '@react-three/drei'
 import { useClosetMaterialInstance } from '../../_shared/materials/ClosetMaterial'
 import { trapNaN, trapGeo } from '@/utils/debugGeometry'
+import { useSlotHighlightMaterial } from '../../_shared/three/slotHighlight'
 import { computeSlotWidthsM } from '../../_shared/store/slotWidths'
 import { getWasmLayoutConfig } from '../moduleLayoutConfigs'
 import { STEP } from '../steps/steps'
@@ -29,7 +30,6 @@ import FillerPanel, { SideWallExtension } from './FillerPanel'
 type InteriorInset = { left: number; right: number }
 const NO_INSET: InteriorInset = { left: 0, right: 0 }
 
-const BORDER_M = 0.015
 const WASHER_REAR_CLEARANCE = 0.10
 
 interface SectionRender {
@@ -50,6 +50,7 @@ function SlotInteraction({
   sectionKind,
   sharedSideWall = null,
   interiorInset = NO_INSET,
+  topCabinetHeightM = 0,
 }: {
   slotIndex: number
   span: 1 | 2
@@ -61,6 +62,8 @@ function SlotInteraction({
   sectionKind: 'high' | 'low'
   sharedSideWall?: 'left' | 'right' | null
   interiorInset?: InteriorInset
+  /** Interior height of the top cabinet above this section; 0 when there is none. */
+  topCabinetHeightM?: number
 }) {
   const selectedSlot = useWasmachinekastStore((s) => s.selectedSlot)
   const activeModulesSection = useWasmachinekastStore((s) => s.activeModulesSection)
@@ -91,6 +94,8 @@ function SlotInteraction({
   // module-interior cap at y=sectionMainHeightM in world space, so cap to that
   // delta — otherwise it overhangs the corpus by the plinth height.
   const overlayHeightM = Math.max(0, sectionMainHeightM - MODULE_FLOOR_Y)
+  // Top cabinet floor, relative to this group (which sits at MODULE_FLOOR_Y).
+  const topCabinetFloorY = sectionMainHeightM - MODULE_FLOOR_Y
 
   const slotWidthsM = useMemo(() => computeSlotWidthsM(modules, innerW), [modules, innerW])
   const slotOffset = slotWidthsM.slice(0, slotIndex).reduce((a, b) => a + b, 0)
@@ -117,38 +122,14 @@ function SlotInteraction({
     return () => { document.body.style.cursor = 'auto' }
   }, [localHovered])
 
-  const bxU = useRef(uniform(BORDER_M / totalW))
-  const byU = useRef(uniform(BORDER_M / overlayHeightM))
-  const fillAlphaU = useRef(uniform(0.0))
-  const borderAlphaU = useRef(uniform(0.0))
-
-  useEffect(() => { bxU.current.value = BORDER_M / totalW }, [totalW])
-  useEffect(() => { byU.current.value = BORDER_M / overlayHeightM }, [overlayHeightM])
-  useEffect(() => {
-    fillAlphaU.current.value = isSelected ? 0.05 : hovered ? 0.10 : 0.0
-    borderAlphaU.current.value = (isSelected || hovered) ? 0.85 : 0.0
-  }, [isSelected, hovered])
-
-  const visualMaterial = useMemo(() => {
-    const uvCoord = uv()
-    const onEdge = uvCoord.x.lessThan(bxU.current)
-      .or(float(1.0).sub(uvCoord.x).lessThan(bxU.current))
-      .or(uvCoord.y.lessThan(byU.current))
-      .or(float(1.0).sub(uvCoord.y).lessThan(byU.current))
-    const stripe = fract(positionWorld.x.sub(positionWorld.y).mul(8.0).add(time.mul(0.8)))
-    const stripeOn = stripe.lessThan(float(0.5))
-    const pixelAlpha = select(
-      onEdge,
-      select(stripeOn, borderAlphaU.current, float(0.0)),
-      fillAlphaU.current,
-    )
-    const mat = new THREE.MeshBasicNodeMaterial()
-    mat.colorNode = color(0x22c55e)
-    mat.opacityNode = pixelAlpha
-    mat.transparent = true
-    mat.depthWrite = false
-    return mat
-  }, [])
+  const visualMaterial = useSlotHighlightMaterial(totalW, overlayHeightM, isSelected, hovered)
+  const tcVisualMaterial = useSlotHighlightMaterial(totalW, topCabinetHeightM || 1, isSelected, hovered)
+  const tcGeo = useMemo(() => {
+    if (topCabinetHeightM <= 0) return null
+    const geo = new THREE.PlaneGeometry(totalW, topCabinetHeightM)
+    geo.translate(totalW / 2, topCabinetHeightM / 2, 0)
+    return trapGeo(geo, `WasmSlotInteraction${slotIndex}-tcGeo`)
+  }, [totalW, topCabinetHeightM, slotIndex])
 
   const hitMaterial = useMemo(() => {
     const mat = new THREE.MeshBasicMaterial()
@@ -161,30 +142,43 @@ function SlotInteraction({
 
   const showVisual = isSelected || hovered
 
+  const handlers = {
+    onPointerOver: (e: ThreeEvent<PointerEvent>) => {
+      e.stopPropagation()
+      setLocalHovered(true)
+      setHoveredSlot(slotIndex)
+      setHoveredSection(sectionKind)
+    },
+    onPointerOut: () => {
+      setLocalHovered(false)
+      setHoveredSlot(null)
+      setHoveredSection(null)
+    },
+    onClick: (e: ThreeEvent<MouseEvent>) => {
+      e.stopPropagation()
+      if (isSelected) {
+        setSelectedSlot(null)
+      } else {
+        const ne = e.nativeEvent
+        // Clicking a module is a request to configure it, so take the
+        // customer to the indeling step. The material step has its own
+        // meaning for a module click (recolour that module), so it stays.
+        if (step !== STEP.modules && step !== STEP.material) {
+          setStep(STEP.modules)
+        }
+        // setStep clears the selection, so select after moving.
+        setSelectedSlot(slotIndex, { x: ne.clientX, y: ne.clientY }, sectionKind)
+      }
+    },
+  }
+
   return (
     <group position={[-sectionWidthM / 2 + leftWallM + slotOffset, MODULE_FLOOR_Y, WALL]}>
       <mesh
         position={[0, 0, moduleDepth + 0.002]}
         geometry={shapeGeo}
         material={hitMaterial}
-        onPointerOver={(e) => { e.stopPropagation(); setLocalHovered(true); setHoveredSlot(slotIndex); setHoveredSection(sectionKind) }}
-        onPointerOut={() => { setLocalHovered(false); setHoveredSlot(null); setHoveredSection(null) }}
-        onClick={(e) => {
-          e.stopPropagation()
-          if (isSelected) {
-            setSelectedSlot(null)
-          } else {
-            const ne = e.nativeEvent as MouseEvent
-            // Clicking a module is a request to configure it, so take the
-            // customer to the indeling step. The material step has its own
-            // meaning for a module click (recolour that module), so it stays.
-            if (step !== STEP.modules && step !== STEP.material) {
-              setStep(STEP.modules)
-            }
-            // setStep clears the selection, so select after moving.
-            setSelectedSlot(slotIndex, { x: ne.clientX, y: ne.clientY }, sectionKind)
-          }
-        }}
+        {...handlers}
       />
       {showVisual && (
         <mesh
@@ -193,6 +187,25 @@ function SlotInteraction({
           material={visualMaterial}
           raycast={() => null}
         />
+      )}
+      {/* The top cabinet compartment above belongs to this module. */}
+      {tcGeo && (
+        <group position={[0, topCabinetFloorY, 0]}>
+          <mesh
+            position={[0, 0, moduleDepth + 0.002]}
+            geometry={tcGeo}
+            material={hitMaterial}
+            {...handlers}
+          />
+          {showVisual && (
+            <mesh
+              position={[0, 0, moduleDepth + 0.003]}
+              geometry={tcGeo}
+              material={tcVisualMaterial}
+              raycast={() => null}
+            />
+          )}
+        </group>
       )}
     </group>
   )
@@ -552,6 +565,9 @@ function SectionGroup({
   const doorBottomY = doorsExtendToFloor ? 0.02 : MODULE_FLOOR_Y
   const doorTopY = (isLow ? lowMainH : mainHeightCm / 100) - WALL_M
   const topCabinetCeilY = heightCm / 100 - SIDE_WALL_EXTRA_M - WALL_M
+  // Same interior height WasmTopCabinet builds its compartments to.
+  const topCabinetFlatH = topCabinetCeilY - mainHeightCm / 100
+  const topCabinetInteriorH = !isLow && needsTop && topCabinetFlatH > WALL * 2 ? topCabinetFlatH : 0
   // A piece sits against its side wall, past any thickening of that wall.
   const pieceXLeft = (piece: { side: 'left' | 'right'; widthCm: number }) =>
     piece.side === 'left'
@@ -694,6 +710,7 @@ function SectionGroup({
               sectionKind={kind}
               sharedSideWall={sharedSideWall}
               interiorInset={interiorInset}
+              topCabinetHeightM={topCabinetInteriorH}
             />
           )
         })}

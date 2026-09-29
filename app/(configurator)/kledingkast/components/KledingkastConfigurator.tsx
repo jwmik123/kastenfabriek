@@ -81,6 +81,7 @@ export default function KledingkastConfigurator({ pricingData, editConfig, editI
             buitenkantMaterialId: m.buitenkantMaterialId,
             binnenkantMaterialId: m.binnenkantMaterialId,
             hasPowerHole: m.hasPowerHole ?? false,
+            topHasDoor: m.topHasDoor ?? true,
           })),
           buitenkantMaterialId: state.buitenkantMaterialId,
           binnenkantMaterialId: state.binnenkantMaterialId,
