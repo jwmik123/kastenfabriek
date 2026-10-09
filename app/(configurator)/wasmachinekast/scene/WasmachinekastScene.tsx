@@ -16,6 +16,7 @@ import { useClosetMaterialInstance } from '../../_shared/materials/ClosetMateria
 import { trapNaN, trapGeo } from '@/utils/debugGeometry'
 import { useSlotHighlightMaterial } from '../../_shared/three/slotHighlight'
 import { computeSlotWidthsM } from '../../_shared/store/slotWidths'
+import { hasTopDoorAt } from '../../_shared/store/topCabinetDoors'
 import { getWasmLayoutConfig } from '../moduleLayoutConfigs'
 import { STEP } from '../steps/steps'
 import { WASHER_LAYOUT_IDS } from '../moduleLayouts'
@@ -455,7 +456,7 @@ function WasmTopCabinet({
               flatH={flatH}
               doorsOpen={doorsOpen}
               mirror={mirror}
-              showDoor={m.topHasDoor !== false}
+              showDoor={hasTopDoorAt(modules, i)}
             />
           </group>
         )

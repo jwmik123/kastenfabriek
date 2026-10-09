@@ -13,6 +13,7 @@ import { LAYOUT_SVGS } from '../../kledingkast/components/LayoutSvgs'
 import { LOW_LAYOUT_SVGS, WASHER_LAYOUT_SVGS, WASHER_TYPE_SVGS } from './WasherLayoutSvgs'
 import { STEP } from '../steps/steps'
 import { Toggle } from '@/components/ui/Toggle'
+import { hasTopDoorAt } from '../../_shared/store/topCabinetDoors'
 import { cn } from '@/lib/utils'
 import { useCanSplitFiller, useFillerPanel } from '../hooks/useFillerPanel'
 import FillerPanelControl, { formatPanelWidth } from './FillerPanelControl'
@@ -136,7 +137,7 @@ export default function ModuleConfigCard({ className }: { className?: string }) 
     >
       <span className="text-sm">Bovenkast deur</span>
       <Toggle
-        checked={modules[selectedSlot]?.topHasDoor !== false}
+        checked={hasTopDoorAt(modules, selectedSlot)}
         onCheckedChange={() => toggleTopDoor(selectedSlot)}
       />
     </div>
@@ -292,21 +293,22 @@ export default function ModuleConfigCard({ className }: { className?: string }) 
         </div>
       ) : (
         <>
-          {/* A washer brings its own front, so the door and double toggles do
-              not apply to it. */}
-          {!isWasherSlot && (
+          {/* A washer in the high section has a door above the machine, which
+              the customer may leave off; in the low section it stays open.
+              A washer slot can never be doubled. */}
+          {(!isWasherSlot || editingSection === 'high') && (
           <div className="flex gap-5">
             <div
               data-testid="module-popover-door-toggle"
               className="flex items-center justify-between flex-1"
             >
-              <span className="text-sm">Deur</span>
+              <span className="text-sm">{isWasherSlot ? 'Deur boven machine' : 'Deur'}</span>
               <Toggle
                 checked={modules[selectedSlot]?.hasDoor ?? false}
                 onCheckedChange={() => toggleModuleDoor(selectedSlot)}
               />
             </div>
-            {canBeDouble && (
+            {canBeDouble && !isWasherSlot && (
               <div
                 data-testid="module-popover-double-toggle"
                 className="flex items-center justify-between flex-1"

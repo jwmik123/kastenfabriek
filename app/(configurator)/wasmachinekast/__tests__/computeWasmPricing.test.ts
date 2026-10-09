@@ -247,6 +247,16 @@ describe('computeWasmPricing — cabinet-wide lines', () => {
     expect(result.totals.mechanismCost).toBe(20 + 30)
   })
 
+  it('leaves both top cabinet compartments above a double open', () => {
+    const three = [
+      slot({ slotIndex: 0, layoutId: 1, hasDoor: true, span: 2, topHasDoor: false }),
+      slot({ slotIndex: 1, layoutId: null, hasDoor: true }),
+      slot({ slotIndex: 2, layoutId: 1, hasDoor: true }),
+    ]
+    const result = computeWasmPricing(input({ modules: three, moduleCount: 3, hasTopCabinet: true }))
+    expect(result.topCabinet?.doorCount).toBe(1)
+  })
+
   it('drops the top cabinet door of a compartment left open', () => {
     const open = modules.map((m, i) => (i === 1 ? { ...m, topHasDoor: false } : m))
     const result = computeWasmPricing(input({ modules: open, moduleCount: 2, hasTopCabinet: true }))

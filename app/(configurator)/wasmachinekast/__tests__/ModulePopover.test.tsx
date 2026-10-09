@@ -110,13 +110,13 @@ describe('ModulePopover (wasmachinekast)', () => {
     expect(html).toBe('')
   })
 
-  it('opens on a washer slot, without the deur and dubbele toggles', async () => {
+  it('opens on a washer slot with the deur toggle (door above the machine), without dubbele', async () => {
     mockState.selectedSlot = 0
     const { default: ModulePopover } = await import('../components/ModulePopover')
     const html = renderToStaticMarkup(<ModulePopover />)
     // The washer is one of the layouts in the picker, so its vak stays editable.
     expect(html).toContain('data-testid="module-popover-layout-picker"')
-    expect(html).not.toContain('data-testid="module-popover-door-toggle"')
+    expect(html).toContain('data-testid="module-popover-door-toggle"')
     expect(html).not.toContain('data-testid="module-popover-double-toggle"')
   })
 
@@ -202,6 +202,5 @@ describe('ModulePopover (wasmachinekast)', () => {
     const { default: ModulePopover } = await import('../components/ModulePopover')
     const html = renderToStaticMarkup(<ModulePopover />)
     expect(html).toContain('module-popover-top-door-toggle')
-    expect(html).not.toContain('module-popover-door-toggle"')
   })
 })

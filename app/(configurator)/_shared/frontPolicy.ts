@@ -86,14 +86,15 @@ export function resolveFrontPlan(ctx: FrontPolicyContext): FrontPlan {
     }
   }
 
-  // Washer modules: only the door above the washer, always push-to-open. The
+  // Washer modules: only the door above the washer (when the customer keeps
+  // the vak's door), always push-to-open. The
   // drawers under the machine (high section) are ordinary lades and carry the
   // cabinet's handle, horizontally, like the lage-kast fronts do.
   if (ctx.isWasher) {
     const high = ctx.sectionKind === 'high'
     return {
       showDoor: false,
-      showWasherDoorAbove: high,
+      showWasherDoorAbove: high && ctx.hasDoorSetting,
       showDrawerFronts: false,
       doorHandleId: 'none',
       drawerHandleId: high

@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { useClosetStore } from '../store'
+import { useClosetStore, countTopCabinetDoors } from '../store'
+import type { ModuleSlot } from '../store'
 import type { ClosetConfigSnapshot } from '@/lib/cart/types'
 import type { FullPricingData, PricingConstraints } from '@/types/configurator-pricing'
 
@@ -376,6 +377,43 @@ describe('top cabinet doors', () => {
 describe('countTopCabinetDoors', () => {
   it('counts slots with a top door, treating a missing flag as a door', async () => {
     const { countTopCabinetDoors } = await import('../store')
-    expect(countTopCabinetDoors([{ topHasDoor: true }, {}, { topHasDoor: false }])).toBe(2)
+    expect(countTopCabinetDoors([{ span: 1, topHasDoor: true }, { span: 1 }, { span: 1, topHasDoor: false }])).toBe(2)
+  })
+})
+
+describe('top cabinet doors above a double module', () => {
+  beforeEach(resetStore)
+
+  const filled = (n: number): ModuleSlot[] =>
+    Array.from({ length: n }, (_, i) => ({ slotIndex: i, layoutId: 1, hasDoor: true, span: 1, hasPowerHole: false, topHasDoor: true }))
+
+  it('toggling the double opens both compartments above it', () => {
+    useClosetStore.setState({ width: 200, moduleCount: 4, modules: filled(4), step: 2 })
+    useClosetStore.getState().setModuleSpan(0, 2)
+    useClosetStore.getState().toggleTopDoor(0)
+    const { modules } = useClosetStore.getState()
+    expect(modules.map((m) => m.topHasDoor)).toEqual([false, false, true, true])
+    expect(countTopCabinetDoors(modules)).toBe(2)
+  })
+
+  it('toggling from the covered half toggles the whole double', () => {
+    useClosetStore.setState({ width: 200, moduleCount: 4, modules: filled(4), step: 2 })
+    useClosetStore.getState().setModuleSpan(0, 2)
+    useClosetStore.getState().toggleTopDoor(1)
+    expect(useClosetStore.getState().modules.map((m) => m.topHasDoor)).toEqual([false, false, true, true])
+  })
+
+  it('a slot that becomes covered takes over the double its top door choice', () => {
+    const mods = filled(4)
+    mods[0] = { ...mods[0], topHasDoor: false }
+    useClosetStore.setState({ width: 200, moduleCount: 4, modules: mods, step: 2 })
+    useClosetStore.getState().setModuleSpan(0, 2)
+    expect(useClosetStore.getState().modules[1].topHasDoor).toBe(false)
+  })
+
+  it('counts by the double even when the stored halves disagree (older snapshots)', () => {
+    const mods = filled(3)
+    mods[0] = { ...mods[0], span: 2, topHasDoor: false }
+    expect(countTopCabinetDoors(mods)).toBe(1)
   })
 })

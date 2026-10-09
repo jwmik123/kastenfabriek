@@ -1,4 +1,5 @@
 import { getMaterialName } from "@/lib/materials";
+import { hasTopDoorAt } from "@/app/(configurator)/_shared/store/topCabinetDoors";
 import { getWasmLayoutConfig } from "@/app/(configurator)/wasmachinekast/moduleLayoutConfigs";
 import type {
   ClosetConfigSnapshot,
@@ -468,7 +469,7 @@ export function buildClosetSpec(
 function describeTopCabinet(c: ClosetConfigSnapshot): string {
   const base = `Bovenkast (${c.topCabinetHeightCm} cm)`;
   const open = c.modules
-    .filter((m) => m.topHasDoor === false)
+    .filter((_, i) => !hasTopDoorAt(c.modules, i))
     .map((m) => m.slotIndex + 1);
   if (open.length === 0) return base;
   return `${base}, ${open.length === 1 ? "vak" : "vakken"} ${open.join(", ")} zonder deur`;

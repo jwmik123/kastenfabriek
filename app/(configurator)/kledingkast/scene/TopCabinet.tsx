@@ -11,6 +11,7 @@ import type { DiagParams } from './diagonalUtils'
 import { trapShape, trapGeo, trapNaN } from '@/utils/debugGeometry'
 import { useSlotHighlightMaterial, buildSlotOverlayGeometry } from '../../_shared/three/slotHighlight'
 import { useClosetSlotInteraction } from './slotInteraction'
+import { hasTopDoorAt } from '../../_shared/store/topCabinetDoors'
 
 const WALL = 0.018
 const DOOR_DEPTH = 0.018
@@ -956,7 +957,7 @@ export default function TopCabinet() {
                 shellAtHingeZ={shellAtHingeZ}
                 doorsOpen={doorsOpen}
                 mirror={mirror}
-                showDoor={modules[i]?.topHasDoor !== false}
+                showDoor={hasTopDoorAt(modules, i)}
               />
               <TCSlotHighlight
                 slotIndex={ownerSlot}
@@ -1017,7 +1018,7 @@ export default function TopCabinet() {
               flatH={flatH}
               doorsOpen={doorsOpen}
               mirror={mirror}
-              showDoor={modules[i]?.topHasDoor !== false}
+              showDoor={hasTopDoorAt(modules, i)}
             />
             <TCSlotHighlight
               slotIndex={ownerSlot}

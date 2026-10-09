@@ -210,3 +210,11 @@ describe('resolveFrontPlan — bottom edge', () => {
     ).toBe('floor')
   })
 })
+
+describe('resolveFrontPlan — door above a washer follows the door toggle', () => {
+  it('drops the door above the washer when the customer turns the door off', () => {
+    const plan = resolveFrontPlan({ ...base, isWasher: true, hasDoorSetting: false })
+    expect(plan.showWasherDoorAbove).toBe(false)
+    expect(plan.showDoor).toBe(false)
+  })
+})

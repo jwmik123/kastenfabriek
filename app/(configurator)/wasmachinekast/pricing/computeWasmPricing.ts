@@ -1,4 +1,5 @@
 import type { DoorVariant, FullPricingData, InstallationTier } from '@/types/configurator-pricing'
+import { countTopCabinetDoors } from '../../_shared/store/topCabinetDoors'
 import { PricingEngine } from '@/lib/configurator/pricing-engine'
 import { computeFreeMontage, montageChoiceEnabled } from '@/lib/configurator/free-montage'
 import type { MontageOption } from '@/lib/cart/types'
@@ -266,9 +267,10 @@ export function computeWasmPricing(input: WasmPricingInput): WasmPricingResult {
     }
   })
 
-  // One door per compartment, minus the ones the customer left open.
+  // One door per compartment, minus the ones the customer left open (both
+  // compartments above a double follow the double's choice).
   const topCabinetDoorCount = hasTopCabinet
-    ? moduleCount - modules.filter((m) => m.topHasDoor === false).length
+    ? moduleCount - (modules.length - countTopCabinetDoors(modules))
     : 0
   const topCabinet: WasmTopCabinetRow | null =
     topCabinetDoorCount > 0

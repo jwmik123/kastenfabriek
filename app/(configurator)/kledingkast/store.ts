@@ -13,6 +13,7 @@ import type { HandleMaterial } from '../_shared/constants/handleMaterials'
 import { validateHandleMaterial } from '../_shared/components/validateHandleMaterial'
 import { maxTotalWidthCm } from '@/lib/configurator/dimensions'
 import { DEFAULT_FLOOR_ID, FLOOR_IDS } from '../_shared/materials/floors'
+import { toggleTopDoorIn } from '../_shared/store/topCabinetDoors'
 
 export interface ModuleSlot {
   slotIndex: number
@@ -27,10 +28,7 @@ export interface ModuleSlot {
   topHasDoor?: boolean
 }
 
-/** Top cabinet doors to price: one per slot, minus the ones left open. */
-export function countTopCabinetDoors(modules: Pick<ModuleSlot, 'topHasDoor'>[]): number {
-  return modules.filter((m) => m.topHasDoor !== false).length
-}
+export { countTopCabinetDoors } from '../_shared/store/topCabinetDoors'
 
 export type PlacementType = 'vrijstaand' | 'ingebouwd'
 
@@ -216,7 +214,11 @@ function normalizeSlots(modules: ModuleSlot[], s: SlotGeometryState, fillEmpty: 
   for (let i = 0; i < count; i++) {
     const m = modules[i]
     if (covered) {
-      next.push(m.layoutId === null && m.span === 1 ? m : { ...m, layoutId: null, span: 1 })
+      // The compartment above follows the double that covers this slot.
+      const topHasDoor = next[i - 1].topHasDoor ?? true
+      next.push(m.layoutId === null && m.span === 1 && (m.topHasDoor ?? true) === topHasDoor
+        ? m
+        : { ...m, layoutId: null, span: 1, topHasDoor })
       covered = false
       continue
     }
@@ -721,9 +723,7 @@ export const useClosetStore = create<ClosetState>((set, get) => ({
     })),
 
   toggleTopDoor: (slotIndex) =>
-    set((s) => ({
-      modules: s.modules.map((m) => (m.slotIndex === slotIndex ? { ...m, topHasDoor: m.topHasDoor === false } : m)),
-    })),
+    set((s) => ({ modules: toggleTopDoorIn(s.modules, slotIndex) })),
 
   setHasPowerHole: (slotIndex, value) =>
     set((s) => ({

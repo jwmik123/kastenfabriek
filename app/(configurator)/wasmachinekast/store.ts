@@ -4,6 +4,7 @@ import { montageChoiceEnabled, resolveMontageOption } from '@/lib/configurator/f
 import type { MontageOption } from '@/lib/cart/types'
 import type { FullPricingData } from '@/types/configurator-pricing'
 import type { BaseConfiguratorState, BaseModuleSlot } from '../_shared/store/types'
+import { toggleTopDoorIn } from '../_shared/store/topCabinetDoors'
 import type { ClosetConfigSnapshot } from '@/lib/cart/types'
 import { WASHER_LAYOUT_IDS } from './moduleLayouts'
 import { filterForSection } from './sections/wasmModuleLayoutFilter'
@@ -1090,7 +1091,7 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
 
   toggleTopDoor: (slotIndex) =>
     set((s) => ({
-      modules: s.modules.map((m) => (m.slotIndex === slotIndex ? { ...m, topHasDoor: m.topHasDoor === false } : m)),
+      modules: toggleTopDoorIn(s.modules, slotIndex),
     })),
 
   toggleModulePushToOpen: (slotIndex) =>

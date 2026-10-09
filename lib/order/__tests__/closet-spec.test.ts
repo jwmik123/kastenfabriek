@@ -237,6 +237,20 @@ describe("buildClosetSpec", () => {
     expect(spec.extras).toContain("Bovenkast (40 cm), vak 2 zonder deur");
   });
 
+  it("names both compartments above a double left open", () => {
+    const spec = buildClosetSpec(
+      {
+        ...base,
+        moduleCount: 3,
+        hasTopCabinet: true,
+        topCabinetHeightCm: 40,
+        modules: [mod(0, { span: 2, topHasDoor: false }), mod(1, { layoutId: null }), mod(2)],
+      },
+      price,
+    );
+    expect(spec.extras).toContain("Bovenkast (40 cm), vakken 1, 2 zonder deur");
+  });
+
   it("keeps the plain Bovenkast line when every compartment has a door", () => {
     const spec = buildClosetSpec(
       { ...base, hasTopCabinet: true, topCabinetHeightCm: 40 },

@@ -7,6 +7,7 @@ import { MODULE_LAYOUTS } from '../scene/moduleLayouts'
 import { LAYOUT_SVGS } from './LayoutSvgs'
 import { getDiagHeightAt, getBackDiagHeightAtZ, isFullHeight } from '../scene/diagonalUtils'
 import { Toggle } from '@/components/ui/Toggle'
+import { hasTopDoorAt } from '../../_shared/store/topCabinetDoors'
 import { cn } from '@/lib/utils'
 
 const WALL = 0.018
@@ -113,7 +114,7 @@ export default function ModuleConfigCard({ className }: { className?: string }) 
     >
       <span className="text-sm">Bovenkast deur</span>
       <Toggle
-        checked={modules[selectedSlot]?.topHasDoor !== false}
+        checked={hasTopDoorAt(modules, selectedSlot)}
         onCheckedChange={() => toggleTopDoor(selectedSlot)}
       />
     </div>
