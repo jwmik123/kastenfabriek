@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import { useWasmachinekastStore } from '../store'
-import LowWidthControl from '../components/LowWidthControl'
+import PartWidthControl from '../components/PartWidthControl'
 import type { BaseModuleSlot } from '../../_shared/store/types'
 import { Toggle } from '@/components/ui/Toggle'
 import { cn } from '@/lib/utils'
@@ -145,6 +145,18 @@ function SectionModules({
   )
 }
 
+/** Why the vak count stops, and which width to change instead. */
+function WidthLimitHint({ label, atMin, atMax, kind }: { label: string; atMin: boolean; atMax: boolean; kind: 'high' | 'low' }) {
+  if (!atMin && !atMax) return null
+  return (
+    <p className="text-[11px] text-muted-foreground" data-testid={`width-limit-hint-${kind}`}>
+      {atMin
+        ? `Minder vakken worden te breed. Wil je er minder? Maak de ${label} dan smaller.`
+        : `Meer vakken worden te smal. Wil je er meer? Maak de ${label} dan breder.`}
+    </p>
+  )
+}
+
 export default function ModulesStep() {
   const layout = useWasmachinekastStore((s) => s.layout)
   const isDual = layout === 'low-left' || layout === 'low-right'
@@ -242,17 +254,20 @@ export default function ModulesStep() {
           washerSlots={washerSlotsFor(block.kind)}
           showLabel={blocks.length > 1}
           widthControl={
-            isDual && block.kind === 'low' ? (
+            isDual ? (
               <div className="space-y-2">
-                <LowWidthControl />
-                {/* Only when it is the width that holds the count up, not the
-                    one vak (or the machines) every part keeps anyway. */}
-                {block.moduleCount <= block.min &&
-                  block.min > Math.max(1, washerSlotsFor('low').size) && (
-                  <p className="text-[11px] text-muted-foreground" data-testid="low-width-hint">
-                    Minder vakken worden te breed. Wil je er minder? Maak de lage kast dan smaller.
-                  </p>
-                )}
+                <PartWidthControl section={block.kind} />
+                <WidthLimitHint
+                  label={block.label.toLowerCase()}
+                  atMin={
+                    // Only when the width holds the count up, not the one vak
+                    // (or the machines) every part keeps anyway.
+                    block.moduleCount <= block.min &&
+                    block.min > Math.max(1, washerSlotsFor(block.kind).size)
+                  }
+                  atMax={block.moduleCount >= block.max}
+                  kind={block.kind}
+                />
               </div>
             ) : undefined
           }

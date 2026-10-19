@@ -144,11 +144,35 @@ describe('breedte lage kast — hoge + lage opstelling', () => {
     expect(total()).toBeCloseTo(250, 6)
   })
 
-  it('exposes the range for the lage-kast slider', () => {
+  it('exposes the range for each slider', () => {
     store().addWasherModule(0, HIGH_WASHER, 'high')
-    const range = store().lowWidthRange()!
-    expect(range.min).toBeCloseTo(1.8 + 30, 6)
-    expect(range.max).toBeCloseTo(250 - (3.6 + 68.6), 6)
+    const low = store().partWidthRange('low')!
+    expect(low.min).toBeCloseTo(1.8 + 30, 6)
+    expect(low.max).toBeCloseTo(250 - (3.6 + 68.6), 6)
+    const high = store().partWidthRange('high')!
+    expect(high.min).toBeCloseTo(3.6 + 68.6, 6)
+    expect(high.max).toBeCloseTo(250 - (1.8 + 30), 6)
+  })
+
+  it('sets the hoge kast to the chosen width; the lage kast takes the rest', () => {
+    store().setHighSectionWidth(150)
+    expect(store().width).toBeCloseTo(150, 6)
+    expect(lowWidth()).toBeCloseTo(100, 6)
+    expect(total()).toBeCloseTo(250, 6)
+  })
+
+  it('removing a hoge-kast vak keeps the hoge kast as wide as chosen', () => {
+    store().setHighSectionWidth(150)
+    store().setModuleCount(4)
+    store().setModuleCount(3)
+    expect(store().moduleCount).toBe(3)
+    expect(store().width).toBeCloseTo(150, 6)
+  })
+
+  it('caps the hoge-kast width so the lage kast keeps one vak', () => {
+    store().setHighSectionWidth(500)
+    expect(lowWidth()).toBeCloseTo(1.8 + 30, 6)
+    expect(total()).toBeCloseTo(250, 6)
   })
 })
 

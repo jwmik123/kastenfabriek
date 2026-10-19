@@ -487,8 +487,10 @@ interface WasmState extends BaseConfiguratorState {
   setTotalWidth: (cm: number) => void
   /** Hoge + lage opstelling: the current width split, or null in other layouts. */
   dualWidthPlan: () => DualWidthResult | null
-  /** Hoge + lage opstelling: the widths the lage kast can take, or null. */
-  lowWidthRange: () => { min: number; max: number } | null
+  /** Hoge + lage opstelling: the widths a part can take, or null. */
+  partWidthRange: (section: 'high' | 'low') => { min: number; max: number } | null
+  /** Hoge + lage opstelling: set the hoge kast; the lage kast takes the rest. */
+  setHighSectionWidth: (cm: number) => void
   // Placed washers, each in its own section — high and low may both hold some.
   // `section` defaults to the one the top-level fields stand for.
   washerModules: WasherModule[]
@@ -596,9 +598,20 @@ export const useWasmachinekastStore = create<WasmState>((set, get) => ({
     rebalanceDual(get, set, { totalCm: Math.min(maxTotalWidthCm(s.constraints), cm) })
   },
   dualWidthPlan: () => dualSplit(get()),
-  lowWidthRange: () => {
-    const split = dualSplit(get())
-    return split ? { min: split.minLowCm, max: split.maxLowCm } : null
+  partWidthRange: (section) => {
+    const s = get()
+    const split = dualSplit(s)
+    if (!split || !s.lowSection) return null
+    if (section === 'low') return { min: split.minLowCm, max: split.maxLowCm }
+    // The two parts share the total: the hoge kast is what the lage kast leaves.
+    const totalCm = split.highWidthCm + split.lowWidthCm
+    return { min: totalCm - split.maxLowCm, max: totalCm - split.minLowCm }
+  },
+  setHighSectionWidth: (cm) => {
+    const s = get()
+    if (!isDualLayout(s.layout) || !s.lowSection) return
+    // The total stays; the hoge kast is set through the lage kast it leaves.
+    rebalanceDual(get, set, { lowWidthCm: s.width + s.lowSection.width - cm })
   },
 
   washerModules: [],

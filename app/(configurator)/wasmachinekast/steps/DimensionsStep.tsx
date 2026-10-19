@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useWasmachinekastStore, WASM_MIN_DEPTH_CM, type PlacementType } from '../store'
-import LowWidthControl from '../components/LowWidthControl'
+import PartWidthControl from '../components/PartWidthControl'
 import { Slider } from '@/components/ui/slider'
 import { Info } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -209,9 +209,8 @@ export default function DimensionsStep() {
               max={maxW}
               unit="cm"
               onChange={setTotalWidth}
-              hint="Hoge en lage kast samen, van muur tot muur"
+              hint="Hoge en lage kast samen, van muur tot muur. Verdeel hieronder per kast."
             />
-            <LowWidthControl />
           </div>
         )}
 
@@ -220,7 +219,9 @@ export default function DimensionsStep() {
             <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
               Hoge kast
             </h3>
-            {!isDual && (
+            {isDual ? (
+              <PartWidthControl section="high" />
+            ) : (
               <DimensionInput
                 label="Breedte"
                 value={width}
@@ -259,6 +260,7 @@ export default function DimensionsStep() {
             <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
               Lage kast
             </h3>
+            <PartWidthControl section="low" />
             <DimensionInput
               label="Modules"
               value={lowSection.moduleCount}
