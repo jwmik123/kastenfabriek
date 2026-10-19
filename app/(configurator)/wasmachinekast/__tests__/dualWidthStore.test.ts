@@ -27,12 +27,11 @@ const slots = (n: number): BaseModuleSlot[] =>
   Array.from({ length: n }, (_, i) => ({ slotIndex: i, layoutId: null, hasDoor: true, span: 1, hasPowerHole: false }))
 
 /** Hoge kast links, lage kast rechts; 120 + 130 = 250 cm in total. */
-function dual(preference: 'high' | 'low' = 'high') {
+function dual() {
   useWasmachinekastStore.setState(useWasmachinekastStore.getInitialState())
   useWasmachinekastStore.setState({
     constraints,
     moduleLayouts: [PLANKEN, WASHER_SINGLE, WASHER_WMOPEN],
-    restPreference: preference,
   })
   store().applySectionsState({
     layout: 'low-right',
@@ -42,57 +41,93 @@ function dual(preference: 'high' | 'low' = 'high') {
 }
 
 const total = () => store().width + (store().lowSection?.width ?? 0)
-const LOW_WASHER = 23 // WASHER_WMOPEN: under the werkblad
+const lowWidth = () => store().lowSection?.width ?? 0
+const LOW_WASHER = 23 // WASHER_WMOPEN: under the werkblad, 68.6 cm
 const HIGH_WASHER = 11 // WASHER_SINGLE
 
-describe('restruimte — hoge + lage opstelling', () => {
+describe('breedte lage kast — hoge + lage opstelling', () => {
   beforeEach(() => dual())
 
-  it('keeps the total width when the layout is chosen', () => {
+  it('keeps both widths when the layout is chosen', () => {
     expect(total()).toBeCloseTo(250, 6)
-    // Rest to the high part: the low part holds its two vakken at minimum width.
-    expect(store().lowSection?.width).toBeCloseTo(1.8 + 2 * 30, 6)
+    expect(lowWidth()).toBeCloseTo(130, 6)
   })
 
-  it('fits the low part around its washer and gives the rest to the high part', () => {
-    store().addWasherModule(0, LOW_WASHER, 'low')
-    store().setLowSectionModuleCount(1) // drop the spare vak next to the machine
-    const s = store()
-    expect(s.lowSection?.width).toBeCloseTo(1.8 + 68.6, 6)
-    expect(s.width).toBeCloseTo(250 - 70.4, 6)
-    expect(s.fillerPanel('low')).toBeNull()
+  it('sets the lage kast to the chosen width; the hoge kast takes the rest', () => {
+    store().setLowSectionWidth(160)
+    expect(lowWidth()).toBeCloseTo(160, 6)
+    expect(store().width).toBeCloseTo(90, 6)
+  })
+
+  it('removing a vak keeps the lage kast as wide as chosen', () => {
+    store().setLowSectionWidth(160)
+    store().setLowSectionModuleCount(4)
+    const before = store().lowSection!.moduleCount
+    store().setLowSectionModuleCount(before - 1)
+    expect(store().lowSection!.moduleCount).toBe(before - 1)
+    expect(lowWidth()).toBeCloseTo(160, 6)
     expect(total()).toBeCloseTo(250, 6)
   })
 
-  it('moves the rest to the low part when the customer asks for that', () => {
-    store().addWasherModule(0, HIGH_WASHER, 'high')
-    store().setRestPreference('low')
-    store().setModuleCount(1) // just the washer in the high part
-    const s = store()
-    expect(s.width).toBeCloseTo(3.6 + 68.6, 6)
-    expect(s.lowSection?.width).toBeCloseTo(250 - 72.2, 6)
-    expect(s.lowSection!.moduleCount).toBeGreaterThanOrEqual(3)
-  })
-
-  it('lets the tight part grow by a vak, taken from the rest', () => {
-    store().addWasherModule(0, LOW_WASHER, 'low')
+  it('stops removing vakken once they would get wider than allowed', () => {
+    store().setLowSectionWidth(160)
+    // 160 − 1.8 seam panel = 158.2 cm: three vakken of 52.7, two would be 79.1 > 65.
+    expect(store().minModulesFor('low')).toBe(3)
     store().setLowSectionModuleCount(1)
-    expect(store().maxModulesFor('low')).toBeGreaterThan(1)
-    store().setLowSectionModuleCount(2)
-    expect(store().lowSection?.width).toBeCloseTo(1.8 + 68.6 + 30, 6)
+    expect(store().lowSection!.moduleCount).toBe(3)
+    expect(lowWidth()).toBeCloseTo(160, 6)
+  })
+
+  it('stops adding vakken once they would get narrower than allowed', () => {
+    store().setLowSectionWidth(160)
+    expect(store().maxModulesFor('low')).toBe(5) // 158.2 / 30
+    store().setLowSectionModuleCount(9)
+    expect(store().lowSection!.moduleCount).toBe(5)
+    expect(lowWidth()).toBeCloseTo(160, 6)
+  })
+
+  it('changing the hoge kast vakken leaves both widths alone', () => {
+    store().setModuleCount(3)
+    expect(lowWidth()).toBeCloseTo(130, 6)
+    expect(store().width).toBeCloseTo(120, 6)
+  })
+
+  it('a wider total goes to the hoge kast; the lage kast keeps its width', () => {
+    store().setTotalWidth(300)
+    expect(lowWidth()).toBeCloseTo(130, 6)
+    expect(store().width).toBeCloseTo(170, 6)
+  })
+
+  it('a narrower total narrows the lage kast once the hoge kast is at its minimum', () => {
+    store().setTotalWidth(100)
+    // Hoge kast: side panels + one vak.
+    expect(store().width).toBeCloseTo(3.6 + 30, 6)
+    expect(lowWidth()).toBeCloseTo(100 - 33.6, 6)
+  })
+
+  it('caps the lage-kast width so the hoge kast keeps one vak', () => {
+    store().setLowSectionWidth(500)
+    expect(store().width).toBeCloseTo(3.6 + 30, 6)
     expect(total()).toBeCloseTo(250, 6)
   })
 
-  it('gives the width back when the washer goes', () => {
+  it('a machine wider than the lage kast widens it, taken from the hoge kast', () => {
+    store().setLowSectionWidth(40)
+    store().addWasherModule(0, LOW_WASHER, 'low')
+    expect(store().washerModules).toHaveLength(1)
+    expect(lowWidth()).toBeCloseTo(1.8 + 68.6, 6)
+    expect(total()).toBeCloseTo(250, 6)
+  })
+
+  it('removing a machine keeps the lage kast as wide as it was', () => {
+    store().setLowSectionWidth(160)
     store().addWasherModule(0, LOW_WASHER, 'low')
     store().removeWasherModule(0, 'low')
-    expect(store().lowSection?.width).toBeCloseTo(1.8 + 2 * 30, 6)
-    expect(total()).toBeCloseTo(250, 6)
+    expect(lowWidth()).toBeCloseTo(160, 6)
   })
 
   it('refuses a machine the total width cannot hold', () => {
-    store().setTotalWidth(100)
-    // high: 3.6 + 30, low: 1.8 + 2 × 30 → 95.4; a washer in the low part needs 38.6 more
+    store().setTotalWidth(90)
     expect(store().canPlaceWasher(0, LOW_WASHER, 'low')).toBe(false)
     store().addWasherModule(0, LOW_WASHER, 'low')
     expect(store().washerModules).toHaveLength(0)
@@ -100,9 +135,7 @@ describe('restruimte — hoge + lage opstelling', () => {
 
   it('never lets the total drop below what the parts need', () => {
     store().setTotalWidth(50)
-    // High (gets the rest): side panels + one vak. Low: side panel + its two vakken.
-    expect(total()).toBeCloseTo(3.6 + 30 + 1.8 + 60, 6)
-    expect(store().moduleCount).toBe(1)
+    expect(total()).toBeCloseTo(3.6 + 30 + 1.8 + 30, 6)
   })
 
   it('keeps the total when the side panels get thicker', () => {
@@ -110,10 +143,17 @@ describe('restruimte — hoge + lage opstelling', () => {
     store().setSidePanelThickness('36mm')
     expect(total()).toBeCloseTo(250, 6)
   })
+
+  it('exposes the range for the lage-kast slider', () => {
+    store().addWasherModule(0, HIGH_WASHER, 'high')
+    const range = store().lowWidthRange()!
+    expect(range.min).toBeCloseTo(1.8 + 30, 6)
+    expect(range.max).toBeCloseTo(250 - (3.6 + 68.6), 6)
+  })
 })
 
-describe('restruimte — opgeslagen configuraties', () => {
-  it('reads the preference off an older snapshot without the answer', () => {
+describe('breedte lage kast — opgeslagen configuraties', () => {
+  it('restores the saved widths as they were', () => {
     dual()
     const snapshot = {
       id: 'x',
@@ -147,8 +187,7 @@ describe('restruimte — opgeslagen configuraties', () => {
       topCabinetHeightCm: 0,
     }
     store().restoreConfig(snapshot)
-    expect(store().restPreference).toBe('low')
     expect(store().width).toBeCloseTo(72.2, 6)
-    expect(store().lowSection?.width).toBeCloseTo(180, 6)
+    expect(lowWidth()).toBeCloseTo(180, 6)
   })
 })

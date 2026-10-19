@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useWasmachinekastStore, WASM_MIN_DEPTH_CM, type PlacementType } from '../store'
-import RestPreferenceControl from '../components/RestPreferenceControl'
+import LowWidthControl from '../components/LowWidthControl'
 import { Slider } from '@/components/ui/slider'
 import { Info } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -211,7 +211,7 @@ export default function DimensionsStep() {
               onChange={setTotalWidth}
               hint="Hoge en lage kast samen, van muur tot muur"
             />
-            <RestPreferenceControl />
+            <LowWidthControl />
           </div>
         )}
 

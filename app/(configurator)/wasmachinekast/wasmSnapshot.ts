@@ -40,7 +40,6 @@ export interface WasmSnapshotInput {
   sidePanelThickness: '18mm' | '36mm'
   placementType: 'vrijstaand' | 'ingebouwd'
   montageOption?: MontageOption
-  restPreference?: 'high' | 'low'
   customerRemarks?: string
   hasTopCabinet: boolean
   topCabinetHeightCm: number
@@ -104,7 +103,6 @@ export function buildWasmConfigSnapshot(s: WasmSnapshotInput): ClosetConfigSnaps
     modules: s.modules.map((m) => toModuleSnapshot(m, s.moduleLayouts)),
 
     layout: s.layout,
-    ...(s.layout === 'low-left' || s.layout === 'low-right' ? { restPreference: s.restPreference ?? 'high' } : {}),
     washerModules: s.washerModules,
     fillerPanel: topLevelFiller,
     ...(topLevelExtra > 0 ? { sideWallExtraCm: topLevelExtra } : {}),

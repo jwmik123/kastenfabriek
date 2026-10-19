@@ -951,10 +951,12 @@ describe('low-section setters', () => {
     })
   }
 
-  it('setLowSectionWidth clamps to single-corpus bounds', () => {
+  it('setLowSectionWidth keeps one vak in the lage kast and the total as it was', () => {
     bootstrapDual()
     useWasmachinekastStore.getState().setLowSectionWidth(5)
-    expect(useWasmachinekastStore.getState().lowSection?.width).toBe(15) // minWidth
+    const s = useWasmachinekastStore.getState()
+    expect(s.lowSection?.width).toBeCloseTo(1.8 + 15, 6) // seam panel + one vak at minWidth
+    expect(s.width + s.lowSection!.width).toBeCloseTo(300, 6)
   })
 
   it('setLowSectionModuleCount resizes lowSection.modules', () => {

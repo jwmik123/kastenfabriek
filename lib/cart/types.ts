@@ -132,8 +132,8 @@ export interface ClosetConfigSnapshot {
   layout?: WasmLayout;
   lowSection?: LowSectionSnapshot;
   /**
-   * Hoge + lage opstelling: which part got the width next to the machines.
-   * Absent on older snapshots; restore infers it from the saved widths.
+   * Legacy (Oct 2026): hoge + lage opstelling, which part got the width next to
+   * the machines. Read nowhere; the saved section widths say it all.
    */
   restPreference?: 'high' | 'low';
   /** Legacy: the single section that held every washer. Read, no longer written. */

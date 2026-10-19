@@ -124,8 +124,7 @@ describe('afwerkpaneel — two machines in a cabinet too narrow for a third modu
   })
 
   it('keeps the low section of a dual cabinet on its own panel', () => {
-    // The rest goes to the low part, which is too narrow for a third vak.
-    useWasmachinekastStore.setState({ restPreference: 'low' })
+    // The lage kast is chosen 150 cm wide, too narrow for a third vak.
     store().applySectionsState({
       layout: 'low-right',
       highSection: {
@@ -254,7 +253,7 @@ describe('machines are cleaned up on every path that narrows a section', () => {
     expect(store().washerModules).toHaveLength(1)
   })
 
-  it('cleans up the low section when its own width shrinks', () => {
+  it('keeps the low section as wide as its machines when its width is set lower', () => {
     store().setWidth(200)
     store().applySectionsState({
       layout: 'low-right',
@@ -271,8 +270,9 @@ describe('machines are cleaned up on every path that narrows a section', () => {
     expect(store().washerModules.filter((w) => w.section === 'low')).toHaveLength(2)
     store().setLowSectionWidth(100)
     const s = store()
-    expect(s.washerModules.filter((w) => w.section === 'low')).toHaveLength(1)
-    expect(s.lowSection?.modules.filter((m) => m.fixedWidth)).toHaveLength(1)
+    // The seam panel plus two machines is as narrow as the lage kast goes.
+    expect(s.lowSection?.width).toBeCloseTo(1.8 + 2 * 68.6, 6)
+    expect(s.washerModules.filter((w) => w.section === 'low')).toHaveLength(2)
     expect(s.lowSection?.moduleCount).toBe(s.lowSection?.modules.length)
   })
 

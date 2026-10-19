@@ -1,20 +1,15 @@
 /**
  * Hoge + lage kast naast elkaar (low-left / low-right): the customer gives one
- * total width and says where the space next to the machines should go — to
- * the vakken of the hoge kast or of the lage kast. This decides the width of
- * each part.
+ * total width and the width of the lage kast; the hoge kast gets the rest.
  *
- * Each part first gets what it cannot do without: its side panels and the
- * machines placed in it. The part that does not get the rest also keeps the
- * vakken the customer put there, at their minimum width, so adding a vak there
- * takes it from the rest. Whatever is left over goes entirely to the part the
- * customer chose; that part widens, adds or sheds its own vakken to fill it,
- * exactly as a single cabinet does when its width changes.
+ * The chosen lage-kast width stays put while the customer adds or removes
+ * vakken — a vak less means wider vakken, not a narrower kast, and the vak
+ * count stops where the vakken would leave their allowed width. Only two things
+ * move it: a part that would get narrower than its machines (plus one vak when
+ * it has none), and a total that no longer holds both parts.
  *
  * Pure: the store applies the outcome and reconciles the vakken.
  */
-
-export type RestPreference = 'high' | 'low'
 
 export interface DualPartInput {
   /** Side panels this part owns, in cm (the low part shares the seam panel). */
@@ -27,25 +22,25 @@ export interface DualPartInput {
 
 export interface DualWidthInput {
   totalCm: number
+  /** The lage-kast width the customer chose. */
+  lowWidthCm: number
   high: DualPartInput
   low: DualPartInput
   /** Narrowest vak. */
   minVarWidthCm: number
-  preference: RestPreference
 }
 
 export interface DualWidthResult {
   highWidthCm: number
   lowWidthCm: number
-  /** Width left over after both parts have their minimum; goes to `preference`. */
-  restCm: number
   /** False when the minimum of both parts is wider than the total. */
   fits: boolean
   /** Narrowest total that still fits: both parts at their minimum. */
   minTotalCm: number
+  /** Range the lage-kast width can take within this total. */
+  minLowCm: number
+  maxLowCm: number
 }
-
-const EPS = 1e-6
 
 /** Millimetre precision, so the split never drifts by float noise. */
 function mm(cm: number): number {
@@ -53,49 +48,30 @@ function mm(cm: number): number {
 }
 
 /**
- * The narrowest a part can be. `keepVakken` is false for the part that gets
- * the rest: its vakken follow its width, so only the one slot every part keeps
- * (when it has no machine) counts.
+ * The narrowest a part can be: its side panels and machines, plus one vak
+ * when it has no machine. Its other vakken follow its width, like a single
+ * cabinet's do.
  */
-export function dualPartMinimumCm(part: DualPartInput, minVarWidthCm: number, keepVakken = true): number {
+export function dualPartMinimumCm(part: DualPartInput, minVarWidthCm: number): number {
   const machines = part.fixedWidthsCm.reduce((sum, w) => sum + w, 0)
-  const hasMachines = part.fixedWidthsCm.length > 0
-  const vakken = keepVakken
-    ? hasMachines ? part.variableCount : Math.max(1, part.variableCount)
-    : hasMachines ? 0 : 1
+  const vakken = part.fixedWidthsCm.length > 0 ? 0 : 1
   return part.wallsCm + machines + vakken * minVarWidthCm
 }
 
-export function splitDualWidth({ totalCm, high, low, minVarWidthCm, preference }: DualWidthInput): DualWidthResult {
-  const highMin = mm(dualPartMinimumCm(high, minVarWidthCm, preference !== 'high'))
-  const lowMin = mm(dualPartMinimumCm(low, minVarWidthCm, preference !== 'low'))
+export function splitDualWidth({ totalCm, lowWidthCm, high, low, minVarWidthCm }: DualWidthInput): DualWidthResult {
+  const highMin = mm(dualPartMinimumCm(high, minVarWidthCm))
+  const lowMin = mm(dualPartMinimumCm(low, minVarWidthCm))
   const minTotalCm = mm(highMin + lowMin)
-  const restCm = mm(totalCm - minTotalCm)
-  const fits = restCm >= -EPS
-  const rest = Math.max(0, restCm)
+  const fits = totalCm >= minTotalCm - 1e-6
+  const total = mm(Math.max(totalCm, minTotalCm))
+  const maxLowCm = mm(total - highMin)
+  const lowWidth = mm(Math.min(maxLowCm, Math.max(lowMin, lowWidthCm)))
   return {
-    highWidthCm: mm(highMin + (preference === 'high' ? rest : 0)),
-    lowWidthCm: mm(lowMin + (preference === 'low' ? rest : 0)),
-    restCm,
+    highWidthCm: mm(total - lowWidth),
+    lowWidthCm: lowWidth,
     fits,
     minTotalCm,
+    minLowCm: lowMin,
+    maxLowCm,
   }
-}
-
-/**
- * The preference an existing pair of widths reads as, for configurations saved
- * before the question existed: whichever part holds more than its minimum.
- */
-export function inferRestPreference(
-  highWidthCm: number,
-  lowWidthCm: number,
-  high: DualPartInput,
-  low: DualPartInput,
-  minVarWidthCm: number,
-): RestPreference {
-  // Measured against the tight-fit minimum: the part that got the rest has
-  // width to spare beyond machines and one vak.
-  const highSpare = highWidthCm - dualPartMinimumCm(high, minVarWidthCm, false)
-  const lowSpare = lowWidthCm - dualPartMinimumCm(low, minVarWidthCm, false)
-  return lowSpare > highSpare ? 'low' : 'high'
 }

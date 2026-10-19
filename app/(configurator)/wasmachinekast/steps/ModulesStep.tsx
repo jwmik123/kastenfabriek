@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import { useWasmachinekastStore } from '../store'
-import RestPreferenceControl from '../components/RestPreferenceControl'
+import LowWidthControl from '../components/LowWidthControl'
 import type { BaseModuleSlot } from '../../_shared/store/types'
 import { Toggle } from '@/components/ui/Toggle'
 import { cn } from '@/lib/utils'
@@ -35,6 +35,7 @@ function SectionModules({
   setCount,
   washerSlots,
   showLabel,
+  widthControl,
 }: {
   kind: 'high' | 'low'
   label: string
@@ -45,6 +46,8 @@ function SectionModules({
   setCount: (count: number) => void
   washerSlots: Set<number>
   showLabel: boolean
+  /** The part's width, right under its count: that is where the count hits its limits. */
+  widthControl?: React.ReactNode
 }) {
   const selectedSlot = useWasmachinekastStore((s) => s.selectedSlot)
   const setSelectedSlot = useWasmachinekastStore((s) => s.setSelectedSlot)
@@ -102,6 +105,7 @@ function SectionModules({
             <Plus className="w-4 h-4" />
           </button>
         </div>
+        {widthControl}
       </div>
 
       <div className="grid grid-cols-8 gap-1">
@@ -225,12 +229,6 @@ export default function ModulesStep() {
         Selecteer een module — in de lijst of direct in de 3D-weergave — om de indeling aan te passen
       </p>
 
-      {isDual && (
-        <section className="rounded-md border border-border/60 p-3">
-          <RestPreferenceControl compact />
-        </section>
-      )}
-
       {blocks.map((block) => (
         <SectionModules
           key={block.kind}
@@ -243,6 +241,21 @@ export default function ModulesStep() {
           setCount={block.setCount}
           washerSlots={washerSlotsFor(block.kind)}
           showLabel={blocks.length > 1}
+          widthControl={
+            isDual && block.kind === 'low' ? (
+              <div className="space-y-2">
+                <LowWidthControl />
+                {/* Only when it is the width that holds the count up, not the
+                    one vak (or the machines) every part keeps anyway. */}
+                {block.moduleCount <= block.min &&
+                  block.min > Math.max(1, washerSlotsFor('low').size) && (
+                  <p className="text-[11px] text-muted-foreground" data-testid="low-width-hint">
+                    Minder vakken worden te breed. Wil je er minder? Maak de lage kast dan smaller.
+                  </p>
+                )}
+              </div>
+            ) : undefined
+          }
         />
       ))}
 
