@@ -265,6 +265,33 @@ describe("buildClosetSpec", () => {
   });
 });
 
+describe("describeModuleRow — washer module", () => {
+  const washer = (hasDoor: boolean) =>
+    describeModuleRow({
+      position: 1,
+      layoutId: 11,
+      layoutName: "1 grote lade",
+      description: null,
+      contents: null,
+      hasDoor,
+      span: 1,
+      isWasher: true,
+      section: "high",
+    } as Parameters<typeof describeModuleRow>[0]);
+
+  it("leaves a washer with door as it was", () => {
+    const row = washer(true);
+    expect(row.execution).toContain("met deur");
+    expect(row.execution).not.toContain("greepgroef");
+  });
+
+  it("puts the drawers of an open washer vak inside the module", () => {
+    const row = washer(false);
+    expect(row.execution).toContain("open, zonder front");
+    expect(row.execution).toContain("lades binnen de module met greepgroef");
+  });
+});
+
 describe("describeModule", () => {
   it("uses singular forms for a count of one", () => {
     const section = resolveSections({

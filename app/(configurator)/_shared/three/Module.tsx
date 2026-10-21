@@ -45,6 +45,12 @@ interface ModuleProps {
   // content (e.g. above a washer), flush with normal module doors. Independent
   // of `hasDoor` — washer bodies have no full-height door of their own.
   washerDoorAbove?: boolean
+  // Shelf midway in the open space above the content (a washer). Stays when the
+  // customer leaves the door above off; defaults to following that door.
+  shelfAboveContent?: boolean
+  // The layout's drawers sit inside the module, like an ordinary drawer
+  // module's (a washer vak without door; layouts with `insetFronts`).
+  insetDrawerFronts?: boolean
   // Kitchen-style fronts (front policy, lage kast layouts with `lowFronts`):
   // the GLB's fronts are the visible front; `hasDoor` should be false and the
   // config's noDoorDepthOffset puts them flush with the door plane.
@@ -176,6 +182,8 @@ export default function Module({
   sectionModules,
   sectionNeedsTopCabinet,
   washerDoorAbove,
+  shelfAboveContent = washerDoorAbove,
+  insetDrawerFronts = false,
   drawerFronts,
   doorHandleIdOverride,
   drawerHandleId,
@@ -215,7 +223,8 @@ export default function Module({
   // Nothing covers this module's opening: the fronts of the GLB and the front
   // edges of the carcass panels look straight into the room, so they finish in
   // the buitenkant colour like the rest of the cabinet's visible outside.
-  const exposedFronts = insideFinish && !hasDoor
+  // Fronts inside the module are interior, like a drawer module's behind its door.
+  const exposedFronts = insideFinish && !hasDoor && !insetDrawerFronts
 
   const sideWallM    = p.sideWallThickness
   // A shared side wall belongs to the neighbouring section, so this section has
@@ -508,6 +517,7 @@ export default function Module({
           hasDoor={hasDoor}
           insideFinish={insideFinish}
           exposedFronts={exposedFronts}
+          insetFronts={insetDrawerFronts}
           extendFrontBottomY={
             doorsExtendToFloor && !hasDoor ? 0.02 - effectiveFloorY : null
           }
@@ -701,7 +711,7 @@ export default function Module({
 
       {/* Shelf centered in the open zone above the content (e.g. above a
           washer), midway between the content top and the ceiling. */}
-      {washerDoorAbove && roofY > fillAbove.start && (
+      {shelfAboveContent && roofY > fillAbove.start && (
         <FillZone
           config={{ type: 'fixedShelves', positions: [(fillAbove.start + roofY) / 2 + SHELF_THICKNESS / 2] }}
           startY={fillAbove.start}

@@ -103,3 +103,14 @@ describe('hasDrawerFronts', () => {
     ).toBe(false)
   })
 })
+
+describe('countDrawerFronts — washer vak without door', () => {
+  it('counts no handle-bearing fronts: the drawers open by a groove', () => {
+    const count = countDrawerFronts({
+      layout: 'high-only',
+      topLevelModules: [slot(11, { hasDoor: false }), slot(13, { hasDoor: false }), slot(14)],
+      lowSection: null,
+    })
+    expect(count).toBe(2)
+  })
+})

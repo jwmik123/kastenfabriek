@@ -46,6 +46,11 @@ interface SpecialElementProps {
    * exposed front.
    */
   exposedFronts?: boolean
+  /**
+   * Put the element's drawer fronts inside the module (`element.insetFronts`),
+   * like an ordinary drawer module's, instead of the GLB's overlay fronts.
+   */
+  insetFronts?: boolean
   // When set, render a horizontal handle centered on each Front* mesh
   // (kitchen-style lage kast fronts).
   drawerHandle?: {
@@ -78,6 +83,7 @@ function SpecialElementInner({
   hasDoor,
   insideFinish,
   exposedFronts = false,
+  insetFronts = false,
   drawerHandle = null,
   extendFrontBottomY = null,
 }: SpecialElementProps) {
@@ -286,6 +292,69 @@ function SpecialElementInner({
       }
     })
 
+    // Washer drawers inside the module: the GLB models overlay fronts that
+    // span the whole slot in the door plane. Fit each front to the module's
+    // inner width, spread the fronts over the height from the panels' bottom
+    // to the panel the machine stands on, and set them back so their face is
+    // flush with the panels. The drawer boxes move back with them, as far as
+    // the room behind them allows. Runs before the animation tracks are
+    // re-based below, so the drawers still slide from their new place.
+    if (insetFronts && element.insetFronts) {
+      const byName = (n: string) => clone.getObjectByName(n) as THREE.Mesh | undefined
+      const left = byName(element.insetFronts.between[0])
+      const right = byName(element.insetFronts.between[1])
+      const top = byName(element.insetFronts.top)
+      const boxOf = (m: THREE.Mesh) => {
+        m.updateMatrix()
+        if (!m.geometry.boundingBox) m.geometry.computeBoundingBox()
+        return m.geometry.boundingBox!.clone().applyMatrix4(m.matrix)
+      }
+      const frontMeshes: THREE.Mesh[] = []
+      clone.traverse((child) => {
+        if ((child as THREE.Mesh).isMesh && child.name.includes('Front')) frontMeshes.push(child as THREE.Mesh)
+      })
+      if (left && right && top && frontMeshes.length > 0) {
+        const GAP = 0.002
+        const l = boxOf(left)
+        const r = boxOf(right)
+        const t = boxOf(top)
+        // Full module width, like the panel the machine stands on — not just
+        // between the inner side panels, which would leave a strip each side.
+        const x0 = t.min.x + GAP
+        const x1 = t.max.x - GAP
+        const y0 = Math.max(l.min.y, r.min.y) + GAP
+        const y1 = t.min.y - GAP
+        // A millimetre proud of the side panels: flush would z-fight with
+        // their front edges, which the fronts now run across.
+        const faceZ = Math.max(l.max.z, r.max.z) + 0.001
+        const boxes = frontMeshes.map(boxOf)
+        const u0 = Math.min(...boxes.map((b) => b.min.y))
+        const u1 = Math.max(...boxes.map((b) => b.max.y))
+        const ky = (y1 - y0) / (u1 - u0)
+        let frontShiftZ = 0
+        frontMeshes.forEach((m, k) => {
+          const b = boxes[k]
+          // Local Z is world X, local Y stays Y (the shared -90° Y rotation).
+          m.scale.z *= (x1 - x0) / (b.max.x - b.min.x)
+          m.scale.y *= ky
+          const nb = boxOf(m)
+          const targetMinY = y0 + (b.min.y - u0) * ky
+          m.position.x += x0 - nb.min.x
+          m.position.y += targetMinY - nb.min.y
+          m.position.z += faceZ - nb.max.z
+          frontShiftZ = Math.min(frontShiftZ, faceZ - nb.max.z)
+        })
+        const drawerParts = (element.drawerMeshes ?? [])
+          .map(byName)
+          .filter((m): m is THREE.Mesh => !!m && !m.name.includes('Front'))
+        if (drawerParts.length > 0) {
+          const minZ = Math.min(...drawerParts.map((m) => boxOf(m).min.z))
+          const shift = Math.max(frontShiftZ, Math.min(l.min.z, r.min.z) - minZ)
+          drawerParts.forEach((m) => { m.position.z += shift })
+        }
+      }
+    }
+
     const fronts: Array<{
       cx: number
       topY: number
@@ -340,7 +409,7 @@ function SpecialElementInner({
       proxyRef.current.t = targetT
       action.time = targetT
     }
-  }, [clone, originals, box, clonedClips, actions, targetWidth, targetDepth, extendFrontBottomY, positionY, element.widthScaleMeshes, slotGrowth])
+  }, [clone, originals, box, clonedClips, actions, targetWidth, targetDepth, extendFrontBottomY, positionY, element.widthScaleMeshes, element.drawerMeshes, element.insetFronts, insetFronts, slotGrowth])
 
   useEffect(() => {
     const action = Object.values(actions)[0]

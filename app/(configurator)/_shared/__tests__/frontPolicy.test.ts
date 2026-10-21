@@ -218,3 +218,26 @@ describe('resolveFrontPlan — door above a washer follows the door toggle', () 
     expect(plan.showDoor).toBe(false)
   })
 })
+
+describe('resolveFrontPlan — washer drawers inside the module without door', () => {
+  it('keeps the original overlay fronts with handle while the vak has its door', () => {
+    const plan = resolveFrontPlan({ ...base, isWasher: true, selectedHandleId: '12' })
+    expect(plan.insetDrawerFronts).toBe(false)
+    expect(plan.showWasherDoorAbove).toBe(true)
+    expect(plan.drawerHandleId).toBe('12')
+  })
+
+  it('without door the drawers sit inside the module, opened by a groove', () => {
+    const plan = resolveFrontPlan({ ...base, isWasher: true, hasDoorSetting: false, selectedHandleId: '12' })
+    expect(plan.insetDrawerFronts).toBe(true)
+    expect(plan.showWasherDoorAbove).toBe(false)
+    expect(plan.drawerHandleId).toBeNull()
+  })
+
+  it('never insets outside a high-section washer', () => {
+    expect(resolveFrontPlan({ ...base, hasDoorSetting: false }).insetDrawerFronts).toBe(false)
+    expect(
+      resolveFrontPlan({ ...base, isWasher: true, sectionKind: 'low', hasDoorSetting: false }).insetDrawerFronts,
+    ).toBe(false)
+  })
+})

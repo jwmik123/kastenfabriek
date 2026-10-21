@@ -109,6 +109,15 @@ describe('computeWasmPricing — modules and doors', () => {
     expect(row.drawerHandleCost).toBe(10)
   })
 
+  it('prices no drawer handles on a washer vak without door (groove)', () => {
+    const result = computeWasmPricing(
+      input({ modules: [slot({ slotIndex: 0, layoutId: 11, hasDoor: false })], moduleCount: 1 }),
+    )
+    expect(result.rows[0].doorCount).toBe(0)
+    expect(result.rows[0].drawerFrontCount).toBe(0)
+    expect(result.rows[0].drawerHandleCost).toBe(0)
+  })
+
   it('drops the handle of a push-to-open module, fronts included', () => {
     const result = computeWasmPricing(
       input({ modules: [slot({ slotIndex: 0, layoutId: 1, hasDoor: true, pushToOpen: true })], moduleCount: 1 }),
@@ -122,7 +131,8 @@ describe('computeWasmPricing — modules and doors', () => {
     const result = computeWasmPricing(
       input({
         doorHandleId: 'h2',
-        modules: [slot({ slotIndex: 0, layoutId: 11, hasDoor: false })],
+        // With its door the washer vak keeps its overlay drawer fronts.
+        modules: [slot({ slotIndex: 0, layoutId: 11, hasDoor: true })],
         moduleCount: 1,
       }),
     )

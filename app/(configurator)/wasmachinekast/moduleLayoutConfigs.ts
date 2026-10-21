@@ -17,6 +17,10 @@ const WASHER_SINGLE_CONFIG: ModuleLayoutConfig = {
       glbMaterialMeshes: ['Plane051_1'],
       chromeMaterialMeshes: ['Plane051_2'],
       glassMaterialMeshes: ['Plane051_5'],
+      drawerMeshes: [
+        'WMSingleFront_extend', 'WMSingleLeft1_ds', 'WMSingleRight1_ds', 'WMSingleBottom1_ds', 'WMSingleBack',
+      ],
+      insetFronts: { between: ['WMSinglePanel3Left_ds', 'WMSinglePanel3Right_ds'], top: 'WMSingleShelf1_ds' },
     },
   ],
   fillZone: {
@@ -41,6 +45,12 @@ const WASHER_DOUBLE_GLB_CONFIG: ModuleLayoutConfig = {
       glbMaterialMeshes: ['Plane005_1'],
       chromeMaterialMeshes: ['Plane005_2'],
       glassMaterialMeshes: ['Plane005_5'],
+      drawerMeshes: [
+        'WMDoubleFront1_extend', 'WMDoubleFront2', 'WMDoubleBack1', 'WMDoubleBack2',
+        'WMDoubleBottom1_ds', 'WMDoubleBottom2_ds', 'WMDoubleLeft1_ds', 'WMDoubleLeft2_ds',
+        'WMDoubleRight1_ds', 'WMDoubleRight2_ds', 'WMDoubleFixedLeft', 'WMDoubleFixedRight',
+      ],
+      insetFronts: { between: ['WMDoublePanel3Left_ds', 'WMDoublePanel3Right_ds'], top: 'WMDoubleShelf1_ds' },
     },
   ],
   fillZone: {
@@ -65,6 +75,13 @@ const WASHER_PLANK_CONFIG: ModuleLayoutConfig = {
       glbMaterialMeshes: ['Mesh929', 'Mesh928', 'Plane006_1'],
       chromeMaterialMeshes: ['Plane006_2'],
       glassMaterialMeshes: ['Plane006_5'],
+      // The pull-out plank (with its own front) and its runners move with the drawers.
+      drawerMeshes: [
+        'WMPlankFront1_extend', 'WMPlankFront2', 'WMPlankPlank', 'WMPlankBack', 'WMPlankBottom_ds',
+        'WMPlankLeft_ds', 'WMPlankRight_ds', 'WMPlankFixedLeft1', 'WMPlankFixedLeft2',
+        'WMPlankFixedRight1', 'WMPlankFixedRight2',
+      ],
+      insetFronts: { between: ['WMPlankPanel3Left_ds', 'WMPlankPanel3Right_ds'], top: 'WMPlankShelf1_ds' },
     },
   ],
   fillZone: {

@@ -39,6 +39,20 @@ export type ModuleElement = {
    * against this rather than against the element's own bbox.
    */
   nativeSlotWidth?: number
+  /**
+   * Washer GLBs: the meshes that make up the drawers under the machine —
+   * fronts, drawer boxes, runners. Moved back with the fronts when those sit
+   * inside the module (`insetFronts`).
+   */
+  drawerMeshes?: string[]
+  /**
+   * Washer GLBs: where the drawer fronts go when they sit inside the module,
+   * like an ordinary drawer module's: as wide as the `top` panel (the one the
+   * machine stands on, spanning the module's inner width), from the bottom of
+   * the `between` side panels up to that panel, front face flush with them.
+   * The GLB models them as overlay fronts.
+   */
+  insetFronts?: { between: [string, string]; top: string }
 }
 
 // --- Module layout ---

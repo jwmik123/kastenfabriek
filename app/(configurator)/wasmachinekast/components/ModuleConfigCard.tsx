@@ -294,8 +294,9 @@ export default function ModuleConfigCard({ className }: { className?: string }) 
       ) : (
         <>
           {/* A washer in the high section has a door above the machine, which
-              the customer may leave off; in the low section it stays open.
-              A washer slot can never be doubled. */}
+              the customer may leave off (the drawers below then sit inside the
+              module); in the low section it stays open. A washer slot is
+              never doubled. */}
           {(!isWasherSlot || editingSection === 'high') && (
           <div className="flex gap-5">
             <div

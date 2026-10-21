@@ -51,7 +51,9 @@ export function frontsInModule({ module, section }: SectionedModule): number {
   const config = getWasmLayoutConfig(module.layoutId)
   if (!config) return 0
   const isWasher = WASHER_LAYOUT_IDS.has(module.layoutId)
-  const showsFronts = section === 'high' ? isWasher : config.lowFronts === true
+  // Without its door a washer vak's drawers sit inside the module and open by
+  // a groove: no handle-bearing fronts.
+  const showsFronts = section === 'high' ? isWasher && module.hasDoor : config.lowFronts === true
   if (!showsFronts) return 0
   return config.drawerFrontCount ?? 0
 }

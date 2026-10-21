@@ -676,6 +676,8 @@ function SectionGroup({
               sectionNeedsTopCabinet={isLow ? false : section.height > TOP_CABINET_THRESHOLD}
               sectionKind={kind}
               washerDoorAbove={plan.showWasherDoorAbove}
+              shelfAboveContent={isWasher && kind === 'high'}
+              insetDrawerFronts={plan.insetDrawerFronts}
               drawerFronts={plan.showDrawerFronts}
               doorHandleIdOverride={plan.doorHandleId}
               drawerHandleId={plan.drawerHandleId}

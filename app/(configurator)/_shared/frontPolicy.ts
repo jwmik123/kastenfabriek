@@ -57,6 +57,12 @@ export type FrontPlan = {
   showDoor: boolean
   /** Render a door covering only the open zone above the module content. */
   showWasherDoorAbove: boolean
+  /**
+   * The layout's drawers sit inside the module like an ordinary drawer
+   * module's (a washer vak without door): fronts across the module's inner
+   * width, opened by a groove, no handle.
+   */
+  insetDrawerFronts: boolean
   /** Render the layout's drawer fronts flush with the door plane (no door). */
   showDrawerFronts: boolean
   /** Handle on door(s); 'none' = push-to-open, no handle mesh. */
@@ -79,6 +85,7 @@ export function resolveFrontPlan(ctx: FrontPolicyContext): FrontPlan {
     return {
       showDoor: ctx.hasDoorSetting,
       showWasherDoorAbove: false,
+      insetDrawerFronts: false,
       showDrawerFronts: false,
       doorHandleId: handleId,
       drawerHandleId: null,
@@ -86,18 +93,21 @@ export function resolveFrontPlan(ctx: FrontPolicyContext): FrontPlan {
     }
   }
 
-  // Washer modules: only the door above the washer (when the customer keeps
-  // the vak's door), always push-to-open. The
-  // drawers under the machine (high section) are ordinary lades and carry the
-  // cabinet's handle, horizontally, like the lage-kast fronts do.
+  // Washer modules (high section). With the vak's door: a push-to-open door
+  // above the machine, and the drawers under it as the GLB models them —
+  // fronts in the door plane carrying the cabinet's handle, horizontally,
+  // like the lage-kast fronts. Without: an open vak whose drawers sit inside
+  // the module and open by a groove. The low section stays open.
   if (ctx.isWasher) {
     const high = ctx.sectionKind === 'high'
+    const door = high && ctx.hasDoorSetting
     return {
       showDoor: false,
-      showWasherDoorAbove: high && ctx.hasDoorSetting,
+      showWasherDoorAbove: door,
+      insetDrawerFronts: high && !ctx.hasDoorSetting,
       showDrawerFronts: false,
       doorHandleId: 'none',
-      drawerHandleId: high
+      drawerHandleId: door
         ? ctx.selectedHandleFitsLowModule === false
           ? 'none'
           : handleId
@@ -112,6 +122,7 @@ export function resolveFrontPlan(ctx: FrontPolicyContext): FrontPlan {
     return {
       showDoor: false,
       showWasherDoorAbove: false,
+      insetDrawerFronts: false,
       showDrawerFronts: true,
       doorHandleId: 'none',
       drawerHandleId:
@@ -127,6 +138,7 @@ export function resolveFrontPlan(ctx: FrontPolicyContext): FrontPlan {
   return {
     showDoor: ctx.hasDoorSetting,
     showWasherDoorAbove: false,
+    insetDrawerFronts: false,
     showDrawerFronts: false,
     doorHandleId: doorTooBigForLow ? 'none' : handleId,
     drawerHandleId: null,
