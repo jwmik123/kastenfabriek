@@ -316,6 +316,17 @@ function syncWarmthUniforms(
   }
 }
 
+/** Drawer boxes are always white, whatever colours the cabinet has. */
+export const DRAWER_INTERIOR_MATERIAL_ID = 'premium-wit'
+
+export function useDrawerInteriorMaterialInstance(): THREE.MeshPhysicalNodeMaterial {
+  const getMaterial = useContext(MaterialCacheContext)
+  if (!getMaterial) {
+    throw new Error('useDrawerInteriorMaterialInstance must be used inside <ClosetMaterialProvider>')
+  }
+  return getMaterial(DRAWER_INTERIOR_MATERIAL_ID, false)
+}
+
 /** Imperative hook variant — used where callers need the material object directly */
 export function useClosetMaterialInstance(
   variant: 'buitenkant' | 'binnenkant' = 'buitenkant',

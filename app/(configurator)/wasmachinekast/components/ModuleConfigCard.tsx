@@ -293,22 +293,25 @@ export default function ModuleConfigCard({ className }: { className?: string }) 
         </div>
       ) : (
         <>
-          {/* A washer in the high section has a door above the machine, which
-              the customer may leave off (the drawers below then sit inside the
-              module); in the low section it stays open. A washer slot is
-              never doubled. */}
-          {(!isWasherSlot || editingSection === 'high') && (
+          {/* "Geen fronten": no door on an ordinary vak; on a machine vak in
+              the high section no door above the machine and no drawer fronts
+              (boxes and runners stay). A machine in the low section is open
+              anyway, and the lage-kast front layouts always keep theirs. A
+              washer slot is never doubled. */}
+          {(!isWasherSlot || editingSection === 'high') && !(editingSection === 'low' && activeLayoutConfig?.lowFronts) && (
           <div className="flex gap-5">
-            <div
+            <label
               data-testid="module-popover-door-toggle"
-              className="flex items-center justify-between flex-1"
+              className="flex items-center justify-between flex-1 cursor-pointer"
             >
-              <span className="text-sm">{isWasherSlot ? 'Deur boven machine' : 'Deur'}</span>
-              <Toggle
-                checked={modules[selectedSlot]?.hasDoor ?? false}
-                onCheckedChange={() => toggleModuleDoor(selectedSlot)}
+              <span className="text-sm">Geen fronten</span>
+              <input
+                type="checkbox"
+                checked={!(modules[selectedSlot]?.hasDoor ?? false)}
+                onChange={() => toggleModuleDoor(selectedSlot)}
+                className="size-4 accent-primary cursor-pointer"
               />
-            </div>
+            </label>
             {canBeDouble && !isWasherSlot && (
               <div
                 data-testid="module-popover-double-toggle"

@@ -524,10 +524,11 @@ export function describeModuleRow(m: SpecModule): SpecModuleRow {
   if (m.span === 2) execution.push("dubbele module");
   if (m.isWasher) execution.push("wasmachine");
   if (m.fixedWidthCm) execution.push(`vaste breedte ${m.fixedWidthCm} cm`);
-  execution.push(m.hasDoor ? `met ${front}` : "open, zonder front");
-  // Without its door a washer vak's drawers sit inside the module, no handle.
-  if (m.isWasher && m.section === "high" && !m.hasDoor) {
-    execution.push("lades binnen de module met greepgroef");
+  const highWasher = m.isWasher && m.section === "high";
+  execution.push(m.hasDoor ? `met ${front}` : highWasher ? "zonder fronten" : "open, zonder front");
+  // "Geen fronten" on a machine module: only the fronts come off.
+  if (highWasher && !m.hasDoor) {
+    execution.push("lades zonder fronten (ladebakken en geleiders blijven)");
   }
   if (m.pushToOpen) execution.push("push-to-open");
 

@@ -203,4 +203,14 @@ describe('ModulePopover (wasmachinekast)', () => {
     const html = renderToStaticMarkup(<ModulePopover />)
     expect(html).toContain('module-popover-top-door-toggle')
   })
+
+  it('offers "Geen fronten" as a checkbox, ticked when the vak has no fronts', async () => {
+    mockState.modules[1] = { ...mockState.modules[1], layoutId: 1, hasDoor: false }
+    mockState.washerModules = []
+    mockState.selectedSlot = 1
+    const { default: ModulePopover } = await import('../components/ModulePopover')
+    const html = renderToStaticMarkup(<ModulePopover />)
+    expect(html).toContain('Geen fronten')
+    expect(html).toMatch(/type="checkbox"[^>]*checked/)
+  })
 })

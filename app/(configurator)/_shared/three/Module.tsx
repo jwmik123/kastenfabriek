@@ -48,9 +48,8 @@ interface ModuleProps {
   // Shelf midway in the open space above the content (a washer). Stays when the
   // customer leaves the door above off; defaults to following that door.
   shelfAboveContent?: boolean
-  // The layout's drawers sit inside the module, like an ordinary drawer
-  // module's (a washer vak without door; layouts with `insetFronts`).
-  insetDrawerFronts?: boolean
+  // "Geen fronten" on a washer: the GLB's drawer fronts come off.
+  hideDrawerFronts?: boolean
   // Kitchen-style fronts (front policy, lage kast layouts with `lowFronts`):
   // the GLB's fronts are the visible front; `hasDoor` should be false and the
   // config's noDoorDepthOffset puts them flush with the door plane.
@@ -183,7 +182,7 @@ export default function Module({
   sectionNeedsTopCabinet,
   washerDoorAbove,
   shelfAboveContent = washerDoorAbove,
-  insetDrawerFronts = false,
+  hideDrawerFronts = false,
   drawerFronts,
   doorHandleIdOverride,
   drawerHandleId,
@@ -223,8 +222,7 @@ export default function Module({
   // Nothing covers this module's opening: the fronts of the GLB and the front
   // edges of the carcass panels look straight into the room, so they finish in
   // the buitenkant colour like the rest of the cabinet's visible outside.
-  // Fronts inside the module are interior, like a drawer module's behind its door.
-  const exposedFronts = insideFinish && !hasDoor && !insetDrawerFronts
+  const exposedFronts = insideFinish && !hasDoor
 
   const sideWallM    = p.sideWallThickness
   // A shared side wall belongs to the neighbouring section, so this section has
@@ -517,7 +515,7 @@ export default function Module({
           hasDoor={hasDoor}
           insideFinish={insideFinish}
           exposedFronts={exposedFronts}
-          insetFronts={insetDrawerFronts}
+          hideFronts={hideDrawerFronts}
           extendFrontBottomY={
             doorsExtendToFloor && !hasDoor ? 0.02 - effectiveFloorY : null
           }

@@ -94,11 +94,22 @@ export class PricingEngine {
    * costing nothing is how an unpriced module ends up free in a quote — so the
    * gap is logged, once per layout, rather than swallowed by the caller.
    */
-  getModulePrice(layoutId: number, type: CorpusType, section?: SectionType): number {
+  getModulePrice(
+    layoutId: number,
+    type: CorpusType,
+    section?: SectionType,
+    { noFronts = false }: { noFronts?: boolean } = {},
+  ): number {
     const layout = this.getModule(layoutId, section);
     if (!layout) {
       warnMissingModuleOnce(layoutId);
       return 0;
+    }
+    // "Geen fronten" has its own price where the owner set one (machine
+    // modules with drawers); elsewhere it costs the same as with fronts.
+    if (noFronts) {
+      const price = type === "double" ? layout.priceDoubleNoFronts : layout.priceSingleNoFronts;
+      if (price != null) return price;
     }
     return type === "double" ? layout.priceDouble : layout.priceSingle;
   }

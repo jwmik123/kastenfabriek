@@ -58,11 +58,10 @@ export type FrontPlan = {
   /** Render a door covering only the open zone above the module content. */
   showWasherDoorAbove: boolean
   /**
-   * The layout's drawers sit inside the module like an ordinary drawer
-   * module's (a washer vak without door): fronts across the module's inner
-   * width, opened by a groove, no handle.
+   * "Geen fronten" on a washer module: the drawer fronts (and the front of a
+   * pull-out plank) come off; drawer boxes and runners stay.
    */
-  insetDrawerFronts: boolean
+  hideDrawerFronts: boolean
   /** Render the layout's drawer fronts flush with the door plane (no door). */
   showDrawerFronts: boolean
   /** Handle on door(s); 'none' = push-to-open, no handle mesh. */
@@ -85,7 +84,7 @@ export function resolveFrontPlan(ctx: FrontPolicyContext): FrontPlan {
     return {
       showDoor: ctx.hasDoorSetting,
       showWasherDoorAbove: false,
-      insetDrawerFronts: false,
+      hideDrawerFronts: false,
       showDrawerFronts: false,
       doorHandleId: handleId,
       drawerHandleId: null,
@@ -93,18 +92,18 @@ export function resolveFrontPlan(ctx: FrontPolicyContext): FrontPlan {
     }
   }
 
-  // Washer modules (high section). With the vak's door: a push-to-open door
-  // above the machine, and the drawers under it as the GLB models them —
-  // fronts in the door plane carrying the cabinet's handle, horizontally,
-  // like the lage-kast fronts. Without: an open vak whose drawers sit inside
-  // the module and open by a groove. The low section stays open.
+  // Washer modules (high section). With fronts (the vak's door setting): a
+  // push-to-open door above the machine, and drawer fronts under it carrying
+  // the cabinet's handle, horizontally, like the lage-kast fronts. "Geen
+  // fronten": no door above and no drawer fronts — the drawer boxes and their
+  // runners stay. The low section stays open.
   if (ctx.isWasher) {
     const high = ctx.sectionKind === 'high'
     const door = high && ctx.hasDoorSetting
     return {
       showDoor: false,
       showWasherDoorAbove: door,
-      insetDrawerFronts: high && !ctx.hasDoorSetting,
+      hideDrawerFronts: high && !ctx.hasDoorSetting,
       showDrawerFronts: false,
       doorHandleId: 'none',
       drawerHandleId: door
@@ -122,7 +121,7 @@ export function resolveFrontPlan(ctx: FrontPolicyContext): FrontPlan {
     return {
       showDoor: false,
       showWasherDoorAbove: false,
-      insetDrawerFronts: false,
+      hideDrawerFronts: false,
       showDrawerFronts: true,
       doorHandleId: 'none',
       drawerHandleId:
@@ -138,7 +137,7 @@ export function resolveFrontPlan(ctx: FrontPolicyContext): FrontPlan {
   return {
     showDoor: ctx.hasDoorSetting,
     showWasherDoorAbove: false,
-    insetDrawerFronts: false,
+    hideDrawerFronts: false,
     showDrawerFronts: false,
     doorHandleId: doorTooBigForLow ? 'none' : handleId,
     drawerHandleId: null,

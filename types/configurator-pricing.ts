@@ -15,6 +15,9 @@ export interface ModuleLayout {
   contents: ModuleLayoutContents;
   priceDouble: number;
   priceSingle: number;
+  /** Wasmachinekast "Geen fronten": price with the drawer fronts off. Absent = the normal price. */
+  priceDoubleNoFronts?: number;
+  priceSingleNoFronts?: number;
   availableForTopCabinet: boolean;
   sectionType?: SectionType;
   minSlotWidth?: number; // cm — if set, setModuleLayout rejects slots narrower than this

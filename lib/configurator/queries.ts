@@ -20,6 +20,8 @@ export const pricingDataQuery = groq`{
     contents,
     priceDouble,
     priceSingle,
+    priceDoubleNoFronts,
+    priceSingleNoFronts,
     availableForTopCabinet,
     sectionType
   },
@@ -72,6 +74,8 @@ export const moduleLayoutsQuery = groq`
     contents,
     priceDouble,
     priceSingle,
+    priceDoubleNoFronts,
+    priceSingleNoFronts,
     availableForTopCabinet,
     sectionType
   }

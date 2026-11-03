@@ -23,7 +23,9 @@ const pricingData: FullPricingData = {
     // 1 — a shared layout with a plain door.
     { layoutId: 1, name: 'Open', description: '', contents: { shelves: 2, rods: 0, drawers: 0 }, priceSingle: 200, priceDouble: 350, availableForTopCabinet: false },
     // 11 — washer, single. 20 — lage kast with 2 drawer fronts.
-    { layoutId: 11, name: 'Wasmachine', description: '', contents: { shelves: 0, rods: 0, drawers: 0 }, priceSingle: 400, priceDouble: 600, availableForTopCabinet: false },
+    { layoutId: 11, name: 'Wasmachine', description: '', contents: { shelves: 0, rods: 0, drawers: 0 }, priceSingle: 400, priceDouble: 600, priceSingleNoFronts: 330, priceDoubleNoFronts: 500, availableForTopCabinet: false },
+    // 13 — washer with two drawers, no "zonder fronten" price filled in.
+    { layoutId: 13, name: 'Wasmachine 2 lades', description: '', contents: { shelves: 0, rods: 0, drawers: 0 }, priceSingle: 450, priceDouble: 450, availableForTopCabinet: false },
     { layoutId: 20, name: 'Lage plank', description: '', contents: { shelves: 1, rods: 0, drawers: 0 }, priceSingle: 150, priceDouble: 260, availableForTopCabinet: false },
   ],
   doors: [
@@ -109,7 +111,28 @@ describe('computeWasmPricing — modules and doors', () => {
     expect(row.drawerHandleCost).toBe(10)
   })
 
-  it('prices no drawer handles on a washer vak without door (groove)', () => {
+  it('uses the "zonder fronten" price for a washer vak without fronts', () => {
+    const result = computeWasmPricing(
+      input({ modules: [slot({ slotIndex: 0, layoutId: 11, hasDoor: false })], moduleCount: 1 }),
+    )
+    expect(result.rows[0].interiorCost).toBe(330)
+  })
+
+  it('keeps the normal price when no "zonder fronten" price is set', () => {
+    const result = computeWasmPricing(
+      input({ modules: [slot({ slotIndex: 0, layoutId: 13, hasDoor: false })], moduleCount: 1 }),
+    )
+    expect(result.rows[0].interiorCost).toBe(450)
+  })
+
+  it('keeps the normal price for a washer vak with fronts', () => {
+    const result = computeWasmPricing(
+      input({ modules: [slot({ slotIndex: 0, layoutId: 11, hasDoor: true })], moduleCount: 1 }),
+    )
+    expect(result.rows[0].interiorCost).toBe(400)
+  })
+
+  it('prices no drawer handles on a washer vak without fronts', () => {
     const result = computeWasmPricing(
       input({ modules: [slot({ slotIndex: 0, layoutId: 11, hasDoor: false })], moduleCount: 1 }),
     )

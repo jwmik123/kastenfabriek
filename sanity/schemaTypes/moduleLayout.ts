@@ -78,6 +78,21 @@ export const moduleLayout = defineType({
       validation: (Rule) => Rule.required().min(0),
     }),
     defineField({
+      name: "priceSingleNoFronts",
+      title: "Prijs zonder fronten - Single Corpus (€)",
+      type: "number",
+      description:
+        "Wasmachinekast: prijs als de klant 'Geen fronten' kiest. Alleen nodig voor machine-modules met lades of uitschuifplank: de fronten gaan eraf, ladebakken en geleiders blijven. Leeg = de gewone prijs.",
+      validation: (Rule) => Rule.min(0),
+    }),
+    defineField({
+      name: "priceDoubleNoFronts",
+      title: "Prijs zonder fronten - Double Corpus (€)",
+      type: "number",
+      description: "Zie hierboven, voor de dubbele breedte. Leeg = de gewone prijs.",
+      validation: (Rule) => Rule.min(0),
+    }),
+    defineField({
       name: "availableForTopCabinet",
       title: "Available for Top Cabinet",
       type: "boolean",

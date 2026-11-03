@@ -210,7 +210,9 @@ export function computeWasmPricing(input: WasmPricingInput): WasmPricingResult {
     const pricingTier = module.span === 2 ? ('double' as const) : ('single' as const)
     // The section decides which catalogue document prices this module: the
     // same layoutId exists as a high and a low variant at different prices.
-    const interiorCost = engine?.getModulePrice(module.layoutId, pricingTier, section) ?? 0
+    // "Geen fronten" on a machine module: its own price, set in Sanity.
+    const noFronts = section === 'high' && isWasher && !module.hasDoor
+    const interiorCost = engine?.getModulePrice(module.layoutId, pricingTier, section, { noFronts }) ?? 0
     const layoutDoc = engine?.getModule(module.layoutId, section)
 
     // A washer door and a lage-kast front layout are drawn as fronts, not as a

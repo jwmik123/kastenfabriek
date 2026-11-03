@@ -282,13 +282,13 @@ describe("describeModuleRow — washer module", () => {
   it("leaves a washer with door as it was", () => {
     const row = washer(true);
     expect(row.execution).toContain("met deur");
-    expect(row.execution).not.toContain("greepgroef");
+    expect(row.execution).not.toContain("lades zonder fronten");
   });
 
-  it("puts the drawers of an open washer vak inside the module", () => {
+  it("says the drawers keep their mechanism without fronts", () => {
     const row = washer(false);
-    expect(row.execution).toContain("open, zonder front");
-    expect(row.execution).toContain("lades binnen de module met greepgroef");
+    expect(row.execution).toContain("zonder fronten");
+    expect(row.execution).toContain("lades zonder fronten (ladebakken en geleiders blijven)");
   });
 });
 
