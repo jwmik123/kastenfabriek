@@ -111,6 +111,25 @@ describe('computeWasmPricing — modules and doors', () => {
     expect(row.drawerHandleCost).toBe(10)
   })
 
+  it('prices the door above a washing machine as a small door', () => {
+    const result = computeWasmPricing(
+      input({ modules: [slot({ slotIndex: 0, layoutId: 11, hasDoor: true })], moduleCount: 1 }),
+    )
+    expect(result.rows[0].doorVariant).toBe('small')
+    expect(result.rows[0].doorCost).toBe(80)
+  })
+
+  it('keeps a small door above the machine on a houtlook cabinet', () => {
+    const result = computeWasmPricing(
+      input({
+        buitenkantMaterialId: 'h3165-vicenza-eik-licht',
+        modules: [slot({ slotIndex: 0, layoutId: 11, hasDoor: true })],
+        moduleCount: 1,
+      }),
+    )
+    expect(result.rows[0].doorVariant).toBe('small')
+  })
+
   it('uses the "zonder fronten" price for a washer vak without fronts', () => {
     const result = computeWasmPricing(
       input({ modules: [slot({ slotIndex: 0, layoutId: 11, hasDoor: false })], moduleCount: 1 }),

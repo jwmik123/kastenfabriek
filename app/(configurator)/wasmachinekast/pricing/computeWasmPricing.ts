@@ -227,7 +227,8 @@ export function computeWasmPricing(input: WasmPricingInput): WasmPricingResult {
     let handleCost = 0
 
     if (hasDoor) {
-      doorVariant = doorVariantFor(module, buitenkantMaterialId)
+      // The door above a washing machine is a small door, whatever the finish.
+      doorVariant = section === 'high' && isWasher ? 'small' : doorVariantFor(module, buitenkantMaterialId)
       doorCount = module.span === 2 ? 2 : 1
       doorCost = (engine?.getDoorPrice(doorVariant) ?? 0) * doorCount
       // The door above a washing machine is always push-to-open, as is any

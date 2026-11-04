@@ -7,6 +7,8 @@ describe('drawer parts by mesh name', () => {
       'DrawerLeft1_ds', 'DrawerRight3_ds', 'DrawerBottom2_ds_ws', 'DrawerBack1_ws',
       'WMSingleBack', 'WMSingleBottom1_ds', 'WMDoubleLeft2_ds', 'WMPlankRight_ds',
       'WMDoubleLowBottom2_ds', 'WMPlankLowBack',
+      // The pull-out plank is finished like a drawer box.
+      'WMPlankPlank', 'WMPlankLowPlank',
     ]) {
       expect(isDrawerBoxMesh(name), name).toBe(true)
     }
@@ -15,7 +17,7 @@ describe('drawer parts by mesh name', () => {
   it('leaves the cabinet panels, shelves, fronts and runners alone', () => {
     for (const name of [
       'DrawerPanel3Left_ds', 'DrawerPanel2Right', 'WMSingleShelf1_ds', 'DrawerShelf_ds_ws',
-      'DrawerFront1_ws', 'WMPlankFront2', 'WMPlankFixedLeft1', 'WMPlankPlank', 'WMSingleMachine',
+      'DrawerFront1_ws', 'WMPlankFront2', 'WMPlankFixedLeft1', 'WMSingleMachine',
     ]) {
       expect(isDrawerBoxMesh(name), name).toBe(false)
     }
